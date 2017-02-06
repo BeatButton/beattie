@@ -126,10 +126,11 @@ class RPG:
 
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
-        if isinstance(exception, ValueError):
-            await self.bot.say(ctx, '''Invalid input. Valid input examples:
-        6
-        13e''')
+        if (isinstance(exception, commands.MissingRequiredArgument)
+            or isinstance(exception.original, ValueError)):
+            await self.bot.say(ctx, 'Invalid input. Valid input examples:'
+                               '\n6'
+                               '\n13e')
         elif isinstance(exception.original, futures.TimeoutError):
             await self.bot.reply(ctx, 'Your execution took too long. Roll fewer dice.')
         else:
@@ -173,7 +174,10 @@ class RPG:
 
     @srd.error
     async def srd_error(self, exception, ctx):
-        await self.bot.handle_error(exception, ctx)
+        if isinstance(exception, commands.MissingRequiredArgument):
+            await self.bot.say(ctx, 'Please include a search term.')
+        else:
+            await self.bot.handle_error(exception, ctx)
 
 
 def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
@@ -191,16 +195,25 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
     return rolls
 
 def shadowroller(num, edge=False):
-    rolls = []
+    rolls = 0
+    hits = 0
+    count1 = 0
     while True:
-        pool = tuple(randint(1, 6) for _ in range(num))
-        count6 = pool.count(6)
-        rolls += pool
-        if not (edge and count6 > 0):
+        count6 = 0
+        rolls += num
+        for _ in range(num):
+            roll = randint(1, 6)
+            if roll > 4:
+                hits += 1
+                if roll == 6:
+                    count6 += 1
+            elif roll == 1:
+                count1 += 1
+        if not (count6 > 0 and edge):
             break
-    hits = rolls.count(5) + count6
+        num = count6
     s = 's' if hits != 1 else ''
-    if rolls.count(1) > len(rolls) / 2:
+    if count1 > rolls / 2:
         if hits == 0:
             result = 'Critical glitch.'
         else:
