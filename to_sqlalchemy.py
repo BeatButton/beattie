@@ -102,24 +102,18 @@ def update():
     import shutil
 
     if os.path.isdir('tmp'):
-        if os.path.isfile('tmp/ed.db'):
-            os.remove('tmp/ed.db')
-    else:
-        os.mkdir('tmp')
+        shutil.rmtree('tmp')
+    os.mkdir('tmp')
 
     print('Downloading raw data...')
-    files = ('commodities.json', 'modules.json', 'factions.jsonl',
-                 'systems_populated.jsonl', 'stations.jsonl',
-                 'listings.csv', 'systems.csv', 'bodies.jsonl',)
+    files = ('commodities.json', 'systems_populated.jsonl', 'stations.jsonl',
+                 'listings.csv', 'systems.csv', 'bodies.jsonl')
     for file in files:
-        if not os.path.isfile(f'tmp/{file}'):
-            with open(f'tmp/{file}', 'wb') as handle:
-                response = requests.get(f'https://eddb.io/archive/v5/{file}', stream=True)
-                for block in response.iter_content(1024):
-                    handle.write(block)
-            print(f'{file} downloaded.')
-        else:
-            print(f'{file} already present.')
+        with open(f'tmp/{file}', 'wb') as handle:
+            response = requests.get(f'https://eddb.io/archive/v5/{file}', stream=True)
+            for block in response.iter_content(1024):
+                handle.write(block)
+        print(f'{file} downloaded.')
 
     print('Beginning database creation.')
     engine = sqlalchemy.create_engine('sqlite:///tmp/ed.db', echo=False)
@@ -234,11 +228,7 @@ def update():
 
     print('Cleaning up.')
     session.close()
-    try:
-        os.remove('data/ed.db')
-    except FileNotFoundError:
-        pass
-    if not os.path.exists('data/'):
+    if not os.path.isdir('data'):
         os.mkdir('data')
     shutil.move('tmp/ed.db', 'data/ed.db')
     shutil.rmtree('tmp')
