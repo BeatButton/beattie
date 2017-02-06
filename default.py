@@ -64,7 +64,6 @@ class Default:
     async def eval_(self, ctx, *, inp):
         """Uses eval on an expression. Owner only."""
         if ctx.message.author.id != 140293604726800385:
-            print(ctx.message.author.id)
             await self.bot.say(ctx, "I don't think so.")
             return
         inp = inp.strip()
@@ -76,7 +75,6 @@ class Default:
         while inp.endswith('`'):
             inp = inp[:-1]
         inp.strip()
-        print(inp)
         import math, cmath, asyncio, discord, aiohttp
         try:
             result = eval(inp)
@@ -95,9 +93,9 @@ class Default:
             return
         await self.bot.say(ctx, 'Restarting...')
         if self.bot.connection.is_bot:
-            os.execl('~/Documents/beattie/beattie.sh', '.')
+            os.execl('~/Documents/beattie-bot/beattie.sh', '.')
         else:
-            os.execl('~/Documents/beattie/self.sh', '.')
+            os.execl('~/Documents/beattie-bot/self.sh', '.')
 
 def setup(bot):
     bot.add_cog(Default(bot))

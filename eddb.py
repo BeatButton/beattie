@@ -55,10 +55,6 @@ class EDDB:
     def station_search(self, search, target_system=None, ctx=None):
         search = search.lower()
         conn = sqlite3.connect('data/ed.db').cursor()
-        try:
-            id_ = int(search)
-        except ValueError:
-            id_ = -1
         if ',' in search:
             search, target_system = (i.strip() for i in search.split(','))
 
@@ -176,7 +172,7 @@ class EDDB:
             if not result:
                 return 'Commodity not available to be bought or sold at station.'
 
-            keys = tuple(i[0] for i in table.description)
+            keys = (i[0] for i in table.description)
             result = {k: v for k, v in zip(keys, result)}
             result.pop('station_id')
             result.pop('commodity_id')

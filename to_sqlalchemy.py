@@ -94,7 +94,7 @@ class Listing(Base):
     demand = Column(Integer)
     collected_at = Column(String)
     
-def remake():
+def update():
     print('Updating ed.db')
     import json
     import csv
