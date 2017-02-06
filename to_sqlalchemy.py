@@ -234,7 +234,12 @@ def update():
 
     print('Cleaning up.')
     session.close()
-    os.remove('data/ed.db')
+    try:
+        os.remove('data/ed.db')
+    except FileNotFoundError:
+        pass
+    if not os.path.exists('data/'):
+        os.mkdir('data')
     shutil.move('tmp/ed.db', 'data/ed.db')
     shutil.rmtree('tmp')
 
