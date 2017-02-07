@@ -2,6 +2,8 @@ import asyncio
 import json
 import sys
 
+from discord.ext.commands import when_mentioned_or
+
 from bot import BeattieBot
 
 try:
@@ -17,7 +19,7 @@ with open('config.json') as file:
 token = config['token']
 prefix = ['>']
 
-bot = BeattieBot(command_prefix=prefix)
+bot = BeattieBot(when_mentioned_or(prefix))
 
 for extension in ('default', 'rpg', 'eddb'):
     try:
