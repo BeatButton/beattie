@@ -19,7 +19,7 @@ with open('config.json') as file:
 token = config['token']
 prefix = ['>']
 
-bot = BeattieBot(when_mentioned_or(prefix))
+bot = BeattieBot(when_mentioned_or(*prefix))
 
 for extension in ('default', 'rpg', 'eddb'):
     try:
