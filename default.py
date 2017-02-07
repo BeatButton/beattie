@@ -16,7 +16,7 @@ class Default:
 
         Responds to the ping with "pong." This is just to let you know the bot's working.
         """
-        msg = await self.bot.say(ctx, 'pong')
+        msg = await ctx.send('pong')
         delta = (msg.created_at - ctx.message.created_at).total_seconds()
         await msg.edit(content=f'{msg.content}\nTime to respond: {delta:.3f} seconds')
 
@@ -24,14 +24,14 @@ class Default:
     async def string(self, ctx):
         """Commands for doing stuff to strings."""
         if ctx.invoked_subcommand is None:
-            await self.bot.say(ctx, 'Invalid command passed. ' \
-                            f'Try "{bot.command_prefix[0]}help string"')
+            await ctx.send('Invalid command passed. ' \
+                            f'Try "{ctx.prefix}help string"')
 
 
     @string.command(aliases=['rev', 'r'])
     async def reverse(self, ctx, *, inp):
         """Reverse a string."""
-        await self.bot.say(ctx, inp[::-1])
+        await ctx.send(inp[::-1])
 
 
     @string.command(aliases=['rot'])
@@ -39,7 +39,7 @@ class Default:
         """Apply rot13 to a string.
 
         Uses the shift cipher with key 13."""
-        await self.bot.say(ctx, encode(inp, 'rot_13'))
+        await ctx.send(encode(inp, 'rot_13'))
 
 
     @commands.command(hidden=True, aliases=['gel'])
@@ -57,14 +57,14 @@ class Default:
             message = random.choice(entries)
         except IndexError:
             message = 'No images found.'
-        await self.bot.say(ctx, message)
+        await ctx.send(f'http:{message}')
     
 
     @commands.command(hidden=True, name='eval')
     async def eval_(self, ctx, *, inp):
         """Uses eval on an expression. Owner only."""
         if ctx.message.author.id != 140293604726800385:
-            await self.bot.say(ctx, "I don't think so.")
+            await ctx.send("I don't think so.")
             return
         inp = inp.strip()
         while inp.startswith('`'):
@@ -82,20 +82,17 @@ class Default:
             result = e
         finally:
             del math, cmath, asyncio, discord, aiohttp
-        await self.bot.say(ctx, f'```py\n{result}```')
+        await ctx.send(f'```py\n{result}```')
 
     @commands.command(hidden=True)
     async def restart(self, ctx):
         """Restarts bot. Owner only."""
         if ctx.message.author.id != 140293604726800385:
             print(ctx.message.author.id)
-            await self.bot.say(ctx, "I don't think so.")
+            await ctx.send("I don't think so.")
             return
-        await self.bot.say(ctx, 'Restarting...')
-        if self.bot.connection.is_bot:
-            os.execl('~/Documents/beattie-bot/beattie.sh', '.')
-        else:
-            os.execl('~/Documents/beattie-bot/self.sh', '.')
+        await ctx.send('Restarting...')
+        os.execl('~/Documents/beattie-bot/beattie.sh', '.')
 
 def setup(bot):
     bot.add_cog(Default(bot))

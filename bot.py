@@ -2,26 +2,14 @@ from discord.ext.commands import Bot
 from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument
 
 class BeattieBot(Bot):
-    def __init__(self, *args, **kwargs):
-        if kwargs.get('self_bot', False):
-            self.say = self.reply = self.edit
-        super().__init__(*args, **kwargs)
-
     async def reply(self, ctx, message):
-        return await ctx.channel.send(f'{ctx.message.author.mention}\n{message}')
-
-    async def say(self, ctx, message):
-        return await ctx.channel.send(message)
-
-    async def edit(self, ctx, message):
-        await ctx.message.edit(content=f'{ctx.message.content}\n{message}')
-        return ctx.message
+        return await ctx.send(f'{ctx.message.author.mention}\n{message}')
 
     async def handle_error(self, exception, ctx):
         if isinstance(exception, MissingRequiredArgument):
-            await self.say(ctx, 'Missing required arguments.')
+            await ctx.send('Missing required arguments.')
         elif not isinstance(exception, CommandNotFound):
-            await self.say(ctx, 'Generic error handler triggered. '
+            await ctx.send('Generic error handler triggered. '
                            'This should never happen.')
             if hasattr(exception, 'original'):
                 exception = exception.original

@@ -87,7 +87,7 @@ class RPG:
     async def roll_error(self, exception, ctx):
         if (isinstance(exception, commands.MissingRequiredArgument)
             or isinstance(exception.original, ValueError)):
-            await self.bot.say(ctx, 'Invalid input. Valid input examples:'
+            await ctx.send('Invalid input. Valid input examples:'
                                '\n1d20+3'
                                '\n1d6'
                                '\n2d8-4'
@@ -128,7 +128,7 @@ class RPG:
     async def shadowroll_error(self, exception, ctx):
         if (isinstance(exception, commands.MissingRequiredArgument)
             or isinstance(exception.original, ValueError)):
-            await self.bot.say(ctx, 'Invalid input. Valid input examples:'
+            await ctx.send('Invalid input. Valid input examples:'
                                '\n6'
                                '\n13e')
         elif isinstance(exception.original, futures.TimeoutError):
@@ -169,13 +169,13 @@ class RPG:
             if entries[1:3]:
                 msg += '\n\nSee also:\n{}'.format('\n'.join(f'<{entry}>' for entry in entries[1:3]))
         
-        await self.bot.say(ctx, msg)
+        await ctx.send(msg)
 
 
     @srd.error
     async def srd_error(self, exception, ctx):
         if isinstance(exception, commands.MissingRequiredArgument):
-            await self.bot.say(ctx, 'Please include a search term.')
+            await ctx.send('Please include a search term.')
         else:
             await self.bot.handle_error(exception, ctx)
 
@@ -195,9 +195,7 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
     return rolls
 
 def shadowroller(num, edge=False):
-    rolls = 0
-    hits = 0
-    count1 = 0
+    rolls = hits = count1 = 0
     while True:
         count6 = 0
         rolls += num

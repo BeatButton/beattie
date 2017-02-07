@@ -14,21 +14,16 @@ else:
 with open('config.json') as file:
     config = json.load(file)
 
-if 'self' in sys.argv:
-    token = config['self']
-    self_bot = True
-    prefix = ['b>']
-else:
-    token = config['token']
-    self_bot = False
-    prefix = ['>']
+token = config['token']
+prefix = ['>']
 
-bot = BeattieBot(command_prefix=prefix, self_bot=self_bot)
+bot = BeattieBot(command_prefix=prefix)
 
-for extension in ('default', 'eddb', 'rpg'):
+for extension in ('default', 'rpg', 'eddb'):
     try:
         bot.load_extension(extension)
     except Exception as e:
         print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
-bot.run(token, bot=not self_bot)
+bot.run(token)
+bot.session.close()

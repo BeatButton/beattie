@@ -15,7 +15,7 @@ class EDDB:
     async def eddb(self, ctx):
         """Commands for getting data from EDDB.io"""
         if ctx.invoked_subcommand is None:
-            await self.bot.say(ctx, 'Invalid command passed. '\
+            await ctx.send('Invalid command passed. '
                             f'Try "{self.bot.command_prefix[0]}help eddb"')
         
     @eddb.command(aliases=['sys'])
@@ -25,7 +25,7 @@ class EDDB:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, self.system_search, inp)
 
-        await self.bot.say(ctx, result)
+        await ctx.send(result)
 
     def system_search(self, search):
         search = search.lower()
@@ -50,7 +50,7 @@ class EDDB:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, self.station_search, inp)
 
-        await self.bot.say(ctx, result)
+        await ctx.send(result)
 
     def station_search(self, search, target_system=None, ctx=None):
         search = search.lower()
@@ -88,7 +88,7 @@ class EDDB:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, self.body_search, inp)
 
-        await self.bot.say(ctx, result)
+        await ctx.send(result)
 
     def body_search(self, search):
         search = search.lower()
@@ -107,13 +107,13 @@ class EDDB:
         """Updates the database. Will take some time."""
         if not self.updating:
             self.updating = True
-            await self.bot.say(ctx, 'Database update in progress...')
+            await ctx.send('Database update in progress...')
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, to_sqlalchemy.remake)
-            await self.bot.say(ctx, 'Database update complete.')
+            await ctx.send('Database update complete.')
             self.updating = False
         else:
-            await self.bot.say(ctx, 'Database update still in progress.')
+            await ctx.send('Database update still in progress.')
 
 
     @update.error
@@ -127,7 +127,7 @@ class EDDB:
             Input in the format: commodity[, station[, system]]"""
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, self.commodity_search, inp)
-        await self.bot.say(ctx, result)
+        await ctx.send(result)
 
 
     def commodity_search(self, search):
