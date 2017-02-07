@@ -26,4 +26,3 @@ for extension in ('default', 'rpg', 'eddb'):
         print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
 bot.run(token)
-bot.session.close()
