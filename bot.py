@@ -16,7 +16,6 @@ class BeattieBot(Bot):
             raise exception
 
     async def on_ready(self):
-        self.command_prefix.append(self.user.mention + ' ')
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
