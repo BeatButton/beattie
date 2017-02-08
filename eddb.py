@@ -61,6 +61,7 @@ class EDDB:
             session.close()
             if update_hash == self.hash and not force:
                 await ctx.send('Update not necessary.')
+                self.updateing = False
                 return
             
             loop = asyncio.get_event_loop()
