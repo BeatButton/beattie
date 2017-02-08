@@ -1,6 +1,5 @@
 import asyncio
 import json
-import sys
 
 from discord.ext.commands import when_mentioned_or
 

@@ -1,4 +1,3 @@
-import os
 import time
 
 import requests
@@ -8,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker 
 
 Base = declarative_base()
+
 
 class System(Base):
     __tablename__ = 'systems'
@@ -20,7 +20,8 @@ class System(Base):
     state = Column(String)
     security = Column(String)
     power = Column(String)
-    
+
+
 class Station(Base):
     __tablename__ = 'stations'
 
@@ -42,6 +43,7 @@ class Station(Base):
     is_planetary = Column(Boolean)
     selling_ships = Column(String)
 
+
 class Populated(Base):
     __tablename__ = 'populated'
 
@@ -53,7 +55,8 @@ class Populated(Base):
     state = Column(String)
     security = Column(String)
     power = Column(String)
-    
+
+
 class Body(Base):
     __tablename__ = 'bodies'
 
@@ -73,6 +76,7 @@ class Body(Base):
     is_rotational_period_tidally_locked = Column(Boolean)
     is_landable = Column(Boolean)
 
+
 class Commodity(Base):
     __tablename__ = 'commodities'
     
@@ -81,6 +85,7 @@ class Commodity(Base):
     category = Column(String)
     average_price = Column(Integer)
     is_rare = Column(Boolean)
+
 
 class Listing(Base):
     __tablename__ = 'listings'
@@ -93,7 +98,8 @@ class Listing(Base):
     sell_price = Column(Integer)
     demand = Column(Integer)
     collected_at = Column(String)
-    
+
+
 def update():
     print('Updating ed.db')
     import json
@@ -107,7 +113,7 @@ def update():
 
     print('Downloading raw data...')
     files = ('commodities.json', 'systems_populated.jsonl', 'stations.jsonl',
-                 'listings.csv', 'systems.csv', 'bodies.jsonl')
+             'listings.csv', 'systems.csv', 'bodies.jsonl')
     for file in files:
         with open(f'tmp/{file}', 'wb') as handle:
             response = requests.get(f'https://eddb.io/archive/v5/{file}', stream=True)
@@ -118,8 +124,7 @@ def update():
     print('Beginning database creation.')
     engine = sqlalchemy.create_engine('sqlite:///tmp/ed.db', echo=False)
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    session = sessionmaker(bind=engine)()
     with open('tmp/commodities.json', encoding='utf-8') as commodities:
         commodities = json.load(commodities)
         for commodity in commodities:
@@ -150,7 +155,7 @@ def update():
     with open('tmp/stations.jsonl', encoding='utf-8') as stations:
         props = ('id', 'system_id', 'name', 'max_landing_pad_size', 'distance_to_star', 'government',
                  'allegiance', 'state', 'type', 'has_blackmarket', 'has_commodities',
-                 'import_commodities', 'export_commodities','prohibited_commodities',
+                 'import_commodities', 'export_commodities', 'prohibited_commodities',
                  'economies', 'is_planetary', 'selling_ships')
         for station in stations:
             station = json.loads(station)
@@ -177,7 +182,6 @@ def update():
             if counter > 200_000:
                 session.commit()
                 counter = 0
-            
 
     session.commit()
     print('Table listings created.')
