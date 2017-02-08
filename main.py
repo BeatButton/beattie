@@ -17,9 +17,8 @@ with open('config.json') as file:
     config = json.load(file)
 
 token = config['token']
-prefix = ['>']
 
-bot = BeattieBot(when_mentioned_or(*prefix))
+bot = BeattieBot(when_mentioned_or('>'))
 
 for extension in ('default', 'rpg', 'eddb'):
     try:
