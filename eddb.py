@@ -30,10 +30,10 @@ class EDDB:
     def system_search(self, search):
         search = search.lower()
         conn = sqlite3.connect('data/ed.db').cursor()
-        table = conn.execute(f"select * from populated where lower(name) = '{search}'")
+        table = conn.execute('select * from populated where lower(name) = ?', (search,))
         results = table.fetchone()
         if not results:
-            table = conn.execute(f"select * from systems where lower(name) = '{search}'")
+            table = conn.execute('select * from systems where lower(name) = ?', (search,))
             results = table.fetchone()
         if results:
             keys = tuple(i[0] for i in table.description) 
@@ -58,19 +58,23 @@ class EDDB:
         if ',' in search:
             search, target_system = (i.strip() for i in search.split(','))
 
-        query = f"select * from stations where lower(name) = '{search}'"
+        query = 'select * from stations where lower(name) = ?'
 
         if target_system is not None: 
             target_system = target_system.lower()
-            table = conn.execute(f"select id from populated where lower(name)='{target_system}'")
+            table = conn.execute('select id from populated where lower(name)=?', (target_system,))
             results = table.fetchone()
             if results:
                 target_system = results[0]
-                query += f" and system_id = {target_system}"
+                query += " and system_id = ?"
             else:
                 return 'System not found.'
 
-        result = conn.execute(query)
+        args = (search,)
+        if target_system:
+            args = args + (target_system,)
+            
+        result = conn.execute(query, args)
         results = result.fetchall()
 
         if len(results) == 1:
@@ -93,7 +97,7 @@ class EDDB:
     def body_search(self, search):
         search = search.lower()
         conn = sqlite3.connect('data/ed.db').cursor()
-        result = conn.execute(f"select * from bodies where lower(name) = '{search}'")
+        result = conn.execute('select * from bodies where lower(name) = ?', (search,))
         results = result.fetchone()
         if results:
             keys = tuple(i[0] for i in result.description) 
@@ -135,7 +139,7 @@ class EDDB:
         conn = sqlite3.connect('data/ed.db').cursor()
 
         if len(search) == 1:
-            table = conn.execute(f"select * from commodities where lower(name)='{search[0]}'")
+            table = conn.execute('select * from commodities where lower(name)=?', (search[0],))
             result = table.fetchone()
             if result:
                 keys = tuple(i[0] for i in table.description)
@@ -143,22 +147,24 @@ class EDDB:
                                  for key, field in zip(keys[1:], result[1:]))
         
         elif len(search) < 4:
-            table = conn.execute(f"select id from commodities where lower(name)='{search[0]}'")
+            table = conn.execute('select id from commodities where lower(name)=?', (search[0],))
             result = table.fetchone()
             if not result:
                 return 'Commodity not found.'
             commodity_id = result[0]
 
-            query = f"select id from stations where lower(name)='{search[1]}'"
+            query = 'select id from stations where lower(name)=?'
+            args = (search[1],)
             
             if len(search) == 3:
-                table = conn.execute(f"select id from systems where lower(name)='{search[2]}'")
+                table = conn.execute('select id from systems where lower(name)=?', (search[2],))
                 result = table.fetchone()
                 if not result:
                     return 'System not found.'
                 system_id = result[0]
-                query += f" and system_id={system_id}"
-            table = conn.execute(query)
+                query += ' and system_id=?'
+                args = args + (system_id,)
+            table = conn.execute(query, args)
             result = table.fetchall()
             if not result:
                 return 'Station not found.'
@@ -166,8 +172,8 @@ class EDDB:
                 return 'Multiple stations found, please specify system.'
             station_id = result[0][0]
 
-            table = conn.execute(f"select * from listings where station_id={station_id} "
-                                 f"and commodity_id={commodity_id}")
+            table = conn.execute('select * from listings where station_id=? '
+                                 'and commodity_id=?', (station_id, commodity_id))
             result = table.fetchone()
             if not result:
                 return 'Commodity not available to be bought or sold at station.'
