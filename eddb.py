@@ -59,8 +59,12 @@ class EDDB:
             session = aiohttp.ClientSession()
             hashfile = 'systems_recently.csv'
             async with session.get(f'https://eddb.io/archive/v5/{hashfile}') as resp:
-                update_hash = hash(await resp.text())
+                with open(hashfile, 'wb') as handle:
+                    async for chunk in resp.content.iter_chunked(1024):
+                        handle.write(chunk)
             session.close()
+            with open(hashfile) as file:
+                update_hash = hash(file)
             os.remove(hashfile)         
             if update_hash == self.hash and not force:
                 await ctx.send('Update not necessary.')
