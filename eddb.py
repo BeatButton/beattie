@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import sqlite3
 
 import aiohttp
@@ -56,12 +57,14 @@ class EDDB:
             await ctx.send('Database update in progress...')
             print('Checking whether an ed.db update is necessary.')
             session = aiohttp.ClientSession()
-            async with session.get('https://eddb.io/archive/v5/systems_recently.csv') as resp:
+            hashfile = 'systems_recently.csv'
+            async with session.get(f'https://eddb.io/archive/v5/{hashfile}') as resp:
                 update_hash = hash(await resp.text())
             session.close()
+            os.remove(hashfile)         
             if update_hash == self.hash and not force:
                 await ctx.send('Update not necessary.')
-                self.updateing = False
+                self.updating = False
                 return
             
             loop = asyncio.get_event_loop()
