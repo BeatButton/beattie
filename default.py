@@ -6,6 +6,9 @@ from discord.ext import commands
 from lxml import etree
 import requests
 
+from utils import checks
+
+
 class Default:
     def __init__(self, bot):
         self.bot = bot
@@ -24,15 +27,12 @@ class Default:
     async def string(self, ctx):
         """Commands for doing stuff to strings."""
         if ctx.invoked_subcommand is None:
-            await ctx.send('Invalid command passed. ' \
-                            f'Try "{ctx.prefix}help string"')
-
+            await ctx.send(f'Invalid command passed. Try "{ctx.prefix}help string"')
 
     @string.command(aliases=['rev', 'r'])
     async def reverse(self, ctx, *, inp):
         """Reverse a string."""
         await ctx.send(inp[::-1])
-
 
     @string.command(aliases=['rot'])
     async def rot13(self, ctx, *, inp):
@@ -40,7 +40,6 @@ class Default:
 
         Uses the shift cipher with key 13."""
         await ctx.send(encode(inp, 'rot_13'))
-
 
     @commands.command(hidden=True, aliases=['gel'])
     async def gelbooru(self, ctx, *, inp):
@@ -58,14 +57,11 @@ class Default:
         except IndexError:
             message = 'No images found.'
         await ctx.send(f'http:{message}')
-    
 
-    @commands.command(hidden=True, name='eval')
+    @commands.command(name='eval')
+    @checks.is_owner()
     async def eval_(self, ctx, *, inp):
         """Uses eval on an expression. Owner only."""
-        if ctx.message.author.id != 140293604726800385:
-            await ctx.send("I don't think so.")
-            return
         inp = inp.strip()
         while inp.startswith('`'):
             inp = inp[1:]
@@ -84,15 +80,6 @@ class Default:
             del math, cmath, asyncio, discord, aiohttp
         await ctx.send(f'```py\n{result}```')
 
-    @commands.command(hidden=True)
-    async def restart(self, ctx):
-        """Restarts bot. Owner only."""
-        if ctx.message.author.id != 140293604726800385:
-            print(ctx.message.author.id)
-            await ctx.send("I don't think so.")
-            return
-        await ctx.send('Restarting...')
-        os.execl('~/Documents/beattie-bot/beattie.sh', '.')
 
 def setup(bot):
     bot.add_cog(Default(bot))

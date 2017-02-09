@@ -7,6 +7,7 @@ import aiohttp
 from discord.ext import commands
 
 import to_sqlalchemy
+from utils import checks
 
 
 class EDDB:
@@ -50,6 +51,7 @@ class EDDB:
         await ctx.send(result)
 
     @eddb.command(aliases=['u', 'upd'])
+    @checks.is_owner()
     async def update(self, ctx, force: bool=False):
         """Updates the database. Will take some time."""
         if not self.updating:
