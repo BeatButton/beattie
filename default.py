@@ -58,28 +58,6 @@ class Default:
             message = 'No images found.'
         await ctx.send(f'http:{message}')
 
-    @commands.command(name='eval')
-    @checks.is_owner()
-    async def eval_(self, ctx, *, inp):
-        """Uses eval on an expression. Owner only."""
-        inp = inp.strip()
-        while inp.startswith('`'):
-            inp = inp[1:]
-        inp = inp.strip()
-        if inp.startswith('py'):
-            inp = inp[2:]
-        while inp.endswith('`'):
-            inp = inp[:-1]
-        inp.strip()
-        import math, cmath, asyncio, discord, aiohttp
-        try:
-            result = eval(inp)
-        except Exception as e:
-            result = e
-        finally:
-            del math, cmath, asyncio, discord, aiohttp
-        await ctx.send(f'```py\n{result}```')
-
 
 def setup(bot):
     bot.add_cog(Default(bot))
