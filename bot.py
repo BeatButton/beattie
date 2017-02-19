@@ -11,9 +11,10 @@ class BeattieBot(Bot):
         elif not isinstance(exception, CommandNotFound):
             await ctx.send('Generic error handler triggered. '
                            'This should never happen.')
-            if isinstance(exception, CommandInvokeError):
-                exception = exception.original
-            raise exception
+            try:
+                raise exception.original
+            except AttributeError:
+                raise exception
 
     async def on_ready(self):
         print('Logged in as')
