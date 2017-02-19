@@ -29,5 +29,5 @@ class BeattieBot(Bot):
         await self.process_commands(message)
 
     async def on_command_error(self, exception, ctx):
-        if ctx.command is None or not hasattr(ctx.command, 'on_error'):
+        if not hasattr(ctx.command, 'on_error'):
             await self.handle_error(exception, ctx)
