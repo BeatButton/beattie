@@ -1,4 +1,4 @@
-from discord.ext.commands import Bot, CommandInvokeError
+from discord.ext.commands import Bot
 from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument
 
 class BeattieBot(Bot):
