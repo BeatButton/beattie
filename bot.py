@@ -1,4 +1,4 @@
-from discord.ext.commands import Bot
+from discord.ext.commands import Bot, CommandInvokeError
 from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument
 
 class BeattieBot(Bot):
@@ -11,7 +11,7 @@ class BeattieBot(Bot):
         elif not isinstance(exception, CommandNotFound):
             await ctx.send('Generic error handler triggered. '
                            'This should never happen.')
-            if hasattr(exception, 'original'):
+            if isinstance(exception, CommandInvokeError):
                 exception = exception.original
             raise exception
 
