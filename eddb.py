@@ -21,32 +21,34 @@ class EDDB:
     async def eddb(self, ctx):
         """Commands for getting data from EDDB.io"""
         if ctx.invoked_subcommand is None:
-            await ctx.send('Invalid command passed. Try "{self.bot.command_prefix[0]}help eddb"')
+            await ctx.send('Invalid command passed. Try "{ctx.prefix}help eddb"')
         
     @eddb.command(aliases=['sys'])
     async def system(self, ctx, *, inp):
         """Searches the database for a system."""
 
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, system_search, inp)
-
+        async with ctx.typing():
+            result = await loop.run_in_executor(None, system_search, inp)
+            
         await ctx.send(result)
 
     @eddb.command(aliases=['sta'])
     async def station(self, ctx, *, inp):
         """Searches the database for a station.
             To specify the system, put a comma after the station name and put the system there."""
-
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, station_search, inp)
-
+        async with ctx.typing():
+            result = await loop.run_in_executor(None, station_search, inp)
+            
         await ctx.send(result)
 
     @eddb.command(aliases=['b', 'bod'])
     async def body(self, ctx, *, inp):
         """Searches the database for a stellar body."""
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, body_search, inp)
+        async with ctx.typing():
+            result = await loop.run_in_executor(None, body_search, inp)
 
         await ctx.send(result)
 
@@ -97,7 +99,9 @@ class EDDB:
 
             Input in the format: commodity[, station[, system]]"""
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, commodity_search, inp)
+        async with ctx.typing():
+            result = await loop.run_in_executor(None, commodity_search, inp)
+            
         await ctx.send(result)
 
 
