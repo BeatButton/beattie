@@ -89,10 +89,6 @@ class EDDB:
         else:
             await ctx.send('Database update still in progress.')
 
-    @update.error
-    async def update_error(self, exception, ctx):
-        await self.bot.handle_error(exception, ctx)
-
     @eddb.command(aliases=['c', 'com', 'comm'])
     async def commodity(self, ctx, *, inp):
         """Searches the database for information on a commodity. Specify the station to get listing data.
@@ -127,20 +123,18 @@ def station_search(search, target_system=None):
         search, target_system = (i.strip() for i in search.split(','))
 
     query = 'select * from stations where lower(name) = ?'
-
+    args = (search,)
+    
     if target_system is not None:
         target_system = target_system.lower()
         table = conn.execute('select id from populated where lower(name)=?', (target_system,))
         results = table.fetchone()
         if results:
-            target_system = results[0]
+            args += (results[0],)
             query += " and system_id = ?"
         else:
             return 'System not found.'
 
-    args = (search,)
-    if target_system:
-        args += (target_system,)
 
     result = conn.execute(query, args)
     results = result.fetchall()
