@@ -151,20 +151,20 @@ class RPG:
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64)'
         }
         entries = []
-        async with aiohttp.get('https://google.com/search', params=params, headers=headers) as resp:
+        async with self.bot.session.get('https://google.com/search', params=params, headers=headers) as resp:
             root = etree.fromstring(await resp.text(), etree.HTMLParser())
-            search_nodes = root.findall(".//div[@class='g']")
-            for node in search_nodes:
-                url_node = node.find('.//h3/a')
-                if url_node is None:
-                    continue
-                url = url_node.attrib['href']
-                if not url.startswith('/url?'):
-                    continue
+        search_nodes = root.findall(".//div[@class='g']")
+        for node in search_nodes:
+            url_node = node.find('.//h3/a')
+            if url_node is None:
+                continue
+            url = url_node.attrib['href']
+            if not url.startswith('/url?'):
+                continue
 
-                url = parse_qs(url[5:])['q'][0]
+            url = parse_qs(url[5:])['q'][0]
 
-                entries.append(url)
+            entries.append(url)
         try:
             msg = entries[0]
         except IndexError:

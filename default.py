@@ -46,18 +46,18 @@ class Default:
         await ctx.trigger_typing()
         entries = []
         url = 'http://gelbooru.com/index.php?page=dapi&s=post&q=index&tags={}'
-        resp = requests.get(url.format('+'.join(tags)))
-        root = etree.fromstring(resp.content, etree.HTMLParser())
+        async with self.bot.session.get(url.format('+'.join(tags))) as resp:
+            root = etree.fromstring(bytes(await resp.text(), 'utf8'), etree.HTMLParser())
         search_nodes = root.findall(".//post")
         for node in search_nodes:
             image = dict(node.items()).get('file_url', None)
             if image:
                  entries.append(image)
         try:
-            message = random.choice(entries)
+            message = f'http:{random.choice(entries)}'
         except IndexError:
             message = 'No images found.'
-        await ctx.send(f'http:{message}')
+        await ctx.send(message)
 
     @commands.command(hidden=True)
     async def massage(self, ctx):
