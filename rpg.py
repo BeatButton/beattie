@@ -28,6 +28,8 @@ class RPG:
         s sorts the results
         t totals each roll
         """
+        if inp == 'stats':
+            inp = '4d6v1x6t'
         inp = ''.join(inp.split()).lower()
         expr = r'^[\d]*d?\d+(?:[+\-^v]\d+)?(?:x\d+)?(?:[ts]{1,2})?$'
         if re.match(expr, inp) is None:
@@ -67,7 +69,8 @@ class RPG:
         loop = asyncio.get_event_loop()
         args = (num, sides, lo_drop, hi_drop, mod, times)
         future = loop.run_in_executor(None, roller, *args)
-        result = await asyncio.wait_for(future, 10, loop=loop)
+        async with ctx.typing():
+            result = await asyncio.wait_for(future, 10, loop=loop)
 
         total = 't' in inp
         
@@ -120,7 +123,8 @@ class RPG:
         loop = asyncio.get_event_loop()
         args = (num, edge)
         future = loop.run_in_executor(None, shadowroller, *args)
-        result = await asyncio.wait_for(future, 10, loop=loop)
+        async with ctx.typing():
+            result = await asyncio.wait_for(future, 10, loop=loop)
 
         await self.bot.reply(ctx, result)
 
