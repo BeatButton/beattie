@@ -42,10 +42,11 @@ class Default:
         await ctx.send(encode(inp, 'rot_13'))
 
     @commands.command(hidden=True, aliases=['gel'])
-    async def gelbooru(self, ctx, *, inp):
+    async def gelbooru(self, ctx, *tags):
+        await ctx.trigger_typing()
         entries = []
         url = 'http://gelbooru.com/index.php?page=dapi&s=post&q=index&tags={}'
-        resp = requests.get(url.format('+'.join(inp.strip().split())))
+        resp = requests.get(url.format('+'.join(tags)))
         root = etree.fromstring(resp.content, etree.HTMLParser())
         search_nodes = root.findall(".//post")
         for node in search_nodes:
@@ -57,6 +58,10 @@ class Default:
         except IndexError:
             message = 'No images found.'
         await ctx.send(f'http:{message}')
+
+    @commands.command(hidden=True)
+    async def massage(self, ctx):
+        await ctx.invoke(self.gelbooru, 'massage')
 
 
 def setup(bot):
