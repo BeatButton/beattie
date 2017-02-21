@@ -1,5 +1,6 @@
 from discord.ext.commands import Bot
 from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument
+from aiohttp import ClientSession
 
 class BeattieBot(Bot):
     async def reply(self, ctx, message):
@@ -17,6 +18,7 @@ class BeattieBot(Bot):
                 raise exception
 
     async def on_ready(self):
+        self.session = ClientSession()
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
