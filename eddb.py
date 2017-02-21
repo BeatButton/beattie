@@ -21,7 +21,7 @@ class EDDB:
     async def eddb(self, ctx):
         """Commands for getting data from EDDB.io"""
         if ctx.invoked_subcommand is None:
-            await ctx.send('Invalid command passed. Try "{ctx.prefix}help eddb"')
+            await ctx.send(f'Invalid command passed. Try "{ctx.prefix}help eddb"')
         
     @eddb.command(aliases=['sys'])
     async def system(self, ctx, *, inp):
@@ -125,7 +125,7 @@ def station_search(search, target_system=None):
     query = 'select * from stations where lower(name) = ?'
     args = (search,)
     
-    if target_system is not None:
+    if target_system:
         target_system = target_system.lower()
         table = conn.execute('select id from populated where lower(name)=?', (target_system,))
         results = table.fetchone()
@@ -150,15 +150,16 @@ def station_search(search, target_system=None):
 
 
 def commodity_search(search):
-    search = search.lower().split(', ')
+    search = [term.strip() for term in search.lower().split(',')]
     conn = sqlite3.connect('data/ed.db').cursor()
-
     if len(search) == 1:
         table = conn.execute('select * from commodities where lower(name)=?', (search[0],))
         result = table.fetchone()
         if result:
             keys = tuple(i[0] for i in table.description)
             return '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], result[1:]))
+        else:
+            return 'Commodity not found.'
 
     elif len(search) < 4:
         table = conn.execute('select id from commodities where lower(name)=?', (search[0],))
@@ -171,7 +172,7 @@ def commodity_search(search):
         args = (search[1],)
 
         if len(search) == 3:
-            table = conn.execute('select id from systems where lower(name)=?', (search[2],))
+            table = conn.execute('select * from populated where lower(name) = ?', (search[2],))
             result = table.fetchone()
             if not result:
                 return 'System not found.'
@@ -181,7 +182,7 @@ def commodity_search(search):
         table = conn.execute(query, args)
         result = table.fetchall()
         if not result:
-            return 'Station not found.'
+            return "Station not populated or doesn't exist."
         elif len(result) > 1:
             return 'Multiple stations found, please specify system.'
         station_id = result[0][0]
