@@ -1,6 +1,7 @@
 import asyncio
 import csv
 import json
+import logging
 import os
 import shutil
 
@@ -288,10 +289,10 @@ class EDDB:
 
             logging.log(logging.DEBUG, 'ed.db cleaning up.')
             session.close()
-            if not os.path.isdir('data'):
-                os.mkdir('data')
-            shutil.move('tmp/ed.db', 'data/ed.db')
-            shutil.rmtree('tmp')
+            try:
+                shutil.rmtree('tmp')
+            except PermissionError:
+                logging.log(logging.WARNING, 'Failed to delete tmp directory.')
 
             logging.log(logging.INFO, 'ed.db update complete.')
             
@@ -441,5 +442,5 @@ def body_search(search):
 def setup(bot):
     bot.add_cog(EDDB(bot))
     cog = bot.get_cog('EDDB')
-    bot.loop.create_task(cog._create_engine())
+    bot.loop.create_task(cog._create_pool())
     
