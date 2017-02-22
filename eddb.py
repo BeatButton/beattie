@@ -110,18 +110,20 @@ class EDDB:
                          'average_price int,'
                          'is_rare bool,'
                          'PRIMARY KEY(id));')
-            async with aiofiles.open('tmp/commodities.json', encoding='utf-8') as commodities:
-                commodities = json.load(commodities)
-                for commodity in commodities:
-                    for k, v in commodity.items():
-                        if isinstance(v, list):
-                            commodity[k] = ', '.join(v)
-                    del commodity['category_id']
-                    commodity = tuple((k, v) for k, v in commodity.items())
-                    await cur.execute(f'INSERT INTO commodities ({", ".join(val[0] for val in commodity)})'
-                                      f'VALUES ({", ".join(val[1] for val in commodity)})'
-                                      'ON CONFLICT id DO UPDATE SET'
-                                      f'{", ".join(f"{val[0]}={val[1]}" for val in commodity)}')
+            with open('tmp/commodities.json', encoding='utf-8') as commodities:
+                commodities = json.load()
+            for commodity in commodities:
+                for k, v in commodity.items():
+                    if isinstance(v, list):
+                        commodity[k] = ', '.join(v)
+                    if isinstance(v, str):
+                        commodity[k] = f"'{v}'"
+                del commodity['category_id']
+                commodity = tuple((str(k), str(v)) for k, v in commodity.items())
+                await cur.execute(f'INSERT INTO commodities ({", ".join(val[0] for val in commodity)})'
+                                  f'VALUES ({", ".join(val[1] for val in commodity)})'
+                                  'ON CONFLICT id DO UPDATE SET'
+                                  f'{", ".join(f"{val[0]}={val[1]}" for val in commodity)}')
 
         logging.log(logging.DEBUG, 'Table commodities created.')
 
@@ -140,10 +142,13 @@ class EDDB:
                 props = ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')
                 async for system in populated:
                     system = json.loads(system)
-                    for prop in props:
-                        if isinstance(system[prop], list):
-                            system[prop] = ', '.join(system[prop])
-                    system = tuple((prop, system[prop]) for prop in props)
+                    system = {prop: system[prop] for prop in props}
+                    for k, v in system:
+                        if isinstance(v, list):
+                            system[k] = ', '.join(v)
+                        if isinstance(v, str):
+                            system[k] = f"'{v}'"
+                    system = tuple((str(k), str(v)) for k, v in system.items())
                     await cur.execute(f'INSERT INTO populated ({", ".join(val[0] for val in system)})'
                                       f'VALUES ({", ".join(val[1] for val in system)})'
                                       'ON CONFLICT id DO UPDATE SET'
@@ -178,14 +183,18 @@ class EDDB:
                          'economies', 'is_planetary', 'selling_ships')
                 async for station in stations:
                     station = json.loads(station)
-                    for prop in props:
-                        if isinstance(station[prop], list):
-                            station[prop] = ', '.join(station[prop])
-                    system = tuple((prop, system[prop]) for prop in props)
-                    await cur.execute(f'INSERT INTO commodities ({", ".join(val[0] for val in system)})'
-                                      f'VALUES ({", ".join(val[1] for val in system)})'
+                    station = {prop: station[prop] for prop in props}
+                    for k, v in station.items():
+                        if isinstance(v, list):
+                            station[k] = ', '.join(v)
+                        if isinstance(v, str):
+                            station[k] = f"'{v}'"
+                        
+                    station = tuple((str(k), str(v)) for k, v in station.items())
+                    await cur.execute(f'INSERT INTO commodities ({", ".join(val[0] for val in station)})'
+                                      f'VALUES ({", ".join(val[1] for val in station)})'
                                       'ON CONFLICT id DO UPDATE SET'
-                                      f'{", ".join(f"{val[0]}={val[1]}" for val in system)}')
+                                      f'{", ".join(f"{val[0]}={val[1]}" for val in station)}')
 
         logging.log(logging.DEBUG, 'Table stations created.')
 
@@ -237,10 +246,12 @@ class EDDB:
                          ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')}
                 for system in systems:
                     system = {prop: system[index] for prop, index in props.items()}
-                    for prop in props:
-                        if isinstance(system[prop], list):
-                            system[prop] = ', '.join(system[prop])
-                    system = tuple((prop, system[prop]) for prop in props)
+                    for k, v in system.items():
+                        if isinstance(v, list):
+                            system[k] = ', '.join(v)
+                        if isinstance(v, list):
+                            system[k] = f"'{v}'"
+                    system = tuple((str(k), str(v)) for k, v in system.items())
                     for val in system:
                         if not val[1].isdigit():
                             val[1] = f"'{val[1]}'"
@@ -278,9 +289,12 @@ class EDDB:
                     for key in body.keys():
                         if key.endswith('_name'):
                             body[key.replace('_name', '')] = body.pop(key)
-                    for prop in props:
-                        if isinstance(body[prop], list):
-                            body[prop] = ', '.join(body[prop])
+                    body = {prop: body[prop] for prop in props}
+                    for k, v in body.items():
+                        if isinstance(v, list):
+                            body[k] = ', '.join(v)
+                        if isinstance(v, str):
+                            body[k] = f"'{v}'"
                     await cur.execute(f'INSERT INTO bodies ({", ".join(val[0] for val in body)})'
                                       f'VALUES ({", ".join(val[1] for val in body)})'
                                       'ON CONFLICT id DO UPDATE SET'
