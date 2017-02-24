@@ -1,5 +1,4 @@
-from discord.ext.commands import Bot
-from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument
+from discord.ext.commands import Bot, errors
 from aiohttp import ClientSession
 
 class BeattieBot(Bot):
@@ -7,9 +6,9 @@ class BeattieBot(Bot):
         return await ctx.send(f'{ctx.message.author.mention}\n{message}')
 
     async def handle_error(self, exception, ctx):
-        if isinstance(exception, MissingRequiredArgument):
+        if isinstance(exception, errors.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
-        elif not isinstance(exception, CommandNotFound):
+        elif not isinstance(exception, errors.CommandNotFound):
             await ctx.send('Generic error handler triggered. '
                            'This should never happen.')
             try:
@@ -25,10 +24,10 @@ class BeattieBot(Bot):
         print('------')
 
     async def on_message(self, message):
-        msg = message.content.split(None, 1)
-        msg[0] = msg[0].lower()
-        message.content = ' '.join(msg)
-        await self.process_commands(message)
+        ctx = await self.get_context(message)
+        if ctx.prefix is not None:
+            ctx.command = self.commands.get(ctx.invoked_with.lower())
+            await self.invoke(ctx)
 
     async def on_command_error(self, exception, ctx):
         if not hasattr(ctx.command, 'on_error'):

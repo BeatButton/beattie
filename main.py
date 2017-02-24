@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import sys
 
 import discord
 from discord.ext.commands import when_mentioned_or
@@ -29,12 +28,9 @@ for extension in ('default', 'rpg', 'eddb', 'repl'):
         print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
 logger = logging.getLogger('discord')
-if 'debug' in sys.argv:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
-
+bot.logger = logger
 bot.run(token)
