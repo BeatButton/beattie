@@ -40,40 +40,41 @@ class EDDB:
     async def system(self, ctx, *, search):
         """Searches the database for a system."""
         search = search.lower()
-        result = ''
+        output = ''
         async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
-            table = await cur.execute('SELECT * FROM populated WHERE LOWER(name) = $1', (search,))
-            results = await table.fetchone()
+            table = await cur.execute('SELECT * FROM populated WHERE LOWER(name) = (%s)', (search,))
+            results = await cur.fetchone()
             if not results:
-                await cur.execute('SELECT * FROM systems WHERE LOWER(name) = $1', (search,))
+                await cur.execute('SELECT * FROM systems WHERE LOWER(name) = (%s)', (search,))
                 results = await cur.fetchone()
             if results:
-                keys = tuple(i[0] for i in table.description)
-                result = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]) if val)
+                keys = tuple(i[0] for i in cur.description)
+                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]) if val)
             else:
-                result = 'No systems found.'                
-        await ctx.send(result)
+                output = 'No systems found.'                
+        await ctx.send(output)
 
     @eddb.command(aliases=['sta'])
     async def station(self, ctx, *, search):
         """Searches the database for a station.
             To specify the system, put a comma after the station name and put the system there."""
         search = search.lower()
-        result = ''
+        output = ''
+        target_system = None
         async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
-            query = 'SELECT * FROM stations WHERE LOWER(name) = $1'
+            query = 'SELECT * FROM stations WHERE LOWER(name) = (%s)'
             args = (search,)
             
             if target_system:
                 target_system = target_system.lower()
-                await cur.execute('SELECT id FROM populated WHERE LOWER(name) = $1', (target_system,))
+                await cur.execute('SELECT id FROM populated WHERE LOWER(name) = (%s)', (target_system,))
                 results = await cur.fetchone()
                 if results:
                     args += (results[0],)
-                    query += " AND system_id = $2"
+                    query += " AND system_id = (%s)"
                 else:
                      await ctx.send('System not found.')
                      return
@@ -82,15 +83,15 @@ class EDDB:
             results = await cur.fetchall()
 
             if len(results) == 1:
-                keys = tuple(i[0] for i in result.description)
+                keys = tuple(i[0] for i in cur.description)
                 results = results[0]
-                result = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
+                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
             elif not results:
-                result =  'Station not found.'
+                output =  'Station not found.'
             else:
-                result = 'Multiple stations found, please specify system.'
+                output = 'Multiple stations found, please specify system.'
 
-            await ctx.send(result)
+            await ctx.send(output)
 
 
     @eddb.command(aliases=['c', 'com', 'comm'])
@@ -98,37 +99,37 @@ class EDDB:
         """Searches the database for information on a commodity. Specify the station to get listing data.
 
             Input in the format: commodity[, station[, system]]"""
-        search = [term.strip() for term in search.lower().split(',')]
-        result = ''
+        search = [term.strip().lower() for term in search.split(',')]
+        output = ''
         async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
             if len(search) == 1:
-                await cur.execute('SELECT * FROM commodities WHERE LOWER(name) = $1', (search[0],))
-                results = await table.fetchone()
-                if result:
-                    keys = tuple(i[0] for i in table.description)
-                    result = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]))
+                await cur.execute('SELECT * FROM commodities WHERE LOWER(name) = (%s)', (search[0],))
+                results = await cur.fetchone()
+                if results:
+                    keys = tuple(i[0] for i in cur.description)
+                    output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]))
                 else:
-                    result = 'Commodity not found.'
+                    output = 'Commodity not found.'
 
             elif len(search) < 4:
-                await cur.execute('SELECT id FROM commodities WHER LOWER(name) = $1', (search[0],))
+                await cur.execute('SELECT id FROM commodities WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if not results:
                     await ctx.send('Commodity not found.')
                     return
 
                 commodity_id = results[0]
-                query = 'SELECT id FROM STATIONS WHERE LOWER(name) = $1'
+                query = 'SELECT id FROM STATIONS WHERE LOWER(name) = (%s)'
                 args = (search[1],)
 
                 if len(search) == 3:
-                    await cur.execute('SELECT * FROM populated WHERE LOWER(name) = $1', (search[2],))
-                    resulst = await cur.fetchone()
+                    await cur.execute('SELECT * FROM populated WHERE LOWER(name) = (%s)', (search[2],))
+                    results = await cur.fetchone()
                     if not results:
                         await ctx.send('System not found.')
                         return
-                    system_id = result[0]
-                    query += ' AND system_id=?'
+                    system_id = results[0]
+                    query += ' AND system_id=(%s)'
                     args += (system_id,)
                     
                 await cur.execute(query, args)
@@ -141,45 +142,46 @@ class EDDB:
                     await ctx.send('Multiple stations found, please specify system.')
                     return
 
-                station_id = result[0][0]
-                await cur.execute('SELECT * FROM listings WHERE station_id=? '
-                                     'AND commodity_id=?', (station_id, commodity_id))
-                results = await table.fetchone()
+                station_id = results[0][0]
+                await cur.execute('SELECT * FROM listings WHERE station_id=(%s) '
+                                     'AND commodity_id=(%s)', (station_id, commodity_id))
+                results = await cur.fetchone()
                 if not results:
                     await ctx.send('Commodity not available to be bought or sold at station.')
                     return
 
-                keys = (i[0] for i in table.description)
+                keys = (row[0] for row in cur.description)
                 results = {k: v for k, v in zip(keys, results)}
                 del results['station_id']
                 del results['commodity_id']
                 del results['id']
-                result = f'Commodity: {search[0].title()}\n'
+                output = f'Commodity: {search[0].title()}\n'
                 if len(search) > 1:
-                    result += f'Station: {search[1].title()}\n'
+                    output += f'Station: {search[1].title()}\n'
                 if len(search) > 2:
-                    result += f'System: {search[2].title()}\n'
-                result = ('\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in results.items()))
+                    output += f'System: {search[2].title()}\n'
+                output = ('\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in results.items()))
 
             else:
-                result = 'Too many commas. What does that even mean.'
+                output = 'Too many commas. What does that even mean.'
             
-        await ctx.send(result)
+        await ctx.send(output)
 
     @eddb.command(aliases=['b'])
     async def body(self, ctx, *, search):
+        """Searches the database for a stellar body."""
         search = search.lower()
-        result = ''
+        output = ''
         async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
-            await cur.execute('select * from bodies where lower(name) = ?', (search,))
+            await cur.execute('SELECT * FROM bodies WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
             if results:
-                keys = tuple(i[0] for i in result.description)
-                result = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
+                keys = tuple(i[0] for i in cur.description)
+                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
             else:
-                result = 'No bodies found.'
+                output = 'No bodies found.'
 
-        await ctx.send(result)
+        await ctx.send(output)
 
     @eddb.command(aliases=['u', 'upd'])
     @checks.is_owner()
@@ -226,10 +228,10 @@ class EDDB:
             await cur.execute('DROP TABLE IF EXISTS commodities;'
                               'CREATE TABLE commodities('
                               'id int,'
-                              'name text,'
+                              'name char(32),'
                               'average_price int,'
                               'is_rare bool,'
-                              'category text,'
+                              'category char(32),'
                               'PRIMARY KEY(id));')
             with open('tmp/commodities.json', encoding='utf-8') as file:
                 commodities = json.load(file)
@@ -271,13 +273,13 @@ class EDDB:
             await cur.execute('DROP TABLE IF EXISTS populated;'
                               'CREATE TABLE populated('
                               'id int,'
-                              'name text,'
+                              'name nchar(32),'
                               'population bigint,'
-                              'government text,'
-                              'allegiance text,'
-                              'state text,'
-                              'security text,'
-                              'power text,'
+                              'government char(16),'
+                              'allegiance char(16),'
+                              'state char(16),'
+                              'security char(8),'
+                              'power nchar(32),'
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/systems_populated.jsonl', encoding='utf-8') as populated:
                 props = ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')
@@ -322,21 +324,21 @@ class EDDB:
                               'CREATE TABLE stations('
                               'id int,'
                               'system_id int,'
-                              'name text,'
+                              'name nchar(64),'
                               'max_landing_pad_size char(1),'
                               'distance_to_star int,'
-                              'government text,'
-                              'allegiance text,'
-                              'state text,'
-                              'type text,'
+                              'government char(16),'
+                              'allegiance char(16),'
+                              'state char(16),'
+                              'type char(32),'
                               'has_blackmarket bool,'
                               'has_commodities bool,'
-                              'import_commodities text,'
-                              'export_commodities text,'
-                              'prohibited_commodities text,'
-                              'economies text,'
+                              'import_commodities char(1024),'
+                              'export_commodities char(1024),'
+                              'prohibited_commodities char(512),'
+                              'economies char(64),'
                               'is_planetary bool,'
-                              'selling_ships text,'
+                              'selling_ships char(512),'
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/stations.jsonl', encoding='utf-8') as stations:
                 props = ('id', 'system_id', 'name', 'max_landing_pad_size', 'distance_to_star', 'government',
@@ -391,7 +393,7 @@ class EDDB:
                               'buy_price int,'
                               'sell_price int,'
                               'demand int,'
-                              'collected_at text,'
+                              'collected_at char(24),'
                               'PRIMARY KEY(id));')
                               
             async with aiofiles.open('tmp/listings.csv', encoding='utf-8') as listings:
@@ -429,13 +431,13 @@ class EDDB:
             await cur.execute('DROP TABLE IF EXISTS systems;'
                               'CREATE TABLE systems('
                               'id int,'
-                              'name text,'
+                              'name nchar(64),'
                               'population bigint,'
-                              'government text,'
-                              'allegiance text,'
-                              'state text,'
-                              'security text,'
-                              'power text,'
+                              'government char(16),'
+                              'allegiance char(16),'
+                              'state char(16),'
+                              'security char(8),'
+                              'power nchar(32),'
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/systems.csv', encoding='utf-8') as systems:
                 systems = csv_reader(systems)
@@ -478,7 +480,6 @@ class EDDB:
                               'id int,'
                               'system_id int,'
                               'name text,'
-                              'group text,'
                               'type text,'
                               'atmosphere_type text,'
                               'solar_masses real,'
@@ -487,16 +488,21 @@ class EDDB:
                               'radius int,'
                               'gravity real,'
                               'surface_pressure real,'
-                              'volcanism_type,'
+                              'volcanism_type text,'
                               'is_rotational_period_tidally_locked bool,'
                               'is_landable bool,'
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/bodies.jsonl', encoding='utf-8') as bodies:
-                props = ('id', 'system_id', 'name', 'group', 'type', 'atmosphere_type', 'solar_masses',  'solar_radius',
+                props = ('id', 'system_id', 'name', 'type', 'atmosphere_type', 'solar_masses',  'solar_radius',
                          'earth_masses', 'radius', 'gravity', 'surface_pressure', 'volcanism_type',
                          'is_rotational_period_tidally_locked', 'is_landable')
                 async for body in bodies:
                     body = json.loads(body)
+                    for key in ('solar_masses', 'solar_radius', 'earth_masses',
+                                'radius', 'gravity', 'surface_pressure'):
+                        if body[key] is None:
+                            body[key] = 0
+                    body['is_landable'] = bool(body['is_landable'])
                     for key in body.keys():
                         if key.endswith('_name'):
                             body[key.replace('_name', '')] = body.pop(key)
