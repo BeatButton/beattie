@@ -191,7 +191,7 @@ class EDDB:
         self.updating = True
         batch_size = 10_000 - 1
         await ctx.send('Database update in progress...')
-        '''self.bot.logger.log(logging.DEBUG, 'Checking whether an ed.db update is necessary.')
+        self.bot.logger.log(logging.DEBUG, 'Checking whether an ed.db update is necessary.')
 
         hashfile = 'systems_recently.csv'
 
@@ -212,11 +212,11 @@ class EDDB:
         
         self.bot.logger.log(logging.INFO, 'Updating ed.db')
 
-        '''
+        
 
         self.bot.logger.log(logging.DEBUG, 'Beginning database creation.')
 
-        '''await self.tmp_download('commodities.json')
+        await self.tmp_download('commodities.json')
         
         self.bot.logger.log(logging.DEBUG, 'commodities.json downloaded.')
         
@@ -421,7 +421,7 @@ class EDDB:
 
         await self.tmp_download('systems.csv')
 
-        self.bot.logger.log(logging.DEBUG, 'File systems.csv downloaded.')'''
+        self.bot.logger.log(logging.DEBUG, 'File systems.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
