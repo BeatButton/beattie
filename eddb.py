@@ -193,7 +193,7 @@ class EDDB:
         self.updating = True
         batch_size = 10_000 - 1
         await ctx.send('Database update in progress...')
-        self.bot.logger.log(logging.DEBUG, 'Checking whether an ed.db update is necessary.')
+        self.bot.logger.log(logging.INFO, 'Checking whether an ed.db update is necessary.')
 
         hashfile = 'systems_recently.csv'
 
@@ -216,11 +216,11 @@ class EDDB:
 
         
 
-        self.bot.logger.log(logging.DEBUG, 'Beginning database creation.')
+        self.bot.logger.log(logging.INFO, 'Beginning database creation.')
 
         await self.tmp_download('commodities.json')
         
-        self.bot.logger.log(logging.DEBUG, 'commodities.json downloaded.')
+        self.bot.logger.log(logging.INFO, 'commodities.json downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
@@ -259,13 +259,13 @@ class EDDB:
                     commit = ''
             await cur.execute(commit)
 
-        self.bot.logger.log(logging.DEBUG, 'Table commodities created.')
+        self.bot.logger.log(logging.INFO, 'Table commodities created.')
 
         os.remove('tmp/commodities.json')
 
         await self.tmp_download('systems_populated.jsonl')
 
-        self.bot.logger.log(logging.DEBUG, 'File systems_populated.jsonl downloaded.')
+        self.bot.logger.log(logging.INFO, 'File systems_populated.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             counter = 0
@@ -309,13 +309,13 @@ class EDDB:
                         commit = ''
             await cur.execute(commit)
 
-        self.bot.logger.log(logging.DEBUG, 'Table populated created.')
+        self.bot.logger.log(logging.INFO, 'Table populated created.')
 
         os.remove('tmp/systems_populated.jsonl')
 
         await self.tmp_download('stations.jsonl')
 
-        self.bot.logger.log(logging.DEBUG, 'File stations.jsonl downloaded.')
+        self.bot.logger.log(logging.INFO, 'File stations.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
@@ -373,13 +373,13 @@ class EDDB:
                         commit = ''
             await cur.execute(commit)
 
-        self.bot.logger.log(logging.DEBUG, 'Table stations created.')
+        self.bot.logger.log(logging.INFO, 'Table stations created.')
 
         os.remove('tmp/stations.jsonl')
 
         await self.tmp_download('listings.csv')
 
-        self.bot.logger.log(logging.DEBUG, 'File listings.csv downloaded.')
+        self.bot.logger.log(logging.INFO, 'File listings.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
@@ -417,13 +417,13 @@ class EDDB:
                         commit = ''
             await cur.execute(commit)
 
-        self.bot.logger.log(logging.DEBUG, 'Table listings created.')
+        self.bot.logger.log(logging.INFO, 'Table listings created.')
 
         os.remove('tmp/listings.csv')
 
         await self.tmp_download('systems.csv')
 
-        self.bot.logger.log(logging.DEBUG, 'File systems.csv downloaded.')
+        self.bot.logger.log(logging.INFO, 'File systems.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
@@ -464,13 +464,13 @@ class EDDB:
                         commit = ''
                 await cur.execute(commit)
 
-        self.bot.logger.log(logging.DEBUG, 'Table systems created.')
+        self.bot.logger.log(logging.INFO, 'Table systems created.')
 
         os.remove('tmp/systems.csv')
 
         await self.tmp_download('bodies.jsonl')
 
-        self.bot.logger.log(logging.DEBUG, 'File bodies.jsonl downloaded.')
+        self.bot.logger.log(logging.INFO, 'File bodies.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
@@ -528,7 +528,7 @@ class EDDB:
                         commit = ''
             await cur.execute(commit)
 
-        self.bot.logger.log(logging.DEBUG, 'Table bodies created.')
+        self.bot.logger.log(logging.INFO, 'Table bodies created.')
 
         os.remove('tmp/bodies.jsonl')
 
@@ -557,7 +557,6 @@ class EDDB:
 async def csv_reader(aiofile):
     async for line in aiofile:
         yield [val.strip() for val in line.split(',')]
-
 
 
 def setup(bot):
