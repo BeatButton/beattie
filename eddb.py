@@ -327,7 +327,7 @@ class EDDB:
                               'name varchar(64),'
                               'max_landing_pad_size char(1),'
                               'distance_to_star int,'
-                              'government varchar16),'
+                              'government varchar(16),'
                               'allegiance varchar(16),'
                               'state varchar(16),'
                               'type varchar(32),'
