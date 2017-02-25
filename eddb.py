@@ -540,10 +540,10 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'ed.db update complete.')
         
         self.hash = update_hash
-        async with aiofiles.open('config.json') as file:
+        with open('config.json') as file:
             data = json.load(file)
         data.update({'eddb_hash': self.hash})
-        async with aiofiles.open('config.json', 'w') as file:
+        with open('config.json', 'w') as file:
             json.dump(data, file)
         self.updating = False
         await ctx.send('Database update complete.')
