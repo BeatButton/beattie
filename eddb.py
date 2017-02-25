@@ -273,13 +273,13 @@ class EDDB:
             await cur.execute('DROP TABLE IF EXISTS populated;'
                               'CREATE TABLE populated('
                               'id int,'
-                              'name nvarchar(32),'
+                              'name varchar(32),'
                               'population bigint,'
                               'government varchar(16),'
                               'allegiance varchar(16),'
                               'state varchar(16),'
                               'security varchar(8),'
-                              'power nvarchar(32),'
+                              'power varchar(32),'
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/systems_populated.jsonl', encoding='utf-8') as populated:
                 props = ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')
@@ -324,7 +324,7 @@ class EDDB:
                               'CREATE TABLE stations('
                               'id int,'
                               'system_id int,'
-                              'name nvarchar(64),'
+                              'name varchar(64),'
                               'max_landing_pad_size char(1),'
                               'distance_to_star int,'
                               'government varchar16),'
@@ -431,13 +431,13 @@ class EDDB:
             await cur.execute('DROP TABLE IF EXISTS systems;'
                               'CREATE TABLE systems('
                               'id int,'
-                              'name nvarchar(64),'
+                              'name varchar(64),'
                               'population bigint,'
                               'government varchar(16),'
                               'allegiance varchar(16),'
                               'state varchar(16),'
                               'security varchar(8),'
-                              'power nvarchar(32),'
+                              'power varchar(32),'
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/systems.csv', encoding='utf-8') as systems:
                 systems = csv_reader(systems)
