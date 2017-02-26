@@ -35,7 +35,7 @@ class Wolfram:
                 result = root.xpath("//pod[@title='Result']/subpod/plaintext/text()")[0]
             except IndexError:
                 try:
-                    result = root.xpath("//pod/subpod/plaintext/text()")[0]
+                    result = root.xpath("//pod[@title!='Input interpretation']/subpod/plaintext/text()")[0]
                 except IndexError:
                     result = 'No results found.'
         return result.translate(self.chars)
