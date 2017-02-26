@@ -225,8 +225,8 @@ class EDDB:
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
             commit = ''
-            await cur.execute('DROP TABLE IF EXISTS commodities;'
-                              'CREATE TABLE commodities('
+            await cur.execute('DROP TABLE IF EXISTS commodity;'
+                              'CREATE TABLE commodity('
                               'id int,'
                               'name varchar(32),'
                               'average_price int,'
@@ -320,8 +320,8 @@ class EDDB:
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
             commit = ''
-            await cur.execute('DROP TABLE IF EXISTS stations;'
-                              'CREATE TABLE stations('
+            await cur.execute('DROP TABLE IF EXISTS station;'
+                              'CREATE TABLE station('
                               'id int,'
                               'system_id int,'
                               'name varchar(64),'
@@ -384,8 +384,8 @@ class EDDB:
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
             commit = ''
-            await cur.execute('DROP TABLE IF EXISTS listings;'
-                              'CREATE TABLE listings('
+            await cur.execute('DROP TABLE IF EXISTS listing;'
+                              'CREATE TABLE listing('
                               'id int,'
                               'station_id int,'
                               'commodity_id int,'
@@ -428,8 +428,8 @@ class EDDB:
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
             commit = ''
-            await cur.execute('DROP TABLE IF EXISTS systems;'
-                              'CREATE TABLE systems('
+            await cur.execute('DROP TABLE IF EXISTS system;'
+                              'CREATE TABLE system('
                               'id int,'
                               'name varchar(64),'
                               'population bigint,'
@@ -476,8 +476,8 @@ class EDDB:
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             count = 0
             commit = ''
-            await cur.execute('DROP TABLE IF EXISTS bodies;'
-                              'CREATE TABLE bodies('
+            await cur.execute('DROP TABLE IF EXISTS body;'
+                              'CREATE TABLE body('
                               'id int,'
                               'system_id int,'
                               'name text,'
