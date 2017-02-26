@@ -39,7 +39,7 @@ class Wolfram:
                 result = root.xpath("//pod[@title!='Input interpretation']/subpod/plaintext/text()")[0]
             except IndexError:
                 result = 'No results found.'
-        return ('\n'.join((interpretation, result)).translate(self.chars)
+        return '\n'.join((interpretation, result)).translate(self.chars)
 
-def setup(bot):
+def setup(bot): 
     bot.add_cog(Wolfram(bot))
