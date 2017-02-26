@@ -73,9 +73,19 @@ class Default:
     async def massage(self, ctx):
         await ctx.invoke(self.gelbooru, 'massage')
 
-    @commands.command(hidden=True)
+
+    @commands.command()
+    @checks.is_owner()
     async def sudo(self, ctx, *, inp):
-        await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
+        await ctx.send('Operation successful.')
+
+    @sudo.error
+    async def sudo_error(self, exception, ctx):
+        if isinstance(exception, commands.errors.CheckFailure):
+            await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
+        else:
+            await self.bot.handle_error(exception, ctx)
+        
 
 
 def setup(bot):
