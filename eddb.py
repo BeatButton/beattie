@@ -51,7 +51,7 @@ class EDDB:
                 keys = tuple(i[0] for i in cur.description)
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]) if val)
             else:
-                output = 'No systems found.'                
+                output = f'No system {search} found.'
         await ctx.send(output)
 
     @eddb.command(aliases=['sta'])
@@ -76,7 +76,7 @@ class EDDB:
                     args += (results[0],)
                     query += " AND system_id = (%s)"
                 else:
-                     await ctx.send('System not found.')
+                     await ctx.send(f'No system {target_system} found.')
                      return
                     
             await cur.execute(query, args)
@@ -87,9 +87,9 @@ class EDDB:
                 results = results[0]
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
             elif not results:
-                output =  'Station not found.'
+                output =  f'Station {search} not found.'
             else:
-                output = 'Multiple stations found, please specify system.'
+                output = f'Multiple stations called {search} found, please specify system.'
 
             await ctx.send(output)
 
@@ -109,13 +109,13 @@ class EDDB:
                     keys = tuple(i[0] for i in cur.description)
                     output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]))
                 else:
-                    output = 'Commodity not found.'
+                    output = f'Commodity {search[0]} not found.'
 
             elif len(search) < 4:
                 await cur.execute('SELECT id FROM commodities WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if not results:
-                    await ctx.send('Commodity not found.')
+                    await ctx.send(f'Commodity {search[0]} not found.')
                     return
 
                 commodity_id = results[0]
@@ -126,7 +126,7 @@ class EDDB:
                     await cur.execute('SELECT * FROM populated WHERE LOWER(name) = (%s)', (search[2],))
                     results = await cur.fetchone()
                     if not results:
-                        await ctx.send('System not found.')
+                        await ctx.send(f'System {search[2]} not found.')
                         return
                     system_id = results[0]
                     query += ' AND system_id=(%s)'
@@ -136,10 +136,10 @@ class EDDB:
                 results = await cur.fetchall()
                 
                 if not results:
-                    await ctx.send("System not populated or station doesn't exist.")
+                    await ctx.send(f'Station {search[1]} not found.')
                     return 
                 elif len(results) > 1:
-                    await ctx.send('Multiple stations found, please specify system.')
+                    await ctx.send(f'Multiple stations called {search[1]} found, please specify system.')
                     return
 
                 station_id = results[0][0]
@@ -147,7 +147,7 @@ class EDDB:
                                      'AND commodity_id=(%s)', (station_id, commodity_id))
                 results = await cur.fetchone()
                 if not results:
-                    await ctx.send('Commodity not available to be bought or sold at station.')
+                    await ctx.send(f'Commodity {search[0]} not available to be bought or sold at station.')
                     return
 
                 keys = (row[0] for row in cur.description)
