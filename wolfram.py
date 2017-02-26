@@ -32,12 +32,9 @@ class Wolfram:
             await file.write(text)
             root = etree.fromstring(text.encode(), etree.XMLParser())
             try:
-                result = root.xpath("//pod[@title='Result']/subpod/plaintext/text()")[0]
+                result = root.xpath("//pod[@title!='Input interpretation']/subpod/plaintext/text()")[0]
             except IndexError:
-                try:
-                    result = root.xpath("//pod[@title!='Input interpretation']/subpod/plaintext/text()")[0]
-                except IndexError:
-                    result = 'No results found.'
+                result = 'No results found.'
         return result.translate(self.chars)
 
 def setup(bot):
