@@ -191,7 +191,7 @@ class EDDB:
             await ctx.send('Database update still in progress.')
             return
         self.updating = True
-        batch_size = 10_000 - 1
+        batch_size = 10_000
         await ctx.send('Database update in progress...')
         self.bot.logger.log(logging.INFO, 'Checking whether an ed.db update is necessary.')
 
@@ -262,7 +262,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File systems_populated.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            commit = ''
             await cur.execute('DROP TABLE IF EXISTS populated;'
                               'CREATE TABLE populated('
                               'id int,'
@@ -276,26 +275,34 @@ class EDDB:
                               'PRIMARY KEY(id));')
             async with aiofiles.open('tmp/systems_populated.jsonl', encoding='utf-8') as populated:
                 props = ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')
-                async for system in populated:
-                    system = json.loads(system)
-                    system = {prop: system[prop] for prop in props}
-                    if system['population'] is None:
-                        system['population'] = 0
-                    keys, vals = zip(*system.items())
-                    new_vals = []
-                    for val in vals:
-                        if val is None:
-                            val = ''
-                        if isinstance(val, list):
-                            val = ', '.join(val)
-                        if isinstance(val, str):
-                            val = val.replace("'", "''")
-                            val = f"'{val}'"
-                        new_vals.append(str(val))
-                    vals = new_vals
-                    commit += (f'INSERT INTO populated ({", ".join(keys)})'
-                                      f'VALUES ({", ".join(vals)});')
-            await cur.execute(commit)
+                loop = True
+                while loop:
+                    commit = ''
+                    for _ in range(batch_size):
+                        try:
+                            system = await systems.__anext__()
+                        except StopAsyncIteration:
+                            loop = False
+                            break
+                        system = json.loads(system)
+                        system = {prop: system[prop] for prop in props}
+                        if system['population'] is None:
+                            system['population'] = 0
+                        keys, vals = zip(*system.items())
+                        new_vals = []
+                        for val in vals:
+                            if val is None:
+                                val = ''
+                            if isinstance(val, list):
+                                val = ', '.join(val)
+                            if isinstance(val, str):
+                                val = val.replace("'", "''")
+                                val = f"'{val}'"
+                            new_vals.append(str(val))
+                        vals = new_vals
+                        commit += (f'INSERT INTO populated ({", ".join(keys)})'
+                                          f'VALUES ({", ".join(vals)});')
+                    await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table populated created.')
 
@@ -306,7 +313,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File stations.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            commit = ''
             await cur.execute('DROP TABLE IF EXISTS station;'
                               'CREATE TABLE station('
                               'id int,'
@@ -332,28 +338,36 @@ class EDDB:
                          'allegiance', 'state', 'type', 'has_blackmarket', 'has_commodities',
                          'import_commodities', 'export_commodities', 'prohibited_commodities',
                          'economies', 'is_planetary', 'selling_ships')
-                async for station in stations:
-                    station = json.loads(station)
-                    station = {prop: station[prop] for prop in props}
-                    if station['distance_to_star'] is None:
-                        station['distance_to_star'] = 0
-                    if station['max_landing_pad_size'] is None or len(station['max_landing_pad_size']) > 1:
-                        station['max_landing_pad_size'] = ''
-                    keys, vals = zip(*station.items())
-                    new_vals = []
-                    for val in vals:
-                        if val is None:
-                            val = ''
-                        if isinstance(val, list):
-                            val = ', '.join(val)
-                        if isinstance(val, str):
-                            val = val.replace("'", "''")
-                            val = f"'{val}'"
-                        new_vals.append(str(val))
-                    vals = new_vals
-                    commit += (f'INSERT INTO station ({", ".join(keys)})'
-                                      f'VALUES ({", ".join(vals)});')
-            await cur.execute(commit)
+                loop = True
+                while loop:
+                    commit = ''
+                    for _ in range(batch_size):
+                        try:
+                            station = await stations.__anext__()
+                        except:
+                            loop = False
+                            break
+                        station = json.loads(station)
+                        station = {prop: station[prop] for prop in props}
+                        if station['distance_to_star'] is None:
+                            station['distance_to_star'] = 0
+                        if station['max_landing_pad_size'] is None or len(station['max_landing_pad_size']) > 1:
+                            station['max_landing_pad_size'] = ''
+                        keys, vals = zip(*station.items())
+                        new_vals = []
+                        for val in vals:
+                            if val is None:
+                                val = ''
+                            if isinstance(val, list):
+                                val = ', '.join(val)
+                            if isinstance(val, str):
+                                val = val.replace("'", "''")
+                                val = f"'{val}'"
+                            new_vals.append(str(val))
+                        vals = new_vals
+                        commit += (f'INSERT INTO station ({", ".join(keys)})'
+                                          f'VALUES ({", ".join(vals)});')
+                    await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table stations created.')
 
@@ -364,7 +378,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File listings.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            commit = ''
             await cur.execute('DROP TABLE IF EXISTS listing;'
                               'CREATE TABLE listing('
                               'id int,'
@@ -382,16 +395,24 @@ class EDDB:
                 header = await listings.__anext__()
                 props = {prop: header.index(prop) for prop in header}
                 timestamp = props['collected_at']
-                async for listing in listings:
-                    listing[timestamp] = f'{time.ctime(int(listing[timestamp]))}'
-                    keys, vals = zip(*((prop, listing[index]) for prop, index in props.items()))
-                    vals = list(vals)
-                    for i, val in enumerate(vals):
-                        if not val.isdigit():
-                            vals[i] = f"'{val}'"
-                    commit += (f'INSERT INTO listing ({", ".join(keys)})'
-                                      f'VALUES ({", ".join(vals)});')
-            await cur.execute(commit)
+                loop = True
+                while loop:
+                    commit = ''
+                    for _ in range(batch_size):
+                        try:
+                            listing = await listings.__anext__()
+                        except StopAsyncIteration:
+                            loop = False
+                            break
+                        listing[timestamp] = f'{time.ctime(int(listing[timestamp]))}'
+                        keys, vals = zip(*((prop, listing[index]) for prop, index in props.items()))
+                        vals = list(vals)
+                        for i, val in enumerate(vals):
+                            if not val.isdigit():
+                                vals[i] = f"'{val}'"
+                        commit += (f'INSERT INTO listing ({", ".join(keys)})'
+                                          f'VALUES ({", ".join(vals)});')
+                    await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table listings created.')
 
@@ -419,21 +440,29 @@ class EDDB:
                 header = await systems.__anext__()
                 props = {prop: header.index(prop) for prop in
                          ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')}
-                async for system in systems:
-                    try:
-                        int(system[props['population']])
-                    except ValueError:
-                        system[props['population']] = '0'
-                    keys, vals = zip(*((prop, system[index]) for prop, index in props.items()))
-                    vals = list(vals)
-                    for i, val in enumerate(vals):
-                        if not val.isdigit():
-                            val = val.replace('"', '')
-                            val = val.replace("'", "''")
-                            vals[i] = f"'{val}'"
-                    commit += (f'INSERT INTO system ({", ".join(keys)})'
-                                      f'VALUES ({", ".join(vals)});')
-                await cur.execute(commit)
+                loop = True
+                while loop:
+                    commit = ''
+                    for _ in range(batch_size):
+                        try:
+                            system = await systems.__anext__()
+                        except StopAsyncIteration:
+                            loop = False
+                            break
+                        try:
+                            int(system[props['population']])
+                        except ValueError:
+                            system[props['population']] = '0'
+                        keys, vals = zip(*((prop, system[index]) for prop, index in props.items()))
+                        vals = list(vals)
+                        for i, val in enumerate(vals):
+                            if not val.isdigit():
+                                val = val.replace('"', '')
+                                val = val.replace("'", "''")
+                                vals[i] = f"'{val}'"
+                        commit += (f'INSERT INTO system ({", ".join(keys)})'
+                                          f'VALUES ({", ".join(vals)});')
+                    await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table systems created.')
 
@@ -444,7 +473,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File bodies.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            commit = ''
             await cur.execute('DROP TABLE IF EXISTS body;'
                               'CREATE TABLE body('
                               'id int,'
@@ -466,32 +494,40 @@ class EDDB:
                 props = ('id', 'system_id', 'name', 'type', 'atmosphere_type', 'solar_masses',  'solar_radius',
                          'earth_masses', 'radius', 'gravity', 'surface_pressure', 'volcanism_type',
                          'is_rotational_period_tidally_locked', 'is_landable')
-                async for body in bodies:
-                    body = json.loads(body)
-                    for key in ('solar_masses', 'solar_radius', 'earth_masses',
-                                'radius', 'gravity', 'surface_pressure'):
-                        if body[key] is None:
-                            body[key] = 0
-                    body['is_landable'] = bool(body['is_landable'])
-                    for key in body.keys():
-                        if key.endswith('_name'):
-                            body[key.replace('_name', '')] = body.pop(key)
-                    vals = [body[prop] for prop in props]
-                    keys = props
-                    new_vals = []
-                    for val in vals:
-                        if val is None:
-                            val = ''
-                        if isinstance(val, list):
-                            val =', '.join(val)
-                        if isinstance(val, str):
-                            val = val.replace("'", "''")
-                            val = f"'{val}'"
-                        new_vals.append(str(val))
-                    vals = new_vals
-                    commit += (f'INSERT INTO body ({", ".join(keys)})'
-                                      f'VALUES ({", ".join(vals)});')
-            await cur.execute(commit)
+                loop = True
+                while loop:
+                    commit = ''     
+                    for _ in range(batch_size):
+                        try:
+                            body = await bodies.__anext__()
+                        except StopAsyncIteration:
+                            loop = False
+                            break
+                        body = json.loads(body)
+                        for key in ('solar_masses', 'solar_radius', 'earth_masses',
+                                    'radius', 'gravity', 'surface_pressure'):
+                            if body[key] is None:
+                                body[key] = 0
+                        body['is_landable'] = bool(body['is_landable'])
+                        for key in body.keys():
+                            if key.endswith('_name'):
+                                body[key.replace('_name', '')] = body.pop(key)
+                        vals = [body[prop] for prop in props]
+                        keys = props
+                        new_vals = []
+                        for val in vals:
+                            if val is None:
+                                val = ''
+                            if isinstance(val, list):
+                                val =', '.join(val)
+                            if isinstance(val, str):
+                                val = val.replace("'", "''")
+                                val = f"'{val}'"
+                            new_vals.append(str(val))
+                        vals = new_vals
+                        commit += (f'INSERT INTO body ({", ".join(keys)})'
+                                          f'VALUES ({", ".join(vals)});')
+                    await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table bodies created.')
 
