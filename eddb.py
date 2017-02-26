@@ -45,7 +45,7 @@ class EDDB:
             table = await cur.execute('SELECT * FROM populated WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
             if not results:
-                await cur.execute('SELECT * FROM systems WHERE LOWER(name) = (%s)', (search,))
+                await cur.execute('SELECT * FROM system WHERE LOWER(name) = (%s)', (search,))
                 results = await cur.fetchone()
             if results:
                 keys = tuple(i[0] for i in cur.description)
@@ -65,7 +65,7 @@ class EDDB:
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
-            query = 'SELECT * FROM stations WHERE LOWER(name) = (%s)'
+            query = 'SELECT * FROM station WHERE LOWER(name) = (%s)'
             args = (search,)
             
             if target_system:
@@ -103,7 +103,7 @@ class EDDB:
         output = ''
         async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
             if len(search) == 1:
-                await cur.execute('SELECT * FROM commodities WHERE LOWER(name) = (%s)', (search[0],))
+                await cur.execute('SELECT * FROM commodity WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if results:
                     keys = tuple(i[0] for i in cur.description)
@@ -112,14 +112,14 @@ class EDDB:
                     output = f'Commodity {search[0]} not found.'
 
             elif len(search) < 4:
-                await cur.execute('SELECT id FROM commodities WHERE LOWER(name) = (%s)', (search[0],))
+                await cur.execute('SELECT id FROM commodity WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if not results:
                     await ctx.send(f'Commodity {search[0]} not found.')
                     return
 
                 commodity_id = results[0]
-                query = 'SELECT id FROM STATIONS WHERE LOWER(name) = (%s)'
+                query = 'SELECT id FROM station WHERE LOWER(name) = (%s)'
                 args = (search[1],)
 
                 if len(search) == 3:
@@ -143,7 +143,7 @@ class EDDB:
                     return
 
                 station_id = results[0][0]
-                await cur.execute('SELECT * FROM listings WHERE station_id=(%s) '
+                await cur.execute('SELECT * FROM listing WHERE station_id=(%s) '
                                      'AND commodity_id=(%s)', (station_id, commodity_id))
                 results = await cur.fetchone()
                 if not results:
@@ -173,7 +173,7 @@ class EDDB:
         search = search.lower()
         output = ''
         async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
-            await cur.execute('SELECT * FROM bodies WHERE LOWER(name) = (%s)', (search,))
+            await cur.execute('SELECT * FROM body WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
             if results:
                 keys = tuple(i[0] for i in cur.description)
@@ -250,7 +250,7 @@ class EDDB:
                         val = f"'{val}'"
                     new_vals.append(str(val))
                 vals = new_vals
-                commit += (f'INSERT INTO commodities ({", ".join(keys)})'
+                commit += (f'INSERT INTO commodity ({", ".join(keys)})'
                                   f'VALUES ({", ".join(vals)});')
                 count += 1
                 if count > batch_size:
@@ -364,7 +364,7 @@ class EDDB:
                             val = f"'{val}'"
                         new_vals.append(str(val))
                     vals = new_vals
-                    commit += (f'INSERT INTO stations ({", ".join(keys)})'
+                    commit += (f'INSERT INTO station ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
                     count += 1
                     if count > batch_size:
@@ -408,7 +408,7 @@ class EDDB:
                     for i, val in enumerate(vals):
                         if not val.isdigit():
                             vals[i] = f"'{val}'"
-                    commit += (f'INSERT INTO listings ({", ".join(keys)})'
+                    commit += (f'INSERT INTO listing ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
                     count += 1
                     if count > batch_size:
@@ -456,7 +456,7 @@ class EDDB:
                             val = val.replace('"', '')
                             val = val.replace("'", "''")
                             vals[i] = f"'{val}'"
-                    commit += (f'INSERT INTO systems ({", ".join(keys)})'
+                    commit += (f'INSERT INTO system ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
                     count += 1
                     if count > batch_size:
@@ -520,7 +520,7 @@ class EDDB:
                             val = f"'{val}'"
                         new_vals.append(str(val))
                     vals = new_vals
-                    commit += (f'INSERT INTO bodies ({", ".join(keys)})'
+                    commit += (f'INSERT INTO body ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
                     count += 1
                     if count > batch_size:
