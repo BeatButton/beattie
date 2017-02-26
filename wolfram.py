@@ -41,5 +41,5 @@ class Wolfram:
                 result = 'No results found.'
         return '\n'.join((interpretation, result)).translate(self.chars)
 
-def setup(bot): 
+def setup(bot):
     bot.add_cog(Wolfram(bot))
