@@ -13,15 +13,8 @@ from utils import checks
 class Default:
     def __init__(self, bot):
         self.bot = bot
-        self._questions = None
+        self.questions = None
 
-    @property
-    def questions(self):
-        if self._questions is None:
-            async with aiofiles.open('data/why.txt', encoding='utf8') as file:
-                self._questions = await file.readlines()
-        return self._questions
-                
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
         """Pong.
@@ -35,7 +28,10 @@ class Default:
     @commands.command()
     async def why(self, ctx):
         async with ctx.typing():
-            await ctx.send(random.choice(self.questions))
+            if self.questions is None:
+                async with aiofiles.open('data/why.txt', encoding='utf8') as file:
+                    self.questions = await file.readlines()
+        await ctx.send(random.choice(self.questions))
 
     @commands.group(aliases=['str', 's'])
     async def string(self, ctx):
@@ -76,6 +72,7 @@ class Default:
     @commands.command(hidden=True)
     async def massage(self, ctx):
         await ctx.invoke(self.gelbooru, 'massage')
+
 
     @commands.command()
     @checks.is_owner()
