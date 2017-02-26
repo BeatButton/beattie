@@ -223,7 +223,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'commodities.json downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            count = 0
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS commodity;'
                               'CREATE TABLE commodity('
@@ -252,11 +251,6 @@ class EDDB:
                 vals = new_vals
                 commit += (f'INSERT INTO commodity ({", ".join(keys)})'
                                   f'VALUES ({", ".join(vals)});')
-                count += 1
-                if count > batch_size:
-                    await cur.execute(commit)
-                    count = 0
-                    commit = ''
             await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table commodities created.')
@@ -268,7 +262,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File systems_populated.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            counter = 0
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS populated;'
                               'CREATE TABLE populated('
@@ -302,11 +295,6 @@ class EDDB:
                     vals = new_vals
                     commit += (f'INSERT INTO populated ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
-                    count += 1
-                    if count > batch_size:
-                        await cur.execute(commit)
-                        count = 0
-                        commit = ''
             await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table populated created.')
@@ -318,7 +306,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File stations.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            count = 0
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS station;'
                               'CREATE TABLE station('
@@ -366,11 +353,6 @@ class EDDB:
                     vals = new_vals
                     commit += (f'INSERT INTO station ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
-                    count += 1
-                    if count > batch_size:
-                        await cur.execute(commit)
-                        count = 0
-                        commit = ''
             await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table stations created.')
@@ -382,7 +364,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File listings.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            count = 0
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS listing;'
                               'CREATE TABLE listing('
@@ -410,11 +391,6 @@ class EDDB:
                             vals[i] = f"'{val}'"
                     commit += (f'INSERT INTO listing ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
-                    count += 1
-                    if count > batch_size:
-                        await cur.execute(commit)
-                        count = 0
-                        commit = ''
             await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table listings created.')
@@ -426,7 +402,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File systems.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            count = 0
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS system;'
                               'CREATE TABLE system('
@@ -458,11 +433,6 @@ class EDDB:
                             vals[i] = f"'{val}'"
                     commit += (f'INSERT INTO system ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
-                    count += 1
-                    if count > batch_size:
-                        await cur.execute(commit)
-                        count = 0
-                        commit = ''
                 await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table systems created.')
@@ -474,7 +444,6 @@ class EDDB:
         self.bot.logger.log(logging.INFO, 'File bodies.jsonl downloaded.')
         
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            count = 0
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS body;'
                               'CREATE TABLE body('
@@ -522,11 +491,6 @@ class EDDB:
                     vals = new_vals
                     commit += (f'INSERT INTO body ({", ".join(keys)})'
                                       f'VALUES ({", ".join(vals)});')
-                    count += 1
-                    if count > batch_size:
-                        await cur.execute(commit)
-                        count = 0
-                        commit = ''
             await cur.execute(commit)
 
         self.bot.logger.log(logging.INFO, 'Table bodies created.')
