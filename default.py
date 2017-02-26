@@ -27,6 +27,7 @@ class Default:
 
     @commands.command()
     async def why(self, ctx):
+        """Asks a question."""
         async with ctx.typing():
             if self.questions is None:
                 async with aiofiles.open('data/why.txt', encoding='utf8') as file:
@@ -74,7 +75,7 @@ class Default:
         await ctx.invoke(self.gelbooru, 'massage')
 
 
-    @commands.command()
+    @commands.command(hidden=True)
     @checks.is_owner()
     async def sudo(self, ctx, *, inp):
         await ctx.send('Operation successful.')
