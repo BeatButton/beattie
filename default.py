@@ -2,6 +2,7 @@ from codecs import encode
 import os
 import random
 
+import aiofiles
 from discord.ext import commands
 from lxml import etree
 import requests
@@ -12,6 +13,7 @@ from utils import checks
 class Default:
     def __init__(self, bot):
         self.bot = bot
+        self.questions = None
 
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
@@ -22,6 +24,14 @@ class Default:
         msg = await ctx.send('pong')
         delta = (msg.created_at - ctx.message.created_at).total_seconds()
         await msg.edit(content=f'{msg.content}\nTime to respond: {delta:.3f} seconds')
+
+    @commands.command()
+    async def why(self, ctx):
+        async with ctx.typing():
+            if self.questions is None:
+                async with aiofiles.open('data/why.txt', encoding='utf8') as file:
+                    self.questions = await file.readlines()
+        await ctx.send(random.choice(self.questions))
 
     @commands.group(aliases=['str', 's'])
     async def string(self, ctx):
@@ -62,6 +72,10 @@ class Default:
     @commands.command(hidden=True)
     async def massage(self, ctx):
         await ctx.invoke(self.gelbooru, 'massage')
+
+    @commands.command(hidden=True)
+    async def sudo(self, ctx, *, inp):
+        await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
 
 
 def setup(bot):
