@@ -280,7 +280,7 @@ class EDDB:
                     commit = ''
                     for _ in range(batch_size):
                         try:
-                            system = await systems.__anext__()
+                            system = await populated.__anext__()
                         except StopAsyncIteration:
                             loop = False
                             break
