@@ -453,6 +453,7 @@ class EDDB:
                     vals = list(vals)
                     for i, val in enumerate(vals):
                         if not val.isdigit():
+                            val = val.replace('"', '')
                             val = val.replace("'", "''")
                             vals[i] = f"'{val}'"
                     commit += (f'INSERT INTO systems ({", ".join(keys)})'
