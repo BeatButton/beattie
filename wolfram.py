@@ -5,7 +5,7 @@ import aiofiles
 from lxml import etree
 
 class Wolfram:
-    chars = {0xf74c: 'd',
+    chars = {0xf74c: ' d',
              0xf74d: 'e',
              0xf74e: 'i',
              0xf74e: 'j',
@@ -32,10 +32,14 @@ class Wolfram:
             await file.write(text)
             root = etree.fromstring(text.encode(), etree.XMLParser())
             try:
+                interpretation = root.xpath("//pod[@title='Input interpretation']/subpod/plaintext/text()")[0]
+            except IndexError:
+                interpretation = ''
+            try:
                 result = root.xpath("//pod[@title!='Input interpretation']/subpod/plaintext/text()")[0]
             except IndexError:
                 result = 'No results found.'
-        return result.translate(self.chars)
+        return ('\n'.join((interpretation, result)).translate(self.chars)
 
 def setup(bot):
     bot.add_cog(Wolfram(bot))
