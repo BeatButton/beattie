@@ -1,12 +1,12 @@
-from contextlib import contextmanager
+from functools import partial
 import json
 import os
 import time
 
 import aiofiles
-import aiohttp
+from aiohttp import errors
 import aiopg
-from aitertools import islice as aislice
+from aitertools import islice as aislice, chain as achain, aiter, anext
 from discord.ext import commands
 from psycopg2 import OperationalError
 
@@ -25,11 +25,26 @@ class EDDB:
             self.hash = data.get('eddb_hash', None)
             self.password = data.get('eddb_password', '')
 
-    async def tmp_download(self, file):
-        async with aiofiles.open(f'tmp/{file}', 'wb') as handle,\
-           self.bot.session.get(f'{self.urlbase}{file}') as resp:
-            async for block in resp.content.iter_chunked(1024):
-                await handle.write(block)
+    async def tmp_download(self, file, ctx):
+        try:
+            async with aiofiles.open(f'tmp/{file}', 'wb') as handle,\
+               self.bot.session.get(f'{self.urlbase}{file}') as resp:
+                async for block in resp.content.iter_chunked(1024):
+                    await handle.write(block)
+        except (errors.ClientResponseError, errors.ServerDisconnectedError):
+            pre = ctx.prefix
+            while True:
+                await ctx.send(f'Downloading {file} failed. Retry?\n'
+                               f'({pre}yes or {pre}no)')
+                response = await self.bot.wait_for('message',
+                                                   check=lambda m:
+                                                   m.content.startswith(pre))
+                response = response[len(pre):]
+                if response == 'yes':
+                    return await self.tmp_download(file, ctx)
+                elif response == 'no':
+                    return False
+        return True
 
     async def _create_pool(self):
         self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
@@ -235,9 +250,11 @@ class EDDB:
         if not os.path.isdir('tmp'):
             os.mkdir('tmp')
 
-        await self.tmp_download(hashfile)
+        success = await self.tmp_download(hashfile, ctx)
+        if not success:
+            return
 
-        async with aopen(f'tmp/{hashfile}') as file:
+        with open(f'tmp/{hashfile}') as file:
             update_hash = hash(file)
 
         os.remove(f'tmp/{hashfile}')
@@ -251,7 +268,7 @@ class EDDB:
 
         self.bot.logger.info('Beginning database creation.')
 
-        await self.tmp_download('commodities.json')
+        await self.tmp_download('commodities.json', ctx)
 
         self.bot.logger.info('commodities.json downloaded.')
 
@@ -290,7 +307,9 @@ class EDDB:
 
         os.remove('tmp/commodities.json')
 
-        await self.tmp_download('systems_populated.jsonl')
+        success = await self.tmp_download('systems_populated.jsonl', ctx)
+        if not success:
+            return
 
         self.bot.logger.info('File systems_populated.jsonl downloaded.')
 
@@ -306,11 +325,12 @@ class EDDB:
                               'security varchar(8),'
                               'power varchar(32),'
                               'PRIMARY KEY(id));')
-            async with aopen('tmp/systems_populated.jsonl') as populated:
+            with open('tmp/systems_populated.jsonl') as populated:
                 props = ('id', 'name', 'population', 'government',
                          'allegiance', 'state', 'security', 'power')
-                async for batch in aislice(populated, None, None, batch_size):
-                    for system in batch:
+                async for batch in make_batches(populated, batch_size):
+                    commit = ''
+                    async for system in batch:
                         system = json.loads(system)
                         system = {prop: system[prop] for prop in props}
                         if system['population'] is None:
@@ -335,7 +355,9 @@ class EDDB:
 
         os.remove('tmp/systems_populated.jsonl')
 
-        await self.tmp_download('stations.jsonl')
+        success = await self.tmp_download('stations.jsonl', ctx)
+        if not success:
+            return
 
         self.bot.logger.info('File stations.jsonl downloaded.')
 
@@ -367,9 +389,9 @@ class EDDB:
                          'import_commodities', 'export_commodities',
                          'prohibited_commodities', 'economies', 'is_planetary',
                          'selling_ships')
-                async for batch in aislice(stations, None, None, batch_size):
+                async for batch in make_batches(stations, batch_size):
                     commit = ''
-                    for station in batch:
+                    async for station in batch:
                         station = json.loads(station)
                         station = {prop: station[prop] for prop in props}
                         if station['distance_to_star'] is None:
@@ -397,7 +419,9 @@ class EDDB:
 
         os.remove('tmp/stations.jsonl')
 
-        await self.tmp_download('listings.csv')
+        success = await self.tmp_download('listings.csv', ctx)
+        if not success:
+            return
 
         self.bot.logger.info('File listings.csv downloaded.')
 
@@ -416,11 +440,12 @@ class EDDB:
 
             async with aopen('tmp/listings.csv') as listings:
                 listings = csv_reader(listings)
-                header = await listings.__anext__()
+                header = await anext(listings)
                 props = {prop: header.index(prop) for prop in header}
                 timestamp = props['collected_at']
                 loop = True
-                async for batch in aislice(listings, None, None, batch_size):
+                async for batch in make_batches(listings, batch_size):
+                    commit = ''
                     async for listing in batch:
                         listing[timestamp] = (
                             f'{time.ctime(int(listing[timestamp]))}')
@@ -438,7 +463,9 @@ class EDDB:
 
         os.remove('tmp/listings.csv')
 
-        await self.tmp_download('systems.csv')
+        success = await self.tmp_download('systems.csv', ctx)
+        if not success:
+            return
 
         self.bot.logger.info('File systems.csv downloaded.')
 
@@ -456,11 +483,12 @@ class EDDB:
                               'PRIMARY KEY(id));')
             async with aopen('tmp/systems.csv') as systems:
                 systems = csv_reader(systems)
-                header = await systems.__anext__()
+                header = await anext(systems)
                 props = {prop: header.index(prop) for prop in
                          ('id', 'name', 'population', 'government',
                           'allegiance', 'state', 'security', 'power')}
-                async for batch in aislice(systems, None, None, batch_size):
+                async for batch in make_batches(systems, batch_size):
+                    commit = ''
                     async for system in batch:
                         try:
                             int(system[props['population']])
@@ -482,7 +510,9 @@ class EDDB:
 
         os.remove('tmp/systems.csv')
 
-        await self.tmp_download('bodies.jsonl')
+        success = await self.tmp_download('bodies.jsonl', ctx)
+        if not success:
+            return
 
         self.bot.logger.info('File bodies.jsonl downloaded.')
 
@@ -510,7 +540,8 @@ class EDDB:
                          'radius', 'gravity', 'surface_pressure',
                          'volcanism_type',
                          'is_rotational_period_tidally_locked', 'is_landable')
-                async for batch in aislice(bodies, None, None, batch_size):
+                async for batch in make_batches(bodies, batch_size):
+                    commit = ''
                     async for body in batch:
                         body = json.loads(body)
                         for key in ('solar_masses', 'solar_radius',
@@ -570,18 +601,13 @@ async def csv_reader(aiofile):
         yield [val.strip() for val in line.split(',')]
 
 
-class aopen:
-    def __init__(self, filename, **kwargs):
-        kwargs['encoding'] = kwargs.get('encoding', 'utf-8')
-        self.file = aiofiles.open(filename, **kwargs)
+aopen = partial(aiofiles.open, encoding='utf-8')
 
-    async def __aenter__(self):
-        self.file = await self.file
-        return self.file
 
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.file.close()
-        raise exc
+async def make_batches(iterable, size):
+    iterator = await aiter(iterable)
+    async for first in iterator:
+        yield achain([first], aislice(iterator, size - 1))
 
 
 def setup(bot):
