@@ -24,7 +24,7 @@ class Default:
         msg = await ctx.send('pong')
         delta = (msg.created_at - ctx.message.created_at).total_seconds()
         await msg.edit(content=f'{msg.content}\nTime to respond: '
-                       '{delta:.3f} seconds')
+                       f'{delta:.3f} seconds')
 
     @commands.command()
     async def why(self, ctx):
