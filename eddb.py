@@ -579,8 +579,9 @@ class aopen:
         self.file = await self.file
         return self.file
 
-    async def __aexit__(self):
+    async def __aexit__(self, exc_type, exc, tb):
         await self.file.close()
+        raise exc
 
 
 def setup(bot):
