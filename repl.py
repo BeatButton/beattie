@@ -100,9 +100,9 @@ class REPL:
         while True:
             response = await (
                  self.bot.wait_for('message',
-                                   check=lambda m: m.content.startswith('`')
-                                   and (m.author, m.channel)
-                                   == (msg.author, msg.channel)))
+                                   check=lambda m: m.content[0] == '`' and
+                                   (m.author, m.channel) ==
+                                   (msg.author, msg.channel)))
 
             cleaned = self.cleanup_code(response.content)
 

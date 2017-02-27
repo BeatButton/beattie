@@ -396,8 +396,8 @@ class EDDB:
                         station = {prop: station[prop] for prop in props}
                         if station['distance_to_star'] is None:
                             station['distance_to_star'] = 0
-                        if (station['max_landing_pad_size'] is None
-                           or len(station['max_landing_pad_size']) > 1):
+                        if (station['max_landing_pad_size'] is None or
+                           len(station['max_landing_pad_size']) > 1):
                             station['max_landing_pad_size'] = ''
                         keys, vals = zip(*station.items())
                         new_vals = []

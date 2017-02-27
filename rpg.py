@@ -90,8 +90,8 @@ class RPG:
 
     @roll.error
     async def roll_error(self, exception, ctx):
-        if (isinstance(exception, commands.MissingRequiredArgument)
-           or isinstance(exception.original, ValueError)):
+        if (isinstance(exception, commands.MissingRequiredArgument) or
+           isinstance(exception.original, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n1d20+3'
                            '\n1d6'
@@ -133,8 +133,8 @@ class RPG:
 
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
-        if (isinstance(exception, commands.MissingRequiredArgument)
-           or isinstance(exception.original, ValueError)):
+        if (isinstance(exception, commands.MissingRequiredArgument) or
+           isinstance(exception.original, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n6'
                            '\n13e')
