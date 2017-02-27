@@ -565,7 +565,7 @@ async def csv_reader(aiofile):
 
 
 async def aopen(filename, encoding='utf-8', **kwargs):
-    **kwargs.update({'encoding': encoding})
+    kwargs.update({'encoding': encoding})
     return await aiofiles.open(filename, **kwargs)
 
 
