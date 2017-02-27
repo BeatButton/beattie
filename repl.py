@@ -1,4 +1,5 @@
 from discord.ext import commands
+from discord.errors import Forbidden
 from utils import checks
 import asyncio
 import traceback
@@ -7,6 +8,7 @@ import inspect
 import textwrap
 from contextlib import redirect_stdout
 import io
+
 
 class REPL:
     def __init__(self, bot):
@@ -62,7 +64,7 @@ class REPL:
             value = stdout.getvalue()
             try:
                 await self.bot.add_reaction(ctx.message, '\u2705')
-            except:
+            except Forbidden:
                 pass
 
             if ret is None:
@@ -88,15 +90,19 @@ class REPL:
         }
 
         if msg.channel.id in self.sessions:
-            await ctx.send('Already running a REPL session in this channel. Exit it with `quit`.')
+            await ctx.send('Already running a REPL session in this channel. '
+                           'Exit it with `quit`.')
             return
 
         self.sessions.add(msg.channel.id)
-        await ctx.send('Enter code to execute or evaluate. `exit()` or `quit` to exit.')
+        await ctx.send('Enter code to execute or evaluate. '
+                       '`exit()` or `quit` to exit.')
         while True:
-            response = await self.bot.wait_for('message',
-                                               check=lambda m: m.content.startswith('`')
-                                               and (m.author, m.channel) == (msg.author, msg.channel))
+            response = await (
+                 self.bot.wait_for('message',
+                                   check=lambda m: m.content.startswith('`')
+                                   and (m.author, m.channel)
+                                   == (msg.author, msg.channel)))
 
             cleaned = self.cleanup_code(response.content)
 
@@ -153,6 +159,7 @@ class REPL:
                 pass
             except discord.HTTPException as e:
                 await ctx.send(f'Unexpected error: `{e}`')
+
 
 def setup(bot):
     bot.add_cog(REPL(bot))
