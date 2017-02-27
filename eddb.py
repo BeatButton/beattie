@@ -5,6 +5,7 @@ import time
 import aiofiles as aiof
 import aiohttp
 import aiopg
+from aitertools import islice as aislice
 from discord.ext import commands
 
 from utils import checks
@@ -302,15 +303,8 @@ class EDDB:
             async with aopen('tmp/systems_populated.jsonl') as populated:
                 props = ('id', 'name', 'population', 'government',
                          'allegiance', 'state', 'security', 'power')
-                loop = True
-                while loop:
-                    commit = ''
-                    for _ in range(batch_size):
-                        try:
-                            system = await populated.__anext__()
-                        except StopAsyncIteration:
-                            loop = False
-                            break
+                async for batch in aislice(populated, None, None, batch_size):
+                    for system in batch:
                         system = json.loads(system)
                         system = {prop: system[prop] for prop in props}
                         if system['population'] is None:
@@ -367,15 +361,9 @@ class EDDB:
                          'import_commodities', 'export_commodities',
                          'prohibited_commodities', 'economies', 'is_planetary',
                          'selling_ships')
-                loop = True
-                while loop:
+                async for batch in aislice(stations, None, None, batch_size):
                     commit = ''
-                    for _ in range(batch_size):
-                        try:
-                            station = await stations.__anext__()
-                        except StopAsyncIteration:
-                            loop = False
-                            break
+                    for station in batch:
                         station = json.loads(station)
                         station = {prop: station[prop] for prop in props}
                         if station['distance_to_star'] is None:
@@ -426,14 +414,8 @@ class EDDB:
                 props = {prop: header.index(prop) for prop in header}
                 timestamp = props['collected_at']
                 loop = True
-                while loop:
-                    commit = ''
-                    for _ in range(batch_size):
-                        try:
-                            listing = await listings.__anext__()
-                        except StopAsyncIteration:
-                            loop = False
-                            break
+                async for batch in aislice(listings, None, None, batch_size):
+                    async for listing in batch:
                         listing[timestamp] = (
                             f'{time.ctime(int(listing[timestamp]))}')
                         keys, vals = zip(*((prop, listing[index])
@@ -455,7 +437,6 @@ class EDDB:
         self.bot.logger.info('File systems.csv downloaded.')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
-            commit = ''
             await cur.execute('DROP TABLE IF EXISTS system;'
                               'CREATE TABLE system('
                               'id int,'
@@ -473,15 +454,8 @@ class EDDB:
                 props = {prop: header.index(prop) for prop in
                          ('id', 'name', 'population', 'government',
                           'allegiance', 'state', 'security', 'power')}
-                loop = True
-                while loop:
-                    commit = ''
-                    for _ in range(batch_size):
-                        try:
-                            system = await systems.__anext__()
-                        except StopAsyncIteration:
-                            loop = False
-                            break
+                async for batch in aislice(systems, None, None, batch_size):
+                    async for system in batch:
                         try:
                             int(system[props['population']])
                         except ValueError:
@@ -530,15 +504,8 @@ class EDDB:
                          'radius', 'gravity', 'surface_pressure',
                          'volcanism_type',
                          'is_rotational_period_tidally_locked', 'is_landable')
-                loop = True
-                while loop:
-                    commit = ''
-                    for _ in range(batch_size):
-                        try:
-                            body = await bodies.__anext__()
-                        except StopAsyncIteration:
-                            loop = False
-                            break
+                async for batch in aislice(bodies, None, None, batch_size):
+                    async for body in batch:
                         body = json.loads(body)
                         for key in ('solar_masses', 'solar_radius',
                                     'earth_masses', 'radius', 'gravity',
@@ -590,11 +557,6 @@ class EDDB:
     async def update_error(self, exception, ctx):
         self.updating = False
         await self.bot.handle_error(exception, ctx)
-
-    async def batch_statements(self, aiofile, batch_size):
-        while True:
-            for _ in range(batch_size):
-                pass
 
 
 async def csv_reader(aiofile):
