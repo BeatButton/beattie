@@ -22,7 +22,7 @@ class EDDB:
 
     async def tmp_download(self, file):
         async with aiof.open(f'tmp/{file}', 'wb') as handle,\
-                   elf.bot.session.get(f'{self.urlbase}{file}') as resp:
+           self.bot.session.get(f'{self.urlbase}{file}') as resp:
             async for block in resp.content.iter_chunked(1024):
                 await handle.write(block)
 
