@@ -43,7 +43,7 @@ class Wolfram:
                                     "/subpod/plaintext/text()")[0]
             except IndexError:
                 result = 'No results found.'
-        return '\n'.join((interpret, result)).translate(self.chars)
+        return f'{interpret}\n{result}'.translate(self.chars)
 
 
 def setup(bot):
