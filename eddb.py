@@ -573,10 +573,10 @@ async def csv_reader(aiofile):
 class aopen:
     def __init__(self, filename, **kwargs):
         kwargs['encoding'] = kwargs.get('encoding', 'utf-8')
-        self.kwargs = kwargs
+        self.file = aiofiles.open(filename, **kwargs)
 
     async def __aenter__(self):
-        self.file = await aiofiles.open(filename, **self.kwargs)
+        self.file = await self.file
         return self.file
 
     async def __aexit__(self):
