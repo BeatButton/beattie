@@ -1,8 +1,9 @@
+from contextlib import contextmanager
 import json
 import os
 import time
 
-import aiofiles as aiof
+import aiofiles
 import aiohttp
 import aiopg
 from aitertools import islice as aislice
@@ -21,7 +22,7 @@ class EDDB:
             self.hash = json.load(file).get('eddb_hash', None)
 
     async def tmp_download(self, file):
-        async with aiof.open(f'tmp/{file}', 'wb') as handle,\
+        async with aiofiles.open(f'tmp/{file}', 'wb') as handle,\
            self.bot.session.get(f'{self.urlbase}{file}') as resp:
             async for block in resp.content.iter_chunked(1024):
                 await handle.write(block)
@@ -564,9 +565,11 @@ async def csv_reader(aiofile):
         yield [val.strip() for val in line.split(',')]
 
 
+@contextmanager
 async def aopen(filename, encoding='utf-8', **kwargs):
     kwargs.update({'encoding': encoding})
-    return await aiofiles.open(filename, **kwargs)
+    for line in aiofiles.open(filename, **kwargs):
+        yield line
 
 
 def setup(bot):
