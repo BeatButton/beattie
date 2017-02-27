@@ -8,6 +8,7 @@ import aiohttp
 import aiopg
 from aitertools import islice as aislice
 from discord.ext import commands
+from psycopg2 import OperationalError
 
 from utils import checks
 
@@ -18,8 +19,11 @@ class EDDB:
         self.updating = False
         self.pool = None
         self.urlbase = 'https://eddb.io/archive/v5/'
+        self.bot.loop.create_task(self._create_pool())
         with open('config.json') as file:
-            self.hash = json.load(file).get('eddb_hash', None)
+            data = json.load(file)
+            self.hash = data.get('eddb_hash', None)
+            self.password = data.get('eddb_password', '')
 
     async def tmp_download(self, file):
         async with aiofiles.open(f'tmp/{file}', 'wb') as handle,\
@@ -29,7 +33,8 @@ class EDDB:
 
     async def _create_pool(self):
         self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
-                                            'password=passwd host=127.0.0.1')
+                                            f'password={self.password} '
+                                            'host=127.0.0.1')
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -568,11 +573,10 @@ async def csv_reader(aiofile):
 @contextmanager
 async def aopen(filename, **kwargs):
     kwargs['encoding'] = kwargs.get('encoding', 'utf-8')
-    for line in aiofiles.open(filename, **kwargs):
-        yield line
+    file = await aiofiles.open(filename, **kwargs)
+    yield file
+    await file.close()
 
 
 def setup(bot):
     bot.add_cog(EDDB(bot))
-    cog = bot.get_cog('EDDB')
-    bot.loop.create_task(cog._create_pool())
