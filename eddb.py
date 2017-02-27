@@ -566,8 +566,8 @@ async def csv_reader(aiofile):
 
 
 @contextmanager
-async def aopen(filename, encoding='utf-8', **kwargs):
-    kwargs.update({'encoding': encoding})
+async def aopen(filename, **kwargs):
+    kwargs['encoding'] = kwargs.get('encoding', 'utf-8')
     for line in aiofiles.open(filename, **kwargs):
         yield line
 
