@@ -1,8 +1,9 @@
 from discord.ext import commands
 import json
 
-import aiofiles
 from lxml import etree
+
+from utils.aioutils import aopen
 
 
 class Wolfram:
@@ -30,7 +31,7 @@ class Wolfram:
         params = {'input': inp, 'appid': self.key, 'format': 'plaintext'}
         async with self.bot.session.get(self.url, params=params) as resp:
             text = await resp.text()
-        async with aiofiles.open('request.txt', 'w', encoding='utf8') as file:
+        async with aopen('request.txt', 'w') as file:
             await file.write(text)
             root = etree.fromstring(text.encode(), etree.XMLParser())
             try:

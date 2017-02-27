@@ -2,12 +2,12 @@ from codecs import encode
 import os
 import random
 
-import aiofiles as aiof
 from discord.ext import commands
 from lxml import etree
 import requests
 
 from utils import checks
+from utils.aioutils import aopen
 
 
 class Default:
@@ -31,7 +31,7 @@ class Default:
         """Asks a question."""
         async with ctx.typing():
             if self.questions is None:
-                async with aiof.open('data/why.txt', encoding='utf8') as file:
+                async with aopen('data/why.txt') as file:
                     self.questions = await file.readlines()
         await ctx.send(random.choice(self.questions))
 
