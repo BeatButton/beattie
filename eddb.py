@@ -570,12 +570,17 @@ async def csv_reader(aiofile):
         yield [val.strip() for val in line.split(',')]
 
 
-@contextmanager
-async def aopen(filename, **kwargs):
-    kwargs['encoding'] = kwargs.get('encoding', 'utf-8')
-    file = await aiofiles.open(filename, **kwargs)
-    yield file
-    await file.close()
+class aopen:
+    def __init__(self, filename, **kwargs):
+        kwargs['encoding'] = kwargs.get('encoding', 'utf-8')
+        self.kwargs = kwargs
+
+    async def __aenter__(self):
+        self.file = await aiofiles.open(filename, **self.kwargs)
+        return self.file
+
+    async def __aexit__(self):
+        await self.file.close()
 
 
 def setup(bot):
