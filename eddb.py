@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-import aiofiles
+import aiofiles as aiof
 import aiohttp
 import aiopg
 from discord.ext import commands
@@ -19,36 +19,42 @@ class EDDB:
         with open('config.json') as file:
             self.hash = json.load(file).get('eddb_hash', None)
 
-
     async def tmp_download(self, file):
-        async with aiofiles.open(f'tmp/{file}', 'wb') as handle, \
-                    self.bot.session.get(f'{self.urlbase}{file}') as resp:
+        async with aiof.open(f'tmp/{file}', 'wb') as handle,\
+                   elf.bot.session.get(f'{self.urlbase}{file}') as resp:
             async for block in resp.content.iter_chunked(1024):
                 await handle.write(block)
 
     async def _create_pool(self):
-        self.pool = await aiopg.create_pool('dbname=ed.db user=postgres password=passwd host=127.0.0.1')
+        self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
+                                            'password=passwd host=127.0.0.1')
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
         """Commands for getting data from EDDB.io"""
         if ctx.invoked_subcommand is None:
-            await ctx.send(f'Invalid command passed. Try "{ctx.prefix}help eddb"')
-        
+            await ctx.send('Invalid command passed. '
+                           f'Try "{ctx.prefix}help eddb"')
+
     @eddb.command(aliases=['sys'])
     async def system(self, ctx, *, search):
         """Searches the database for a system."""
         search = search.lower()
         output = ''
-        async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
-            table = await cur.execute('SELECT * FROM populated WHERE LOWER(name) = (%s)', (search,))
+        typing = ctx.typing
+        async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
+            table = await cur.execute('SELECT * FROM populated '
+                                      'WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
             if not results:
-                await cur.execute('SELECT * FROM system WHERE LOWER(name) = (%s)', (search,))
+                await cur.execute('SELECT * FROM system '
+                                  'WHERE LOWER(name) = (%s)', (search,))
                 results = await cur.fetchone()
             if results:
                 keys = tuple(i[0] for i in cur.description)
-                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]) if val)
+                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
+                                   for key, val in zip(keys[1:], results[1:])
+                                   if val)
             else:
                 output = f'No system {search} found.'
         await ctx.send(output)
@@ -56,62 +62,75 @@ class EDDB:
     @eddb.command(aliases=['sta'])
     async def station(self, ctx, *, search):
         """Searches the database for a station.
-            To specify the system, put a comma after the station name and put the system there."""
+           Optionally, specify a system.
+
+           Input in the format: station[, system]"""
         search = search.lower()
         output = ''
         target_system = None
-        async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
+        typing = ctx.typing
+        async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
             query = 'SELECT * FROM station WHERE LOWER(name) = (%s)'
             args = (search,)
-            
+
             if target_system:
                 target_system = target_system.lower()
-                await cur.execute('SELECT id FROM populated WHERE LOWER(name) = (%s)', (target_system,))
+                await cur.execute('SELECT id FROM populated '
+                                  'WHERE LOWER(name) = (%s)', (target_system,))
                 results = await cur.fetchone()
                 if results:
                     args += (results[0],)
                     query += " AND system_id = (%s)"
                 else:
-                     await ctx.send(f'No system {target_system} found.')
-                     return
-                    
+                    await ctx.send(f'No system {target_system} found.')
+                    return
+
             await cur.execute(query, args)
             results = await cur.fetchall()
 
             if len(results) == 1:
                 keys = tuple(i[0] for i in cur.description)
                 results = results[0]
-                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
+                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
+                                   for key, val in zip(keys[2:], results[2:])
+                                   if val)
             elif not results:
-                output =  f'Station {search} not found.'
+                output = f'Station {search} not found.'
             else:
-                output = f'Multiple stations called {search} found, please specify system.'
+                output = (f'Multiple stations called {search} found, '
+                          'please specify system.')
 
             await ctx.send(output)
 
-
     @eddb.command(aliases=['c', 'com', 'comm'])
     async def commodity(self, ctx, *, search):
-        """Searches the database for information on a commodity. Specify the station to get listing data.
+        """Searches the database for information on a commodity
+           Specify the station to get listing data.
 
-            Input in the format: commodity[, station[, system]]"""
+           Input in the format: commodity[, station[, system]]"""
         search = [term.strip().lower() for term in search.split(',')]
         output = ''
-        async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
+        typing = ctx.typing
+        async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
             if len(search) == 1:
-                await cur.execute('SELECT * FROM commodity WHERE LOWER(name) = (%s)', (search[0],))
+                await cur.execute('SELECT * FROM commodity '
+                                  'WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if results:
-                    keys = tuple(i[0] for i in cur.description)
-                    output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[1:], results[1:]))
+                    keys = tuple(i[0].replace("_", " ")
+                                 for i in cur.description)
+                    output = '\n'.join(f'{key.title()}: {val}'
+                                       for key, val
+                                       in zip(keys[1:], results[1:]))
                 else:
                     output = f'Commodity {search[0]} not found.'
 
             elif len(search) < 4:
-                await cur.execute('SELECT id FROM commodity WHERE LOWER(name) = (%s)', (search[0],))
+                await cur.execute('SELECT id FROM commodity '
+                                  'WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if not results:
                     await ctx.send(f'Commodity {search[0]} not found.')
@@ -122,7 +141,8 @@ class EDDB:
                 args = (search[1],)
 
                 if len(search) == 3:
-                    await cur.execute('SELECT * FROM populated WHERE LOWER(name) = (%s)', (search[2],))
+                    await cur.execute('SELECT * FROM populated '
+                                      'WHERE LOWER(name) = (%s)', (search[2],))
                     results = await cur.fetchone()
                     if not results:
                         await ctx.send(f'System {search[2]} not found.')
@@ -130,23 +150,27 @@ class EDDB:
                     system_id = results[0]
                     query += ' AND system_id=(%s)'
                     args += (system_id,)
-                    
+
                 await cur.execute(query, args)
                 results = await cur.fetchall()
-                
+
                 if not results:
                     await ctx.send(f'Station {search[1]} not found.')
-                    return 
+                    return
                 elif len(results) > 1:
-                    await ctx.send(f'Multiple stations called {search[1]} found, please specify system.')
+                    await ctx.send(f'Multiple stations called {search[1]} '
+                                   'found, please specify system.')
                     return
 
                 station_id = results[0][0]
-                await cur.execute('SELECT * FROM listing WHERE station_id=(%s) '
-                                     'AND commodity_id=(%s)', (station_id, commodity_id))
+                await cur.execute('SELECT * FROM listing '
+                                  'WHERE station_id=(%s) '
+                                  'AND commodity_id=(%s) ',
+                                  (station_id, commodity_id))
                 results = await cur.fetchone()
                 if not results:
-                    await ctx.send(f'Commodity {search[0]} not available to be bought or sold at station.')
+                    await ctx.send(f'Commodity {search[0]} not available '
+                                   'to be bought or sold at station.')
                     return
 
                 keys = (row[0] for row in cur.description)
@@ -159,11 +183,12 @@ class EDDB:
                     output += f'Station: {search[1].title()}\n'
                 if len(search) > 2:
                     output += f'System: {search[2].title()}\n'
-                output = ('\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in results.items()))
+                output = ('\n'.join(f'{key.replace("_", " ").title()}: {val}'
+                          for key, val in results.items()))
 
             else:
                 output = 'Too many commas. What does that even mean.'
-            
+
         await ctx.send(output)
 
     @eddb.command(aliases=['b'])
@@ -171,12 +196,16 @@ class EDDB:
         """Searches the database for a stellar body."""
         search = search.lower()
         output = ''
-        async with self.pool.acquire() as conn, conn.cursor() as cur, ctx.typing():
-            await cur.execute('SELECT * FROM body WHERE LOWER(name) = (%s)', (search,))
+        typing = ctx.typing
+        async with self.pool.acquire() as conn, conn.cursor() as cur, typing():
+            await cur.execute('SELECT * FROM body '
+                              'WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
             if results:
                 keys = tuple(i[0] for i in cur.description)
-                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}' for key, val in zip(keys[2:], results[2:]) if val)
+                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
+                                   for key, val in zip(keys[2:], results[2:])
+                                   if val)
             else:
                 output = 'No bodies found.'
 
@@ -201,26 +230,24 @@ class EDDB:
 
         await self.tmp_download(hashfile)
 
-        async with aiofiles.open(f'tmp/{hashfile}') as file:
+        async with aopen(f'tmp/{hashfile}') as file:
             update_hash = hash(file)
-            
+
         os.remove(f'tmp/{hashfile}')
-        
+
         if update_hash == self.hash and not force:
             await ctx.send('Update not necessary.')
             self.updating = False
             return
-        
-        self.bot.logger.info('Updating ed.db')
 
-        
+        self.bot.logger.info('Updating ed.db')
 
         self.bot.logger.info('Beginning database creation.')
 
         await self.tmp_download('commodities.json')
-        
+
         self.bot.logger.info('commodities.json downloaded.')
-        
+
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             commit = ''
             await cur.execute('DROP TABLE IF EXISTS commodity;'
@@ -249,7 +276,7 @@ class EDDB:
                     new_vals.append(str(val))
                 vals = new_vals
                 commit += (f'INSERT INTO commodity ({", ".join(keys)})'
-                                  f'VALUES ({", ".join(vals)});')
+                           f'VALUES ({", ".join(vals)});')
             await cur.execute(commit)
 
         self.bot.logger.info('Table commodities created.')
@@ -259,7 +286,7 @@ class EDDB:
         await self.tmp_download('systems_populated.jsonl')
 
         self.bot.logger.info('File systems_populated.jsonl downloaded.')
-        
+
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS populated;'
                               'CREATE TABLE populated('
@@ -272,8 +299,9 @@ class EDDB:
                               'security varchar(8),'
                               'power varchar(32),'
                               'PRIMARY KEY(id));')
-            async with aiofiles.open('tmp/systems_populated.jsonl', encoding='utf-8') as populated:
-                props = ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')
+            async with aopen('tmp/systems_populated.jsonl') as populated:
+                props = ('id', 'name', 'population', 'government',
+                         'allegiance', 'state', 'security', 'power')
                 loop = True
                 while loop:
                     commit = ''
@@ -300,7 +328,7 @@ class EDDB:
                             new_vals.append(str(val))
                         vals = new_vals
                         commit += (f'INSERT INTO populated ({", ".join(keys)})'
-                                          f'VALUES ({", ".join(vals)});')
+                                   f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
         self.bot.logger.info('Table populated created.')
@@ -310,7 +338,7 @@ class EDDB:
         await self.tmp_download('stations.jsonl')
 
         self.bot.logger.info('File stations.jsonl downloaded.')
-        
+
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS station;'
                               'CREATE TABLE station('
@@ -332,25 +360,28 @@ class EDDB:
                               'is_planetary bool,'
                               'selling_ships varchar(512),'
                               'PRIMARY KEY(id));')
-            async with aiofiles.open('tmp/stations.jsonl', encoding='utf-8') as stations:
-                props = ('id', 'system_id', 'name', 'max_landing_pad_size', 'distance_to_star', 'government',
-                         'allegiance', 'state', 'type', 'has_blackmarket', 'has_commodities',
-                         'import_commodities', 'export_commodities', 'prohibited_commodities',
-                         'economies', 'is_planetary', 'selling_ships')
+            async with aopen('tmp/stations.jsonl') as stations:
+                props = ('id', 'system_id', 'name', 'max_landing_pad_size',
+                         'distance_to_star', 'government', 'allegiance',
+                         'state', 'type', 'has_blackmarket', 'has_commodities',
+                         'import_commodities', 'export_commodities',
+                         'prohibited_commodities', 'economies', 'is_planetary',
+                         'selling_ships')
                 loop = True
                 while loop:
                     commit = ''
                     for _ in range(batch_size):
                         try:
                             station = await stations.__anext__()
-                        except:
+                        except StopAsyncIteration:
                             loop = False
                             break
                         station = json.loads(station)
                         station = {prop: station[prop] for prop in props}
                         if station['distance_to_star'] is None:
                             station['distance_to_star'] = 0
-                        if station['max_landing_pad_size'] is None or len(station['max_landing_pad_size']) > 1:
+                        if (station['max_landing_pad_size'] is None
+                           or len(station['max_landing_pad_size']) > 1):
                             station['max_landing_pad_size'] = ''
                         keys, vals = zip(*station.items())
                         new_vals = []
@@ -365,7 +396,7 @@ class EDDB:
                             new_vals.append(str(val))
                         vals = new_vals
                         commit += (f'INSERT INTO station ({", ".join(keys)})'
-                                          f'VALUES ({", ".join(vals)});')
+                                   f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
         self.bot.logger.info('Table stations created.')
@@ -388,8 +419,8 @@ class EDDB:
                               'demand int,'
                               'collected_at char(24),'
                               'PRIMARY KEY(id));')
-                              
-            async with aiofiles.open('tmp/listings.csv', encoding='utf-8') as listings:
+
+            async with aopen('tmp/listings.csv') as listings:
                 listings = csv_reader(listings)
                 header = await listings.__anext__()
                 props = {prop: header.index(prop) for prop in header}
@@ -403,14 +434,16 @@ class EDDB:
                         except StopAsyncIteration:
                             loop = False
                             break
-                        listing[timestamp] = f'{time.ctime(int(listing[timestamp]))}'
-                        keys, vals = zip(*((prop, listing[index]) for prop, index in props.items()))
+                        listing[timestamp] = (
+                            f'{time.ctime(int(listing[timestamp]))}')
+                        keys, vals = zip(*((prop, listing[index])
+                                         for prop, index in props.items()))
                         vals = list(vals)
                         for i, val in enumerate(vals):
                             if not val.isdigit():
                                 vals[i] = f"'{val}'"
                         commit += (f'INSERT INTO listing ({", ".join(keys)})'
-                                          f'VALUES ({", ".join(vals)});')
+                                   f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
         self.bot.logger.info('Table listings created.')
@@ -434,11 +467,12 @@ class EDDB:
                               'security varchar(8),'
                               'power varchar(32),'
                               'PRIMARY KEY(id));')
-            async with aiofiles.open('tmp/systems.csv', encoding='utf-8') as systems:
+            async with aopen('tmp/systems.csv') as systems:
                 systems = csv_reader(systems)
                 header = await systems.__anext__()
                 props = {prop: header.index(prop) for prop in
-                         ('id', 'name', 'population', 'government', 'allegiance', 'state', 'security', 'power')}
+                         ('id', 'name', 'population', 'government',
+                          'allegiance', 'state', 'security', 'power')}
                 loop = True
                 while loop:
                     commit = ''
@@ -452,7 +486,8 @@ class EDDB:
                             int(system[props['population']])
                         except ValueError:
                             system[props['population']] = '0'
-                        keys, vals = zip(*((prop, system[index]) for prop, index in props.items()))
+                        keys, vals = zip(*((prop, system[index])
+                                         for prop, index in props.items()))
                         vals = list(vals)
                         for i, val in enumerate(vals):
                             if not val.isdigit():
@@ -460,7 +495,7 @@ class EDDB:
                                 val = val.replace("'", "''")
                                 vals[i] = f"'{val}'"
                         commit += (f'INSERT INTO system ({", ".join(keys)})'
-                                          f'VALUES ({", ".join(vals)});')
+                                   f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
         self.bot.logger.info('Table systems created.')
@@ -470,7 +505,7 @@ class EDDB:
         await self.tmp_download('bodies.jsonl')
 
         self.bot.logger.info('File bodies.jsonl downloaded.')
-        
+
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS body;'
                               'CREATE TABLE body('
@@ -489,13 +524,15 @@ class EDDB:
                               'is_rotational_period_tidally_locked bool,'
                               'is_landable bool,'
                               'PRIMARY KEY(id));')
-            async with aiofiles.open('tmp/bodies.jsonl', encoding='utf-8') as bodies:
-                props = ('id', 'system_id', 'name', 'type', 'atmosphere_type', 'solar_masses',  'solar_radius',
-                         'earth_masses', 'radius', 'gravity', 'surface_pressure', 'volcanism_type',
+            async with aopen('tmp/bodies.jsonl') as bodies:
+                props = ('id', 'system_id', 'name', 'type', 'atmosphere_type',
+                         'solar_masses',  'solar_radius', 'earth_masses',
+                         'radius', 'gravity', 'surface_pressure',
+                         'volcanism_type',
                          'is_rotational_period_tidally_locked', 'is_landable')
                 loop = True
                 while loop:
-                    commit = ''     
+                    commit = ''
                     for _ in range(batch_size):
                         try:
                             body = await bodies.__anext__()
@@ -503,8 +540,9 @@ class EDDB:
                             loop = False
                             break
                         body = json.loads(body)
-                        for key in ('solar_masses', 'solar_radius', 'earth_masses',
-                                    'radius', 'gravity', 'surface_pressure'):
+                        for key in ('solar_masses', 'solar_radius',
+                                    'earth_masses', 'radius', 'gravity',
+                                    'surface_pressure'):
                             if body[key] is None:
                                 body[key] = 0
                         body['is_landable'] = bool(body['is_landable'])
@@ -518,14 +556,14 @@ class EDDB:
                             if val is None:
                                 val = ''
                             if isinstance(val, list):
-                                val =', '.join(val)
+                                val = ', '.join(val)
                             if isinstance(val, str):
                                 val = val.replace("'", "''")
                                 val = f"'{val}'"
                             new_vals.append(str(val))
                         vals = new_vals
                         commit += (f'INSERT INTO body ({", ".join(keys)})'
-                                          f'VALUES ({", ".join(vals)});')
+                                   f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
         self.bot.logger.info('Table bodies created.')
@@ -535,10 +573,10 @@ class EDDB:
         try:
             os.rmdir('tmp')
         except PermissionError:
-            self.bot.logger.log(logging.WARNING, 'Failed to delete tmp directory.')
+            self.bot.logger.warning('Failed to delete tmp directory.')
 
         self.bot.logger.info('ed.db update complete.')
-        
+
         self.hash = update_hash
         with open('config.json') as file:
             data = json.load(file)
@@ -556,7 +594,7 @@ class EDDB:
     async def batch_statements(self, aiofile, batch_size):
         while True:
             for _ in range(batch_size):
-                
+                pass
 
 
 async def csv_reader(aiofile):
@@ -564,8 +602,12 @@ async def csv_reader(aiofile):
         yield [val.strip() for val in line.split(',')]
 
 
+async def aopen(filename, encoding='utf-8', **kwargs):
+    **kwargs.update({'encoding': encoding})
+    return await aiofiles.open(filename, **kwargs)
+
+
 def setup(bot):
     bot.add_cog(EDDB(bot))
     cog = bot.get_cog('EDDB')
     bot.loop.create_task(cog._create_pool())
-    

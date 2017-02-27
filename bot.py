@@ -1,6 +1,7 @@
 from discord.ext.commands import Bot, errors
 from aiohttp import ClientSession
 
+
 class BeattieBot(Bot):
     async def reply(self, ctx, message):
         return await ctx.send(f'{ctx.message.author.mention}\n{message}')

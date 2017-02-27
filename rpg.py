@@ -8,6 +8,7 @@ import aiohttp
 from discord.ext import commands
 from lxml import etree
 
+
 class RPG:
     def __init__(self, bot):
         self.bot = bot
@@ -16,7 +17,7 @@ class RPG:
     async def roll(self, ctx, *, inp='1d20'):
         """Roll some dice!
 
-        Can roll multiple dice of any size, with modifiers, and drop the lowest of a set of dice.
+        Can roll multiple dice of any size, with modifiers.
         Format: XdY([+-^v]Z)(xN)(s)(t)
         X is the number of dice
         Y is the number of sides
@@ -34,7 +35,7 @@ class RPG:
         expr = r'^[\d]*d?\d+(?:[+\-^v]\d+)?(?:x\d+)?(?:[ts]{1,2})?$'
         if re.match(expr, inp) is None:
             raise ValueError
-        
+
         if 'd' not in inp:
             inp = f'1d{inp}'
         elif inp[0] == 'd':
@@ -73,43 +74,45 @@ class RPG:
             result = await asyncio.wait_for(future, 10, loop=loop)
 
         total = 't' in inp
-        
+
         if total:
             result = [[sum(roll_)] for roll_ in result]
         if 's' in inp:
-            for roll_ in result: roll_.sort()
+            for roll_ in result:
+                roll_.sort()
             result.sort()
         if total or num == 1:
             result = [roll_[0] for roll_ in result]
         if times == 1:
             result = result[0]
-                
+
         await self.bot.reply(ctx, f'{inp}: {result}')
 
     @roll.error
     async def roll_error(self, exception, ctx):
         if (isinstance(exception, commands.MissingRequiredArgument)
-            or isinstance(exception.original, ValueError)):
+           or isinstance(exception.original, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
-                               '\n1d20+3'
-                               '\n1d6'
-                               '\n2d8-4'
-                               '\n2d20^1'
-                               '\n4d6v1x6t')
+                           '\n1d20+3'
+                           '\n1d6'
+                           '\n2d8-4'
+                           '\n2d20^1'
+                           '\n4d6v1x6t')
         elif isinstance(exception.original, futures.TimeoutError):
-            await self.bot.reply(ctx, 'Your execution took too long. Roll fewer dice.')
+            await self.bot.reply(ctx, 'Your execution took too long. '
+                                 'Roll fewer dice.')
         elif isinstance(exception.original, discord.HTTPException):
-            await self.bot.reply(ctx, 'Your results were too big to fit. Maybe sum them?')
+            await self.bot.reply(ctx, 'Your results were too big to fit. '
+                                      'Maybe sum them?')
         else:
             await self.bot.handle_error(exception, ctx)
-
 
     @commands.command(aliases=['shadroll', 'sr'])
     async def shadowroll(self, ctx, *, inp):
         """Roll some dice - for Shadowrun!
 
         Format: N[e]
-        Rolls N six-sided dice and returns the number of dice that rolled 5 or 6.
+        Roll N six-sided dice and return the number of dice that rolled 5 or 6.
         If you put "e" after the number, 6s are counted and then rerolled."""
         inp = inp.strip()
         expr = r'^\d+e?$'
@@ -131,12 +134,13 @@ class RPG:
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
         if (isinstance(exception, commands.MissingRequiredArgument)
-            or isinstance(exception.original, ValueError)):
+           or isinstance(exception.original, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
-                               '\n6'
-                               '\n13e')
+                           '\n6'
+                           '\n13e')
         elif isinstance(exception.original, futures.TimeoutError):
-            await self.bot.reply(ctx, 'Your execution took too long. Roll fewer dice.')
+            await self.bot.reply(ctx, 'Your execution took too long. '
+                                 'Roll fewer dice.')
         else:
             await self.bot.handle_error(exception, ctx)
 
@@ -151,7 +155,9 @@ class RPG:
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64)'
         }
         entries = []
-        async with self.bot.session.get('https://google.com/search', params=params, headers=headers) as resp:
+        session = self.bot.session
+        async with session.get('https://google.com/search',
+                               params=params, headers=headers) as resp:
             root = etree.fromstring(await resp.text(), etree.HTMLParser())
         search_nodes = root.findall(".//div[@class='g']")
         for node in search_nodes:
@@ -171,10 +177,10 @@ class RPG:
             msg = 'No results found.'
         else:
             if entries[1:3]:
-                msg += '\n\nSee also:\n{}'.format('\n'.join(f'<{entry}>' for entry in entries[1:3]))
-        
-        await ctx.send(msg)
+                msg += '\n\nSee also:\n{}'.format('\n'.join(f'<{entry}>'
+                                                  for entry in entries[1:3]))
 
+        await ctx.send(msg)
 
     @srd.error
     async def srd_error(self, exception, ctx):
@@ -197,6 +203,7 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
             pool = [sum(pool) + mod]
         rolls.append(pool)
     return rolls
+
 
 def shadowroller(num, edge=False):
     rolls = hits = count1 = 0
@@ -225,7 +232,5 @@ def shadowroller(num, edge=False):
     return result
 
 
-
 def setup(bot):
     bot.add_cog(RPG(bot))
-
