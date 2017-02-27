@@ -11,6 +11,7 @@ from discord.ext import commands
 from psycopg2 import OperationalError
 
 from utils import checks
+from utils.aioutils import aopen, areader, make_batches
 
 
 class EDDB:
@@ -439,7 +440,7 @@ class EDDB:
                               'PRIMARY KEY(id));')
 
             async with aopen('tmp/listings.csv') as listings:
-                listings = csv_reader(listings)
+                listings = areader(listings)
                 header = await anext(listings)
                 props = {prop: header.index(prop) for prop in header}
                 timestamp = props['collected_at']
@@ -482,7 +483,7 @@ class EDDB:
                               'power varchar(32),'
                               'PRIMARY KEY(id));')
             async with aopen('tmp/systems.csv') as systems:
-                systems = csv_reader(systems)
+                systems = areader(systems)
                 header = await anext(systems)
                 props = {prop: header.index(prop) for prop in
                          ('id', 'name', 'population', 'government',
@@ -594,20 +595,6 @@ class EDDB:
     async def update_error(self, exception, ctx):
         self.updating = False
         await self.bot.handle_error(exception, ctx)
-
-
-async def csv_reader(aiofile):
-    async for line in aiofile:
-        yield [val.strip() for val in line.split(',')]
-
-
-aopen = partial(aiofiles.open, encoding='utf-8')
-
-
-async def make_batches(iterable, size):
-    iterator = await aiter(iterable)
-    async for first in iterator:
-        yield achain([first], aislice(iterator, size - 1))
 
 
 def setup(bot):
