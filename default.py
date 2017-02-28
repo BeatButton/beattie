@@ -56,21 +56,25 @@ class Default:
 
     @commands.command(hidden=True, aliases=['gel'])
     async def gelbooru(self, ctx, *tags):
-        await ctx.trigger_typing()
-        entries = []
-        url = 'http://gelbooru.com/index.php?page=dapi&s=post&q=index&tags={}'
-        async with self.bot.session.get(url.format('+'.join(tags))) as resp:
-            root = etree.fromstring((await resp.text()).encode(),
-                                    etree.HTMLParser())
-        search_nodes = root.findall(".//post")
-        for node in search_nodes:
-            image = dict(node.items()).get('file_url', None)
-            if image:
-                entries.append(image)
-        try:
-            message = f'http:{random.choice(entries)}'
-        except IndexError:
-            message = 'No images found.'
+        async with ctx.typing():
+            entries = []
+            url = 'http://gelbooru.com/index.php'
+            params = {'page': 'dapi',
+                      's': 'post'
+                      'q': 'index'
+                      'tags': '+'.join(tags)}
+            async with self.bot.session.get(url, params=params) as resp:
+                root = etree.fromstring((await resp.text()).encode(),
+                                        etree.HTMLParser())
+            search_nodes = root.findall(".//post")
+            for node in search_nodes:
+                image = dict(node.items()).get('file_url', None)
+                if image:
+                    entries.append(image)
+            try:
+                message = f'http:{random.choice(entries)}'
+            except IndexError:
+                message = 'No images found.'
         await ctx.send(message)
 
     @commands.command(hidden=True)
