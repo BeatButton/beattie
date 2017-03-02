@@ -595,11 +595,13 @@ class EDDB:
                     await cur.execute('UPDATE populated '
                                       'SET bodies=system.bodies '
                                       'FROM system '
-                                      'WHERE system.id = populated.id;')
+                                      'WHERE system.id = populated.id;',
+                                      timeout=600)
                     await cur.execute('UPDATE populated '
                                       'SET star_type=system.star_type '
                                       'FROM system '
-                                      'WHERE system.id = populated.id;')
+                                      'WHERE system.id = populated.id;',
+                                      timeout=600)
 
         self.bot.logger.info('Table bodies created.')
 
