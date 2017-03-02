@@ -251,7 +251,7 @@ class EDDB:
         self.updating = True
         batch_size = 1000
         await ctx.send('Database update in progress...')
-        self.bot.logger.info('Checking whether an ed.db update is necessary.')
+        self.bot.logger.info('Checking whether an ed.db update is necessary')
 
         hashfile = 'systems_recently.csv'
 
@@ -274,9 +274,13 @@ class EDDB:
 
         self.bot.logger.info('Updating ed.db')
 
-        await self.tmp_download('commodities.json', ctx)
+        self.bot.logger.info('downloading commodities.json')
 
-        self.bot.logger.info('commodities.json downloaded.')
+        success = await self.tmp_download('commodities.json', ctx)
+        if not success:
+            return
+
+        self.bot.logger.info('Creating table commodity')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             commit = ''
@@ -308,15 +312,15 @@ class EDDB:
                            f'VALUES ({", ".join(vals)});')
             await cur.execute(commit)
 
-        self.bot.logger.info('Table commodities created.')
-
         os.remove('tmp/commodities.json')
+
+        self.bot.logger.info('Downloading systems_populated.jsonl')
 
         success = await self.tmp_download('systems_populated.jsonl', ctx)
         if not success:
             return
 
-        self.bot.logger.info('File systems_populated.jsonl downloaded.')
+        self.bot.logger.info('Creating table populated')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS populated;'
@@ -360,15 +364,15 @@ class EDDB:
                                    f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
-        self.bot.logger.info('Table populated created.')
-
         os.remove('tmp/systems_populated.jsonl')
+
+        self.bot.logger.info('Downloading stations.jsonl')
 
         success = await self.tmp_download('stations.jsonl', ctx)
         if not success:
             return
 
-        self.bot.logger.info('File stations.jsonl downloaded.')
+        self.bot.logger.info('Creating table station')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS station;'
@@ -424,15 +428,15 @@ class EDDB:
                                    f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
-        self.bot.logger.info('Table stations created.')
-
         os.remove('tmp/stations.jsonl')
+
+        self.bot.logger.info('Downloading listings.csv')
 
         success = await self.tmp_download('listings.csv', ctx)
         if not success:
             return
 
-        self.bot.logger.info('File listings.csv downloaded.')
+        self.bot.logger.info('Creating table listing')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS listing;'
@@ -468,15 +472,15 @@ class EDDB:
                                    f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
-        self.bot.logger.info('Table listings created.')
-
         os.remove('tmp/listings.csv')
+
+        self.bot.logger.info('Downloading systems.csv')
 
         success = await self.tmp_download('systems.csv', ctx)
         if not success:
             return
 
-        self.bot.logger.info('File systems.csv downloaded.')
+        self.bot.logger.info('Creating table system')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS system;'
@@ -520,15 +524,15 @@ class EDDB:
                                    f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
 
-        self.bot.logger.info('Table systems created.')
-
         os.remove('tmp/systems.csv')
+
+        self.bot.logger.info('Downloading bodies.jsonl')
 
         success = await self.tmp_download('bodies.jsonl', ctx)
         if not success:
             return
 
-        self.bot.logger.info('File bodies.jsonl downloaded.')
+        self.bot.logger.info('Creating table body')
 
         async with self.pool.acquire() as conn, conn.cursor() as cur:
             await cur.execute('DROP TABLE IF EXISTS body;'
@@ -603,16 +607,14 @@ class EDDB:
                                       'WHERE system.id = populated.id;',
                                       timeout=600)
 
-        self.bot.logger.info('Table bodies created.')
+        self.bot.logger.info('Cleaning up database update')
 
         os.remove('tmp/bodies.jsonl')
 
         try:
             os.rmdir('tmp')
         except OSError:
-            self.bot.logger.warning('Failed to delete tmp directory.')
-
-        self.bot.logger.info('ed.db update complete.')
+            self.bot.logger.warning('Failed to delete tmp directory')
 
         self.hash = update_hash
         with open('config.yaml') as file:
@@ -621,6 +623,7 @@ class EDDB:
         with open('config.yaml', 'w') as file:
             yaml.dump(data, file)
         self.updating = False
+        self.bot.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
 
     @update.error
