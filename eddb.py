@@ -571,17 +571,13 @@ class EDDB:
                             if key.endswith('_name'):
                                 body[key.replace('_name', '')] = body.pop(key)
                         if body['is_main_star']:
-                            fmt = ('UPDATE {} '
-                                   f"SET star_type='{body['spectral_class']}'"
-                                   f"WHERE id={body['system_id']};")
-                            commit += fmt.format('system')
-                            commit += fmt.format('populated')
+                            commit += ('UPDATE system SET star_type='
+                                       f"'{body['spectral_class']}'"
+                                       f"WHERE id={body['system_id']};")
                         name = body['name'].replace("'", "''")
-                        fmt = ('UPDATE {} '
-                               f"SET bodies=bodies||'{name}, '"
-                               f"WHERE id={body['system_id']};")
-                        commit += fmt.format('system')
-                        commit += fmt.format('populated')
+                        commit += ('UPDATE system '
+                                   f"SET bodies=bodies||'{name}, '"
+                                   f"WHERE id={body['system_id']};")
                         vals = [body[prop] for prop in props]
                         keys = props
                         for i, val in enumerate(vals):
@@ -596,6 +592,14 @@ class EDDB:
                         commit += (f'INSERT INTO body ({", ".join(keys)})'
                                    f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
+                    await cur.execute('UPDATE populated '
+                                      'SET bodies=system.bodies '
+                                      'FROM system '
+                                      'WHERE system.id = populated.id;')
+                    await cur.execute('UPDATE populated '
+                                      'SET star_type=system.star_type '
+                                      'FROM system '
+                                      'WHERE system.id = populated.id;')
 
         self.bot.logger.info('Table bodies created.')
 
