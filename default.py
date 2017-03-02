@@ -1,19 +1,17 @@
 from codecs import encode
-import os
 import random
 
 from discord.ext import commands
 from lxml import etree
-import requests
 
 from utils import checks
-from utils.aioutils import aopen
 
 
 class Default:
     def __init__(self, bot):
         self.bot = bot
-        self.questions = None
+        with open('data/why.txt') as file:
+            self.questions = tuple(file.readlines())
 
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
@@ -29,10 +27,6 @@ class Default:
     @commands.command()
     async def why(self, ctx):
         """Asks a question."""
-        async with ctx.typing():
-            if self.questions is None:
-                async with aopen('data/why.txt') as file:
-                    self.questions = await file.readlines()
         await ctx.send(random.choice(self.questions))
 
     @commands.group(aliases=['str', 's'])
@@ -60,8 +54,8 @@ class Default:
             entries = []
             url = 'http://gelbooru.com/index.php'
             params = {'page': 'dapi',
-                      's': 'post'
-                      'q': 'index'
+                      's': 'post',
+                      'q': 'index',
                       'tags': '+'.join(tags)}
             async with self.bot.session.get(url, params=params) as resp:
                 root = etree.fromstring((await resp.text()).encode(),

@@ -1,7 +1,7 @@
 from discord.ext import commands
-import json
 
 from lxml import etree
+import yaml
 
 from utils.aioutils import aopen
 
@@ -17,8 +17,8 @@ class Wolfram:
     def __init__(self, bot):
         self.bot = bot
         self.url = 'http://api.wolframalpha.com/v2/query'
-        with open('config.json') as file:
-            data = json.load(file)
+        with open('config.yaml') as file:
+            data = yaml.load(file)
         self.key = data['wolfram_key']
 
     @commands.command(aliases=['wolf', 'w'])

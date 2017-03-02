@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 import asyncio
-import json
 import logging
 
 import discord
 from discord.ext.commands import when_mentioned_or
+import yaml
 
 from bot import BeattieBot
 
@@ -14,8 +15,8 @@ except ImportError:
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-with open('config.json') as file:
-    config = json.load(file)
+with open('config.yaml') as file:
+    config = yaml.load(file)
 
 token = config['token']
 

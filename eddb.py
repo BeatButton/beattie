@@ -9,6 +9,7 @@ import aiopg
 from aitertools import islice as aislice, chain as achain, aiter, anext
 from discord.ext import commands
 from psycopg2 import OperationalError
+import yaml
 
 from utils import checks
 from utils.aioutils import aopen, areader, make_batches
@@ -21,8 +22,8 @@ class EDDB:
         self.pool = None
         self.urlbase = 'https://eddb.io/archive/v5/'
         self.bot.loop.create_task(self._create_pool())
-        with open('config.json') as file:
-            data = json.load(file)
+        with open('config.yaml') as file:
+            data = yaml.load(file)
             self.hash = data.get('eddb_hash', None)
             self.password = data.get('eddb_password', '')
 
@@ -66,12 +67,18 @@ class EDDB:
         output = ''
         typing = ctx.typing
         async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
-            table = await cur.execute('SELECT * FROM populated '
-                                      'WHERE LOWER(name) = (%s)', (search,))
+            await cur.execute('SELECT * FROM populated '
+                              'WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
-            if not results:
+            if results:
+                results = list(results)
+                pop_index = tuple(i[0]
+                                  for i in cur.description).index('population')
+                results[pop_index] = f"{results[pop_index]:,d}"
+            else:
                 await cur.execute('SELECT * FROM system '
-                                  'WHERE LOWER(name) = (%s)', (search,))
+                                  'WHERE LOWER(name) = (%s)', (search,),
+                                  timeout=600)
                 results = await cur.fetchone()
             if results:
                 keys = tuple(i[0] for i in cur.description)
@@ -242,7 +249,7 @@ class EDDB:
             await ctx.send('Database update still in progress.')
             return
         self.updating = True
-        batch_size = 10_000
+        batch_size = 1000
         await ctx.send('Database update in progress...')
         self.bot.logger.info('Checking whether an ed.db update is necessary.')
 
@@ -267,8 +274,6 @@ class EDDB:
 
         self.bot.logger.info('Updating ed.db')
 
-        self.bot.logger.info('Beginning database creation.')
-
         await self.tmp_download('commodities.json', ctx)
 
         self.bot.logger.info('commodities.json downloaded.')
@@ -290,16 +295,15 @@ class EDDB:
                 commodity['category'] = commodity['category']['name']
                 commodity['is_rare'] = bool(commodity['is_rare'])
                 keys, vals = zip(*commodity.items())
-                new_vals = []
+                vals = list(vals)
                 keys = map(str, keys)
-                for val in vals:
+                for i, val in enumerate(vals):
                     if isinstance(val, list):
-                        val = ', '.join(val)
+                        vals[i] = val = ', '.join(val)
                     if isinstance(val, str):
-                        val = val.replace("'", "''")
-                        val = f"'{val}'"
-                    new_vals.append(str(val))
-                vals = new_vals
+                        vals[i] = val = val.replace("'", "''")
+                        vals[i] = val = f"'{val}'"
+                    vals[i] = str(val)
                 commit += (f'INSERT INTO commodity ({", ".join(keys)})'
                            f'VALUES ({", ".join(vals)});')
             await cur.execute(commit)
@@ -320,6 +324,9 @@ class EDDB:
                               'id int,'
                               'name varchar(32),'
                               'population bigint,'
+                              'primary_economy text,'
+                              'star_type varchar(4),'
+                              'bodies text,'
                               'government varchar(16),'
                               'allegiance varchar(16),'
                               'state varchar(16),'
@@ -327,8 +334,9 @@ class EDDB:
                               'power varchar(32),'
                               'PRIMARY KEY(id));')
             with open('tmp/systems_populated.jsonl') as populated:
-                props = ('id', 'name', 'population', 'government',
-                         'allegiance', 'state', 'security', 'power')
+                props = ('id', 'name', 'population', 'primary_economy',
+                         'government', 'allegiance', 'state', 'security',
+                         'power')
                 async for batch in make_batches(populated, batch_size):
                     commit = ''
                     async for system in batch:
@@ -476,6 +484,8 @@ class EDDB:
                               'id int,'
                               'name varchar(64),'
                               'population bigint,'
+                              'star_type varchar(4),'
+                              'bodies text,'
                               'government varchar(16),'
                               'allegiance varchar(16),'
                               'state varchar(16),'
@@ -485,9 +495,11 @@ class EDDB:
             async with aopen('tmp/systems.csv') as systems:
                 systems = areader(systems)
                 header = await anext(systems)
+                header += ['star_type', 'bodies']
                 props = {prop: header.index(prop) for prop in
-                         ('id', 'name', 'population', 'government',
-                          'allegiance', 'state', 'security', 'power')}
+                         ('id', 'name', 'population', 'government', 'bodies',
+                          'allegiance', 'state', 'security', 'power',
+                          'star_type')}
                 async for batch in make_batches(systems, batch_size):
                     commit = ''
                     async for system in batch:
@@ -495,6 +507,7 @@ class EDDB:
                             int(system[props['population']])
                         except ValueError:
                             system[props['population']] = '0'
+                        system += ['', '']  # star_type and bodies
                         keys, vals = zip(*((prop, system[index])
                                          for prop, index in props.items()))
                         vals = list(vals)
@@ -522,16 +535,18 @@ class EDDB:
                               'CREATE TABLE body('
                               'id int,'
                               'system_id int,'
-                              'name text,'
-                              'type text,'
-                              'atmosphere_type text,'
+                              'name varchar(64),'
+                              'type varchar(64),'
+                              'atmosphere_type varchar(32),'
                               'solar_masses real,'
                               'solar_radius real,'
+                              'spectral_class varchar(4),'
                               'earth_masses real,'
                               'radius int,'
+                              'rings bool,'
                               'gravity real,'
                               'surface_pressure real,'
-                              'volcanism_type text,'
+                              'volcanism_type varchar(32),'
                               'is_rotational_period_tidally_locked bool,'
                               'is_landable bool,'
                               'PRIMARY KEY(id));')
@@ -545,28 +560,39 @@ class EDDB:
                     commit = ''
                     async for body in batch:
                         body = json.loads(body)
-                        for key in ('solar_masses', 'solar_radius',
+                        for key in ('solar_masses', 'solar_radius', 'rings',
                                     'earth_masses', 'radius', 'gravity',
-                                    'surface_pressure'):
+                                    'surface_pressure', 'spectral_class'):
                             if body[key] is None:
                                 body[key] = 0
                         body['is_landable'] = bool(body['is_landable'])
+                        body['rings'] = bool(body['rings'])
                         for key in body.keys():
                             if key.endswith('_name'):
                                 body[key.replace('_name', '')] = body.pop(key)
+                        if body['is_main_star']:
+                            fmt = ('UPDATE {} '
+                                   f"SET star_type='{body['spectral_class']}'"
+                                   f"WHERE id={body['system_id']};")
+                            commit += fmt.format('system')
+                            commit += fmt.format('populated')
+                        name = body['name'].replace("'", "''")
+                        fmt = ('UPDATE {} '
+                               f"SET bodies=bodies||'{name}, '"
+                               f"WHERE id={body['system_id']};")
+                        commit += fmt.format('system')
+                        commit += fmt.format('populated')
                         vals = [body[prop] for prop in props]
                         keys = props
-                        new_vals = []
-                        for val in vals:
+                        for i, val in enumerate(vals):
                             if val is None:
-                                val = ''
+                                vals[i] = val = ''
                             if isinstance(val, list):
-                                val = ', '.join(val)
+                                vals[i] = val = ', '.join(val)
                             if isinstance(val, str):
-                                val = val.replace("'", "''")
-                                val = f"'{val}'"
-                            new_vals.append(str(val))
-                        vals = new_vals
+                                vals[i] = val = val.replace("'", "''")
+                                vals[i] = val = f"'{val}'"
+                            vals[i] = str(val)
                         commit += (f'INSERT INTO body ({", ".join(keys)})'
                                    f'VALUES ({", ".join(vals)});')
                     await cur.execute(commit)
@@ -577,17 +603,17 @@ class EDDB:
 
         try:
             os.rmdir('tmp')
-        except PermissionError:
+        except OSError:
             self.bot.logger.warning('Failed to delete tmp directory.')
 
         self.bot.logger.info('ed.db update complete.')
 
         self.hash = update_hash
-        with open('config.json') as file:
-            data = json.load(file)
+        with open('config.yaml') as file:
+            data = yaml.load(file)
         data.update({'eddb_hash': self.hash})
-        with open('config.json', 'w') as file:
-            json.dump(data, file)
+        with open('config.yaml', 'w') as file:
+            yaml.dump(data, file)
         self.updating = False
         await ctx.send('Database update complete.')
 

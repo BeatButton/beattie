@@ -86,7 +86,7 @@ class RPG:
         if times == 1:
             result = result[0]
 
-        await self.bot.reply(ctx, f'{inp}: {result}')
+        await ctx.reply(f'{inp}: {result}')
 
     @roll.error
     async def roll_error(self, exception, ctx):
@@ -99,11 +99,9 @@ class RPG:
                            '\n2d20^1'
                            '\n4d6v1x6t')
         elif isinstance(exception.original, futures.TimeoutError):
-            await self.bot.reply(ctx, 'Your execution took too long. '
-                                 'Roll fewer dice.')
+            await ctx.reply('Your execution took too long. Roll fewer dice.')
         elif isinstance(exception.original, discord.HTTPException):
-            await self.bot.reply(ctx, 'Your results were too big to fit. '
-                                      'Maybe sum them?')
+            await ctx.reply('Your results were too long. Maybe sum them?')
         else:
             await self.bot.handle_error(exception, ctx)
 
@@ -129,7 +127,7 @@ class RPG:
         async with ctx.typing():
             result = await asyncio.wait_for(future, 10, loop=loop)
 
-        await self.bot.reply(ctx, result)
+        await ctx.reply(result)
 
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
@@ -139,8 +137,7 @@ class RPG:
                            '\n6'
                            '\n13e')
         elif isinstance(exception.original, futures.TimeoutError):
-            await self.bot.reply(ctx, 'Your execution took too long. '
-                                 'Roll fewer dice.')
+            await ctx.reply('Your execution took too long Roll fewer dice.')
         else:
             await self.bot.handle_error(exception, ctx)
 
@@ -156,29 +153,30 @@ class RPG:
         }
         entries = []
         session = self.bot.session
-        async with session.get('https://google.com/search',
-                               params=params, headers=headers) as resp:
-            root = etree.fromstring(await resp.text(), etree.HTMLParser())
-        search_nodes = root.findall(".//div[@class='g']")
-        for node in search_nodes:
-            url_node = node.find('.//h3/a')
-            if url_node is None:
-                continue
-            url = url_node.attrib['href']
-            if not url.startswith('/url?'):
-                continue
+        async with ctx.typing():
+            async with session.get('https://google.com/search',
+                                   params=params, headers=headers) as resp:
+                root = etree.fromstring(await resp.text(), etree.HTMLParser())
+            search_nodes = root.findall(".//div[@class='g']")
+            for node in search_nodes:
+                url_node = node.find('.//h3/a')
+                if url_node is None:
+                    continue
+                url = url_node.attrib['href']
+                if not url.startswith('/url?'):
+                    continue
 
-            url = parse_qs(url[5:])['q'][0]
+                url = parse_qs(url[5:])['q'][0]
 
-            entries.append(url)
-        try:
-            msg = entries[0]
-        except IndexError:
-            msg = 'No results found.'
-        else:
-            if entries[1:3]:
-                msg += '\n\nSee also:\n{}'.format('\n'.join(f'<{entry}>'
-                                                  for entry in entries[1:3]))
+                entries.append(url)
+            try:
+                msg = entries[0]
+            except IndexError:
+                msg = 'No results found.'
+            else:
+                if entries[1:3]:
+                    msg += '\n\nSee also:\n{}'.format('\n'.join(f'<{ent}>'
+                                                      for ent in entries[1:3]))
 
         await ctx.send(msg)
 
@@ -194,7 +192,7 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
     rolls = []
     for _ in range(times):
         pool = [randint(1, sides) for _ in range(num)]
-        if lo_drop + hi_drop > 0:
+        if lo_drop or hi_drop:
             sorted_pool = sorted(pool)
             dropped_vals = sorted_pool[:lo_drop] + sorted_pool[num-hi_drop:]
             for val in dropped_vals:
