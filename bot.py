@@ -4,7 +4,7 @@ from aiohttp import ClientSession
 
 class BContext(Context):
     async def reply(self, content, sep='\n'):
-        return await self.send(f'{self.message.author.mention}{sep}{content}')
+        return await self.send(f'{self.author.mention}{sep}{content}')
 
 
 class BeattieBot(Bot):
