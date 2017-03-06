@@ -10,7 +10,7 @@ from utils import checks
 class Default:
     def __init__(self, bot):
         self.bot = bot
-        with open('data/why.txt') as file:
+        with open('data/why.txt', encoding='utf8') as file:
             self.questions = tuple(file.readlines())
 
     @commands.command(aliases=['p'])
@@ -49,14 +49,14 @@ class Default:
         await ctx.send(encode(inp, 'rot_13'))
 
     @commands.command(hidden=True, aliases=['gel'])
-    async def gelbooru(self, ctx, *tags):
+    async def gelbooru(self, ctx, *, tags):
         async with ctx.typing():
             entries = []
             url = 'http://gelbooru.com/index.php'
             params = {'page': 'dapi',
                       's': 'post',
                       'q': 'index',
-                      'tags': '+'.join(tags)}
+                      'tags': tags}
             async with self.bot.session.get(url, params=params) as resp:
                 root = etree.fromstring((await resp.text()).encode(),
                                         etree.HTMLParser())
