@@ -1,4 +1,4 @@
-from functools import partial
+from concurrent.futures import CancelledError
 import json
 import os
 import time
@@ -19,7 +19,6 @@ class EDDB:
     def __init__(self, bot):
         self.bot = bot
         self.updating = False
-        self.pool = None
         self.urlbase = 'https://eddb.io/archive/v5/'
         self.bot.loop.create_task(self._create_pool())
         with open('config.yaml') as file:
@@ -33,7 +32,8 @@ class EDDB:
                self.bot.session.get(f'{self.urlbase}{file}') as resp:
                 async for block in resp.content.iter_chunked(1024):
                     await handle.write(block)
-        except (errors.ClientResponseError, errors.ServerDisconnectedError):
+        except (errors.ClientResponseError, errors.ServerDisconnectedError,
+                CancelledError):
             pre = ctx.prefix
             while True:
                 await ctx.send(f'Downloading {file} failed. Retry?\n'
@@ -41,17 +41,16 @@ class EDDB:
                 response = await self.bot.wait_for('message',
                                                    check=lambda m:
                                                    m.content.startswith(pre))
-                response = response[len(pre):]
-                if response == 'yes':
+                if response.content == f'{pre}yes':
                     return await self.tmp_download(file, ctx)
-                elif response == 'no':
+                elif response.content == f'{pre}no':
                     return False
         return True
 
     async def _create_pool(self):
         self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
                                             f'password={self.password} '
-                                            'host=127.0.0.1')
+                                            'host=localhost')
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -274,7 +273,7 @@ class EDDB:
 
         self.bot.logger.info('Updating ed.db')
 
-        self.bot.logger.info('downloading commodities.json')
+        self.bot.logger.info('Downloading commodities.json')
 
         success = await self.tmp_download('commodities.json', ctx)
         if not success:
