@@ -1,3 +1,5 @@
+import random
+
 from discord.ext import commands
 from lxml import etree
 
