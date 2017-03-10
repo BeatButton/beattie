@@ -25,6 +25,11 @@ class Default:
                        f'{delta:.3f} seconds')
 
     @commands.command()
+    async def choose(self, ctx, *options):
+        """Choose between some options. Use quotes if they have spaces."""
+        await ctx.send(random.choice(options))
+
+    @commands.command()
     async def why(self, ctx):
         """Asks a question."""
         await ctx.send(random.choice(self.questions))
@@ -47,33 +52,6 @@ class Default:
 
         Uses the shift cipher with key 13."""
         await ctx.send(encode(inp, 'rot_13'))
-
-    @commands.command(hidden=True, aliases=['gel'])
-    async def gelbooru(self, ctx, *, tags):
-        async with ctx.typing():
-            entries = []
-            url = 'http://gelbooru.com/index.php'
-            params = {'page': 'dapi',
-                      's': 'post',
-                      'q': 'index',
-                      'tags': tags}
-            async with self.bot.session.get(url, params=params) as resp:
-                root = etree.fromstring((await resp.text()).encode(),
-                                        etree.HTMLParser())
-            search_nodes = root.findall(".//post")
-            for node in search_nodes:
-                image = dict(node.items()).get('file_url', None)
-                if image:
-                    entries.append(image)
-            try:
-                message = f'http:{random.choice(entries)}'
-            except IndexError:
-                message = 'No images found.'
-        await ctx.send(message)
-
-    @commands.command(hidden=True)
-    async def massage(self, ctx):
-        await ctx.invoke(self.gelbooru, 'massage')
 
     @commands.command(hidden=True)
     @checks.is_owner()
