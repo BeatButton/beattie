@@ -22,7 +22,8 @@ class NSFW:
                                         etree.HTMLParser())
             search_nodes = root.findall(".//post")
             for node in search_nodes:
-                image = dict(node.items()).get('file_url', None)
+                image = next((item[1] for item in node.items()
+                             if item[0] == 'file_url'), None)
                 if image is not None:
                     entries.append(image)
             try:
@@ -32,8 +33,8 @@ class NSFW:
         await ctx.send(message)
 
     @commands.command(hidden=True)
-    async def massage(self, ctx):
-        await ctx.invoke(self.gelbooru, tags='massage')
+    async def massage(self, ctx, *, tags=''):
+        await ctx.invoke(self.gelbooru, tags='massage ' + tags)
 
 
 def setup(bot):
