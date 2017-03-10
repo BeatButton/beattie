@@ -22,7 +22,7 @@ token = config['token']
 
 bot = BeattieBot(when_mentioned_or('>'))
 
-for extension in ('default', 'rpg', 'eddb', 'repl', 'wolfram'):
+for extension in ('default', 'rpg', 'eddb', 'repl', 'wolfram', 'nsfw'):
     try:
         bot.load_extension(extension)
     except Exception as e:
