@@ -1,6 +1,8 @@
 import asyncio
 from concurrent import futures
-from random import randint
+import functools
+import operator
+import random
 import re
 from urllib.parse import parse_qs
 
@@ -137,7 +139,56 @@ class RPG:
                            '\n6'
                            '\n13e')
         elif isinstance(exception.original, futures.TimeoutError):
-            await ctx.reply('Your execution took too long Roll fewer dice.')
+            await ctx.reply('Your execution took too long. Roll fewer dice.')
+        else:
+            await self.bot.handle_error(exception, ctx)
+
+    @commands.command(aliases=['sw'])
+    async def starroll(self, ctx, *, inp):
+        """Roll some dice - for Fantasy Flight Star Wars!
+
+        Available dice:
+        b[oost]
+        a[bility]
+        p[roficiency]
+        s[etback]
+        d[ifficulty]
+        c[hallenge]
+        f[orce]
+
+        Input examples:
+        4a3d
+        3a2p1b4d1c
+        2f"""
+        inp = inp.lower()
+        if not re.match(r'^(?:\d+[a-z])+$', inp):
+            await ctx.send('Invalid input.')
+            return
+        inp = re.findall(r'\d+[a-z]', inp)
+        dice = {}
+        for roll in inp:
+            num = int(roll[:-1])
+            try:
+                die = die_names[roll[-1]]
+            except KeyError:
+                await ctx.send(f'Die "{inp[i + 1]}" does not exist.')
+                return
+            dice[die] = num
+
+        loop = asyncio.get_event_loop()
+        future = loop.run_in_executor(None, lambda: starroller(**dice))
+        async with ctx.typing():
+            try:
+                result = await asyncio.wait_for(future, 10, loop=loop)
+            except ValueError:
+                await ctx.send('Force dice cannot be used with other dice.')
+            else:
+                await ctx.send(str(result))
+
+    @starroll.error
+    async def starroll_error(self, exception, ctx):
+        if isinstance(exception.original, futures.TimeoutError):
+            await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
             await self.bot.handle_error(exception, ctx)
 
@@ -191,7 +242,7 @@ class RPG:
 def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
     rolls = []
     for _ in range(times):
-        pool = [randint(1, sides) for _ in range(num)]
+        pool = [random.randint(1, sides) for _ in range(num)]
         if lo_drop or hi_drop:
             sorted_pool = sorted(pool)
             dropped_vals = sorted_pool[:lo_drop] + sorted_pool[num-hi_drop:]
@@ -209,7 +260,7 @@ def shadowroller(num, edge=False):
         count6 = 0
         rolls += num
         for _ in range(num):
-            roll = randint(1, 6)
+            roll = random.randint(1, 6)
             if roll > 4:
                 hits += 1
                 if roll == 6:
@@ -227,6 +278,151 @@ def shadowroller(num, edge=False):
             result = f'Glitch with {hits} hit{s}.'
     else:
         result = f'{hits} hit{s}.'
+    return result
+
+
+class Result:
+    def __init__(self, advantages=0, hits=0, triumphs=0):
+        self.advantages = advantages
+        self.hits = hits
+        self.triumphs = triumphs
+
+    def __repr__(self):
+        return (f'{type(self).__name__}'
+                f'({self.advantages}, {self.hits}, {self.triumphs})')
+
+    def __str__(self):
+        ret = []
+
+        if self.hits > 0:
+            s = 's' if self.hits > 1 else ''
+            ret.append(f'{self.hits} hit{s}')
+        elif self.hits < 0:
+            misses = -self.hits
+            es = 'es' if misses > 1 else ''
+            ret.append(f'{misses} miss{es}')
+
+        if self.advantages > 0:
+            s = 's' if self.advantages > 1 else ''
+            ret.append(f'{self.advantages} advantage{s}')
+        elif self.advantages < 0:
+            disadvantages = -self.advantages
+            s = 's' if disadvantages > 1 else ''
+            ret.append(f'{disadvantages} disadvantage{s}')
+
+        if self.triumphs > 0:
+            s = 's' if self.triumphs > 1 else ''
+            ret.append(f'{self.triumphs} triumph{s}')
+        elif self.triumphs < 0:
+            despairs = -self.triumphs
+            s = 's' if despairs > 1 else ''
+            ret.append(f'{despairs} despair{s}')
+
+        if ret:
+            ret = ', '.join(ret) + '.'
+        else:
+            ret = 'Wash.'
+        return ret
+
+    def __add__(self, other):
+        if isinstance(other, Result):
+            return type(self)(self.advantages + other.advantages,
+                              self.hits + other.hits,
+                              self.triumphs + other.triumphs)
+        else:
+            return NotImplemented
+
+    def __mul__(self, other):
+        ret = type(self)(self.advantages * other,
+                         self.hits * other,
+                         self.triumphs * other)
+        return ret
+
+    __rmul__ = __mul__
+
+    def __neg__(self):
+        return type(self)(-self.advantages, -self.hits, -self.triumphs)
+
+
+class Force:
+    def __init__(self, light=0, dark=0):
+        self.light = light
+        self.dark = dark
+
+    def __repr__(self):
+        return f'{type(self).__name__}({self.light}, {self.dark})'
+
+    def __str__(self):
+        ret = []
+        if self.light:
+            ret.append(f'{self.light} light side')
+        if self.dark:
+            ret.append(f'{self.dark} dark side')
+        if not ret:
+            ret = 'Wash.'
+        else:
+            ret = ', '.join(ret) + '.'
+        return ret
+
+    def __add__(self, other):
+        if isinstance(other, Force):
+            return type(self)(self.light + other.light,
+                              self.dark + other.dark)
+        return NotImplemented
+
+    def __mul__(self, other):
+        return type(self)(self.light * other, self.dark * other)
+
+    __rmul__ = __mul__
+
+
+wash = Result()
+adv = Result(advantages=1)
+hit = Result(hits=1)
+triumph = Result(triumphs=1)
+dis = -adv
+miss = -hit
+despair = -triumph
+light = Force(light=1)
+dark = Force(dark=1)
+
+die_names = {'b': 'boost',
+             's': 'setback',
+             'a': 'ability',
+             'd': 'difficulty',
+             'p': 'proficiency',
+             'c': 'challenge',
+             'f': 'force'}
+
+stardice = {'boost': [wash, wash, hit, hit + adv, 2 * adv, adv],
+            'setback': [wash, wash, miss, miss, dis, dis],
+            'ability': [wash, hit, hit, 2 * hit, 2 * adv, adv,
+                        hit + adv, 2 * adv],
+            'difficulty': [wash, miss, 2 * miss, dis, dis, dis,
+                           2 * dis, miss + dis],
+            'proficiency': [wash, hit, hit, 2 * hit, 2 * hit, adv, hit + adv,
+                            hit + adv, hit + adv, adv * 2, adv * 2, triumph],
+            'challenge': [wash, miss, miss, 2 * miss, 2 * miss, dis, dis,
+                          miss + dis, miss + dis, 2 * dis, 2 * dis, despair],
+            'force': [dark, dark, dark, dark, dark, dark, 2 * dark,
+                      light, light, 2 * light, 2 * light, 2 * light],
+            }
+
+
+def sum_(seq):
+    return functools.reduce(operator.add, seq)
+
+
+def starroller(**kwargs):
+    if 'force' in kwargs:
+        if len(kwargs) > 1:
+            raise ValueError
+        return sum_(random.choice(stardice['force'])
+                    for _ in range(kwargs['force']))
+    result = Result()
+    for die in kwargs:
+        result += sum_(random.choice(stardice[die])
+                       for _ in range(kwargs[die]))
     return result
 
 
