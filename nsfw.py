@@ -1,4 +1,5 @@
 from discord.ext import commands
+from lxml import etree
 
 
 class NSFW:
@@ -30,7 +31,7 @@ class NSFW:
 
     @commands.command(hidden=True)
     async def massage(self, ctx):
-        await ctx.invoke(self.gelbooru, 'massage')
+        await ctx.invoke(self.gelbooru, tags=['massage'])
 
 
 def setup(bot):
