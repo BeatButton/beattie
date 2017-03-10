@@ -183,7 +183,7 @@ class RPG:
             except ValueError:
                 await ctx.send('Force dice cannot be used with other dice.')
             else:
-                await ctx.send(str(result))
+                await ctx.reply(str(result))
 
     @starroll.error
     async def starroll_error(self, exception, ctx):
