@@ -1,4 +1,7 @@
 class NSFW:
+    def __init__(self, bot):
+        self.bot = bot
+
     @commands.command(aliases=['gel'])
     async def gelbooru(self, ctx, *, tags):
         async with ctx.typing():
