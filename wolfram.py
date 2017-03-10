@@ -23,16 +23,11 @@ class Wolfram:
 
     @commands.command(aliases=['wolf', 'w'])
     async def wolfram(self, ctx, *, inp):
+        """Query Wolfram|Alpha."""
         async with ctx.typing():
-            result = await self.search(inp)
-        await ctx.send(result)
-
-    async def search(self, inp):
-        params = {'input': inp, 'appid': self.key, 'format': 'plaintext'}
-        async with self.bot.session.get(self.url, params=params) as resp:
-            text = await resp.text()
-        async with aopen('request.txt', 'w') as file:
-            await file.write(text)
+            params = {'input': inp, 'appid': self.key, 'format': 'plaintext'}
+            async with self.bot.session.get(self.url, params=params) as resp:
+                text = await resp.text()
             root = etree.fromstring(text.encode(), etree.XMLParser())
             try:
                 interpret = root.xpath("//pod[@title='Input interpretation']"
@@ -44,7 +39,10 @@ class Wolfram:
                                     "/subpod/plaintext/text()")[0]
             except IndexError:
                 result = 'No results found.'
-        return f'{interpret}\n{result}'.translate(self.chars)
+            if interpret:
+                result = f'{interpret}\n{result}'
+            result = result.translate(self.chars)
+        await ctx.send(result)
 
 
 def setup(bot):
