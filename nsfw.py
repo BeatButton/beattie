@@ -1,3 +1,6 @@
+from discord.ext import commands
+
+
 class NSFW:
     def __init__(self, bot):
         self.bot = bot
