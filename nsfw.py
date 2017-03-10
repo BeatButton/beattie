@@ -1,5 +1,5 @@
 class NSFW:
-    @commands.command(hidden=True, aliases=['gel'])
+    @commands.command(aliases=['gel'])
     async def gelbooru(self, ctx, *, tags):
         async with ctx.typing():
             entries = []
