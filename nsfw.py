@@ -31,7 +31,7 @@ class NSFW:
 
     @commands.command(hidden=True)
     async def massage(self, ctx):
-        await ctx.invoke(self.gelbooru, tags=['massage'])
+        await ctx.invoke(self.gelbooru, tags='massage')
 
 
 def setup(bot):
