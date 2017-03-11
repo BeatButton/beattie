@@ -46,7 +46,7 @@ class REPL:
         body = self.cleanup_code(body)
         stdout = io.StringIO()
 
-        to_compile = 'async def func():\n%s' % textwrap.indent(body, '  ')
+        to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
 
         try:
             exec(to_compile, env)
@@ -62,17 +62,18 @@ class REPL:
             await ctx.send(f'```py\n{value}{traceback.format_exc()}\n```')
         else:
             value = stdout.getvalue()
-            try:
-                await ctx.message.add_reaction('\u2705')
-            except Forbidden:
-                pass
 
             if ret is None:
                 if value:
-                    await ctx.send('```py\n%s\n```' % value)
+                    await ctx.send(f'```py\n{value}\n```')
             else:
                 self._last_result = ret
-                await ctx.send('```py\n%s%s\n```' % (value, ret))
+                await ctx.send(f'```py\n{value}{ret}\n```')
+
+    @commands.command(hidden=True)
+    @checks.is_owner()
+    async def peval(self, ctx, *, body: str):
+        await ctx.invoke(self.eval_, body=f'print({body})')
 
     @commands.command(hidden=True)
     @checks.is_owner()
