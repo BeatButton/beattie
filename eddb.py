@@ -1,4 +1,4 @@
-from concurrent.futures import CancelledError
+from concurrent import futures
 import json
 import os
 import time
@@ -33,7 +33,7 @@ class EDDB:
                 async for block in resp.content.iter_chunked(1024):
                     await handle.write(block)
         except (errors.ClientResponseError, errors.ServerDisconnectedError,
-                CancelledError):
+                futures.CancelledError, futures.TimeoutError, ):
             pre = ctx.prefix
             while True:
                 await ctx.send(f'Downloading {file} failed. Retry?\n'
