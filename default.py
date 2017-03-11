@@ -2,6 +2,7 @@ from codecs import encode
 import json
 import random
 import re
+import time
 
 import discord
 from discord.ext import commands
@@ -18,14 +19,15 @@ class Default:
 
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
-        """Pong.
+        """Ping command, taken from somewhere idk"""
+        msg = await ctx.send("Pong. :ping_pong:")
 
-        Responds to the ping with "pong."
-        """
-        msg = await ctx.send('pong')
-        delta = (msg.created_at - ctx.message.created_at).total_seconds()
-        await msg.edit(content=f'{msg.content}\nTime to respond: '
-                       f'{delta:.3f} seconds')
+        before = time.monotonic()
+        await (await self.bot.ws.ping())
+        after = time.monotonic()
+        ping_time = (after - before) * 1000
+
+        await msg.edit(content=f'{msg.content} **{ping_time:.0f}ms**')
 
     @commands.command()
     async def choose(self, ctx, *options):
