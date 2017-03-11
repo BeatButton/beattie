@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import asyncio
 import logging
+import sys
 
 import discord
 from discord.ext.commands import when_mentioned_or
@@ -18,9 +19,14 @@ else:
 with open('config.yaml') as file:
     config = yaml.load(file)
 
-token = config['token']
+self_bot = 'self' in sys.argv
 
-bot = BeattieBot(when_mentioned_or('>'))
+if self_bot:
+    token = config['self']
+    bot = BeattieBot('b>', self_bot=True)
+else:
+    token = config['token']
+    bot = BeattieBot(when_mentioned_or('>'))
 
 for extension in ('default', 'rpg', 'eddb', 'repl', 'wolfram', 'nsfw'):
     try:
@@ -28,12 +34,14 @@ for extension in ('default', 'rpg', 'eddb', 'repl', 'wolfram', 'nsfw'):
     except Exception as e:
         print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
-logger = logging.getLogger('discord')
-logger.setLevel(logging.INFO)
-handler = logging.FileHandler(
-    filename='discord.log', encoding='utf-8', mode='w')
-handler.setFormatter(
-    logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
-bot.logger = logger
-bot.run(token)
+if not self_bot:
+    logger = logging.getLogger('discord')
+    logger.setLevel(logging.INFO)
+    handler = logging.FileHandler(
+        filename='discord.log', encoding='utf-8', mode='w')
+    handler.setFormatter(
+        logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+    logger.addHandler(handler)
+    bot.logger = logger
+
+bot.run(token, bot=not self_bot)
