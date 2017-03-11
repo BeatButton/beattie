@@ -19,7 +19,7 @@ class EDDB:
     def __init__(self, bot):
         self.bot = bot
         self.updating = False
-        self.urlbase = 'https://eddb.io/archive/v5/'
+        self.url = 'https://eddb.io/archive/v5/'
         self.bot.loop.create_task(self._create_pool())
         with open('config.yaml') as file:
             data = yaml.load(file)
@@ -29,11 +29,11 @@ class EDDB:
     async def tmp_download(self, file, ctx):
         try:
             async with aiofiles.open(f'tmp/{file}', 'wb') as handle,\
-               self.bot.session.get(f'{self.urlbase}{file}') as resp:
-                async for block in resp.content.iter_chunked(1024):
+               self.bot.session.get(f'{self.url}{file}', timeout=None) as resp:
+                async for block in resp.content.iter_any():
                     await handle.write(block)
         except (errors.ClientResponseError, errors.ServerDisconnectedError,
-                futures.CancelledError, futures.TimeoutError, ):
+                futures.CancelledError):
             pre = ctx.prefix
             while True:
                 await ctx.send(f'Downloading {file} failed. Retry?\n'
