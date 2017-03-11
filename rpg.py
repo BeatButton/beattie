@@ -1,7 +1,5 @@
 import asyncio
 from concurrent import futures
-import functools
-import operator
 import random
 import re
 from urllib.parse import parse_qs
@@ -329,8 +327,14 @@ class Result:
             return type(self)(self.advantages + other.advantages,
                               self.hits + other.hits,
                               self.triumphs + other.triumphs)
+        elif isinstance(other, int):
+            return type(self)(self.advantages + other,
+                              self.hits + other,
+                              self.triumphs + other)
         else:
             return NotImplemented
+
+    __radd__ = __add__
 
     def __mul__(self, other):
         ret = type(self)(self.advantages * other,
@@ -368,7 +372,12 @@ class Force:
         if isinstance(other, Force):
             return type(self)(self.light + other.light,
                               self.dark + other.dark)
+        elif isinstance(other, int):
+            return type(self)(self.light + other,
+                              self.dark + other)
         return NotImplemented
+
+    __radd__ = __add__
 
     def __mul__(self, other):
         return type(self)(self.light * other, self.dark * other)
@@ -409,20 +418,16 @@ stardice = {'boost': [wash, wash, hit, hit + adv, 2 * adv, adv],
             }
 
 
-def sum_(seq):
-    return functools.reduce(operator.add, seq)
-
-
 def starroller(**kwargs):
     if 'force' in kwargs:
         if len(kwargs) > 1:
             raise ValueError
-        return sum_(random.choice(stardice['force'])
-                    for _ in range(kwargs['force']))
+        return sum(random.choice(stardice['force'])
+                   for _ in range(kwargs['force']))
     result = Result()
     for die in kwargs:
-        result += sum_(random.choice(stardice[die])
-                       for _ in range(kwargs[die]))
+        result += sum(random.choice(stardice[die])
+                      for _ in range(kwargs[die]))
     return result
 
 
