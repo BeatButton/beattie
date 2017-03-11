@@ -169,7 +169,7 @@ class RPG:
             try:
                 die = die_names[roll[-1]]
             except KeyError:
-                await ctx.send(f'Die "{inp[i + 1]}" does not exist.')
+                await ctx.send(f'Die "{roll[-1]}" does not exist.')
                 return
             dice[die] = num
 
