@@ -1,6 +1,9 @@
 from codecs import encode
+import json
 import random
+import re
 
+import discord
 from discord.ext import commands
 from lxml import etree
 
@@ -34,6 +37,58 @@ class Default:
         """Asks a question."""
         await ctx.send(random.choice(self.questions))
 
+    @commands.group()
+    async def xkcd(self, ctx, *, inp=''):
+        """Commands for getting xkcd comics"""
+        async with ctx.typing():
+            url = 'https://xkcd.com/info.0.json'
+            async with self.bot.session.get(url) as resp:
+                self.xkcd_data = json.loads(await resp.text())
+            if inp == 'random':
+                await ctx.invoke(self.random)
+            elif inp in ('latest', 'current'):
+                await ctx.invoke(self.latest)
+            else:
+                if inp == '':
+                    await ctx.invoke(self.random)
+                else:
+                    await ctx.invoke(self.comic, inp=inp)
+
+    @xkcd.command()
+    async def random(self, ctx):
+        """Gets a random xkcd comic."""
+        number = random.randint(1, self.xkcd_data['num'])
+        url = f'https://xkcd.com/{number}/info.0.json'
+        async with self.bot.session.get(url) as resp:
+            data = json.loads(await resp.text())
+        await ctx.send(embed=format_comic(data))
+
+    @xkcd.command()
+    async def latest(self, ctx):
+        """Gets the latest xkcd comic."""
+        await ctx.send(embed=format_comic(self.xkcd_data))
+
+    @xkcd.command()
+    async def comic(self, ctx, *, inp):
+        """Gets an xkcd comic by number or content."""
+        try:
+            number = int(inp)
+        except ValueError:
+            url = 'https://duckduckgo.com/html/'
+            params = {'q': f'{inp} xkcd'}
+            async with self.bot.session.get(url, params=params) as resp:
+                text = await resp.text()
+            match = re.search(r'xkcd.com/(\d+)', text)
+            if match:
+                number = match.groups()[0]
+            else:
+                await ctx.send('No comic found.')
+
+        url = f'https://xkcd.com/{number}/info.0.json'
+        async with self.bot.session.get(url) as resp:
+            data = json.loads(await resp.text())
+        await ctx.send(embed=format_comic(data))
+
     @commands.group(aliases=['str', 's'])
     async def string(self, ctx):
         """Commands for doing stuff to strings."""
@@ -64,6 +119,15 @@ class Default:
             await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
         else:
             await self.bot.handle_error(exception, ctx)
+
+
+def format_comic(data):
+    embed = discord.Embed()
+    embed.title = data['title']
+    embed.set_image(url=data['img'])
+    embed.set_footer(text=data['alt'])
+    embed.url = f"https://www.xkcd.com/{data['num']}"
+    return embed
 
 
 def setup(bot):
