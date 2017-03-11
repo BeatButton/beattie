@@ -5,6 +5,7 @@ import asyncio
 import traceback
 import discord
 import inspect
+import math
 import textwrap
 from contextlib import redirect_stdout
 import io
