@@ -6,7 +6,7 @@ import time
 import aiofiles
 from aiohttp import errors
 import aiopg
-from aitertools import islice as aislice, chain as achain, aiter, anext
+from aitertools import anext
 from discord.ext import commands
 from psycopg2 import OperationalError
 import yaml
@@ -71,8 +71,8 @@ class EDDB:
             results = await cur.fetchone()
             if results:
                 results = list(results)
-                pop_index = tuple(i[0]
-                                  for i in cur.description).index('population')
+                pop_index = next(i for i, v in enumerate(cur.description)
+                                 if v[0] == 'population')
                 results[pop_index] = f"{results[pop_index]:,d}"
             else:
                 await cur.execute('SELECT * FROM system '
