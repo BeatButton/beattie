@@ -28,6 +28,8 @@ class BeattieBot(Bot):
     async def handle_error(self, exception, ctx):
         if isinstance(exception, errors.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
+        elif isinstance(exception, errors.BadArgument):
+            await ctx.send('Bad arguments.')
         elif isinstance(exception, errors.CheckFailure):
             await ctx.send('You lack the required permissions.')
         elif not isinstance(exception, errors.CommandNotFound):
