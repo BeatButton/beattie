@@ -33,7 +33,7 @@ class BeattieBot(Bot):
             await ctx.send('Bad arguments.')
         elif isinstance(e, errors.CheckFailure):
             await ctx.send('You lack the required permissions.')
-        elif hasattr(e, 'original'):
+        elif isinstance(e, errors.CommandInvokError):
             if (isinstance(e.original, discord.errors.HTTPException)
                and e.original.response.status == 400):
                 print(e.original.response.status)
