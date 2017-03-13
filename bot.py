@@ -1,3 +1,4 @@
+import discord
 from discord.ext.commands import Bot, Context, errors
 from aiohttp import ClientSession
 
@@ -32,9 +33,15 @@ class BeattieBot(Bot):
             await ctx.send('Bad arguments.')
         elif isinstance(exception, errors.CheckFailure):
             await ctx.send('You lack the required permissions.')
+        elif (isinstance(exception, discord.errors.HTTPException)
+              and exception.original.args[0]
+              == 'BAD REQUEST (status code: 400)'):
+            await ctx.send('Message content too long.')
         elif not isinstance(exception, errors.CommandNotFound):
             await ctx.send('Generic error handler triggered. '
                            'This should never happen.')
+            print(type(exception.original.args))
+            print(exception.original.args)
             try:
                 raise exception.original
             except AttributeError:
