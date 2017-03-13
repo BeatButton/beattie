@@ -1,5 +1,4 @@
 from codecs import encode
-import json
 import random
 import re
 import time
@@ -39,22 +38,22 @@ class Default:
         """Asks a question."""
         await ctx.send(random.choice(self.questions))
 
-    @commands.group()
-    async def xkcd(self, ctx, *, inp=''):
+    @commands.group(invoke_without_command=True)
+    async def xkcd(self, ctx, *, inp=None):
         """Commands for getting xkcd comics"""
         async with ctx.typing():
             url = 'https://xkcd.com/info.0.json'
             async with self.bot.session.get(url) as resp:
-                self.xkcd_data = json.loads(await resp.text())
+                self.xkcd_data = await resp.json()
             if inp == 'random':
                 await ctx.invoke(self.random)
             elif inp in ('latest', 'current'):
                 await ctx.invoke(self.latest)
             else:
-                if inp == '':
-                    await ctx.invoke(self.random)
-                else:
+                if inp:
                     await ctx.invoke(self.comic, inp=inp)
+                else:
+                    await ctx.invoke(self.random)
 
     @xkcd.command()
     async def random(self, ctx):
@@ -62,7 +61,7 @@ class Default:
         number = random.randint(1, self.xkcd_data['num'])
         url = f'https://xkcd.com/{number}/info.0.json'
         async with self.bot.session.get(url) as resp:
-            data = json.loads(await resp.text())
+            data = await resp.json()
         await ctx.send(embed=format_comic(data))
 
     @xkcd.command()
@@ -85,10 +84,11 @@ class Default:
                 number = match.groups()[0]
             else:
                 await ctx.send('No comic found.')
+                return
 
         url = f'https://xkcd.com/{number}/info.0.json'
         async with self.bot.session.get(url) as resp:
-            data = json.loads(await resp.text())
+            data = await resp.json()
         await ctx.send(embed=format_comic(data))
 
     @commands.group(aliases=['str', 's'])
