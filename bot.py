@@ -33,10 +33,9 @@ class BeattieBot(Bot):
             await ctx.send('Bad arguments.')
         elif isinstance(e, errors.CheckFailure):
             await ctx.send('You lack the required permissions.')
-        elif isinstance(e, errors.CommandInvokError):
+        elif isinstance(e, errors.CommandInvokeError):
             if (isinstance(e.original, discord.errors.HTTPException)
                and e.original.response.status == 400):
-                print(e.original.response.status)
                 await ctx.send('Message content too long.')
         elif not isinstance(e, errors.CommandNotFound):
             await ctx.send('Generic error handler triggered. '
