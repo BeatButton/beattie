@@ -26,25 +26,25 @@ class BeattieBot(Bot):
     def __del__(self):
         self.session.close()
 
-    async def handle_error(self, exception, ctx):
-        if isinstance(exception, errors.MissingRequiredArgument):
+    async def handle_error(self, e, ctx):
+        if isinstance(e, errors.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
-        elif isinstance(exception, errors.BadArgument):
+        elif isinstance(e, errors.BadArgument):
             await ctx.send('Bad arguments.')
-        elif isinstance(exception, errors.CheckFailure):
+        elif isinstance(e, errors.CheckFailure):
             await ctx.send('You lack the required permissions.')
-        elif hasattr(exception, 'original'):
-            if (isinstance(exception.original, discord.errors.HTTPException)
-               and exception.original.args[0]
-               == 'BAD REQUEST (status code: 400)'):
+        elif hasattr(e, 'original'):
+            if (isinstance(e.original, discord.errors.HTTPException)
+               and e.original.response.status == 400):
+                print(e.original.response.status)
                 await ctx.send('Message content too long.')
-        elif not isinstance(exception, errors.CommandNotFound):
+        elif not isinstance(e, errors.CommandNotFound):
             await ctx.send('Generic error handler triggered. '
                            'This should never happen.')
             try:
-                raise exception.original
+                raise e.original
             except AttributeError:
-                raise exception
+                raise e
 
     async def on_ready(self):
         print('Logged in as')
@@ -58,6 +58,6 @@ class BeattieBot(Bot):
             ctx.command = self.commands.get(ctx.invoked_with.lower())
             await self.invoke(ctx)
 
-    async def on_command_error(self, exception, ctx):
+    async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
-            await self.handle_error(exception, ctx)
+            await self.handle_error(e, ctx)
