@@ -3,7 +3,7 @@ import json
 import os
 import time
 
-import aiofiles
+import aiofiles as aiof
 from aiohttp import errors
 import aiopg
 from aitertools import anext
@@ -26,23 +26,31 @@ class EDDB:
             self.hash = data.get('eddb_hash', None)
             self.password = data.get('eddb_password', '')
 
-    async def tmp_download(self, file, ctx):
+    async def tmp_download(self, filename, ctx):
+        headers = {'Accept-Encoding': 'gzip',
+                   }
+        sess = self.bot.session
+        kw = {'timeout': None,
+              'headers': headers,
+              }
+        url = f'{self.url}{filename}'
+        path = f'tmp/{filename}'
         try:
-            async with aiofiles.open(f'tmp/{file}', 'wb') as handle,\
-               self.bot.session.get(f'{self.url}{file}', timeout=None) as resp:
+            async with aiof.open(path, 'wb') as f, sess.get(url, **kw) as resp:
                 async for block in resp.content.iter_any():
-                    await handle.write(block)
+                    await f.write(block)
         except (errors.ClientResponseError, errors.ServerDisconnectedError,
                 futures.CancelledError):
             pre = ctx.prefix
             while True:
-                await ctx.send(f'Downloading {file} failed. Retry?\n'
+                await ctx.send(f'Downloading {filename} failed. Retry?\n'
                                f'({pre}yes or {pre}no)')
                 response = await self.bot.wait_for('message',
                                                    check=lambda m:
-                                                   m.content.startswith(pre))
+                                                   m.content.startswith(pre)
+                                                   and m.author == ctx.author)
                 if response.content == f'{pre}yes':
-                    return await self.tmp_download(file, ctx)
+                    return await self.tmp_download(filename, ctx)
                 elif response.content == f'{pre}no':
                     return False
         return True
