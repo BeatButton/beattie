@@ -1,4 +1,5 @@
 from codecs import encode
+from json import JSONDecodeError
 import random
 import re
 import time
@@ -58,11 +59,8 @@ class Default:
     @xkcd.command()
     async def random(self, ctx):
         """Gets a random xkcd comic."""
-        number = random.randint(1, self.xkcd_data['num'])
-        url = f'https://xkcd.com/{number}/info.0.json'
-        async with self.bot.session.get(url) as resp:
-            data = await resp.json()
-        await ctx.send(embed=format_comic(data))
+        await ctx.invoke(self.comic,
+                         inp=random.randint(1, self.xkcd_data['num']))
 
     @xkcd.command()
     async def latest(self, ctx):
@@ -92,7 +90,15 @@ class Default:
 
         url = f'https://xkcd.com/{number}/info.0.json'
         async with self.bot.session.get(url) as resp:
-            data = await resp.json()
+            try:
+                data = await resp.json()
+            except JSONDecodeError:
+                data = {'title': '404',
+                        'img': 'http://www.explainxkcd.com/wiki/'
+                               'images/9/92/not_found.png',
+                        'alt': 'Comic not found.',
+                        'num': 404,
+                        }
         await ctx.send(embed=format_comic(data))
 
     @commands.group(aliases=['str', 's'])
@@ -132,7 +138,7 @@ def format_comic(data):
     embed.title = data['title']
     embed.set_image(url=data['img'])
     embed.set_footer(text=data['alt'])
-    embed.url = f"https://www.xkcd.com/{data['num']}"
+    embed.url = f"https://www.xkcd.com/{data['num']}/"
     return embed
 
 
