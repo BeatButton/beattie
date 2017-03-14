@@ -86,6 +86,10 @@ class Default:
                 await ctx.send('No comic found.')
                 return
 
+        if number > self.xkcd_data['num']:
+            await ctx.send('No comic found.')
+            return
+
         url = f'https://xkcd.com/{number}/info.0.json'
         async with self.bot.session.get(url) as resp:
             data = await resp.json()
