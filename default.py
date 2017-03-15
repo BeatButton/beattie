@@ -79,7 +79,7 @@ class Default:
                 text = await resp.text()
             match = re.search(r'xkcd.com/(\d+)', text)
             if match:
-                number = match.groups()[0]
+                number = int(match.groups()[0])
             else:
                 await ctx.send('No comic found.')
                 return
