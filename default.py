@@ -20,7 +20,7 @@ class Default:
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
         """Ping command, taken from somewhere idk"""
-        msg = await ctx.send("Pong. :ping_pong:")
+        msg = await ctx.send("Pong! :ping_pong:")
 
         before = time.monotonic()
         await (await self.bot.ws.ping())
@@ -39,7 +39,7 @@ class Default:
         """Asks a question."""
         await ctx.send(random.choice(self.questions))
 
-    @commands.group(invoke_without_command=True)
+    @commands.group()
     async def xkcd(self, ctx, *, inp=None):
         """Commands for getting xkcd comics"""
         async with ctx.typing():
@@ -77,7 +77,7 @@ class Default:
             params = {'q': f'{inp} xkcd'}
             async with self.bot.session.get(url, params=params) as resp:
                 text = await resp.text()
-            match = re.search(r'xkcd.com/(\d+)', text)
+            match = re.search(r'xkcd\.com/(\d+)', text)
             if match:
                 number = int(match.groups()[0])
             else:
