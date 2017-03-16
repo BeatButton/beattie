@@ -68,7 +68,7 @@ class RPG:
         else:
             times = 1
 
-        loop = asyncio.get_event_loop()
+        loop = self.bot.loop
         args = (num, sides, lo_drop, hi_drop, mod, times)
         future = loop.run_in_executor(None, roller, *args)
         async with ctx.typing():
@@ -122,7 +122,7 @@ class RPG:
             inp = inp[:-1]
         num = int(inp)
 
-        loop = asyncio.get_event_loop()
+        loop = self.bot.loop
         args = (num, edge)
         future = loop.run_in_executor(None, shadowroller, *args)
         async with ctx.typing():
@@ -174,7 +174,7 @@ class RPG:
                 return
             dice[die] = num
 
-        loop = asyncio.get_event_loop()
+        loop = self.bot.loop
         future = loop.run_in_executor(None, lambda: starroller(**dice))
         async with ctx.typing():
             try:
