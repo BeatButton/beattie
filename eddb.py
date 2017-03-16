@@ -267,6 +267,7 @@ class EDDB:
 
         success = await self.tmp_download(hashfile, ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         with open(f'tmp/{hashfile}') as file:
@@ -285,6 +286,7 @@ class EDDB:
 
         success = await self.tmp_download('commodities.json', ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         self.bot.logger.info('Creating table commodity')
@@ -325,6 +327,7 @@ class EDDB:
 
         success = await self.tmp_download('systems_populated.jsonl', ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         self.bot.logger.info('Creating table populated')
@@ -377,6 +380,7 @@ class EDDB:
 
         success = await self.tmp_download('stations.jsonl', ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         self.bot.logger.info('Creating table station')
@@ -441,6 +445,7 @@ class EDDB:
 
         success = await self.tmp_download('listings.csv', ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         self.bot.logger.info('Creating table listing')
@@ -485,6 +490,7 @@ class EDDB:
 
         success = await self.tmp_download('systems.csv', ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         self.bot.logger.info('Creating table system')
@@ -537,6 +543,7 @@ class EDDB:
 
         success = await self.tmp_download('bodies.jsonl', ctx)
         if not success:
+            await ctx.send('Update cancelled.')
             return
 
         self.bot.logger.info('Creating table body')
