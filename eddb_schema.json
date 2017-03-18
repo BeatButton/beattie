@@ -1,0 +1,76 @@
+{
+    "commodities.json": {
+        "id": "int",
+        "name": "text",
+        "average_price": "int",
+        "is_rare": "bool",
+        "category": "text"
+    },
+    "systems_populated.jsonl": {
+        "id": "int",
+        "name": "text",
+        "population": "bigint",
+        "primary_economy": "text",
+        "government": "text",
+        "allegiance": "text",
+        "state": "text",
+        "security": "text",
+        "power": "text"
+    },
+    "stations.jsonl": {
+        "id": "int",
+        "system_id": "int",
+        "name": "text",
+        "max_landing_pad_size": "text",
+        "distance_to_star": "int",
+        "government": "text",
+        "allegiance": "text",
+        "state": "text",
+        "type": "text",
+        "has_blackmarket": "bool",
+        "has_commodities": "bool",
+        "import_commodities": "text",
+        "export_commodities": "text",
+        "prohibited_commodities": "text",
+        "economies": "text",
+        "is_planetary": "bool",
+        "selling_ships": "text"
+    },
+    "listings.csv": {
+        "id": "int",
+        "station_id": "int",
+        "commodity_id": "int",
+        "supply": "int",
+        "buy_price": "int",
+        "sell_price": "int",
+        "demand": "int",
+        "collected_at": "text"
+    },
+    "systems.csv": {
+        "id": "int",
+        "name": "text",
+        "population": "bigint",
+        "government": "text",
+        "allegiance": "text",
+        "state": "text",
+        "security": "text",
+        "power": "text"
+    },
+    "bodies.jsonl": {
+        "id": "int",
+        "system_id": "int",
+        "name": "text",
+        "type": "text",
+        "atmosphere_type": "text",
+        "solar_masses": "real",
+        "solar_radius": "real",
+        "spectral_class": "text",
+        "earth_masses": "real",
+        "radius": "int",
+        "rings": "bool",
+        "gravity": "real",
+        "surface_pressure": "real",
+        "volcanism_type": "text",
+        "is_landable": "bool"
+    }
+}
