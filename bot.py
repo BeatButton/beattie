@@ -61,6 +61,7 @@ class BeattieBot(Bot):
                 await ctx.send('Message content too long.')
         elif not isinstance(e, errors.CommandNotFound):
             await ctx.send(f'{type(e).__name__}: {e}')
+            raise e
 
     async def on_ready(self):
         print('Logged in as')
