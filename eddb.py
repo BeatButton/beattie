@@ -15,13 +15,12 @@ class EDDB:
     def __init__(self, bot):
         self.bot = bot
         self.updating = False
-        self.batch_size = 1000
+        self.batch_size = 10_000
         self.url = 'https://eddb.io/archive/v5/'
         self.bot.loop.create_task(self._create_pool())
         with open('config.yaml') as file:
             data = yaml.load(file)
-            self.hash = data.get('eddb_hash', None)
-            self.password = data.get('eddb_password', '')
+        self.password = data.get('eddb_password', '')
 
     async def _create_pool(self):
         self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
