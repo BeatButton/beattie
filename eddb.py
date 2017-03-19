@@ -1,59 +1,27 @@
-from concurrent import futures
 import json
-import os
 import time
 
-import aiofiles as aiof
-from aiohttp import errors
 import aiopg
 from aitertools import anext
 from discord.ext import commands
-from psycopg2 import OperationalError
 import yaml
 
 from utils import checks
-from utils.aioutils import aopen, areader, make_batches
+from utils.aioutils import areader, make_batches
+from utils.contextmanagers import tmp_dl
 
 
 class EDDB:
     def __init__(self, bot):
         self.bot = bot
         self.updating = False
+        self.batch_size = 1000
         self.url = 'https://eddb.io/archive/v5/'
         self.bot.loop.create_task(self._create_pool())
         with open('config.yaml') as file:
             data = yaml.load(file)
             self.hash = data.get('eddb_hash', None)
             self.password = data.get('eddb_password', '')
-
-    async def tmp_download(self, filename, ctx):
-        headers = {'Accept-Encoding': 'gzip',
-                   }
-        sess = self.bot.session
-        kw = {'timeout': None,
-              'headers': headers,
-              }
-        url = f'{self.url}{filename}'
-        path = f'tmp/{filename}'
-        try:
-            async with aiof.open(path, 'wb') as f, sess.get(url, **kw) as resp:
-                async for block in resp.content.iter_any():
-                    await f.write(block)
-        except (errors.ClientResponseError, errors.ServerDisconnectedError,
-                futures.CancelledError):
-            pre = ctx.prefix
-            while True:
-                await ctx.send(f'Downloading {filename} failed. Retry?\n'
-                               f'({pre}yes or {pre}no)')
-                response = await self.bot.wait_for('message',
-                                                   check=lambda m:
-                                                   m.content.startswith(pre)
-                                                   and m.author == ctx.author)
-                if response.content == f'{pre}yes':
-                    return await self.tmp_download(filename, ctx)
-                elif response.content == f'{pre}no':
-                    return False
-        return True
 
     async def _create_pool(self):
         self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
@@ -74,24 +42,15 @@ class EDDB:
         output = ''
         typing = ctx.typing
         async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('SELECT * FROM populated '
+            await cur.execute('SELECT * FROM systems_populated '
                               'WHERE LOWER(name) = (%s)', (search,))
             results = await cur.fetchone()
             if results:
-                results = list(results)
-                pop_index = next(i for i, v in enumerate(cur.description)
-                                 if v[0] == 'population')
-                results[pop_index] = f"{results[pop_index]:,d}"
-            else:
-                await cur.execute('SELECT * FROM system '
-                                  'WHERE LOWER(name) = (%s)', (search,),
-                                  timeout=600)
-                results = await cur.fetchone()
-            if results:
-                keys = tuple(i[0] for i in cur.description)
+                results = dict(zip((i[0] for i in cur.description), results))
+                results['population'] = f'{results["population"]:,d}'
+                del results['id']
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in zip(keys[1:], results[1:])
-                                   if val)
+                                   for key, val in results.items() if val)
             else:
                 output = f'No system {search} found.'
         await ctx.send(output)
@@ -110,12 +69,12 @@ class EDDB:
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
-            query = 'SELECT * FROM station WHERE LOWER(name) = (%s)'
+            query = 'SELECT * FROM stations WHERE LOWER(name) = (%s)'
             args = (search,)
 
             if target_system:
                 target_system = target_system.lower()
-                await cur.execute('SELECT id FROM populated '
+                await cur.execute('SELECT id FROM systems_populated '
                                   'WHERE LOWER(name) = (%s)', (target_system,))
                 results = await cur.fetchone()
                 if results:
@@ -129,11 +88,12 @@ class EDDB:
             results = await cur.fetchall()
 
             if len(results) == 1:
-                keys = tuple(i[0] for i in cur.description)
-                results = results[0]
+                results = dict(zip((i[0] for i in cur.description),
+                                   results[0]))
+                del results['id']
+                del results['system_id']
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in zip(keys[2:], results[2:])
-                                   if val)
+                                   for key, val in results.items() if val)
             elif not results:
                 output = f'Station {search} not found.'
             else:
@@ -153,20 +113,19 @@ class EDDB:
         typing = ctx.typing
         async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
             if len(search) == 1:
-                await cur.execute('SELECT * FROM commodity '
+                await cur.execute('SELECT * FROM commodities '
                                   'WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if results:
-                    keys = tuple(i[0].replace("_", " ")
-                                 for i in cur.description)
-                    output = '\n'.join(f'{key.title()}: {val}'
-                                       for key, val
-                                       in zip(keys[1:], results[1:]))
+                    results = dict(zip((i[0] for i in cur.description),
+                                       results))
+                    output = '\n'.join(f'{k.replace("_", " ").title()}: {v}'
+                                       for k, v in results.items())
                 else:
                     output = f'Commodity {search[0]} not found.'
 
             elif len(search) < 4:
-                await cur.execute('SELECT id FROM commodity '
+                await cur.execute('SELECT id FROM commodities '
                                   'WHERE LOWER(name) = (%s)', (search[0],))
                 results = await cur.fetchone()
                 if not results:
@@ -174,11 +133,11 @@ class EDDB:
                     return
 
                 commodity_id = results[0]
-                query = 'SELECT id FROM station WHERE LOWER(name) = (%s)'
+                query = 'SELECT id FROM stations WHERE LOWER(name) = (%s)'
                 args = (search[1],)
 
                 if len(search) == 3:
-                    await cur.execute('SELECT * FROM populated '
+                    await cur.execute('SELECT * FROM systems_populated '
                                       'WHERE LOWER(name) = (%s)', (search[2],))
                     results = await cur.fetchone()
                     if not results:
@@ -200,7 +159,7 @@ class EDDB:
                     return
 
                 station_id = results[0][0]
-                await cur.execute('SELECT * FROM listing '
+                await cur.execute('SELECT * FROM listings '
                                   'WHERE station_id=(%s) '
                                   'AND commodity_id=(%s) ',
                                   (station_id, commodity_id))
@@ -210,11 +169,12 @@ class EDDB:
                                    'to be bought or sold at station.')
                     return
 
-                keys = (row[0] for row in cur.description)
-                results = {k: v for k, v in zip(keys, results)}
+                results = dict(zip((i[0] for i in cur.description), results))
+                del results['id']
                 del results['station_id']
                 del results['commodity_id']
-                del results['id']
+                fetch_time = int(results['collected_at'])
+                results['collected_at'] = time.ctime(fetch_time)
                 output = f'Commodity: {search[0].title()}\n'
                 if len(search) > 1:
                     output += f'Station: {search[1].title()}\n'
@@ -228,26 +188,6 @@ class EDDB:
 
         await ctx.send(output)
 
-    @eddb.command(aliases=['b'])
-    async def body(self, ctx, *, search):
-        """Searches the database for a stellar body."""
-        search = search.lower()
-        output = ''
-        typing = ctx.typing
-        async with self.pool.acquire() as conn, conn.cursor() as cur, typing():
-            await cur.execute('SELECT * FROM body '
-                              'WHERE LOWER(name) = (%s)', (search,))
-            results = await cur.fetchone()
-            if results:
-                keys = tuple(i[0] for i in cur.description)
-                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in zip(keys[2:], results[2:])
-                                   if val)
-            else:
-                output = 'No bodies found.'
-
-        await ctx.send(output)
-
     @eddb.command(aliases=['u', 'upd'])
     @checks.is_owner()
     async def update(self, ctx, force: bool=False):
@@ -256,386 +196,16 @@ class EDDB:
             await ctx.send('Database update still in progress.')
             return
         self.updating = True
-        batch_size = 1000
         await ctx.send('Database update in progress...')
-        self.bot.logger.info('Checking whether an ed.db update is necessary')
+        with open('eddb_schema.json') as file:
+            schema = json.load(file)
 
-        hashfile = 'systems_recently.csv'
+        for name in schema:
+            self.bot.logger.info(f'Downloading {name}')
+            async with tmp_dl(f'{self.url}{name}', self.bot.session) as file:
+                self.bot.logger.info(f'Creating table for {name}')
+                await self.make_table(file, f'tmp/{name}', schema[name])
 
-        if not os.path.isdir('tmp'):
-            os.mkdir('tmp')
-
-        success = await self.tmp_download(hashfile, ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        with open(f'tmp/{hashfile}') as file:
-            update_hash = hash(file)
-
-        os.remove(f'tmp/{hashfile}')
-
-        if update_hash == self.hash and not force:
-            await ctx.send('Update not necessary.')
-            self.updating = False
-            return
-
-        self.bot.logger.info('Updating ed.db')
-
-        self.bot.logger.info('Downloading commodities.json')
-
-        success = await self.tmp_download('commodities.json', ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        self.bot.logger.info('Creating table commodity')
-
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            commit = ''
-            await cur.execute('DROP TABLE IF EXISTS commodity;'
-                              'CREATE TABLE commodity('
-                              'id int,'
-                              'name varchar(32),'
-                              'average_price int,'
-                              'is_rare bool,'
-                              'category varchar(32),'
-                              'PRIMARY KEY(id));')
-            with open('tmp/commodities.json', encoding='utf-8') as file:
-                commodities = json.load(file)
-            for commodity in commodities:
-                del commodity['category_id']
-                commodity['category'] = commodity['category']['name']
-                commodity['is_rare'] = bool(commodity['is_rare'])
-                keys, vals = zip(*commodity.items())
-                vals = list(vals)
-                keys = map(str, keys)
-                for i, val in enumerate(vals):
-                    if isinstance(val, list):
-                        vals[i] = val = ', '.join(val)
-                    if isinstance(val, str):
-                        vals[i] = val = val.replace("'", "''")
-                        vals[i] = val = f"'{val}'"
-                    vals[i] = str(val)
-                commit += (f'INSERT INTO commodity ({", ".join(keys)})'
-                           f'VALUES ({", ".join(vals)});')
-            await cur.execute(commit)
-
-        os.remove('tmp/commodities.json')
-
-        self.bot.logger.info('Downloading systems_populated.jsonl')
-
-        success = await self.tmp_download('systems_populated.jsonl', ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        self.bot.logger.info('Creating table populated')
-
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('DROP TABLE IF EXISTS populated;'
-                              'CREATE TABLE populated('
-                              'id int,'
-                              'name varchar(32),'
-                              'population bigint,'
-                              'primary_economy text,'
-                              'star_type varchar(4),'
-                              'bodies text,'
-                              'government varchar(16),'
-                              'allegiance varchar(16),'
-                              'state varchar(16),'
-                              'security varchar(8),'
-                              'power varchar(32),'
-                              'PRIMARY KEY(id));')
-            with open('tmp/systems_populated.jsonl') as populated:
-                props = ('id', 'name', 'population', 'primary_economy',
-                         'government', 'allegiance', 'state', 'security',
-                         'power')
-                async for batch in make_batches(populated, batch_size):
-                    commit = ''
-                    async for system in batch:
-                        system = json.loads(system)
-                        system = {prop: system[prop] for prop in props}
-                        if system['population'] is None:
-                            system['population'] = 0
-                        keys, vals = zip(*system.items())
-                        new_vals = []
-                        for val in vals:
-                            if val is None:
-                                val = ''
-                            if isinstance(val, list):
-                                val = ', '.join(val)
-                            if isinstance(val, str):
-                                val = val.replace("'", "''")
-                                val = f"'{val}'"
-                            new_vals.append(str(val))
-                        vals = new_vals
-                        commit += (f'INSERT INTO populated ({", ".join(keys)})'
-                                   f'VALUES ({", ".join(vals)});')
-                    await cur.execute(commit)
-
-        os.remove('tmp/systems_populated.jsonl')
-
-        self.bot.logger.info('Downloading stations.jsonl')
-
-        success = await self.tmp_download('stations.jsonl', ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        self.bot.logger.info('Creating table station')
-
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('DROP TABLE IF EXISTS station;'
-                              'CREATE TABLE station('
-                              'id int,'
-                              'system_id int,'
-                              'name varchar(64),'
-                              'max_landing_pad_size char(1),'
-                              'distance_to_star int,'
-                              'government varchar(16),'
-                              'allegiance varchar(16),'
-                              'state varchar(16),'
-                              'type varchar(32),'
-                              'has_blackmarket bool,'
-                              'has_commodities bool,'
-                              'import_commodities varchar(1024),'
-                              'export_commodities varchar(1024),'
-                              'prohibited_commodities varchar(512),'
-                              'economies varchar(64),'
-                              'is_planetary bool,'
-                              'selling_ships varchar(512),'
-                              'PRIMARY KEY(id));')
-            async with aopen('tmp/stations.jsonl') as stations:
-                props = ('id', 'system_id', 'name', 'max_landing_pad_size',
-                         'distance_to_star', 'government', 'allegiance',
-                         'state', 'type', 'has_blackmarket', 'has_commodities',
-                         'import_commodities', 'export_commodities',
-                         'prohibited_commodities', 'economies', 'is_planetary',
-                         'selling_ships')
-                async for batch in make_batches(stations, batch_size):
-                    commit = ''
-                    async for station in batch:
-                        station = json.loads(station)
-                        station = {prop: station[prop] for prop in props}
-                        if station['distance_to_star'] is None:
-                            station['distance_to_star'] = 0
-                        if (station['max_landing_pad_size'] is None or
-                           len(station['max_landing_pad_size']) > 1):
-                            station['max_landing_pad_size'] = ''
-                        keys, vals = zip(*station.items())
-                        new_vals = []
-                        for val in vals:
-                            if val is None:
-                                val = ''
-                            if isinstance(val, list):
-                                val = ', '.join(val)
-                            if isinstance(val, str):
-                                val = val.replace("'", "''")
-                                val = f"'{val}'"
-                            new_vals.append(str(val))
-                        vals = new_vals
-                        commit += (f'INSERT INTO station ({", ".join(keys)})'
-                                   f'VALUES ({", ".join(vals)});')
-                    await cur.execute(commit)
-
-        os.remove('tmp/stations.jsonl')
-
-        self.bot.logger.info('Downloading listings.csv')
-
-        success = await self.tmp_download('listings.csv', ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        self.bot.logger.info('Creating table listing')
-
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('DROP TABLE IF EXISTS listing;'
-                              'CREATE TABLE listing('
-                              'id int,'
-                              'station_id int,'
-                              'commodity_id int,'
-                              'supply int,'
-                              'buy_price int,'
-                              'sell_price int,'
-                              'demand int,'
-                              'collected_at char(24),'
-                              'PRIMARY KEY(id));')
-
-            async with aopen('tmp/listings.csv') as listings:
-                listings = areader(listings)
-                header = await anext(listings)
-                props = {prop: header.index(prop) for prop in header}
-                timestamp = props['collected_at']
-                loop = True
-                async for batch in make_batches(listings, batch_size):
-                    commit = ''
-                    async for listing in batch:
-                        listing[timestamp] = (
-                            f'{time.ctime(int(listing[timestamp]))}')
-                        keys, vals = zip(*((prop, listing[index])
-                                         for prop, index in props.items()))
-                        vals = list(vals)
-                        for i, val in enumerate(vals):
-                            if not val.isdigit():
-                                vals[i] = f"'{val}'"
-                        commit += (f'INSERT INTO listing ({", ".join(keys)})'
-                                   f'VALUES ({", ".join(vals)});')
-                    await cur.execute(commit)
-
-        os.remove('tmp/listings.csv')
-
-        self.bot.logger.info('Downloading systems.csv')
-
-        success = await self.tmp_download('systems.csv', ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        self.bot.logger.info('Creating table system')
-
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('DROP TABLE IF EXISTS system;'
-                              'CREATE TABLE system('
-                              'id int,'
-                              'name varchar(64),'
-                              'population bigint,'
-                              'star_type varchar(4),'
-                              'bodies text,'
-                              'government varchar(16),'
-                              'allegiance varchar(16),'
-                              'state varchar(16),'
-                              'security varchar(8),'
-                              'power varchar(32),'
-                              'PRIMARY KEY(id));')
-            async with aopen('tmp/systems.csv') as systems:
-                systems = areader(systems)
-                header = await anext(systems)
-                header += ['star_type', 'bodies']
-                props = {prop: header.index(prop) for prop in
-                         ('id', 'name', 'population', 'government', 'bodies',
-                          'allegiance', 'state', 'security', 'power',
-                          'star_type')}
-                async for batch in make_batches(systems, batch_size):
-                    commit = ''
-                    async for system in batch:
-                        try:
-                            int(system[props['population']])
-                        except ValueError:
-                            system[props['population']] = '0'
-                        system += ['', '']  # star_type and bodies
-                        keys, vals = zip(*((prop, system[index])
-                                         for prop, index in props.items()))
-                        vals = list(vals)
-                        for i, val in enumerate(vals):
-                            if not val.isdigit():
-                                val = val.replace('"', '')
-                                val = val.replace("'", "''")
-                                vals[i] = f"'{val}'"
-                        commit += (f'INSERT INTO system ({", ".join(keys)})'
-                                   f'VALUES ({", ".join(vals)});')
-                    await cur.execute(commit)
-
-        os.remove('tmp/systems.csv')
-
-        self.bot.logger.info('Downloading bodies.jsonl')
-
-        success = await self.tmp_download('bodies.jsonl', ctx)
-        if not success:
-            await ctx.send('Update cancelled.')
-            return
-
-        self.bot.logger.info('Creating table body')
-
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('DROP TABLE IF EXISTS body;'
-                              'CREATE TABLE body('
-                              'id int,'
-                              'system_id int,'
-                              'name varchar(64),'
-                              'type varchar(64),'
-                              'atmosphere_type varchar(32),'
-                              'solar_masses real,'
-                              'solar_radius real,'
-                              'spectral_class varchar(4),'
-                              'earth_masses real,'
-                              'radius int,'
-                              'rings bool,'
-                              'gravity real,'
-                              'surface_pressure real,'
-                              'volcanism_type varchar(32),'
-                              'is_rotational_period_tidally_locked bool,'
-                              'is_landable bool,'
-                              'PRIMARY KEY(id));')
-            async with aopen('tmp/bodies.jsonl') as bodies:
-                props = ('id', 'system_id', 'name', 'type', 'atmosphere_type',
-                         'solar_masses',  'solar_radius', 'earth_masses',
-                         'radius', 'gravity', 'surface_pressure',
-                         'volcanism_type',
-                         'is_rotational_period_tidally_locked', 'is_landable')
-                async for batch in make_batches(bodies, batch_size):
-                    commit = ''
-                    async for body in batch:
-                        body = json.loads(body)
-                        for key in ('solar_masses', 'solar_radius', 'rings',
-                                    'earth_masses', 'radius', 'gravity',
-                                    'surface_pressure', 'spectral_class'):
-                            if body[key] is None:
-                                body[key] = 0
-                        body['is_landable'] = bool(body['is_landable'])
-                        body['rings'] = bool(body['rings'])
-                        for key in body.keys():
-                            if key.endswith('_name'):
-                                body[key.replace('_name', '')] = body.pop(key)
-                        if body['is_main_star']:
-                            commit += ('UPDATE system SET star_type='
-                                       f"'{body['spectral_class']}'"
-                                       f"WHERE id={body['system_id']};")
-                        name = body['name'].replace("'", "''")
-                        commit += ('UPDATE system '
-                                   f"SET bodies=bodies||'{name}, '"
-                                   f"WHERE id={body['system_id']};")
-                        vals = [body[prop] for prop in props]
-                        keys = props
-                        for i, val in enumerate(vals):
-                            if val is None:
-                                vals[i] = val = ''
-                            if isinstance(val, list):
-                                vals[i] = val = ', '.join(val)
-                            if isinstance(val, str):
-                                vals[i] = val = val.replace("'", "''")
-                                vals[i] = val = f"'{val}'"
-                            vals[i] = str(val)
-                        commit += (f'INSERT INTO body ({", ".join(keys)})'
-                                   f'VALUES ({", ".join(vals)});')
-                    await cur.execute(commit)
-                    await cur.execute('UPDATE populated '
-                                      'SET bodies=system.bodies '
-                                      'FROM system '
-                                      'WHERE system.id = populated.id;',
-                                      timeout=600)
-                    await cur.execute('UPDATE populated '
-                                      'SET star_type=system.star_type '
-                                      'FROM system '
-                                      'WHERE system.id = populated.id;',
-                                      timeout=600)
-
-        self.bot.logger.info('Cleaning up database update')
-
-        os.remove('tmp/bodies.jsonl')
-
-        try:
-            os.rmdir('tmp')
-        except OSError:
-            self.bot.logger.warning('Failed to delete tmp directory')
-
-        self.hash = update_hash
-        with open('config.yaml') as file:
-            data = yaml.load(file)
-        data.update({'eddb_hash': self.hash})
-        with open('config.yaml', 'w') as file:
-            yaml.dump(data, file)
         self.updating = False
         self.bot.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
@@ -644,6 +214,69 @@ class EDDB:
     async def update_error(self, exception, ctx):
         self.updating = False
         await self.bot.handle_error(exception, ctx)
+
+    async def make_table(self, file, path, cols, encoding='utf8'):
+        file_ext = path.rpartition('.')[-1]
+        table_name = path.rpartition('/')[-1].partition('.')[0]
+        if file_ext == 'csv':
+            file = self.csv_formatter(file)
+        elif file_ext == 'jsonl':
+            file = self.multi_json(file)
+        elif file_ext == 'json':
+            file = self.single_json(file)
+        else:
+            raise ValueError
+        async with self.pool.acquire() as conn, conn.cursor() as cur:
+            await cur.execute(f'DROP TABLE IF EXISTS {table_name};'
+                              f'CREATE TABLE {table_name}('
+                              f'{",".join(f"{k} {v}" for k,v in cols.items())}'
+                              ', PRIMARY KEY(id));')
+            async for batch in make_batches(file, self.batch_size):
+                commit = ''
+                values = []
+                async for row in batch:
+                    row = {col: row[col] for col in cols}
+                    for col, val in row.items():
+                        if val is None:
+                            row[col] = val = ''
+                        type_ = cols[col]
+                        if type_ == 'bool':
+                            row[col] = bool(val)
+                        elif 'int' in type_:
+                            try:
+                                int(val)
+                            except ValueError:
+                                row[col] = 0
+                        elif type_ == 'real':
+                            try:
+                                float(val)
+                            except ValueError:
+                                row[col] = 0
+                        elif isinstance(val, list):
+                            row[col] = ', '.join(val)
+                        elif isinstance(val, dict):
+                            row[col] = next(v for k, v in val.items()
+                                            if k != 'id')
+                    commit += (f'INSERT INTO {table_name} VALUES('
+                               f'{",".join(["%s"] * len(row))});')
+                    values.extend(row.values())
+                await cur.execute(commit, values, timeout=600)
+
+    async def csv_formatter(self, file):
+        file = areader(file)
+        header = await anext(file)
+        async for line in file:
+            yield dict(zip(header, line))
+
+    async def single_json(self, file):
+        text = await file.read()
+        data = json.loads(text)
+        for item in data:
+            yield item
+
+    async def multi_json(self, file):
+        async for line in file:
+            yield json.loads(line)
 
 
 def setup(bot):
