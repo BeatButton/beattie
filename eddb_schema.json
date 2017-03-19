@@ -45,32 +45,5 @@
         "sell_price": "int",
         "demand": "int",
         "collected_at": "text"
-    },
-    "systems.csv": {
-        "id": "int",
-        "name": "text",
-        "population": "bigint",
-        "government": "text",
-        "allegiance": "text",
-        "state": "text",
-        "security": "text",
-        "power": "text"
-    },
-    "bodies.jsonl": {
-        "id": "int",
-        "system_id": "int",
-        "name": "text",
-        "type": "text",
-        "atmosphere_type": "text",
-        "solar_masses": "real",
-        "solar_radius": "real",
-        "spectral_class": "text",
-        "earth_masses": "real",
-        "radius": "int",
-        "rings": "bool",
-        "gravity": "real",
-        "surface_pressure": "real",
-        "volcanism_type": "text",
-        "is_landable": "bool"
     }
 }
