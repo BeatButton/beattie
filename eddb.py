@@ -270,8 +270,8 @@ class EDDB:
     async def single_json(self, file):
         text = await file.read()
         data = json.loads(text)
-        for item in data:
-            yield item
+        while data:
+            yield data.pop(0)
 
     async def multi_json(self, file):
         async for line in file:
