@@ -26,7 +26,7 @@ class tmp_dl:
     async def __aenter__(self):
         if not os.path.isdir('tmp'):
             os.mkdir('tmp')
-        headers = {'Accept-Encoding': 'gzip',
+        headers = {'Accept-Encoding': 'gzip, deflate, sdch',
                    }
         kwargs = {'timeout': None,
                   'headers': headers,
