@@ -6,7 +6,7 @@
         "is_rare": "bool",
         "category": "text"
     },
-    "systems_populated.jsonl": {
+    "systems_populated.json": {
         "id": "int",
         "name": "text",
         "population": "bigint",
@@ -17,7 +17,7 @@
         "security": "text",
         "power": "text"
     },
-    "stations.jsonl": {
+    "stations.json": {
         "id": "int",
         "system_id": "int",
         "name": "text",
