@@ -6,6 +6,7 @@ import traceback
 import discord
 import inspect
 import math
+import sys
 import textwrap
 from contextlib import redirect_stdout
 import io
@@ -102,8 +103,8 @@ class REPL:
         while True:
             response = await (
                  self.bot.wait_for('message',
-                                   check=lambda m: m.content[0] == '`' and
-                                   (m.author, m.channel) ==
+                                   check=lambda m: m.content.startswith('<')
+                                   and (m.author, m.channel) ==
                                    (msg.author, msg.channel)))
 
             cleaned = self.cleanup_code(response.content)
