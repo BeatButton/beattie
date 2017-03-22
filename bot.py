@@ -37,13 +37,9 @@ class BeattieBot(Bot):
         @self.command(hidden=True)
         @checks.is_owner()
         async def reload(ctx, *, cog):
-            try:
-                self.unload_extension(cog)
-                self.load_extension(cog)
-            except Exception as e:
-                await ctx.send(f'{type(e).__name__}: {e}')
-            else:
-                await ctx.send('Reload successful.')
+            self.unload_extension(cog)
+            self.load_extension(cog)
+            await ctx.send('Reload successful.')
 
     def __del__(self):
         self.session.close()
@@ -72,7 +68,7 @@ class BeattieBot(Bot):
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
         if ctx.prefix is not None:
-            ctx.command = self.commands.get(ctx.invoked_with.lower())
+            ctx.command = self.get_command(ctx.invoked_with.lower())
             await self.invoke(ctx)
 
     async def on_command_error(self, e, ctx):
