@@ -25,7 +25,7 @@ class REPL:
             return '\n'.join(content.split('\n')[1:-1])
 
         # remove `foo`
-        return content.strip('` \n')
+        return content.strip('` \n').lstrip('<')
 
     def get_syntax_error(self, e):
         return f'```py\n{e.text}{"^":>{e.offset}}\n{type(e).__name__}: {e}```'
