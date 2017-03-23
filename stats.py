@@ -52,8 +52,11 @@ class Stats:
     @commands.command(aliases=['stats'])
     async def about(self, ctx):
         """Tells you information about the bot itself."""
+
+        embed = discord.Embed()
+
         try:
-            self._owner
+            owner = self._owner
         except AttributeError:
             self.owner = await self.bot.get_user_info(140293604726800385)
 
@@ -94,7 +97,7 @@ class Stats:
         embed.add_field(name='Commands Run',
                         value=sum(self.bot.commands_used.values()))
 
-        memory_usage = psutil.Process().memory_full_info().uss / 1024 ** 2
+        memory_usage = psutil.Process().memory_full_info().uss / 1024**2
         embed.add_field(name='Memory Usage', value=f'{memory_usage:.2f} MiB')
 
         await ctx.send(embed=embed)
