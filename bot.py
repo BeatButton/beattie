@@ -2,12 +2,15 @@ import datetime
 
 from aiohttp import ClientSession
 import discord
-from discord.ext.commands import Bot, Context, errors
+from discord.ext import commands
+import yaml
 
 from utils import checks, contextmanagers
 
+errors = commands.errors
 
-class BContext(Context):
+
+class BContext(commands.Context):
     async def reply(self, content, sep='\n'):
         if self.me.bot:
             content = f'{self.author.mention}{sep}{content}'
@@ -31,33 +34,29 @@ class BContext(Context):
             return contextmanagers.null()
 
 
-class BeattieBot(Bot):
+class BeattieBot(commands.Bot):
+    ignore = (commands.CommandNotFound, errors.CheckFailure)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session = ClientSession(loop=self.loop)
-
-        @self.command(hidden=True)
-        @checks.is_owner()
-        async def reload(ctx, *, cog):
-            self.unload_extension(cog)
-            self.load_extension(cog)
-            await ctx.send('Reload successful.')
 
     def __del__(self):
         self.session.close()
 
     async def handle_error(self, e, ctx):
+        try:
+            e = e.original
+        except AttributeError:
+            pass
         if isinstance(e, errors.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
         elif isinstance(e, errors.BadArgument):
             await ctx.send('Bad arguments.')
-        elif isinstance(e, errors.CheckFailure):
-            await ctx.send('You lack the required permissions.')
-        elif (isinstance(e, errors.CommandInvokeError)
-              and (isinstance(e.original, discord.errors.HTTPException)
-              and e.original.response.status == 400)):
+        elif (isinstance(e, discord.errors.HTTPException)
+              and e.response.status == 400):
                 await ctx.send('Message content too long.')
-        elif not isinstance(e, errors.CommandNotFound):
+        elif not isinstance(e, self.ignore):
             await ctx.send(f'{type(e).__name__}: {e}')
             raise e
 
