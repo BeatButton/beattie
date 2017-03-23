@@ -1,6 +1,8 @@
+import datetime
+
+from aiohttp import ClientSession
 import discord
 from discord.ext.commands import Bot, Context, errors
-from aiohttp import ClientSession
 
 from utils import checks, contextmanagers
 
@@ -64,6 +66,8 @@ class BeattieBot(Bot):
         print(self.user.name)
         print(self.user.id)
         print('------')
+        if not hasattr(self, 'uptime'):
+            self.uptime = datetime.datetime.utcnow()
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
