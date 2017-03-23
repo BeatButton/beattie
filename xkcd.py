@@ -4,6 +4,8 @@ import re
 import discord
 from discord.ext import commands
 
+from utils import checks
+
 
 class XKCD:
     def __init__(self, bot):
@@ -79,20 +81,11 @@ class XKCD:
         await ctx.send(embed=format_comic(data))
 
     @commands.command(hidden=True)
-    @checks.is_owner()
     async def sudo(self, ctx, *, inp):
-        await ctx.send('Operation successful.')
-
-    @sudo.error
-    async def sudo_error(self, e, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
-        if isinstance(env, commands.errors.CheckFailure):
-            await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
+        if checks.is_owner_check(ctx):
+            await ctx.send('Operation successful.')
         else:
-            await self.bot.handle_error(e, ctx)
+            await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
 
 
 def format_comic(data):
