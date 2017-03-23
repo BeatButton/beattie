@@ -1,15 +1,17 @@
-from discord.ext import commands
-from discord.errors import Forbidden
-from utils import checks
 import asyncio
-import traceback
-import discord
+from contextlib import redirect_stdout
 import inspect
+import io
 import math
 import sys
 import textwrap
-from contextlib import redirect_stdout
-import io
+import traceback
+
+import discord
+from discord.errors import Forbidden
+from discord.ext import commands
+
+from utils import checks
 
 
 class REPL:
