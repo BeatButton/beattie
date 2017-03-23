@@ -19,7 +19,7 @@ class Default:
                 self.bot.cog_blacklist = {}
 
     def __global_check(self, ctx):
-        if checs.is_owner_check(ctx):
+        if checks.is_owner_check(ctx):
             return True
         cog = ctx.command.cog_name
         return cog not in self.bot.cog_blacklist.get(ctx.guild.id, set())
