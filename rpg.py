@@ -14,6 +14,11 @@ class RPG:
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command()
+    async def choose(self, ctx, *options):
+        """Choose between some options. Use quotes if they have spaces."""
+        await ctx.send(random.choice(options))
+
     @commands.command(aliases=['r'])
     async def roll(self, ctx, *, inp='1d20'):
         """Roll some dice!
@@ -90,21 +95,24 @@ class RPG:
         await ctx.reply(f'{inp}: {result}')
 
     @roll.error
-    async def roll_error(self, exception, ctx):
-        if (isinstance(exception, commands.MissingRequiredArgument) or
-           isinstance(exception.original, ValueError)):
+    async def roll_error(self, e, ctx):
+        try:
+            e = e.original
+        except AttributeError:
+            pass
+        if isinstance(e, (commands.MissingRequiredArgument, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n1d20+3'
                            '\n1d6'
                            '\n2d8-4'
                            '\n2d20^1'
                            '\n4d6v1x6t')
-        elif isinstance(exception.original, futures.TimeoutError):
+        elif isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
-        elif isinstance(exception.original, discord.HTTPException):
+        elif isinstance(e, discord.HTTPException):
             await ctx.reply('Your results were too long. Maybe sum them?')
         else:
-            await self.bot.handle_error(exception, ctx)
+            await self.bot.handle_error(e, ctx)
 
     @commands.command(aliases=['shadroll', 'sr'])
     async def shadowroll(self, ctx, *, inp):
@@ -132,15 +140,18 @@ class RPG:
 
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
-        if (isinstance(exception, commands.MissingRequiredArgument) or
-           isinstance(exception.original, ValueError)):
+        try:
+            e = e.original
+        except AttributeError:
+            pass
+        if isinstance(e, (commands.MissingRequiredArgument, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n6'
                            '\n13e')
-        elif isinstance(exception.original, futures.TimeoutError):
+        elif isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
-            await self.bot.handle_error(exception, ctx)
+            await self.bot.handle_error(e, ctx)
 
     @commands.command(aliases=['sw'])
     async def starroll(self, ctx, *, inp):
@@ -185,11 +196,15 @@ class RPG:
                 await ctx.reply(str(result))
 
     @starroll.error
-    async def starroll_error(self, exception, ctx):
-        if isinstance(exception.original, futures.TimeoutError):
+    async def starroll_error(self, e, ctx):
+        try:
+            e = e.original
+        except AttributeError:
+            pass
+        if isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
-            await self.bot.handle_error(exception, ctx)
+            await self.bot.handle_error(e, ctx)
 
     @commands.command()
     async def srd(self, ctx, *, inp):
@@ -231,11 +246,15 @@ class RPG:
         await ctx.send(msg)
 
     @srd.error
-    async def srd_error(self, exception, ctx):
-        if isinstance(exception, commands.MissingRequiredArgument):
+    async def srd_error(self, e, ctx):
+        try:
+            e = e.original
+        except AttributeError:
+            pass
+        if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send('Please include a search term.')
         else:
-            await self.bot.handle_error(exception, ctx)
+            await self.bot.handle_error(e, ctx)
 
 
 def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
