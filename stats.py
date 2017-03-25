@@ -98,7 +98,10 @@ class Stats:
 
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
-        delta = now - self.bot.uptime
+        try:
+            delta = now - self.bot.uptime
+        except AttributeError:
+            delta = datetime.timedelta()
         hours, remainder = divmod(int(delta.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
