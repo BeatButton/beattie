@@ -2,6 +2,7 @@ from json import JSONDecodeError
 import random
 import re
 
+from aiohttp import ClientResponseError
 import discord
 from discord.ext import commands
 
@@ -72,7 +73,9 @@ class XKCD:
         async with self.bot.session.get(url) as resp:
             try:
                 data = await resp.json()
-            except JSONDecodeError:
+            # JSONDecodeError on Windows and ClientResponseError on Linux
+            # aiohttp is not a good library
+            except (JSONDecodeError, ClientResponseError):
                 data = {'title': '404',
                         'img': 'http://www.explainxkcd.com/wiki/'
                                'images/9/92/not_found.png',
