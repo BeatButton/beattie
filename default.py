@@ -31,9 +31,13 @@ class Default:
     @commands.command(hidden=True)
     @checks.is_owner()
     async def reload(self, ctx, *, cog):
-        self.bot.unload_extension(cog)
-        self.bot.load_extension(cog)
-        await ctx.send('Reload successful.')
+        try:
+            self.bot.unload_extension(cog)
+            self.bot.load_extension(cog)
+        except ModuleNotFoundError:
+            await ctx.send('Cog does not exist.')
+        else:
+            await ctx.send('Reload successful.')
 
     @commands.command()
     @checks.is_owner()
