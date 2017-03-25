@@ -56,25 +56,19 @@ class Stats:
         embed = discord.Embed()
 
         try:
-            owner = self._owner
+            self.owner
         except AttributeError:
             self.owner = await self.bot.get_user_info(140293604726800385)
 
         embed.set_author(name=str(self.owner), icon_url=self.owner.avatar_url)
 
-        # statistics
         total_members = sum(len(s.members) for s in self.bot.guilds)
         total_online = sum(1 for m in self.bot.get_all_members()
                            if m.status != discord.Status.offline)
-        unique_ids = set()
-        unique_members = []
-        for member in self.bot.get_all_members():
-            if member.id not in unique_ids:
-                unique_ids.add(member.id)
-                unique_members.append(member)
-        unique_online = sum(1 for m in unique_members
-                            if m.status != discord.Status.offline)
-        unique_members = len(unique_members)
+        unique_members = len(self.bot.users)
+        unique_online = len(set(member.id for member
+                                in self.bot.get_all_members()
+                                if member.status == discord.Status.online))
         voice = 0
         text = 0
         for channel in self.bot.get_all_channels():
