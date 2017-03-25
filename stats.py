@@ -68,7 +68,7 @@ class Stats:
         unique_members = len(self.bot.users)
         unique_online = len(set(member.id for member
                                 in self.bot.get_all_members()
-                                if member.status == discord.Status.online))
+                                if member.status != discord.Status.offline))
         voice = 0
         text = 0
         for channel in self.bot.get_all_channels():
