@@ -31,8 +31,8 @@ class Default:
     @commands.command(hidden=True)
     @checks.is_owner()
     async def reload(self, ctx, *, cog):
-        self.unload_extension(cog)
-        self.load_extension(cog)
+        self.bot.unload_extension(cog)
+        self.bot.load_extension(cog)
         await ctx.send('Reload successful.')
 
     @commands.command()
