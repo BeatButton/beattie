@@ -85,7 +85,10 @@ class Stats:
         embed.add_field(name='Uptime', value=self.get_bot_uptime(brief=True))
         embed.set_footer(text='Made with discord.py',
                          icon_url='http://i.imgur.com/5BFecvA.png')
-        embed.timestamp = self.bot.uptime
+        try:
+            embed.timestamp = self.bot.uptime
+        except AttributeError:
+            pass
 
         embed.add_field(name='Guilds', value=len(self.bot.guilds))
         embed.add_field(name='Commands Run',
