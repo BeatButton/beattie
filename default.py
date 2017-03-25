@@ -31,6 +31,7 @@ class Default:
     @commands.command(hidden=True)
     @checks.is_owner()
     async def reload(self, ctx, *, cog):
+        cog = cog.lower()
         try:
             self.bot.unload_extension(cog)
             self.bot.load_extension(cog)
@@ -60,11 +61,6 @@ class Default:
     @checks.is_owner()
     async def disable(self, ctx, cog):
         """Disable a cog in the guild."""
-        if self.bot.get_cog(cog) is None:
-            try:
-                self.bot.load_extension(cog)
-            except ModuleNotFoundError:
-                pass
         if self.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
         else:
