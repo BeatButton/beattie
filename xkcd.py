@@ -57,7 +57,7 @@ class XKCD:
             params = {'q': f'{inp} xkcd'}
             async with self.bot.session.get(url, params=params) as resp:
                 text = await resp.text()
-            match = re.search(r'xkcd\.com/(\d+)', text)
+            match = re.search(r'xkcd\.com/(\d+)/\s', text)
             if match:
                 number = int(match.groups()[0])
             else:
