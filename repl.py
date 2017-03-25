@@ -77,6 +77,7 @@ class REPL:
     @commands.command(hidden=True)
     @checks.is_owner()
     async def peval(self, ctx, *, body: str):
+        body = self.cleanup_code(body)
         await ctx.invoke(self.eval_, body=f'print({body})')
 
     @commands.command(hidden=True)
