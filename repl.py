@@ -10,6 +10,7 @@ import traceback
 import discord
 from discord.errors import Forbidden
 from discord.ext import commands
+import objgraph
 
 from utils import checks
 
