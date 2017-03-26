@@ -7,8 +7,6 @@ import yaml
 
 from utils import checks, contextmanagers
 
-errors = commands.errors
-
 
 class BContext(commands.Context):
     async def reply(self, content, sep='\n'):
@@ -35,7 +33,7 @@ class BContext(commands.Context):
 
 
 class BeattieBot(commands.Bot):
-    ignore = (commands.CommandNotFound, errors.CheckFailure)
+    ignore = (commands.CommandNotFound, commands.CheckFailure)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,11 +47,11 @@ class BeattieBot(commands.Bot):
             e = e.original
         except AttributeError:
             pass
-        if isinstance(e, errors.MissingRequiredArgument):
+        if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
-        elif isinstance(e, errors.BadArgument):
+        elif isinstance(e, commands.BadArgument):
             await ctx.send('Bad arguments.')
-        elif (isinstance(e, discord.errors.HTTPException)
+        elif (isinstance(e, discord.HTTPException)
               and e.response.status == 400):
                 await ctx.send('Message content too long.')
         elif not isinstance(e, self.ignore):
