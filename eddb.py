@@ -6,7 +6,6 @@ from aitertools import anext
 from discord.ext import commands
 import yaml
 
-from utils import checks
 from utils.aioutils import areader, make_batches
 from utils.contextmanagers import tmp_dl
 
@@ -188,7 +187,7 @@ class EDDB:
         await ctx.send(output)
 
     @eddb.command(aliases=['u', 'upd'])
-    @checks.is_owner()
+    @commands.is_owner()
     async def update(self, ctx, force: bool=False):
         """Updates the database. Will take some time."""
         if self.updating:

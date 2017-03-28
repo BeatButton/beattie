@@ -6,8 +6,6 @@ from aiohttp import ClientResponseError
 import discord
 from discord.ext import commands
 
-from utils import checks
-
 
 class XKCD:
     def __init__(self, bot):
@@ -86,7 +84,7 @@ class XKCD:
 
     @commands.command(hidden=True)
     async def sudo(self, ctx, *, inp):
-        if checks.is_owner_check(ctx):
+        if await self.bot.is_owner(ctx.author):
             await ctx.send('Operation successful.')
         else:
             await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')

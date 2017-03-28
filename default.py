@@ -3,8 +3,6 @@ import time
 from discord.ext import commands
 import yaml
 
-from utils import checks
-
 
 class Default:
     def __init__(self, bot):
@@ -19,7 +17,7 @@ class Default:
                 self.bot.cog_blacklist = {}
 
     def __global_check(self, ctx):
-        if checks.is_owner_check(ctx):
+        if await self.bot.is_owner(ctx.author):
             return True
         cog = ctx.command.cog_name
         return cog not in self.bot.cog_blacklist.get(ctx.guild.id, set())
@@ -29,7 +27,7 @@ class Default:
             yaml.dump(self.bot.cog_blacklist, file)
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     async def reload(self, ctx, *, cog):
         cog = cog.lower()
         try:
@@ -41,7 +39,7 @@ class Default:
             await ctx.send('Reload successful.')
 
     @commands.command()
-    @checks.is_owner()
+    @commands.is_owner()
     async def enable(self, ctx, cog):
         """Enable a cog in the guild."""
         if self.bot.get_cog(cog) is None:
@@ -58,7 +56,7 @@ class Default:
                 self._update_blacklist()
 
     @commands.command()
-    @checks.is_owner()
+    @commands.is_owner()
     async def disable(self, ctx, cog):
         """Disable a cog in the guild."""
         if self.bot.get_cog(cog) is None:

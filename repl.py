@@ -12,8 +12,6 @@ from discord.errors import Forbidden
 from discord.ext import commands
 import objgraph
 
-from utils import checks
-
 
 class REPL:
     def __init__(self, bot):
@@ -76,13 +74,13 @@ class REPL:
                 await ctx.send(f'```py\n{value}{ret}\n```')
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     async def peval(self, ctx, *, body: str):
         body = self.cleanup_code(body)
         await ctx.invoke(self.eval_, body=f'print({body})')
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     async def repl(self, ctx):
         msg = ctx.message
 

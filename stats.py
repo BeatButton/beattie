@@ -7,8 +7,6 @@ import psutil
 import discord
 from discord.ext import commands
 
-from utils import checks
-
 
 class Stats:
     """Bot usage statistics."""
@@ -29,7 +27,7 @@ class Stats:
                              f'{destination}: {message.content}')
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     async def commandstats(self, ctx):
         p = commands.Paginator()
         counter = self.bot.commands_used
