@@ -32,7 +32,7 @@ class REPL:
         return f'```py\n{e.text}{"^":>{e.offset}}\n{type(e).__name__}: {e}```'
 
     @commands.command(hidden=True, name='eval')
-    @checks.is_owner()
+    @commands.is_owner()
     async def eval_(self, ctx, *, body: str):
         env = {
             'bot': self.bot,
