@@ -16,7 +16,7 @@ class Default:
             if self.bot.cog_blacklist is None:
                 self.bot.cog_blacklist = {}
 
-    def __global_check(self, ctx):
+    async def __global_check(self, ctx):
         if await self.bot.is_owner(ctx.author):
             return True
         cog = ctx.command.cog_name
