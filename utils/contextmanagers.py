@@ -22,7 +22,7 @@ class tmp_dl:
         self.url = url
         self.session = session
         self.encoding = encoding
-        self.path = f'tmp/{self.url.rpartition('/')[-1]}'
+        self.path = f'tmp/{self.url.rpartition("/")[-1]}'
 
     async def __aenter__(self):
         if not os.path.isdir('tmp'):
