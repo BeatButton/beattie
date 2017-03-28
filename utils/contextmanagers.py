@@ -22,17 +22,18 @@ class tmp_dl:
         self.url = url
         self.session = session
         self.encoding = encoding
+        self.path = f'tmp/{self.url.rpartition('/')[-1]}'
 
     async def __aenter__(self):
         if not os.path.isdir('tmp'):
             os.mkdir('tmp')
+
         headers = {'Accept-Encoding': 'gzip, deflate, sdch',
                    }
         kwargs = {'timeout': None,
                   'headers': headers,
                   }
-        filename = self.url.rpartition('/')[-1]
-        self.path = f'tmp/{filename}'
+
         async with aiofiles.open(self.path, 'wb') as file:
             async with self.session.get(self.url, **kwargs) as resp:
                 async for block in resp.content.iter_any():
@@ -42,10 +43,7 @@ class tmp_dl:
 
     async def __aexit__(self, exc_type, exc, tb):
         try:
-            await self.file.close()
-        except AttributeError:
-            pass
-        try:
             os.remove(self.path)
-        except FileNotFoundError:
+            await self.file.close()
+        except (FileNotFoundError, AttributeError):
             pass
