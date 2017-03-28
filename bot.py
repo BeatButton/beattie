@@ -1,11 +1,12 @@
 import datetime
+import os
 
-from aiohttp import ClientSession
+import aiohttp
 import discord
 from discord.ext import commands
 import yaml
 
-from utils import checks, contextmanagers
+from utils import contextmanagers
 
 
 class BContext(commands.Context):
@@ -16,12 +17,21 @@ class BContext(commands.Context):
 
     async def send(self, content=None, *, embed=None, **kwargs):
         if self.me.bot:
-            return await super().send(content, embed=embed, **kwargs)
-        elif content:
+            if content is not None and len(content) >= 2000:
+                filename = f'{self.message.id}.txt'
+                with open(filename, 'w') as file:
+                    file.write(content)
+                return await self.send('Message too long, see attached file.',
+                                       file=filename)
+                os.remove(filename)
+            else:
+                return await super().send(content, embed=embed, **kwargs)
+
+        elif content is not None:
             content = f'{self.message.content}\n{content}'
             await self.message.edit(content=content)
             return self.message
-        elif embed:
+        elif embed is not None:
             await self.message.delete()
             return await super().send(embed=embed, **kwargs)
 
@@ -37,7 +47,7 @@ class BeattieBot(commands.Bot):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.session = ClientSession(loop=self.loop)
+        self.session = aiohttp.ClientSession(loop=self.loop)
 
     def __del__(self):
         self.session.close()
