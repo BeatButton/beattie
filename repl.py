@@ -35,13 +35,13 @@ class REPL:
     @commands.is_owner()
     async def eval_(self, ctx, *, body: str):
         env = {
+            'author': ctx.author,
             'bot': self.bot,
             'ctx': ctx,
-            'channel': ctx.message.channel,
-            'author': ctx.message.author,
-            'guild': ctx.message.guild,
+            'channel': ctx.channel,
+            'guild': ctx.guild,
             'message': ctx.message,
-            '_': self._last_result
+            '_': self._last_result,
         }
 
         env.update(globals())
@@ -82,17 +82,17 @@ class REPL:
     @commands.command(hidden=True)
     @commands.is_owner()
     async def repl(self, ctx):
-        msg = ctx.message
-
-        variables = {
-            'ctx': ctx,
+        env = {
+            'author': ctx.author,
             'bot': self.bot,
-            'message': msg,
-            'guild': msg.guild,
-            'channel': msg.channel,
-            'author': msg.author,
+            'ctx': ctx,
+            'channel': ctx.channel,
+            'guild': ctx.guild,
+            'message': ctx.message,
             '_': None,
         }
+
+        env.update(globals())
 
         if msg.channel.id in self.sessions:
             await ctx.send('Already running a REPL session in this channel. '
@@ -133,14 +133,14 @@ class REPL:
                     await ctx.send(self.get_syntax_error(e))
                     continue
 
-            variables['message'] = response
+            env['message'] = response
 
             fmt = None
             stdout = io.StringIO()
 
             try:
                 with redirect_stdout(stdout):
-                    result = executor(code, variables)
+                    result = executor(code, env)
                     if inspect.isawaitable(result):
                         result = await result
             except Exception as e:
@@ -150,7 +150,7 @@ class REPL:
                 value = stdout.getvalue()
                 if result is not None:
                     fmt = f'```py\n{value}{result}\n```'
-                    variables['_'] = result
+                    env['_'] = result
                 elif value:
                     fmt = f'```py\n{value}\n```'
 
