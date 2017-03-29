@@ -17,8 +17,10 @@ class BContext(commands.Context):
 
     async def send(self, content=None, *, embed=None, **kwargs):
         if self.me.bot:
-            if content is not None and len(content) >= 2000:
-                filename = f'{self.message.id}.txt'
+            if content is not None and len(str(content)) >= 2000:
+                if not os.path.isdir('tmp'):
+                    os.makedir('tmp')
+                filename = f'tmp/{self.message.id}.txt'
                 with open(filename, 'w') as file:
                     file.write(content)
                 return await self.send('Message too long, see attached file.',
@@ -48,6 +50,12 @@ class BeattieBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session = aiohttp.ClientSession(loop=self.loop)
+        with open('openbrackets.txt', encoding='utf8') as file:
+            open_ = file.read()
+        with open('closebrackets.txt', encoding='utf8') as file:
+            close = file.read()
+        self.brackets = open_
+        self.charmap = str.maketrans(dict(zip(open_, close)))
 
     def __del__(self):
         self.session.close()
@@ -81,6 +89,12 @@ class BeattieBot(commands.Bot):
         if ctx.prefix is not None:
             ctx.command = self.get_command(ctx.invoked_with.lower())
             await self.invoke(ctx)
+        elif ctx.author != ctx.me:
+            content = message.content
+            count = sum(content.count(char) for char in self.brackets)
+            if count > len(content) // 2:
+                message = ''.join(ch for ch in content if ch in self.brackets)
+                await ctx.send(message.translate(self.charmap)[::-1])
 
     async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
