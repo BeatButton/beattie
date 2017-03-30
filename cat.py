@@ -17,8 +17,8 @@ class Cat:
 
     @commands.command()
     async def cat(self, ctx):
-        session = self.bot.session
-        async with ctx.typing(), session.get(self.url, self.params) as resp:
+        s = self.bot.session
+        async with ctx.typing(), s.get(self.url, params=self.params) as resp:
             image = io.BytesIO(await resp.content.read())
             ext = resp.headers['Content-Type'].partition('/')[2]
         await ctx.send(file=image, filename=f'{ctx.message.id}.{ext}')
