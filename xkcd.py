@@ -24,6 +24,9 @@ class XKCD:
         async with ctx.typing():
             url = 'https://xkcd.com/info.0.json'
             async with self.bot.session.get(url) as resp:
+                if resp.status != 200:
+                    await ctx.send(f'Failed with code {resp.status}')
+                    return
                 self.xkcd_data = await resp.json()
             if inp == 'random':
                 await ctx.invoke(self.random)
@@ -55,6 +58,9 @@ class XKCD:
             url = 'https://duckduckgo.com/html/'
             params = {'q': f'{inp} xkcd'}
             async with self.bot.session.get(url, params=params) as resp:
+                if resp.status != 200:
+                    await ctx.send(f'Failed with code {resp.status}')
+                    return
                 text = await resp.text()
             match = re.search(r'xkcd\.com/(\d+)/\s', text)
             if match:
