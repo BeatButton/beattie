@@ -1,7 +1,9 @@
 import io
 
 import aiohttp
+import discord
 from discord.ext import commands
+from lxml import etree
 import yaml
 
 
@@ -13,15 +15,21 @@ class Cat:
         self.key = data.get('cat_key', '')
         self.url = 'http://thecatapi.com/api/images/get'
         self.params = {'api_key': self.key,
-                       'type': 'png,jpg'}
+                       'type': 'png,jpg',
+                       'format': 'xml',
+                       }
 
     @commands.command()
     async def cat(self, ctx):
-        s = self.bot.session
-        async with ctx.typing(), s.get(self.url, params=self.params) as resp:
-            image = io.BytesIO(await resp.content.read())
-            ext = resp.headers['Content-Type'].partition('/')[2]
-        await ctx.send(file=image, filename=f'{ctx.message.id}.{ext}')
+        session = self.bot.session
+        async with ctx.typing():
+            async with session.get(self.url, params=self.params) as resp:
+                root = etree.fromstring(await resp.text())
+            url = root.find('.//url').text
+            embed = discord.Embed()
+            embed.set_image(url=url)
+        await ctx.send(embed=embed)
+
 
 
 def setup(bot):
