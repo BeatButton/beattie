@@ -28,8 +28,8 @@ else:
     token = config['token']
     bot = BeattieBot(when_mentioned_or('>'))
 
-extensions = ('cat', 'default', 'eddb', 'nsfw', 'repl', 'rpg', 'stats', 'wolfram',
-              'xkcd')
+extensions = ('cat', 'default', 'eddb', 'nsfw', 'repl', 'rpg', 'stats',
+              'wolfram', 'xkcd')
 
 for extension in extensions:
     try:
