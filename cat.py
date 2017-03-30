@@ -20,6 +20,7 @@ class Cat:
 
     @commands.command()
     async def cat(self, ctx):
+        """Gets a picture of a random cat from thecatapi.com!"""
         session = self.bot.session
         async with ctx.typing():
             async with session.get(self.url, params=self.params) as resp:
@@ -32,10 +33,7 @@ class Cat:
 
     @cat.error
     async def cat_error(self, e, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
+        e = getattr(e, 'original', e)
         if isinstance(e, aiohttp.ServerDisconnectedError):
             await ctx.invoke(self.cat)
         else:

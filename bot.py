@@ -61,10 +61,7 @@ class BeattieBot(commands.Bot):
         self.session.close()
 
     async def handle_error(self, e, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
+        e = getattr(e, 'original', e)
         if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
         elif isinstance(e, commands.BadArgument):

@@ -96,10 +96,7 @@ class RPG:
 
     @roll.error
     async def roll_error(self, e, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
+        e = getattr(e, 'original', e)
         if isinstance(e, (commands.MissingRequiredArgument, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n1d20+3'
@@ -140,10 +137,7 @@ class RPG:
 
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
+        e = getattr(e, 'original', e)
         if isinstance(e, (commands.MissingRequiredArgument, ValueError)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n6'
@@ -197,10 +191,7 @@ class RPG:
 
     @starroll.error
     async def starroll_error(self, e, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
+        e = getattr(e, 'original', e)
         if isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
@@ -247,10 +238,7 @@ class RPG:
 
     @srd.error
     async def srd_error(self, e, ctx):
-        try:
-            e = e.original
-        except AttributeError:
-            pass
+        e = getattr(e, 'original', e)
         if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send('Please include a search term.')
         else:
