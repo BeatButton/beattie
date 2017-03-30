@@ -69,9 +69,6 @@ class BeattieBot(commands.Bot):
             await ctx.send('Missing required arguments.')
         elif isinstance(e, commands.BadArgument):
             await ctx.send('Bad arguments.')
-        elif (isinstance(e, discord.HTTPException)
-              and e.response.status == 400):
-                await ctx.send('Message content too long.')
         elif not isinstance(e, self.ignore):
             await ctx.send(f'{type(e).__name__}: {e}')
             raise e
