@@ -1,3 +1,4 @@
+import io
 import random
 
 from discord.ext import commands
@@ -27,10 +28,14 @@ class NSFW:
                 if image is not None:
                     entries.append(image)
             try:
-                message = f'http:{random.choice(entries)}'
+                url = f'http:{random.choice(entries)}'
             except IndexError:
-                message = 'No images found.'
-        await ctx.send(message)
+                await ctx.send('No images found.')
+                return
+            async with self.bot.session.get(url) as resp:
+                image = io.BytesIO(await resp.content.read())
+            filename = url.rpartition('/')[2]
+            await ctx.send(file=image, filename=filename)
 
     @commands.command(hidden=True)
     async def massage(self, ctx, *, tags=''):
