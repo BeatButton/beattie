@@ -1,7 +1,6 @@
 import io
 
 import aiohttp
-import discord
 from discord.ext import commands
 from lxml import etree
 import yaml
@@ -26,10 +25,21 @@ class Cat:
             async with session.get(self.url, params=self.params) as resp:
                 root = etree.fromstring(await resp.text())
             url = root.find('.//url').text
-            embed = discord.Embed()
-            embed.set_image(url=url)
-        await ctx.send(embed=embed)
+            filename = url.rpartition('/')[-1]
+            async with session.get(url) as resp:
+                image = io.BytesIO(await resp.content.read())
+        await ctx.send(file=image, filename=filename)
 
+    @cat.error
+    async def cat_error(self, e, ctx):
+        try:
+            e = e.original
+        except AttributeError:
+            pass
+        if isinstance(e, aiohttp.ServerDisconnectedError):
+            await ctx.invoke(self.cat)
+        else:
+            raise e
 
 
 def setup(bot):
