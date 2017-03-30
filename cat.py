@@ -24,10 +24,18 @@ class Cat:
         session = self.bot.session
         async with ctx.typing():
             async with session.get(self.url, params=self.params) as resp:
+                if resp.status != 200:
+                    await ctx.send(f'Failed with code {resp.status}')
+                    return
                 root = etree.fromstring(await resp.text())
             url = root.find('.//url').text
+            if not url.startswith('http://'):
+                url = f'http://{url}'
             filename = url.rpartition('/')[-1]
             async with session.get(url) as resp:
+                if resp.status != 200:
+                    await ctx.send(f'Failed with code {resp.status}')
+                    return
                 image = io.BytesIO(await resp.content.read())
         await ctx.send(file=image, filename=filename)
 
