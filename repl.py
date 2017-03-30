@@ -94,12 +94,12 @@ class REPL:
 
         env.update(globals())
 
-        if msg.channel.id in self.sessions:
+        if ctx.channel.id in self.sessions:
             await ctx.send('Already running a REPL session in this channel. '
                            'Exit it with `quit`.')
             return
 
-        self.sessions.add(msg.channel.id)
+        self.sessions.add(ctx.channel.id)
         await ctx.send('Enter code to execute or evaluate. '
                        '`exit()` or `quit` to exit.')
         while True:
@@ -107,13 +107,13 @@ class REPL:
                  self.bot.wait_for('message',
                                    check=lambda m: m.content.startswith('<')
                                    and (m.author, m.channel) ==
-                                   (msg.author, msg.channel)))
+                                   (ctx.author, ctx.channel)))
 
             cleaned = self.cleanup_code(response.content)
 
             if cleaned in ('quit', 'exit', 'exit()'):
                 await ctx.send('Exiting.')
-                self.sessions.remove(msg.channel.id)
+                self.sessions.remove(ctx.channel.id)
                 return
 
             executor = exec
