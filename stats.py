@@ -23,7 +23,7 @@ class Stats:
         else:
             destination = f'#{message.channel.name} ({message.guild.name})'
 
-        self.bot.logger.info(f'{message.created_at}: {message.author.name} in '
+        self.bot.logger.info(f'{message.author.name} in '
                              f'{destination}: {message.content}')
 
     @commands.command(hidden=True)
