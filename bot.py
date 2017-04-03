@@ -1,5 +1,5 @@
 import datetime
-import os
+import io
 
 import aiohttp
 import discord
@@ -18,15 +18,10 @@ class BContext(commands.Context):
     async def send(self, content=None, *, embed=None, **kwargs):
         if self.me.bot:
             if content is not None and len(str(content)) >= 2000:
-                if not os.path.isdir('tmp'):
-                    os.makedir('tmp')
-                filename = f'tmp/{self.message.id}.txt'
-                with open(filename, 'w') as file:
-                    file.write(content)
-                msg = await self.send('Message too long, see attached file.',
-                                      file=filename)
-                os.remove(filename)
-                return msg
+                filename = f'{self.message.id}.txt'
+                content = io.StringIO(content)
+                return await self.send('Message too long, see attached file.',
+                                       file=content, filename=filename)
             else:
                 return await super().send(content, embed=embed, **kwargs)
 
