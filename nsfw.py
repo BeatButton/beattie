@@ -41,7 +41,8 @@ class NSFW:
     @commands.command(hidden=True)
     async def shota(self, ctx, *, tags=''):
         ignore = ['female', 'pussy', 'breasts', '1girl', '2girls', '3girls',
-                  '4girls', 'straight_shota', 'loli', 'vaginal']
+                  '4girls', 'straight_shota', 'loli', 'vaginal', 'futa',
+                  'futanari']
         tags = ' '.join([f'-{tag}' for tag in ignore] + [tags])
         await ctx.invoke(self.gelbooru, tags=f'shota {tags}')
 
