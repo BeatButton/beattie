@@ -38,7 +38,7 @@ class NSFW:
     async def massage(self, ctx, *, tags=''):
         await ctx.invoke(self.gelbooru, tags=f'massage {tags}')
 
-    @commands.subcommand(hidden=True)
+    @commands.command(hidden=True)
     async def shota(self, ctx, *, tags=''):
         ignore = ['female', 'pussy', 'breasts', '1girl', '2girl', '3girl',
                   '4girl']
