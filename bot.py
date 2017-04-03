@@ -23,9 +23,10 @@ class BContext(commands.Context):
                 filename = f'tmp/{self.message.id}.txt'
                 with open(filename, 'w') as file:
                     file.write(content)
-                return await self.send('Message too long, see attached file.',
-                                       file=filename)
+                msg = await self.send('Message too long, see attached file.',
+                                      file=filename)
                 os.remove(filename)
+                return msg
             else:
                 return await super().send(content, embed=embed, **kwargs)
 
