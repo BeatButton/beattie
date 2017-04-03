@@ -9,7 +9,7 @@ import yaml
 class Cat:
     def __init__(self, bot):
         self.bot = bot
-        with open('config.yaml') as file:
+        with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.key = data.get('cat_key', '')
         self.url = 'http://thecatapi.com/api/images/get'

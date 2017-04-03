@@ -8,7 +8,7 @@ class Default:
     def __init__(self, bot):
         self.bot = bot
         try:
-            with open('cog_blacklist.yaml') as file:
+            with open('config/cog_blacklist.yaml') as file:
                 self.bot.cog_blacklist = yaml.load(file)
         except FileNotFoundError:
             self.bot.cog_blacklist = {}

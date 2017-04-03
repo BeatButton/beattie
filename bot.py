@@ -50,9 +50,9 @@ class BeattieBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session = aiohttp.ClientSession(loop=self.loop)
-        with open('openbrackets.txt', encoding='utf8') as file:
+        with open('data/openbrackets.txt', encoding='utf8') as file:
             open_ = file.read()
-        with open('closebrackets.txt', encoding='utf8') as file:
+        with open('data/closebrackets.txt', encoding='utf8') as file:
             close = file.read()
         self.brackets = open_
         self.charmap = str.maketrans(dict(zip(open_, close)))

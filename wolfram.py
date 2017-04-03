@@ -17,7 +17,7 @@ class Wolfram:
     def __init__(self, bot):
         self.bot = bot
         self.url = 'http://api.wolframalpha.com/v2/query'
-        with open('config.yaml') as file:
+        with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.key = data['wolfram_key']
 

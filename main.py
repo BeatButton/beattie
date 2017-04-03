@@ -16,7 +16,7 @@ except ImportError:
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-with open('config.yaml') as file:
+with open('config/config.yaml') as file:
     config = yaml.load(file)
 
 self_bot = 'self' in sys.argv

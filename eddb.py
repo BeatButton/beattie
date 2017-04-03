@@ -17,7 +17,7 @@ class EDDB:
         self.batch_size = 10_000
         self.url = 'https://eddb.io/archive/v5/'
         self.bot.loop.create_task(self._create_pool())
-        with open('config.yaml') as file:
+        with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.password = data.get('eddb_password', '')
 
@@ -195,7 +195,7 @@ class EDDB:
             return
         self.updating = True
         await ctx.send('Database update in progress...')
-        with open('eddb_schema.json') as file:
+        with open('config/eddb_schema.json') as file:
             schema = json.load(file)
 
         for name in schema:
