@@ -14,34 +14,6 @@ class Stats:
     def __init__(self, bot):
         self.bot = bot
 
-    async def on_command(self, ctx):
-        self.bot.commands_used[ctx.command.qualified_name] += 1
-        message = ctx.message
-        destination = None
-        if isinstance(message.channel, discord.abc.PrivateChannel):
-            destination = 'Private Message'
-        else:
-            destination = f'#{message.channel.name} ({message.guild.name})'
-
-        self.bot.logger.info(f'{message.author} in '
-                             f'{destination}: {message.content}')
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def commandstats(self, ctx):
-        p = commands.Paginator()
-        counter = self.bot.commands_used
-        width = len(max(counter, key=len))
-        total = sum(counter.values())
-
-        fmt = '{0:<{width}}: {1}'
-        p.add_line(fmt.format('Total', total, width=width))
-        for key, count in counter.most_common():
-            p.add_line(fmt.format(key, count, width=width))
-
-        for page in p.pages:
-            await ctx.send(page)
-
     @commands.command()
     async def uptime(self, ctx):
         """Tells you how long the bot has been up for."""
@@ -61,12 +33,8 @@ class Stats:
         embed.set_author(name=str(self.owner), icon_url=self.owner.avatar_url)
 
         total_members = sum(len(s.members) for s in self.bot.guilds)
-        total_online = sum(1 for m in self.bot.get_all_members()
-                           if m.status != discord.Status.offline)
         unique_members = len(self.bot.users)
-        unique_online = len(set(member.id for member
-                                in self.bot.get_all_members()
-                                if member.status != discord.Status.offline))
+
         voice = 0
         text = 0
         for channel in self.bot.get_all_channels():
@@ -75,11 +43,9 @@ class Stats:
             else:
                 voice += 1
 
-        members = (f'{total_members} total\n{total_online} online\n'
-                   f'{unique_members} unique\n{unique_online} unique online')
+        members = f'{total_members} total\n{unique_members} unique'
         embed.add_field(name='Members', value=members)
-        embed.add_field(name='Channels', value=f'{text + voice} total\n'
-                        f'{text} text\n{voice} voice')
+        embed.add_field(name='Channels', value=f'{text} text\n{voice} voice')
         embed.add_field(name='Uptime', value=self.get_bot_uptime(brief=True))
         embed.set_footer(text='Made with discord.py',
                          icon_url='http://i.imgur.com/5BFecvA.png')
@@ -89,12 +55,12 @@ class Stats:
             pass
 
         embed.add_field(name='Guilds', value=len(self.bot.guilds))
-        embed.add_field(name='Commands Run',
-                        value=sum(self.bot.commands_used.values()))
 
-        memory_usage = psutil.Process().memory_full_info().uss / 1024**2
+        process = psutil.Process()
+        cpu_usage = process.cpu_percent()
+        memory_usage = process.memory_full_info().uss / 1024**2
+        embed.add_field(name='CPU Usage', value=f'{cpu_usage}%')
         embed.add_field(name='Memory Usage', value=f'{memory_usage:.2f} MiB')
-
         await ctx.send(embed=embed)
 
     def get_bot_uptime(self, *, brief=False):
@@ -121,5 +87,4 @@ class Stats:
 
 
 def setup(bot):
-    bot.commands_used = Counter()
     bot.add_cog(Stats(bot))
