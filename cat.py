@@ -1,4 +1,5 @@
 import io
+import re
 
 import aiohttp
 from discord.ext import commands
@@ -31,6 +32,9 @@ class Cat:
             url = root.find('.//url').text
             if not url.startswith('http://'):
                 url = f'http://{url}'
+            pattern = r'http://\d+\.media\.tumblr\.com'
+            replace = 'http://media.tumblr.com'
+            url = re.sub(pattern, replace, url)
             self.bot.logger.debug(f'Cat URL: {url}')
             filename = url.rpartition('/')[-1]
             async with session.get(url) as resp:
