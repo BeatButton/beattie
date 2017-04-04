@@ -31,6 +31,7 @@ class Cat:
             url = root.find('.//url').text
             if not url.startswith('http://'):
                 url = f'http://{url}'
+            self.bot.logger.debug(f'Cat URL: {url}')
             filename = url.rpartition('/')[-1]
             async with session.get(url) as resp:
                 if resp.status != 200:
