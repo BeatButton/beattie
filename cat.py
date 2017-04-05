@@ -1,4 +1,3 @@
-import io
 import re
 
 import aiohttp
@@ -36,13 +35,7 @@ class Cat:
             replace = 'http://media.tumblr.com'
             url = re.sub(pattern, replace, url)
             self.bot.logger.debug(f'Cat URL: {url}')
-            filename = url.rpartition('/')[-1]
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    await ctx.send(f'Failed with code {resp.status}')
-                    return
-                image = io.BytesIO(await resp.content.read())
-        await ctx.send(file=image, filename=filename)
+        await ctx.send(url)
 
     @cat.error
     async def cat_error(self, e, ctx):
