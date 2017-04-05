@@ -1,5 +1,4 @@
 import datetime
-import io
 
 import aiohttp
 import discord
@@ -17,13 +16,7 @@ class BContext(commands.Context):
 
     async def send(self, content=None, *, embed=None, **kwargs):
         if self.me.bot:
-            if content is not None and len(str(content)) >= 2000:
-                filename = f'{self.message.id}.txt'
-                content = io.StringIO(content)
-                return await self.send('Message too long, see attached file.',
-                                       file=content, filename=filename)
-            else:
-                return await super().send(content, embed=embed, **kwargs)
+            return await super().send(content, embed=embed, **kwargs)
 
         elif content is not None:
             content = f'{self.message.content}\n{content}'
@@ -79,12 +72,6 @@ class BeattieBot(commands.Bot):
         if ctx.prefix is not None:
             ctx.command = self.get_command(ctx.invoked_with.lower())
             await self.invoke(ctx)
-        elif ctx.author != ctx.me:
-            content = message.content
-            count = sum(content.count(char) for char in self.brackets)
-            if count > len(content) // 2:
-                message = ''.join(ch for ch in content if ch in self.brackets)
-                await ctx.send(message.translate(self.charmap)[::-1])
 
     async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
