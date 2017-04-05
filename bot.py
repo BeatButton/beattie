@@ -11,13 +11,17 @@ from utils import contextmanagers
 class BContext(commands.Context):
     async def reply(self, content, sep='\n'):
         if self.me.bot:
+            content = f'{self.author.display_name}{sep}{content}'
+        return await self.send(content)
+
+    async def mention(self, content, sep='\n'):
+        if self.me.bot:
             content = f'{self.author.mention}{sep}{content}'
         return await self.send(content)
 
     async def send(self, content=None, *, embed=None, **kwargs):
         if self.me.bot:
             return await super().send(content, embed=embed, **kwargs)
-
         elif content is not None:
             content = f'{self.message.content}\n{content}'
             await self.message.edit(content=content)
@@ -42,6 +46,12 @@ class BeattieBot(commands.Bot):
 
     def __del__(self):
         self.session.close()
+
+    async def is_owner(self, member):
+        if self.user.bot:
+            return await super().is_owner(member)
+        else:
+            return True
 
     async def handle_error(self, e, ctx):
         e = getattr(e, 'original', e)
