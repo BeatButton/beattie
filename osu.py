@@ -15,6 +15,7 @@ class OSU:
 
     @commands.group()
     async def osu(self, ctx):
+        """Commands for getting data about OSU! Feedback appreciated."""
         if ctx.invoked_subcommand is None:
             await ctx.send('Invalid command passed. '
                            f'Try "{ctx.prefix}help osu"')
@@ -36,10 +37,12 @@ class OSU:
         avatar = f'https://a.ppy.sh/{data["user_id"]}'
         rank = f'#{int(data["pp_rank"]):3,}'
         accuracy = f'{float(data["accuracy"]):0.2f}%'
+        level = data['level'].partition('.')[0]
 
         embed = discord.Embed()
         embed.set_author(name=data['username'], icon_url=avatar)
         embed.add_field(inline=False, name='Rank', value=rank)
+        embed.add_field(inline=False, name='Level', value=level)
         embed.add_field(inline=False, name='Accuracy', value=accuracy)
 
         await ctx.send(embed=embed)
