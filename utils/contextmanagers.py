@@ -61,7 +61,7 @@ class get:
         self.resp = await self.session.get(self.url, **self.kwargs)
         if self.resp.status != 200:
             self.resp.close()
-            raise ResponseError(self.resp.status)
+            raise ResponseError(code=self.resp.status)
         return self.resp
 
     async def __aexit__(self, exc_type, exc, tb):
