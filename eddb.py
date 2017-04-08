@@ -200,7 +200,7 @@ class EDDB:
 
         for name in schema:
             self.bot.logger.info(f'Downloading {name}')
-            async with tmp_dl(f'{self.url}{name}', self.bot.session) as file:
+            async with tmp_dl(self.bot.session, f'{self.url}{name}') as file:
                 self.bot.logger.info(f'Creating table for {name}')
                 await self.make_table(file, f'tmp/{name}', schema[name])
 
