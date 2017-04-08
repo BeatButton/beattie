@@ -41,7 +41,7 @@ class Default:
             await ctx.send('Reload successful.')
 
     @commands.command()
-    @checks.is_owner_or(manage_server=True)
+    @checks.is_owner_or(manage_guild=True)
     async def enable(self, ctx, cog):
         """Enable a cog in the guild."""
         if self.bot.get_cog(cog) is None:
@@ -58,7 +58,7 @@ class Default:
                 self._update_blacklist()
 
     @commands.command()
-    @checks.is_owner_or(manage_server=True)
+    @checks.is_owner_or(manage_guild=True)
     async def disable(self, ctx, cog):
         """Disable a cog in the guild."""
         if self.bot.get_cog(cog) is None:
