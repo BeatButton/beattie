@@ -27,11 +27,10 @@ class NSFW:
 
     @commands.command(hidden=True)
     async def shota(self, ctx, *, tags=''):
-        ignore = ['female', 'pussy', 'breasts', '1girl', '2girls', '3girls',
-                  '4girls', '5girls', '6+girls', 'straight_shota', 'loli',
-                  'vaginal', 'futa', 'futanari', 'bisexual']
-        tags = ' '.join([f'-{tag}' for tag in ignore] + [tags])
-        await ctx.invoke(self.gelbooru, tags=f'shota {tags}')
+        async with ctx.typing():
+            url = await self.booru('http://booru.shotachan.net/post/index.xml',
+                                   tags)
+            await ctx.send(url)
 
     async def booru(self, url, tags):
         entries = []
@@ -49,10 +48,14 @@ class NSFW:
             if image is not None:
                 entries.append(image)
         try:
-            return f'http:{random.choice(entries)}'
+            url = random.choice(entries)
+            return f'{random.choice(entries)}'
         except IndexError:
             return 'No images found.'
-
+        else:
+            if not url.startswith('http:'):
+                url = f'http:{url}'
+            return url
 
 def setup(bot):
     bot.add_cog(NSFW(bot))
