@@ -23,10 +23,10 @@ self_bot = 'self' in sys.argv
 
 if self_bot:
     token = config['self']
-    bot = BeattieBot('b>', self_bot=True)
+    bot = BeattieBot('self>', self_bot=True)
 else:
     token = config['token']
-    bot = BeattieBot(when_mentioned_or('>'))
+    bot = BeattieBot(when_mentioned_or('>', 'b>'))
 
 extensions = ('cat', 'default', 'eddb', 'osu', 'nsfw', 'repl', 'rpg', 'stats',
               'wolfram', 'xkcd')
