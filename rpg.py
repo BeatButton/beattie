@@ -45,28 +45,24 @@ class RPG:
         if 'd' not in inp:
             inp = f'1d{inp}'
         elif inp[0] == 'd':
-            inp = '1{inp}'
+            inp = f'1{inp}'
         args = tuple(int(arg) for arg in re.findall(r'\d+', inp))
 
         num = args[0]
         sides = args[1]
 
+        hi_drop = 0
+        lo_drop = 0
+        mod = 0
+
         if '^' in inp:
             hi_drop = args[2]
-        else:
-            hi_drop = 0
-
-        if 'v' in inp:
+        elif 'v' in inp:
             lo_drop = args[2]
-        else:
-            lo_drop = 0
-
-        if '+' in inp:
+        elif '+' in inp:
             mod = args[2]
         elif '-' in inp:
             mod = -args[2]
-        else:
-            mod = 0
 
         if 'x' in inp:
             times = args[-1]
@@ -208,10 +204,9 @@ class RPG:
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64)'
         }
         entries = []
-        session = self.bot.session
         async with ctx.typing():
-            async with session.get('https://google.com/search',
-                                   params=params, headers=headers) as resp:
+            async with self.bot.get('https://google.com/search',
+                                    params=params, headers=headers) as resp:
                 root = etree.fromstring(await resp.text(), etree.HTMLParser())
             search_nodes = root.findall(".//div[@class='g']")
             for node in search_nodes:
@@ -411,18 +406,18 @@ die_names = {'b': 'boost',
              'c': 'challenge',
              'f': 'force'}
 
-stardice = {'boost': [wash, wash, hit, hit + adv, 2 * adv, adv],
-            'setback': [wash, wash, miss, miss, dis, dis],
-            'ability': [wash, hit, hit, 2 * hit, 2 * adv, adv,
-                        hit + adv, 2 * adv],
-            'difficulty': [wash, miss, 2 * miss, dis, dis, dis,
-                           2 * dis, miss + dis],
-            'proficiency': [wash, hit, hit, 2 * hit, 2 * hit, adv, hit + adv,
-                            hit + adv, hit + adv, adv * 2, adv * 2, triumph],
-            'challenge': [wash, miss, miss, 2 * miss, 2 * miss, dis, dis,
-                          miss + dis, miss + dis, 2 * dis, 2 * dis, despair],
-            'force': [dark, dark, dark, dark, dark, dark, 2 * dark,
-                      light, light, 2 * light, 2 * light, 2 * light],
+stardice = {'boost': (wash, wash, hit, hit + adv, 2 * adv, adv),
+            'setback': (wash, wash, miss, miss, dis, dis),
+            'ability': (wash, hit, hit, 2 * hit, 2 * adv, adv,
+                        hit + adv, 2 * adv),
+            'difficulty': (wash, miss, 2 * miss, dis, dis, dis,
+                           2 * dis, miss + dis),
+            'proficiency': (wash, hit, hit, 2 * hit, 2 * hit, adv, hit + adv,
+                            hit + adv, hit + adv, adv * 2, adv * 2, triumph),
+            'challenge': (wash, miss, miss, 2 * miss, 2 * miss, dis, dis,
+                          miss + dis, miss + dis, 2 * dis, 2 * dis, despair),
+            'force': (dark, dark, dark, dark, dark, dark, 2 * dark,
+                      light, light, 2 * light, 2 * light, 2 * light),
             }
 
 
