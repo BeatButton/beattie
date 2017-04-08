@@ -5,8 +5,7 @@ import discord
 from discord.ext import commands
 import yaml
 
-from exceptions import ResponseError
-from utils import contextmanagers
+from utils import contextmanagers, exceptions
 
 
 class BContext(commands.Context):
@@ -66,7 +65,7 @@ class BeattieBot(commands.Bot):
             await ctx.send('Missing required arguments.')
         elif isinstance(e, commands.BadArgument):
             await ctx.send('Bad arguments.')
-        elif isinstance(e, ResponseError):
+        elif isinstance(e, exceptions.ResponseError):
             await ctx.send(f'An HTTP request failled with error code {e.code}')
         elif not isinstance(e, self.ignore):
             await ctx.send(f'{type(e).__name__}: {e}')

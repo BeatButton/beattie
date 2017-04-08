@@ -2,6 +2,8 @@ import os
 
 import aiofiles
 
+from exceptions import ResponseError
+
 
 class null:
     def __enter__(self):
