@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 import yaml
 
+from exceptions import ResponseError
 from utils import contextmanagers
 
 
@@ -46,6 +47,12 @@ class BeattieBot(commands.Bot):
 
     def __del__(self):
         self.session.close()
+        try:
+            delete = super().__del__
+        except AttributeError:
+            pass
+        else:
+            delete()
 
     async def is_owner(self, member):
         if self.user.bot:
@@ -59,6 +66,8 @@ class BeattieBot(commands.Bot):
             await ctx.send('Missing required arguments.')
         elif isinstance(e, commands.BadArgument):
             await ctx.send('Bad arguments.')
+        elif isinstance(e, ResponseError):
+            await ctx.send(f'An HTTP request failled with error code {e.code}')
         elif not isinstance(e, self.ignore):
             await ctx.send(f'{type(e).__name__}: {e}')
             raise e
@@ -80,3 +89,6 @@ class BeattieBot(commands.Bot):
     async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
             await self.handle_error(e, ctx)
+
+    def get(self, *args, **kwargs):
+        return contextmanagers.get(self.session, *args, **kwargs)

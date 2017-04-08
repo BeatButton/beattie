@@ -18,7 +18,7 @@ class null:
 
 
 class tmp_dl:
-    def __init__(self, url, session, encoding='utf8'):
+    def __init__(self, session, url, encoding='utf8'):
         self.url = url
         self.session = session
         self.encoding = encoding
@@ -47,3 +47,20 @@ class tmp_dl:
             await self.file.close()
         except (FileNotFoundError, AttributeError):
             pass
+
+
+class get:
+    def __init__(self, session, url, **kwargs):
+        self.session = session
+        self.url = url
+        self.kwargs = kwargs
+
+    async def __aenter__(self):
+        self.resp = await self.session.get(self.url, **self.kwargs)
+        if self.resp.status != 200:
+            self.resp.close()
+            raise ResponseError(self.resp.status)
+        return self.resp
+
+    async def __aexit__(self, exc_type, exc, tb):
+        self.resp.close()
