@@ -3,6 +3,8 @@ import time
 from discord.ext import commands
 import yaml
 
+from utils import checks
+
 
 class Default:
     def __init__(self, bot):
@@ -39,7 +41,7 @@ class Default:
             await ctx.send('Reload successful.')
 
     @commands.command()
-    @commands.is_owner()
+    @checks.is_owner_or(manage_server=True)
     async def enable(self, ctx, cog):
         """Enable a cog in the guild."""
         if self.bot.get_cog(cog) is None:
@@ -56,7 +58,7 @@ class Default:
                 self._update_blacklist()
 
     @commands.command()
-    @commands.is_owner()
+    @checks.is_owner_or(manage_server=True)
     async def disable(self, ctx, cog):
         """Disable a cog in the guild."""
         if self.bot.get_cog(cog) is None:
@@ -70,7 +72,7 @@ class Default:
 
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
-        """Ping command, taken from somewhere idk"""
+        """Get the ping to the websocket."""
         msg = await ctx.send("Pong! :ping_pong:")
 
         before = time.monotonic()
@@ -79,6 +81,11 @@ class Default:
         ping_time = (after - before) * 1000
 
         await msg.edit(content=f'{msg.content} **{ping_time:.0f}ms**')
+
+    @commands.command()
+    async def source(self, ctx):
+        """Get the source for the bot."""
+        await ctx.send('https://github.com/BeatButton/beattie-bot')
 
 
 def setup(bot):
