@@ -2,7 +2,7 @@ import os
 
 import aiofiles
 
-from exceptions import ResponseError
+from .exceptions import ResponseError
 
 
 class null:
