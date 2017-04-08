@@ -26,7 +26,7 @@ class Wolfram:
         """Query Wolfram|Alpha."""
         async with ctx.typing():
             params = {'input': inp, 'appid': self.key, 'format': 'plaintext'}
-            async with self.bot.session.get(self.url, params=params) as resp:
+            async with self.bot.get(self.url, params=params) as resp:
                 text = await resp.text()
             root = etree.fromstring(text.encode(), etree.XMLParser())
             try:

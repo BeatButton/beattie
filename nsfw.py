@@ -18,7 +18,7 @@ class NSFW:
                       's': 'post',
                       'q': 'index',
                       'tags': tags}
-            async with self.bot.session.get(url, params=params) as resp:
+            async with self.bot.get(url, params=params) as resp:
                 root = etree.fromstring((await resp.text()).encode(),
                                         etree.HTMLParser())
             search_nodes = root.findall(".//post")

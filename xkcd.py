@@ -23,10 +23,7 @@ class XKCD:
         """Commands for getting xkcd comics"""
         async with ctx.typing():
             url = 'https://xkcd.com/info.0.json'
-            async with self.bot.session.get(url) as resp:
-                if resp.status != 200:
-                    await ctx.send(f'Failed with code {resp.status}')
-                    return
+            async with self.bot.get(url) as resp:
                 self.xkcd_data = await resp.json()
             if inp == 'random':
                 await ctx.invoke(self.random)
@@ -57,10 +54,7 @@ class XKCD:
         except ValueError:
             url = 'https://duckduckgo.com/html/'
             params = {'q': f'{inp} xkcd'}
-            async with self.bot.session.get(url, params=params) as resp:
-                if resp.status != 200:
-                    await ctx.send(f'Failed with code {resp.status}')
-                    return
+            async with self.bot.get(url, params=params) as resp:
                 text = await resp.text()
             match = re.search(r'xkcd\.com/(\d+)/\s', text)
             if match:
@@ -74,7 +68,7 @@ class XKCD:
                 return
 
         url = f'https://xkcd.com/{number}/info.0.json'
-        async with self.bot.session.get(url) as resp:
+        async with self.bot.get(url) as resp:
             try:
                 data = await resp.json()
             # JSONDecodeError on Windows and ClientResponseError on Linux

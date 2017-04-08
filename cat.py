@@ -21,12 +21,8 @@ class Cat:
     @commands.command()
     async def cat(self, ctx):
         """Gets a picture of a random cat from thecatapi.com!"""
-        session = self.bot.session
         async with ctx.typing():
-            async with session.get(self.url, params=self.params) as resp:
-                if resp.status != 200:
-                    await ctx.send(f'Failed with code {resp.status}')
-                    return
+            async with self.bot.get(self.url, params=self.params) as resp:
                 root = etree.fromstring(await resp.text())
             url = root.find('.//url').text
             if not url.startswith('http://'):

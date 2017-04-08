@@ -26,8 +26,7 @@ class OSU:
             name = ctx.author.display_name
         url = 'api/get_user'
         params = {'k': self.key, 'u': name}
-        session = self.bot.session
-        async with session.get(f'{self.base}{url}', params=params) as resp:
+        async with self.bot.get(f'{self.base}{url}', params=params) as resp:
             data = await resp.json()
         if not data:
             await ctx.send(f'No user with name or id {name} found.')
@@ -36,7 +35,7 @@ class OSU:
         profile = f'{self.base}u/{data["user_id"]}'
         avatar = f'https://a.ppy.sh/{data["user_id"]}'
         rank = f'#{int(data["pp_rank"]):3,}'
-        accuracy = f'{float(data["accuracy"]):0.2f}%'
+        accuracy = f'{float(data["accuracy"]):.2f}%'
         level = data['level'].partition('.')[0]
 
         embed = discord.Embed()
