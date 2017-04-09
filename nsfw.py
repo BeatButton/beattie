@@ -57,5 +57,6 @@ class NSFW:
                 url = f'http:{url}'
             return url
 
+
 def setup(bot):
     bot.add_cog(NSFW(bot))
