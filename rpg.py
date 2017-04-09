@@ -163,12 +163,11 @@ class RPG:
         3a2p1b4d1c
         2f"""
         inp = inp.lower()
-        if not re.match(r'^(?:\d+[a-z])+$', inp):
-            await ctx.send('Invalid input.')
-            return
-        inp = re.findall(r'\d+[a-z]', inp)
+        match = re.match(r'^(\d+[a-z])+$', inp)
+        if not match:
+            raise commands.BadArgument
         dice = {}
-        for roll in inp:
+        for roll in match.groups():
             num = int(roll[:-1])
             try:
                 die = die_names[roll[-1]]
@@ -185,7 +184,7 @@ class RPG:
             except ValueError:
                 await ctx.send('Force dice cannot be used with other dice.')
             else:
-                await ctx.reply(str(result))
+                await ctx.reply(result)
 
     @starroll.error
     async def starroll_error(self, e, ctx):
