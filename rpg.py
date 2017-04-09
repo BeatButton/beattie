@@ -40,7 +40,7 @@ class RPG:
         inp = ''.join(inp.split()).lower()
         expr = r'^[\d]*d?\d+(?:[+\-^v]\d+)?(?:x\d+)?(?:[ts]{1,2})?$'
         if re.match(expr, inp) is None:
-            raise ValueError
+            raise commands.BadArgument
 
         if 'd' not in inp:
             inp = f'1d{inp}'
@@ -93,7 +93,8 @@ class RPG:
     @roll.error
     async def roll_error(self, e, ctx):
         e = getattr(e, 'original', e)
-        if isinstance(e, (commands.MissingRequiredArgument, ValueError)):
+        if isinstance(e, (commands.MissingRequiredArgument,
+                      commands.BadArgument)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n1d20+3'
                            '\n1d6'
@@ -117,7 +118,7 @@ class RPG:
         inp = inp.strip()
         expr = r'^\d+e?$'
         if not re.match(expr, inp):
-            raise ValueError
+            raise commands.BadArgument
         edge = 'e' in inp
         if edge:
             inp = inp[:-1]
@@ -134,7 +135,8 @@ class RPG:
     @shadowroll.error
     async def shadowroll_error(self, exception, ctx):
         e = getattr(e, 'original', e)
-        if isinstance(e, (commands.MissingRequiredArgument, ValueError)):
+        if isinstance(e, (commands.MissingRequiredArgument,
+                      commands.BadArgument)):
             await ctx.send('Invalid input. Valid input examples:'
                            '\n6'
                            '\n13e')
