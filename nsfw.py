@@ -21,22 +21,27 @@ class NSFW:
             await ctx.send(url)
 
     @commands.command(hidden=True)
-    async def massage(self, ctx, *, tags=''):
-        await ctx.invoke(self.gelbooru, tags=f'massage {tags}')
-
-    @commands.command(hidden=True)
     async def shota(self, ctx, *, tags=''):
         async with ctx.typing():
             url = await self.booru('http://booru.shotachan.net/post/index.xml',
                                    tags)
             await ctx.send(url)
 
-    async def booru(self, url, tags):
+    @commands.command(aliases=['fur'], hidden=True)
+    async def e621(self, ctx, *, tags=''):
+        url = await self.booru('https://e621.net//post/index.xml', tags, 240)
+        await ctx.send(url)
+
+    @commands.command(hidden=True)
+    async def massage(self, ctx, *, tags=''):
+        await ctx.invoke(self.gelbooru, tags=f'massage {tags}')
+
+    async def booru(self, url, tags, limit=100):
         entries = []
         params = {'page': 'dapi',
                   's': 'post',
                   'q': 'index',
-                  'limit': 100,
+                  'limit': limit,
                   'tags': tags}
         async with self.bot.get(url, params=params) as resp:
             root = etree.fromstring((await resp.text()).encode(),
