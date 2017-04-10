@@ -81,8 +81,10 @@ class BeattieBot(commands.Bot):
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
         if ctx.prefix is not None:
-            ctx.command = self.get_command(ctx.invoked_with.lower())
-            await self.invoke(ctx)
+            command = ctx.invoked_with
+            if command:
+                ctx.command = self.get_command(command.lower())
+                await self.invoke(ctx)
 
     async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
