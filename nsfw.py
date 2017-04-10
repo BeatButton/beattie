@@ -48,7 +48,6 @@ class NSFW:
                 entries.append(image)
         try:
             url = random.choice(entries)
-            return f'{random.choice(entries)}'
         except IndexError:
             return 'No images found.'
         else:
