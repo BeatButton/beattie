@@ -3,7 +3,6 @@ import asyncio
 import logging
 import sys
 
-import discord
 from discord.ext.commands import when_mentioned_or
 import yaml
 

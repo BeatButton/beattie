@@ -1,7 +1,4 @@
-from collections import Counter
 import datetime
-import logging
-import os
 import psutil
 
 import discord

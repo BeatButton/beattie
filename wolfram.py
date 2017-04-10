@@ -3,14 +3,11 @@ from discord.ext import commands
 from lxml import etree
 import yaml
 
-from utils.aioutils import aopen
-
 
 class Wolfram:
     chars = {0xf74c: ' d',
              0xf74d: 'e',
              0xf74e: 'i',
-             0xf74e: 'j',
              0xf7d9: ' = ',
              }
 

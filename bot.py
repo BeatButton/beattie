@@ -3,7 +3,6 @@ import datetime
 import aiohttp
 import discord
 from discord.ext import commands
-import yaml
 
 from utils import contextmanagers, exceptions
 

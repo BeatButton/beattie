@@ -1,16 +1,18 @@
-import asyncio
 from contextlib import redirect_stdout
 import inspect
 import io
-import math
-import sys
 import textwrap
 import traceback
-
 import discord
-from discord.errors import Forbidden
 from discord.ext import commands
-import objgraph
+
+
+# imports for REPL env
+import asyncio  # noqa: F401
+import math  # noqa: F401
+import sys  # noqa: F401
+
+import objgraph   # noqa: F401
 
 
 class REPL:

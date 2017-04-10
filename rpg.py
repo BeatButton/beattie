@@ -4,7 +4,6 @@ import random
 import re
 from urllib.parse import parse_qs
 
-import aiohttp
 import discord
 from discord.ext import commands
 from lxml import etree
@@ -133,7 +132,7 @@ class RPG:
         await ctx.reply(result)
 
     @shadowroll.error
-    async def shadowroll_error(self, exception, ctx):
+    async def shadowroll_error(self, e, ctx):
         e = getattr(e, 'original', e)
         if isinstance(e, (commands.MissingRequiredArgument,
                       commands.BadArgument)):

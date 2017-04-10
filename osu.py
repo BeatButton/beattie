@@ -1,5 +1,3 @@
-import json
-
 import discord
 from discord.ext import commands
 import yaml
@@ -39,6 +37,8 @@ class OSU:
         level = data['level'].partition('.')[0]
 
         embed = discord.Embed()
+        embed.title = 'OSU!'
+        embed.url = profile
         embed.set_author(name=data['username'], icon_url=avatar)
         embed.add_field(inline=False, name='Rank', value=rank)
         embed.add_field(inline=False, name='Level', value=level)
