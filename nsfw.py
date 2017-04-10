@@ -9,13 +9,13 @@ class NSFW:
         self.bot = bot
 
     @commands.command(aliases=['gel'], hidden=True)
-    async def gelbooru(self, ctx, *, tags):
+    async def gelbooru(self, ctx, *, tags=''):
         async with ctx.typing():
             url = await self.booru('http://gelbooru.com/index.php', tags)
             await ctx.send(url)
 
     @commands.command(aliases=['r34'], hidden=True)
-    async def rule34(self, ctx, *, tags):
+    async def rule34(self, ctx, *, tags=''):
         async with ctx.typing():
             url = await self.booru('http://rule34.xxx/index.php', tags)
             await ctx.send(url)
@@ -29,8 +29,10 @@ class NSFW:
 
     @commands.command(aliases=['fur'], hidden=True)
     async def e621(self, ctx, *, tags=''):
-        url = await self.booru('https://e621.net/post/index.xml', tags, 240)
-        await ctx.send(url)
+        async with ctx.typing():
+            url = await self.booru('https://e621.net/post/index.xml',
+                                   tags, limit=240)
+            await ctx.send(url)
 
     @commands.command(hidden=True)
     async def massage(self, ctx, *, tags=''):
@@ -44,21 +46,24 @@ class NSFW:
                   'limit': limit,
                   'tags': tags}
         async with self.bot.get(url, params=params) as resp:
-            root = etree.fromstring((await resp.text()).encode(),
-                                    etree.HTMLParser())
-        search_nodes = root.findall(".//post")
-        for node in search_nodes:
-            image = next((item[1] for item in node.items()
+            root = etree.fromstring(await resp.read(), etree.HTMLParser())
+        # We check for posts and images because some booru APIs are different
+        posts = root.findall('.//post')
+        for post in posts:
+            image = next((item[1] for item in post.items()
                          if item[0] == 'file_url'), None)
             if image is not None:
                 entries.append(image)
+        images = root.findall('.//file_url')
+        for image in images:
+            entries.append(image.text)
         try:
             url = random.choice(entries)
         except IndexError:
             return 'No images found.'
         else:
-            if not url.startswith('http:'):
-                url = f'http:{url}'
+            if not url.startswith('http'):
+                url = f'https:{url}'
             return url
 
 
