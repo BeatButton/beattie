@@ -29,7 +29,7 @@ class NSFW:
 
     @commands.command(aliases=['fur'], hidden=True)
     async def e621(self, ctx, *, tags=''):
-        url = await self.booru('https://e621.net//post/index.xml', tags, 240)
+        url = await self.booru('https://e621.net/post/index.xml', tags, 240)
         await ctx.send(url)
 
     @commands.command(hidden=True)
