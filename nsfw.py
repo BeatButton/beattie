@@ -36,6 +36,7 @@ class NSFW:
         params = {'page': 'dapi',
                   's': 'post',
                   'q': 'index',
+                  'limit': 100,
                   'tags': tags}
         async with self.bot.get(url, params=params) as resp:
             root = etree.fromstring((await resp.text()).encode(),
