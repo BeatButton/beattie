@@ -1,7 +1,7 @@
 import json
 import time
 
-import aiopg
+import asyncpg
 from aitertools import anext
 from discord.ext import commands
 import yaml
@@ -16,15 +16,15 @@ class EDDB:
         self.updating = False
         self.batch_size = 10_000
         self.url = 'https://eddb.io/archive/v5/'
-        self.bot.loop.create_task(self._create_pool())
+        self.bot.loop.create_task(self._connect())
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.password = data.get('eddb_password', '')
 
-    async def _create_pool(self):
-        self.pool = await aiopg.create_pool('dbname=ed.db user=postgres '
-                                            f'password={self.password} '
-                                            'host=localhost')
+    async def _connect(self):
+        self.conn = await asyncpg.connect(user='postgres',
+                                          password=self.password,
+                                          database='ed.db', host='localhost')
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -38,17 +38,16 @@ class EDDB:
         """Searches the database for a system."""
         search = search.lower()
         output = ''
-        typing = ctx.typing
-        async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute('SELECT * FROM systems_populated '
-                              'WHERE LOWER(name) = (%s)', (search,))
-            results = await cur.fetchone()
-            if results:
-                results = dict(zip((i[0] for i in cur.description), results))
-                results['population'] = f'{results["population"]:,d}'
-                del results['id']
+        conn = self.conn
+        async with ctx.typing():
+            query = 'SELECT * FROM systems_populated WHERE LOWER(name) = $1'
+            system = await conn.fetchrow(query, search)
+            if system:
+                system = dict(system.items())
+                system['population'] = f'{system["population"]:,d}'
+                del system['id']
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in results.items() if val)
+                                   for key, val in system.items() if val)
             else:
                 output = f'No system {search} found.'
         await ctx.send(output)
@@ -62,37 +61,36 @@ class EDDB:
         search = search.lower()
         output = ''
         target_system = None
-        typing = ctx.typing
-        async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
+        conn = self.conn
+        async with ctx.typing():
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
-            query = 'SELECT * FROM stations WHERE LOWER(name) = (%s)'
+            query = 'SELECT * FROM stations WHERE LOWER(name) = $1'
             args = (search,)
 
             if target_system:
                 target_system = target_system.lower()
-                await cur.execute('SELECT id FROM systems_populated '
-                                  'WHERE LOWER(name) = (%s)', (target_system,))
-                results = await cur.fetchone()
-                if results:
-                    args += (results[0],)
-                    query += " AND system_id = (%s)"
+                system = await conn.fetchrow('SELECT id FROM systems_populated'
+                                             ' WHERE LOWER(name) = $1',
+                                             target_system)
+
+                if system:
+                    query += " AND system_id = $2"
+                    args += (system['id'],)
                 else:
                     await ctx.send(f'No system {target_system} found.')
                     return
 
-            await cur.execute(query, args)
-            results = await cur.fetchall()
+            stations = await conn.fetch(query, *args)
 
-            if len(results) == 1:
-                results = dict(zip((i[0] for i in cur.description),
-                                   results[0]))
-                del results['id']
-                del results['system_id']
+            if len(stations) == 1:
+                station = dict(stations[0].items())
+                del station['id']
+                del station['system_id']
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in results.items() if val)
-            elif not results:
+                                   for key, val in station.items() if val)
+            elif not stations:
                 output = f'Station {search} not found.'
             else:
                 output = (f'Multiple stations called {search} found, '
@@ -108,78 +106,70 @@ class EDDB:
            Input in the format: commodity[, station[, system]]"""
         search = [term.strip().lower() for term in search.split(',')]
         output = ''
-        typing = ctx.typing
-        async with typing(), self.pool.acquire() as conn, conn.cursor() as cur:
+        conn = self.conn
+        async with ctx.typing():
             if len(search) == 1:
-                await cur.execute('SELECT * FROM commodities '
-                                  'WHERE LOWER(name) = (%s)', (search[0],))
-                results = await cur.fetchone()
-                if results:
-                    results = dict(zip((i[0] for i in cur.description),
-                                       results))
+                query = 'SELECT * FROM commodities WHERE LOWER(name) = $1'
+                commodity = await conn.fetchrow(query, search[0])
+                if commodity:
                     output = '\n'.join(f'{k.replace("_", " ").title()}: {v}'
-                                       for k, v in results.items())
+                                       for k, v in commodity.items())
                 else:
                     output = f'Commodity {search[0]} not found.'
 
             elif len(search) < 4:
-                await cur.execute('SELECT id FROM commodities '
-                                  'WHERE LOWER(name) = (%s)', (search[0],))
-                results = await cur.fetchone()
-                if not results:
+                query = 'SELECT id FROM commodities WHERE LOWER(name) = $1'
+                commodity = await conn.fetchrow(query, search[0])
+                if not commodity:
                     await ctx.send(f'Commodity {search[0]} not found.')
                     return
 
-                commodity_id = results[0]
-                query = 'SELECT id FROM stations WHERE LOWER(name) = (%s)'
+                commodity_id = commodity['id']
+                query = 'SELECT id FROM stations WHERE LOWER(name) = $1'
                 args = (search[1],)
 
                 if len(search) == 3:
-                    await cur.execute('SELECT * FROM systems_populated '
-                                      'WHERE LOWER(name) = (%s)', (search[2],))
-                    results = await cur.fetchone()
-                    if not results:
+                    system_query = ('SELECT id FROM systems_populated '
+                                    'WHERE LOWER(name) = $1')
+                    system = await conn.fetchrow(system_query, search[2])
+                    if not system:
                         await ctx.send(f'System {search[2]} not found.')
                         return
-                    system_id = results[0]
-                    query += ' AND system_id=(%s)'
-                    args += (system_id,)
+                    query += ' AND system_id = $2'
+                    args += (system['id'],)
 
-                await cur.execute(query, args)
-                results = await cur.fetchall()
+                listings = await conn.fetch(query, *args)
 
-                if not results:
+                if not listings:
                     await ctx.send(f'Station {search[1]} not found.')
                     return
-                elif len(results) > 1:
+                elif len(listings) > 1:
                     await ctx.send(f'Multiple stations called {search[1]} '
                                    'found, please specify system.')
                     return
 
-                station_id = results[0][0]
-                await cur.execute('SELECT * FROM listings '
-                                  'WHERE station_id=(%s) '
-                                  'AND commodity_id=(%s) ',
-                                  (station_id, commodity_id))
-                results = await cur.fetchone()
-                if not results:
+                station_id = listings[0]['id']
+                query = ('SELECT * FROM listings WHERE station_id = $1 '
+                         'AND commodity_id = $2')
+                args = (station_id, commodity_id)
+                listing = await conn.fetchrow(query, *args)
+                if not listing:
                     await ctx.send(f'Commodity {search[0]} not available '
                                    'to be bought or sold at station.')
                     return
-
-                results = dict(zip((i[0] for i in cur.description), results))
-                del results['id']
-                del results['station_id']
-                del results['commodity_id']
-                fetch_time = int(results['collected_at'])
-                results['collected_at'] = time.ctime(fetch_time)
+                listing = dict(listing.items())
+                del listing['id']
+                del listing['station_id']
+                del listing['commodity_id']
+                fetch_time = int(listing['collected_at'])
+                listing['collected_at'] = time.ctime(fetch_time)
                 output = f'Commodity: {search[0].title()}\n'
                 if len(search) > 1:
                     output += f'Station: {search[1].title()}\n'
                 if len(search) > 2:
                     output += f'System: {search[2].title()}\n'
                 output = ('\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                          for key, val in results.items()))
+                          for key, val in listing.items()))
 
             else:
                 output = 'Too many commas. What does that even mean.'
@@ -224,41 +214,39 @@ class EDDB:
             file = self.single_json(file)
         else:
             raise ValueError
-        async with self.pool.acquire() as conn, conn.cursor() as cur:
-            await cur.execute(f'DROP TABLE IF EXISTS {table_name};'
-                              f'CREATE TABLE {table_name}('
-                              f'{",".join(f"{k} {v}" for k,v in cols.items())}'
-                              ', PRIMARY KEY(id));')
-            async for batch in make_batches(file, self.batch_size):
-                commit = ''
-                values = []
-                async for row in batch:
-                    row = {col: row[col] for col in cols}
-                    for col, val in row.items():
-                        if val is None:
-                            row[col] = val = ''
-                        type_ = cols[col]
-                        if type_ == 'bool':
-                            row[col] = bool(val)
-                        elif 'int' in type_:
-                            try:
-                                int(val)
-                            except ValueError:
-                                row[col] = 0
-                        elif type_ == 'real':
-                            try:
-                                float(val)
-                            except ValueError:
-                                row[col] = 0
-                        elif isinstance(val, list):
-                            row[col] = ', '.join(val)
-                        elif isinstance(val, dict):
-                            row[col] = next(v for k, v in val.items()
-                                            if k != 'id')
-                    commit += (f'INSERT INTO {table_name} VALUES('
-                               f'{",".join(["%s"] * len(row))});')
-                    values.extend(row.values())
-                await cur.execute(commit, values, timeout=600)
+        query = (f'DROP TABLE IF EXISTS {table_name};'
+                 f'CREATE TABLE {table_name}('
+                 f'{",".join(f"{k} {v}" for k,v in cols.items())}'
+                 ', PRIMARY KEY(id));')
+        await self.conn.execute(query)
+        async for row in file:
+            row = {col: row[col] for col in cols}
+            for col, val in row.items():
+                if val is None:
+                    row[col] = val = ''
+                type_ = cols[col]
+                if type_ == 'bool':
+                    row[col] = bool(val)
+                elif 'int' in type_:
+                    try:
+                        row[col] = int(val)
+                    except ValueError:
+                        row[col] = 0
+                elif type_ == 'real':
+                    try:
+                        row[col] = float(val)
+                    except ValueError:
+                        row[col] = 0.0
+                elif isinstance(val, list):
+                    row[col] = ', '.join(val)
+                elif isinstance(val, dict):
+                    row[col] = next(v for k, v in val.items()
+                                    if k != 'id')
+            interp_string = ','.join(f'${n+1}'
+                                     for n, _ in enumerate(row))
+            query = (f'INSERT INTO {table_name} VALUES('
+                     f'{interp_string});')
+            await self.conn.execute(query, *row.values())
 
     async def csv_formatter(self, file):
         file = areader(file)
