@@ -45,9 +45,12 @@ class tmp_dl:
 
     async def __aexit__(self, exc_type, exc, tb):
         try:
-            os.remove(self.path)
             await self.file.close()
-        except (FileNotFoundError, AttributeError):
+        except AttributeError:
+            pass
+        try:
+            os.remove(self.path)
+        except FileNotFoundError:
             pass
 
 
