@@ -25,9 +25,10 @@ if self_bot:
     bot = BeattieBot('self>', self_bot=True)
 else:
     token = config['token']
-    prefixes = config['prefixes']
     if config['debug']:
-        prefixes.append(config['test_prefix'])
+        prefixes = [config['test_prefix']]
+    else:
+        prefixes = config['prefixes']
     bot = BeattieBot(when_mentioned_or(*prefixes))
 
 extensions = ('cat', 'default', 'eddb', 'osu', 'nsfw', 'repl', 'rpg', 'stats',
