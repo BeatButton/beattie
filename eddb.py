@@ -219,37 +219,38 @@ class EDDB:
                  f'{",".join(f"{k} {v}" for k,v in cols.items())}'
                  ', PRIMARY KEY(id));')
         await self.conn.execute(query)
-        interp_string = ','.join(f'${n+1}'
-                                 for n, _ in enumerate(cols))
-        query = (f'INSERT INTO {table_name} VALUES('
-                 f'{interp_string});')
-        async for batch in make_batches(file, self.batch_size):
-            values = []
-            async for row in file:
+        fmt = ','.join(['{}'] * len(cols))
+        query = (f'INSERT INTO {table_name} VALUES({fmt});')
+        async for batch in make_batches(file,  self.batch_size):
+            commit = ''
+            async for row in batch:
                 row = {col: row[col] for col in cols}
                 for col, val in row.items():
                     if val is None:
-                        row[col] = val = ''
+                        val = row[col] = ''
                     type_ = cols[col]
                     if type_ == 'bool':
                         row[col] = bool(val)
                     elif 'int' in type_:
                         try:
-                            row[col] = int(val)
+                            val = row[col] = int(val)
                         except ValueError:
-                            row[col] = 0
+                            val = row[col] = 0
                     elif type_ == 'real':
                         try:
-                            row[col] = float(val)
+                            val = row[col] = float(val)
                         except ValueError:
-                            row[col] = 0.0
+                            val = row[col] = 0.0
                     elif isinstance(val, list):
-                        row[col] = ', '.join(val)
+                        val = row[col] = ', '.join(val)
                     elif isinstance(val, dict):
-                        row[col] = next(v for k, v in val.items()
-                                        if k != 'id')
-                values.append(tuple(row.values()))
-            await self.conn.executemany(query, values)
+                        val = row[col] = next(v for k, v in val.items()
+                                              if k != 'id')
+                    if isinstance(val, str):
+                        val = val.replace("'", "''")
+                        val = row[col] = f"'{val}'"
+                commit += query.format(*row.values())
+            await self.conn.execute(commit)
 
     async def csv_formatter(self, file):
         file = areader(file)
