@@ -22,9 +22,10 @@ class EDDB:
         self.password = data.get('eddb_password', '')
 
     async def _create_pool(self):
-        self.pool = await asyncpg.connect(user='postgres',
-                                          password=self.password,
-                                          database='ed.db', host='localhost')
+        self.pool = await asyncpg.create_pool(user='postgres',
+                                              password=self.password,
+                                              database='ed.db',
+                                              host='localhost')
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
