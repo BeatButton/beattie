@@ -16,13 +16,13 @@ class EDDB:
         self.updating = False
         self.batch_size = 10_000
         self.url = 'https://eddb.io/archive/v5/'
-        self.bot.loop.create_task(self._connect())
+        self.bot.loop.create_task(self._create_pool())
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.password = data.get('eddb_password', '')
 
-    async def _connect(self):
-        self.conn = await asyncpg.connect(user='postgres',
+    async def _create_pool(self):
+        self.pool = await asyncpg.connect(user='postgres',
                                           password=self.password,
                                           database='ed.db', host='localhost')
 
@@ -38,8 +38,7 @@ class EDDB:
         """Searches the database for a system."""
         search = search.lower()
         output = ''
-        conn = self.conn
-        async with ctx.typing():
+        async with ctx.typing(), self.pool.acquire() as conn:
             query = 'SELECT * FROM systems_populated WHERE LOWER(name) = $1'
             system = await conn.fetchrow(query, search)
             if system:
@@ -61,8 +60,7 @@ class EDDB:
         search = search.lower()
         output = ''
         target_system = None
-        conn = self.conn
-        async with ctx.typing():
+        async with ctx.typing(), self.pool.acquire() as conn:
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
@@ -106,8 +104,7 @@ class EDDB:
            Input in the format: commodity[, station[, system]]"""
         search = [term.strip().lower() for term in search.split(',')]
         output = ''
-        conn = self.conn
-        async with ctx.typing():
+        async with ctx.typing(), self.pool.acquire() as conn:
             if len(search) == 1:
                 query = 'SELECT * FROM commodities WHERE LOWER(name) = $1'
                 commodity = await conn.fetchrow(query, search[0])
@@ -214,43 +211,44 @@ class EDDB:
             file = self.single_json(file)
         else:
             raise ValueError
-        query = (f'DROP TABLE IF EXISTS {table_name};'
-                 f'CREATE TABLE {table_name}('
-                 f'{",".join(f"{k} {v}" for k,v in cols.items())}'
-                 ', PRIMARY KEY(id));')
-        await self.conn.execute(query)
-        fmt = ','.join(['{}'] * len(cols))
-        query = (f'INSERT INTO {table_name} VALUES({fmt});')
-        async for batch in make_batches(file,  self.batch_size):
-            commit = ''
-            async for row in batch:
-                row = {col: row[col] for col in cols}
-                for col, val in row.items():
-                    if val is None:
-                        val = row[col] = ''
-                    type_ = cols[col]
-                    if type_ == 'bool':
-                        row[col] = bool(val)
-                    elif 'int' in type_:
-                        try:
-                            val = row[col] = int(val)
-                        except ValueError:
-                            val = row[col] = 0
-                    elif type_ == 'real':
-                        try:
-                            val = row[col] = float(val)
-                        except ValueError:
-                            val = row[col] = 0.0
-                    elif isinstance(val, list):
-                        val = row[col] = ', '.join(val)
-                    elif isinstance(val, dict):
-                        val = row[col] = next(v for k, v in val.items()
-                                              if k != 'id')
-                    if isinstance(val, str):
-                        val = val.replace("'", "''")
-                        val = row[col] = f"'{val}'"
-                commit += query.format(*row.values())
-            await self.conn.execute(commit)
+        async with self.pool.acquire() as conn:
+            query = (f'DROP TABLE IF EXISTS {table_name};'
+                     f'CREATE TABLE {table_name}('
+                     f'{",".join(f"{k} {v}" for k,v in cols.items())}'
+                     ', PRIMARY KEY(id));')
+            await conn.execute(query)
+            fmt = ','.join(['{}'] * len(cols))
+            query = (f'INSERT INTO {table_name} VALUES({fmt});')
+            async for batch in make_batches(file,  self.batch_size):
+                commit = ''
+                async for row in batch:
+                    row = {col: row[col] for col in cols}
+                    for col, val in row.items():
+                        if val is None:
+                            val = row[col] = ''
+                        type_ = cols[col]
+                        if type_ == 'bool':
+                            row[col] = bool(val)
+                        elif 'int' in type_:
+                            try:
+                                val = row[col] = int(val)
+                            except ValueError:
+                                val = row[col] = 0
+                        elif type_ == 'real':
+                            try:
+                                val = row[col] = float(val)
+                            except ValueError:
+                                val = row[col] = 0.0
+                        elif isinstance(val, list):
+                            val = row[col] = ', '.join(val)
+                        elif isinstance(val, dict):
+                            val = row[col] = next(v for k, v in val.items()
+                                                  if k != 'id')
+                        if isinstance(val, str):
+                            val = val.replace("'", "''")
+                            val = row[col] = f"'{val}'"
+                    commit += query.format(*row.values())
+                await conn.execute(commit)
 
     async def csv_formatter(self, file):
         file = areader(file)
