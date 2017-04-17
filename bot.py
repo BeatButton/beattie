@@ -1,4 +1,5 @@
 import datetime
+import sys
 
 import aiohttp
 import discord
@@ -37,7 +38,8 @@ class BContext(commands.Context):
 
 
 class BeattieBot(commands.Bot):
-    ignore = (commands.CommandNotFound, commands.CheckFailure)
+    command_ignore = (commands.CommandNotFound, commands.CheckFailure)
+    general_ignore = (ConnectionResetError, )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,7 +68,7 @@ class BeattieBot(commands.Bot):
             await ctx.send('Bad arguments.')
         elif isinstance(e, exceptions.ResponseError):
             await ctx.send(f'An HTTP request failled with error code {e.code}')
-        elif not isinstance(e, self.ignore):
+        elif not isinstance(e, self.command_ignore):
             await ctx.send(f'{type(e).__name__}: {e}')
             raise e
 
@@ -89,6 +91,11 @@ class BeattieBot(commands.Bot):
     async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
             await self.handle_error(e, ctx)
+
+    async def on_error(self, event_method, *args, **kwargs):
+        _, e, _ = sys.exc_info()
+        if not isinstance(e, general_ignore):
+            await super().on_error(event_method, *args, **kwargs)
 
     def get(self, *args, **kwargs):
         return contextmanagers.get(self.session, *args, **kwargs)
