@@ -94,7 +94,7 @@ class BeattieBot(commands.Bot):
 
     async def on_error(self, event_method, *args, **kwargs):
         _, e, _ = sys.exc_info()
-        if not isinstance(e, general_ignore):
+        if not isinstance(e, self.general_ignore):
             await super().on_error(event_method, *args, **kwargs)
 
     def get(self, *args, **kwargs):
