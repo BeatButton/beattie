@@ -31,8 +31,8 @@ else:
         prefixes = config['prefixes']
     bot = BeattieBot(when_mentioned_or(*prefixes))
 
-extensions = ('cat', 'default', 'eddb', 'osu', 'nsfw', 'repl', 'rpg', 'stats',
-              'wolfram', 'xkcd')
+extensions = ('cat', 'default', 'eddb', 'japanese', 'osu', 'nsfw', 'repl',
+              'rpg', 'stats', 'wolfram', 'xkcd')
 
 for extension in extensions:
     try:
