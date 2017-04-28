@@ -162,7 +162,8 @@ class RPG:
         3a2p1b4d1c
         2f"""
         inp = inp.lower()
-        match = re.match(r'^(\d+[a-z])+$', inp)
+        expr = r'^(\d+[a-z])+$'
+        match = re.match(expr, inp)
         if not match:
             raise commands.BadArgument
         dice = {}
@@ -249,7 +250,7 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
             dropped_vals = sorted_pool[:lo_drop] + sorted_pool[num-hi_drop:]
             for val in dropped_vals:
                 pool.remove(val)
-        if mod != 0:
+        if mod:
             pool = [sum(pool) + mod]
         rolls.append(pool)
     return rolls
@@ -428,9 +429,9 @@ def starroller(**kwargs):
         return sum(random.choice(stardice['force'])
                    for _ in range(kwargs['force']))
     result = Result()
-    for die in kwargs:
+    for die, times in kwargs.items():
         result += sum(random.choice(stardice[die])
-                      for _ in range(kwargs[die]))
+                      for _ in range(times))
     return result
 
 
