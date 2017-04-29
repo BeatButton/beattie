@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 from aitertools import anext
@@ -43,6 +44,21 @@ class EDDB:
         if ctx.invoked_subcommand is None:
             await ctx.send('Invalid command passed. '
                            f'Try "{ctx.prefix}help eddb"')
+
+    @eddb.command()
+    @commands.is_owner()
+    async def debug(self, ctx, enable: bool = True):
+        if enable:
+            logger = logging.getLogger('katagawa')
+            logger.setLevel(logging.DEBUG)
+            handler = logging.FileHandler(
+                filename='katagawa.log', encoding='utf-8', mode='w')
+            logger.addHandler(handler)
+            self.logger = logger
+            await ctx.send('Logging enabled.')
+        else:
+            self.logger = None
+            await ctx.send('Logging disabled.')
 
     @eddb.command(aliases=['sys'])
     async def system(self, ctx, *, search):
