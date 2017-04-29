@@ -1,31 +1,41 @@
 import json
 import time
 
-import asyncpg
 from aitertools import anext
 from discord.ext import commands
+from katagawa.kg import Katagawa
 import yaml
 
+from eddb_schema import Commodity, System, Station, Listing
 from utils.aioutils import areader, make_batches
 from utils.contextmanagers import tmp_dl
 
 
 class EDDB:
+    file_to_table = {
+        'commodities.json': 'commodity',
+        'systems_populated.jsonl': 'system',
+        'stations.jsonl': 'station',
+        'listings.csv': 'listing',
+    }
+
+    table_to_type = {
+        'commodity': Commodity,
+        'system': System,
+        'station': Station,
+        'listing': Listing,
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.updating = False
-        self.batch_size = 10_000
         self.url = 'https://eddb.io/archive/v5/'
-        self.bot.loop.create_task(self._create_pool())
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.password = data.get('eddb_password', '')
-
-    async def _create_pool(self):
-        self.pool = await asyncpg.create_pool(user='postgres',
-                                              password=self.password,
-                                              database='ed.db',
-                                              host='localhost')
+        dsn = f'postgresql://postgres:{self.password}@localhost/ed.db'
+        self.db = Katagawa(dsn)
+        self.bot.loop.create_task(self.db.connect())
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -39,11 +49,13 @@ class EDDB:
         """Searches the database for a system."""
         search = search.lower()
         output = ''
-        async with ctx.typing(), self.pool.acquire() as conn:
-            query = 'SELECT * FROM systems_populated WHERE LOWER(name) = $1'
-            system = await conn.fetchrow(query, search)
+
+        async with ctx.typing(), self.db.get_session() as s:
+            query = s.select(System).where(System.name.ilike(search))
+            system = await query.first()
+
             if system:
-                system = dict(system.items())
+                system = {k.name: v for k, v in system.to_dict().items()}
                 system['population'] = f'{system["population"]:,d}'
                 del system['id']
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
@@ -61,34 +73,36 @@ class EDDB:
         search = search.lower()
         output = ''
         target_system = None
-        async with ctx.typing(), self.pool.acquire() as conn:
+        async with ctx.typing(), self.db.get_session() as s:
             if ',' in search:
                 search, target_system = (i.strip() for i in search.split(','))
 
-            query = 'SELECT * FROM stations WHERE LOWER(name) = $1'
-            args = (search,)
+            query = s.select(Station).where(Station.name.ilike(search))
 
             if target_system:
-                target_system = target_system.lower()
-                system = await conn.fetchrow('SELECT id FROM systems_populated'
-                                             ' WHERE LOWER(name) = $1',
-                                             target_system)
+                sys_query = s.select(System)
+                sys_query = sys_query.where(System.name.ilike(target_system))
+                system = await sys_query.first()
 
                 if system:
-                    query += " AND system_id = $2"
-                    args += (system['id'],)
+                    query = query.where(Station.system_id == system.id)
                 else:
                     await ctx.send(f'No system {target_system} found.')
                     return
 
-            stations = await conn.fetch(query, *args)
+            stations = await (await query.all()).flatten()
 
             if len(stations) == 1:
-                station = dict(stations[0].items())
+                station = stations[0].to_dict()
+                station = {k.name: v for k, v in station.items()}
+                query = s.select(System)
+                query = query.where(System.id == station['system_id'])
+                system = await query.first()
                 del station['id']
                 del station['system_id']
-                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in station.items() if val)
+                output = f'System: {system.name}\n'
+                output += '\n'.join(f'{key.replace("_", " ").title()}: {val}'
+                                    for key, val in station.items() if val)
             elif not stations:
                 output = f'Station {search} not found.'
             else:
@@ -105,57 +119,58 @@ class EDDB:
            Input in the format: commodity[, station[, system]]"""
         search = [term.strip().lower() for term in search.split(',')]
         output = ''
-        async with ctx.typing(), self.pool.acquire() as conn:
+        async with ctx.typing(), self.db.get_session() as s:
             if len(search) == 1:
-                query = 'SELECT * FROM commodities WHERE LOWER(name) = $1'
-                commodity = await conn.fetchrow(query, search[0])
+                query = s.select(Commodity)
+                query = query.where(Commodity.name.ilike(search[0]))
+                commodity = await query.first()
                 if commodity:
+                    commodity = commodity.to_dict()
+                    commodity = {k.name: v for k, v in commodity.items()}
                     output = '\n'.join(f'{k.replace("_", " ").title()}: {v}'
                                        for k, v in commodity.items())
                 else:
                     output = f'Commodity {search[0]} not found.'
 
             elif len(search) < 4:
-                query = 'SELECT id FROM commodities WHERE LOWER(name) = $1'
-                commodity = await conn.fetchrow(query, search[0])
+                query = s.select(Commodity)
+                query = query.where(Commodity.name.ilike(search[0]))
+                commodity = await query.first()
                 if not commodity:
                     await ctx.send(f'Commodity {search[0]} not found.')
                     return
 
-                commodity_id = commodity['id']
-                query = 'SELECT id FROM stations WHERE LOWER(name) = $1'
-                args = (search[1],)
-
+                commodity_id = commodity.id
+                query = s.select(Station).where(Station.name.ilike(search[1]))
                 if len(search) == 3:
-                    system_query = ('SELECT id FROM systems_populated '
-                                    'WHERE LOWER(name) = $1')
-                    system = await conn.fetchrow(system_query, search[2])
+                    sys_query = s.select(System)
+                    sys_query = sys_query.where(System.name.ilike(search[2]))
+                    system = await sys_query.first()
                     if not system:
                         await ctx.send(f'System {search[2]} not found.')
                         return
-                    query += ' AND system_id = $2'
-                    args += (system['id'],)
+                    query = query.where(Station.system_id == system.id)
 
-                listings = await conn.fetch(query, *args)
+                stations = await (await query.all()).flatten()
 
-                if not listings:
+                if not stations:
                     await ctx.send(f'Station {search[1]} not found.')
                     return
-                elif len(listings) > 1:
+                elif len(stations) > 1:
                     await ctx.send(f'Multiple stations called {search[1]} '
                                    'found, please specify system.')
                     return
-
-                station_id = listings[0]['id']
-                query = ('SELECT * FROM listings WHERE station_id = $1 '
-                         'AND commodity_id = $2')
-                args = (station_id, commodity_id)
-                listing = await conn.fetchrow(query, *args)
+                station_id = stations[0].id
+                query = s.select(Listing)
+                query = query.where(Listing.station_id == station_id)
+                query = query.where(Listing.commodity_id == commodity_id)
+                listing = await query.first()
                 if not listing:
                     await ctx.send(f'Commodity {search[0]} not available '
                                    'to be bought or sold at station.')
                     return
-                listing = dict(listing.items())
+                listing = listing.to_dict()
+                listing = {k.name: v for k, v in listing.items()}
                 del listing['id']
                 del listing['station_id']
                 del listing['commodity_id']
@@ -164,8 +179,8 @@ class EDDB:
                 output = f'Commodity: {search[0].title()}\n'
                 if len(search) > 1:
                     output += f'Station: {search[1].title()}\n'
-                if len(search) > 2:
-                    output += f'System: {search[2].title()}\n'
+                    if len(search) > 2:
+                        output += f'System: {search[2].title()}\n'
                 output = ('\n'.join(f'{key.replace("_", " ").title()}: {val}'
                           for key, val in listing.items()))
 
@@ -176,7 +191,7 @@ class EDDB:
 
     @eddb.command(aliases=['u', 'upd'])
     @commands.is_owner()
-    async def update(self, ctx, force: bool=False):
+    async def update(self, ctx):
         """Updates the database. Will take some time."""
         if self.updating:
             await ctx.send('Database update still in progress.')
@@ -190,7 +205,7 @@ class EDDB:
             self.bot.logger.info(f'Downloading {name}')
             async with tmp_dl(self.bot.session, f'{self.url}{name}') as file:
                 self.bot.logger.info(f'Creating table for {name}')
-                await self.make_table(file, f'tmp/{name}', schema[name])
+                await self.make_table(file, name, schema[name])
 
         self.updating = False
         self.bot.logger.info('ed.db update complete')
@@ -201,9 +216,9 @@ class EDDB:
         self.updating = False
         await self.bot.handle_error(exception, ctx)
 
-    async def make_table(self, file, path, cols, encoding='utf8'):
-        file_ext = path.rpartition('.')[-1]
-        table_name = path.rpartition('/')[-1].partition('.')[0]
+    async def make_table(self, file, name, cols, encoding='utf8'):
+        file_ext = name.rpartition('.')[-1]
+        table_name = self.file_to_table[name]
         if file_ext == 'csv':
             file = self.csv_formatter(file)
         elif file_ext == 'jsonl':
@@ -212,61 +227,60 @@ class EDDB:
             file = self.single_json(file)
         else:
             raise ValueError
-        async with self.pool.acquire() as conn:
+        column = self.table_to_type[table_name]
+        async with self.db.get_session() as s:
             query = (f'DROP TABLE IF EXISTS {table_name};'
                      f'CREATE TABLE {table_name}('
                      f'{",".join(f"{k} {v}" for k,v in cols.items())}'
                      ', PRIMARY KEY(id));')
-            await conn.execute(query)
-            fmt = ','.join(['{}'] * len(cols))
-            query = (f'INSERT INTO {table_name} VALUES({fmt});')
-            async for batch in make_batches(file,  self.batch_size):
-                commit = ''
+            await s.execute(query, {})
+        batch_size = 2 ** 15 // len(cols) - 1
+        async for batch in make_batches(file, batch_size):
+            async with self.db.get_session() as s:
                 async for row in batch:
                     row = {col: row[col] for col in cols}
                     for col, val in row.items():
-                        if val is None:
-                            val = row[col] = ''
                         type_ = cols[col]
                         if type_ == 'bool':
                             row[col] = bool(val)
                         elif 'int' in type_:
                             try:
-                                val = row[col] = int(val)
-                            except ValueError:
-                                val = row[col] = 0
+                                row[col] = int(val)
+                            except (ValueError, TypeError):
+                                row[col] = 0
                         elif type_ == 'real':
                             try:
-                                val = row[col] = float(val)
-                            except ValueError:
-                                val = row[col] = 0.0
-                        elif isinstance(val, list):
-                            val = row[col] = ', '.join(val)
+                                row[col] = float(val)
+                            except (ValueError, TypeError):
+                                row[col] = 0.0
                         elif isinstance(val, dict):
-                            val = row[col] = next(v for k, v in val.items()
-                                                  if k != 'id')
-                        if isinstance(val, str):
-                            val = val.replace("'", "''")
-                            val = row[col] = f"'{val}'"
-                    commit += query.format(*row.values())
-                await conn.execute(commit)
+                            row[col] = next(v for k, v in val.items()
+                                            if k != 'id')
+                    s.insert(column(**row))
 
-    async def csv_formatter(self, file):
+    @staticmethod
+    async def csv_formatter(file):
         file = areader(file)
         header = await anext(file)
         async for line in file:
             yield dict(zip(header, line))
 
-    async def single_json(self, file):
+    @staticmethod
+    async def single_json(file):
         text = await file.read()
         data = json.loads(text)
         while data:
             yield data.pop(0)
 
-    async def multi_json(self, file):
+    @staticmethod
+    async def multi_json(file):
         async for line in file:
             yield json.loads(line)
 
 
 def setup(bot):
     bot.add_cog(EDDB(bot))
+
+
+def teardown(self):
+    self.bot.loop.create_task(self.db.close())
