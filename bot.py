@@ -70,13 +70,15 @@ class BeattieBot(commands.Bot):
             await ctx.send(f'An HTTP request failled with error code {e.code}')
         elif not isinstance(e, self.command_ignore):
             await ctx.send(f'{type(e).__name__}: {e}')
-            raise e
+            raise e from None
 
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
         print(self.user.id)
         print('------')
+        if not self.user.bot:
+            await self.change_presence(status=discord.Status.invisible)
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
 
