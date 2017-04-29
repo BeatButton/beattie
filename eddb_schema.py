@@ -17,11 +17,11 @@ class Boolean(ColumnType):
         else:
             return 'FALSE'
 
-    @staticmethod
-    def reverse_cast(sql):
-        if sql in self.true:
+    @classmethod
+    def reverse_cast(cls, sql):
+        if sql in cls.true:
             return True
-        elif sql in self.false:
+        elif sql in cls.false:
             return False
         else:
             raise ValueError
