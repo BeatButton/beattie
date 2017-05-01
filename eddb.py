@@ -143,6 +143,7 @@ class EDDB:
                 if commodity:
                     commodity = commodity.to_dict()
                     commodity = {k.name: v for k, v in commodity.items()}
+                    del commodity['id']
                     output = '\n'.join(f'{k.replace("_", " ").title()}: {v}'
                                        for k, v in commodity.items())
                 else:
