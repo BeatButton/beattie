@@ -9,7 +9,6 @@ import yaml
 
 from eddb_schema import Commodity, System, Station, Listing
 from utils.aioutils import areader, make_batches
-from utils.contextmanagers import tmp_dl
 
 
 class EDDB:
@@ -45,9 +44,9 @@ class EDDB:
             await ctx.send('Invalid command passed. '
                            f'Try "{ctx.prefix}help eddb"')
 
-    @eddb.command()
+    @eddb.command(aliases=['logging'], hidden=True)
     @commands.is_owner()
-    async def debug(self, ctx, enable: bool = True):
+    async def log(self, ctx, enable: bool = True):
         if enable:
             logger = logging.getLogger('katagawa')
             logger.setLevel(logging.DEBUG)
@@ -59,6 +58,12 @@ class EDDB:
         else:
             self.logger = None
             await ctx.send('Logging disabled.')
+
+    @eddb.command(hidden=True)
+    @commands.is_owner()
+    async def debug(self, ctx, *, query):
+        async with ctx.typing(), self.db.get_session() as s:
+            await ctx.send(await s.fetch(query))
 
     @eddb.command(aliases=['sys'])
     async def system(self, ctx, *, search):
@@ -220,8 +225,9 @@ class EDDB:
 
         for name in schema:
             self.bot.logger.info(f'Downloading {name}')
-            async with tmp_dl(self.bot.session, f'{self.url}{name}') as file:
+            async with self.bot.tmp_dl(f'{self.url}{name}') as file:
                 self.bot.logger.info(f'Creating table for {name}')
+                self.updating = self.file_to_table[name]
                 await self.make_table(file, name, schema[name])
 
         self.updating = False
