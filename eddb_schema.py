@@ -3,28 +3,9 @@ from katagawa.orm.schema.types import BigInt, Integer, String, Text, ColumnType
 
 
 class Boolean(ColumnType):
-    true = ('TRUE', 't', 'true', 'y', 'yes', 'on', '1')
-    false = ('FALSE', 'f', 'false', 'n', 'no', 'off', '0')
-
     @staticmethod
     def sql():
         return 'BOOLEAN'
-
-    @staticmethod
-    def cast(value):
-        if value:
-            return 'TRUE'
-        else:
-            return 'FALSE'
-
-    @classmethod
-    def reverse_cast(cls, sql):
-        if sql in cls.true:
-            return True
-        elif sql in cls.false:
-            return False
-        else:
-            raise ValueError
 
 
 Table = table_base()
