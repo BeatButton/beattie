@@ -77,6 +77,7 @@ class BeattieBot(commands.Bot):
         print(self.user.name)
         print(self.user.id)
         print('------')
+        await self.change_presence(game=discord.Game(name='b>help'))
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
 
