@@ -99,3 +99,6 @@ class BeattieBot(commands.Bot):
 
     def get(self, *args, **kwargs):
         return contextmanagers.get(self.session, *args, **kwargs)
+
+    def tmp_dl(self, *args, **kwargs):
+        return contextmanagers.tmp_dl(self.session, *args, **kwargs)
