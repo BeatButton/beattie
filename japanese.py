@@ -12,6 +12,7 @@ class Japanese:
 
     @commands.command()
     async def lookup(self, ctx, *, keyword):
+        """Get results from Jisho.org, Japanese dictionary"""
         data = await self.jisho.lookup(keyword)
         res = data[0]
         res = {k: '\n'.join(v) for k, v in res.items()}
