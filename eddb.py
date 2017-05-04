@@ -239,7 +239,7 @@ class EDDB:
         self.updating = False
         await self.bot.handle_error(exception, ctx)
 
-    async def make_table(self, file, name, cols, encoding='utf8'):
+    async def make_table(self, file, name, cols):
         file_ext = name.rpartition('.')[-1]
         table_name = self.file_to_table[name]
         if file_ext == 'csv':
@@ -305,5 +305,5 @@ def setup(bot):
     bot.add_cog(EDDB(bot))
 
 
-def teardown(self):
-    self.bot.loop.create_task(self.db.close())
+def teardown(cog):
+    self.bot.loop.create_task(cog.db.close())
