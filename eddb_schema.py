@@ -1,4 +1,5 @@
-from katagawa.orm.schema import table_base, Column
+from katagawa.orm.schema.column import Column
+from katagawa.orm.schema.table import table_base
 from katagawa.orm.schema.types import BigInt, Integer, String, Text, ColumnType
 
 
