@@ -40,7 +40,7 @@ for extension in extensions:
     except Exception as e:
         print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
-if not self_bot:
+if self_bot:
     logger = logging.getLogger('discord')
     logger.setLevel(logging.DEBUG)
     handler = logging.FileHandler(
@@ -48,6 +48,10 @@ if not self_bot:
     handler.setFormatter(
         logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
-    bot.logger = logger
+else:
+        logger = logging.getLogger('discord')
+        logger.setLevel(logging.CRITICAL)
+bot.logger = logger
+
 
 bot.run(token, bot=not self_bot)
