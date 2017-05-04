@@ -82,7 +82,7 @@ class EDDB:
                 output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
                                    for key, val in system.items() if val)
             else:
-                output = f'No system {search} found.'
+                output = f'System {search} not found.'
         await ctx.send(output)
 
     @eddb.command(aliases=['sta'])
