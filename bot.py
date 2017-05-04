@@ -44,6 +44,7 @@ class BeattieBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session = aiohttp.ClientSession(loop=self.loop)
+        self.uptime = datetime.datetime.utcnow()
 
     def __del__(self):
         self.session.close()
@@ -78,8 +79,6 @@ class BeattieBot(commands.Bot):
         print(self.user.id)
         print('------')
         await self.change_presence(game=discord.Game(name='b>help'))
-        if not hasattr(self, 'uptime'):
-            self.uptime = datetime.datetime.utcnow()
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
