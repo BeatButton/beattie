@@ -49,8 +49,8 @@ if self_bot:
         logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
 else:
-        logger = logging.getLogger('discord')
-        logger.setLevel(logging.CRITICAL)
+    logger = logging.getLogger('discord')
+    logger.setLevel(logging.CRITICAL)
 bot.logger = logger
 
 
