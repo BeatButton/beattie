@@ -257,6 +257,7 @@ class EDDB:
                      f'{",".join(f"{k} {v}" for k,v in cols.items())}'
                      ', PRIMARY KEY(id));')
             await s.execute(query, {})
+        # postgresql can only have up to 2 ^ 15 paramters. So, this.
         batch_size = 2 ** 15 // len(cols) - 1
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
