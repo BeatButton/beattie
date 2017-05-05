@@ -9,6 +9,8 @@ from utils import contextmanagers, exceptions
 
 
 class BContext(commands.Context):
+    """An extension of Context to add reply and mention methods,
+    as well as support use with self bots"""
     async def reply(self, content, sep='\n'):
         if self.me.bot:
             content = f'{self.author.display_name}{sep}{content}'
@@ -38,6 +40,8 @@ class BContext(commands.Context):
 
 
 class BeattieBot(commands.Bot):
+    """An extension of Bot. Allow use with self bots and handles errors in an
+    organized fashion."""
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
@@ -94,6 +98,7 @@ class BeattieBot(commands.Bot):
 
     async def on_error(self, event_method, *args, **kwargs):
         _, e, _ = sys.exc_info()
+        e = getattr(e, 'original', e)
         if not isinstance(e, self.general_ignore):
             await super().on_error(event_method, *args, **kwargs)
 
