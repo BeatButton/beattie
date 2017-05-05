@@ -39,7 +39,7 @@ class tmp_dl:
                   }
 
         async with aiofiles.open(self.path, 'wb') as file:
-            async with get(self.url, self.session, **kwargs) as resp:
+            async with get(self.session, self.url, **kwargs) as resp:
                 async for block in resp.content.iter_any():
                     await file.write(block)
         self.file = await aiofiles.open(self.path, encoding=self.encoding)
