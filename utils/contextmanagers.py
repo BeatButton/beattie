@@ -20,6 +20,8 @@ class null:
 
 
 class tmp_dl:
+    """Downloads a file and returns an asynchronous handle to it,
+    deleting it after the with block."""
     def __init__(self, session, url, encoding='utf8'):
         self.url = url
         self.session = session
@@ -37,7 +39,7 @@ class tmp_dl:
                   }
 
         async with aiofiles.open(self.path, 'wb') as file:
-            async with self.session.get(self.url, **kwargs) as resp:
+            async with get(self.url, self.session, **kwargs) as resp:
                 async for block in resp.content.iter_any():
                     await file.write(block)
         self.file = await aiofiles.open(self.path, encoding=self.encoding)
@@ -55,6 +57,7 @@ class tmp_dl:
 
 
 class get:
+    """Returns a response to a URL."""
     def __init__(self, session, url, **kwargs):
         self.session = session
         self.url = url
