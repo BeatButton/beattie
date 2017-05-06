@@ -12,23 +12,17 @@ from utils.aioutils import areader, make_batches
 
 
 class EDDB:
-    file_to_table = {
-        'commodities.json': 'commodity',
-        'systems_populated.jsonl': 'system',
-        'stations.jsonl': 'station',
-        'listings.csv': 'listing',
-    }
-
-    table_to_type = {
-        'commodity': Commodity,
-        'system': System,
-        'station': Station,
-        'listing': Listing,
+    file_to_type = {
+        'commodities.json': Commodity,
+        'systems_populated.jsonl': System,
+        'stations.jsonl': Station,
+        'listings.csv': Listing,
     }
 
     def __init__(self, bot):
-        self.bot = bot
         self.updating = False
+        self.logger = None
+        self.bot = bot
         self.url = 'https://eddb.io/archive/v5/'
         with open('config/config.yaml') as file:
             data = yaml.load(file)
@@ -227,7 +221,7 @@ class EDDB:
             self.bot.logger.info(f'Downloading {name}')
             async with self.bot.tmp_dl(f'{self.url}{name}') as file:
                 self.bot.logger.info(f'Creating table for {name}')
-                self.updating = self.file_to_table[name]
+                self.updating = name
                 await self.make_table(file, name, schema[name])
 
         self.updating = False
@@ -241,7 +235,6 @@ class EDDB:
 
     async def make_table(self, file, name, cols):
         file_ext = name.rpartition('.')[-1]
-        table_name = self.file_to_table[name]
         if file_ext == 'csv':
             file = self.csv_formatter(file)
         elif file_ext == 'jsonl':
@@ -250,37 +243,43 @@ class EDDB:
             file = self.single_json(file)
         else:
             raise ValueError
-        column = self.table_to_type[table_name]
+        column = self.file_to_type[name]
+        table_name = column.__tablename__
         async with self.db.get_session() as s:
             query = (f'DROP TABLE IF EXISTS {table_name};'
                      f'CREATE TABLE {table_name}('
-                     f'{",".join(f"{k} {v}" for k,v in cols.items())}'
-                     ', PRIMARY KEY(id));')
+                     f'{",".join(f"{k} {v}" for k, v in cols.items())},'
+                     'PRIMARY KEY(id));')
             await s.execute(query, {})
-        # postgresql can only have up to 2 ^ 15 paramters. So, this.
+        # postgresql can only have up to 2 ^ 15 paramters. So, this
         batch_size = 2 ** 15 // len(cols) - 1
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
                 async for row in batch:
+                    # filter out the data we're not interested in
                     row = {col: row[col] for col in cols}
+                    # fix malformed data, which exists for some reason
                     for col, val in row.items():
-                        type_ = cols[col]
-                        if type_ == 'bool':
-                            row[col] = bool(val)
-                        elif 'int' in type_:
-                            try:
-                                row[col] = int(val)
-                            except (ValueError, TypeError):
-                                row[col] = 0
-                        elif type_ == 'real':
-                            try:
-                                row[col] = float(val)
-                            except (ValueError, TypeError):
-                                row[col] = 0.0
-                        elif isinstance(val, dict):
-                            row[col] = next(v for k, v in val.items()
-                                            if k != 'id')
+                        row[col] = self.coerce(val, cols[col])
                     s.insert(column(**row))
+
+    @staticmethod
+    def coerce(value, type_):
+        if isinstance(value, dict):
+            value = value['name']
+        if type_ == 'bool':
+            return bool(value)
+        if 'int' in type_:
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return 0
+        if type_ == 'real':
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return 0.0
+        return value
 
     @staticmethod
     async def csv_formatter(file):
@@ -307,4 +306,4 @@ def setup(bot):
 
 
 def teardown(cog):
-    self.bot.loop.create_task(cog.db.close())
+    cog.bot.loop.create_task(cog.db.close())
