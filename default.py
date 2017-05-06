@@ -26,7 +26,7 @@ class Default:
         blacklist = guild_conf.get('cog_blacklist', set())
         return cog not in blacklist
 
-    def _update_blacklist(self):
+    def _update_config(self):
         with open('config/guilds.yaml', 'w') as file:
             yaml.dump(self.bot.config, file)
 
@@ -58,7 +58,7 @@ class Default:
         else:
             guild_conf['cog_blacklist'] = blacklist
             await ctx.send('Cog enabled for this guild.')
-            self._update_blacklist()
+            self._update_config()
 
     @commands.command()
     @checks.is_owner_or(manage_guild=True)
@@ -75,7 +75,7 @@ class Default:
         blacklist.add(cog)
         guild_conf['cog_blacklist'] = blacklist
         await ctx.send('Cog disabled for this guild.')
-        self._update_blacklist()
+        self._update_config()
 
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
@@ -102,6 +102,8 @@ class Default:
         Include a {} in the message where you want to mention the newcomer"""
         guild_conf = self.bot.config.setdefault(ctx.guild.id, {})
         guild_conf['welcome_message'] = message
+        self._update_config()
+        await ctx.send('Welcome message set.')
 
 
 def setup(bot):
