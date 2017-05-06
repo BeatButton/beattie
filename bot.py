@@ -97,7 +97,7 @@ class BeattieBot(commands.Bot):
         guild_conf = self.config.get(member.guild.id, {})
         message = guild_conf.get('welcome_message')
         if message is not None:
-            await ctx.send(message.format(member))
+            await guild.send(message.format(member))
 
     async def on_command_error(self, e, ctx):
         if not hasattr(ctx.command, 'on_error'):
