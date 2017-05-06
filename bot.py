@@ -82,7 +82,8 @@ class BeattieBot(commands.Bot):
         print(self.user.name)
         print(self.user.id)
         print('------')
-        await self.change_presence(game=discord.Game(name='b>help'))
+        if self.bot:
+            await self.change_presence(game=discord.Game(name='b>help'))
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
