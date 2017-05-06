@@ -30,6 +30,11 @@ class EDDB:
         dsn = f'postgresql://postgres:{self.password}@localhost/ed.db'
         self.db = Katagawa(dsn)
         self.bot.loop.create_task(self.db.connect())
+        self.parsers = {
+            'csv': self.csv_formatter,
+            'json': self.single_json,
+            'jsonl': self.multi_json,
+        }
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -214,15 +219,15 @@ class EDDB:
             return
         self.updating = True
         await ctx.send('Database update in progress...')
-        with open('config/eddb_schema.json') as file:
-            schema = json.load(file)
 
-        for name in schema:
+        for name, table in self.file_to_type.items():
             self.bot.logger.info(f'Downloading {name}')
             async with self.bot.tmp_dl(f'{self.url}{name}') as file:
                 self.bot.logger.info(f'Creating table for {name}')
                 self.updating = name
-                await self.make_table(file, name, schema[name])
+                schema = {col.name: col.type.sql()
+                          for col in table.iter_columns()}
+                await self.make_table(file, name, schema)
 
         self.updating = False
         self.bot.logger.info('ed.db update complete')
@@ -235,14 +240,7 @@ class EDDB:
 
     async def make_table(self, file, name, cols):
         file_ext = name.rpartition('.')[-1]
-        if file_ext == 'csv':
-            file = self.csv_formatter(file)
-        elif file_ext == 'jsonl':
-            file = self.multi_json(file)
-        elif file_ext == 'json':
-            file = self.single_json(file)
-        else:
-            raise ValueError
+        file = self.parsers[file_ext](file)
         column = self.file_to_type[name]
         table_name = column.__tablename__
         async with self.db.get_session() as s:
@@ -256,25 +254,21 @@ class EDDB:
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
                 async for row in batch:
-                    # filter out the data we're not interested in
-                    row = {col: row[col] for col in cols}
-                    # fix malformed data, which exists for some reason
-                    for col, val in row.items():
-                        row[col] = self.coerce(val, cols[col])
-                    s.insert(column(**row))
+                    s.insert(column(**{col: self.coerce(row[col], cols[col])
+                                       for col in cols}))
 
     @staticmethod
     def coerce(value, type_):
         if isinstance(value, dict):
             value = value['name']
-        if type_ == 'bool':
+        if type_ == 'BOOLEAN':
             return bool(value)
-        if 'int' in type_:
+        if type_ in ('INTEGER', 'BIGINT'):
             try:
                 return int(value)
             except (ValueError, TypeError):
                 return 0
-        if type_ == 'real':
+        if type_ == 'REAL':
             try:
                 return float(value)
             except (ValueError, TypeError):
