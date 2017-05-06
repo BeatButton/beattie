@@ -11,12 +11,12 @@ from utils import contextmanagers, exceptions
 class BContext(commands.Context):
     """An extension of Context to add reply and mention methods,
     as well as support use with self bots"""
-    async def reply(self, content, sep='\n'):
+    async def reply(self, content, sep='\n,'):
         if self.me.bot:
             content = f'{self.author.display_name}{sep}{content}'
         return await self.send(content)
 
-    async def mention(self, content, sep='\n'):
+    async def mention(self, content, sep='\n,'):
         if self.me.bot:
             content = f'{self.author.mention}{sep}{content}'
         return await self.send(content)
@@ -41,7 +41,7 @@ class BContext(commands.Context):
 
 class BeattieBot(commands.Bot):
     """An extension of Bot. Allow use with self bots and handles errors in an
-    organized fashion."""
+    ordered way"""
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
