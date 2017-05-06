@@ -94,7 +94,8 @@ class BeattieBot(commands.Bot):
                 await self.invoke(ctx)
 
     async def on_member_join(self, member):
-        guild_conf = self.config.get(member.guild.id, {})
+        guild = member.guild
+        guild_conf = self.config.get(guild.id, {})
         message = guild_conf.get('welcome_message')
         if message is not None:
             await guild.send(message.format(member))
