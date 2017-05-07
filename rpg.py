@@ -8,6 +8,8 @@ import discord
 from discord.ext import commands
 from lxml import etree
 
+from starwars import starroller, die_names
+
 
 class RPG:
     def __init__(self, bot):
@@ -46,9 +48,9 @@ class RPG:
         args_batch = []
         for roll in rolls:
             if 'd' not in roll:
-                inp = f'1d{roll}'
-            elif inp[0] == 'd':
-                inp = f'1{roll}'
+                roll = f'1d{roll}'
+            elif roll[0] == 'd':
+                roll = f'1{roll}'
             args = tuple(int(arg) for arg in re.findall(r'\d+', roll))
 
             num = args[0]
@@ -207,52 +209,6 @@ class RPG:
         else:
             await self.bot.handle_error(e, ctx)
 
-    @commands.command()
-    async def srd(self, ctx, *, inp):
-        """Search the Pathfinder SRD.
-
-        Returns the first three results from d20pfsrd.com on the search query.
-        Copied shamelessly with some minimal editing from RoboDanny."""
-        params = {'q': inp + ' site:d20pfsrd.com'}
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64)'
-        }
-        entries = []
-        async with ctx.typing():
-            async with self.bot.get('https://google.com/search',
-                                    params=params, headers=headers) as resp:
-                root = etree.fromstring(await resp.text(), etree.HTMLParser())
-            search_nodes = root.findall(".//div[@class='g']")
-            for node in search_nodes:
-                url_node = node.find('.//h3/a')
-                if url_node is None:
-                    continue
-                url = url_node.attrib['href']
-                if not url.startswith('/url?'):
-                    continue
-
-                url = parse_qs(url[5:])['q'][0]
-
-                entries.append(url)
-            try:
-                msg = entries[0]
-            except IndexError:
-                msg = 'No results found.'
-            else:
-                if entries[1:3]:
-                    msg += '\n\nSee also:\n{}'.format('\n'.join(f'<{ent}>'
-                                                      for ent in entries[1:3]))
-
-        await ctx.send(msg)
-
-    @srd.error
-    async def srd_error(self, e, ctx):
-        e = getattr(e, 'original', e)
-        if isinstance(e, commands.MissingRequiredArgument):
-            await ctx.send('Please include a search term.')
-        else:
-            await self.bot.handle_error(e, ctx)
-
 
 def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
     rolls = []
@@ -286,165 +242,13 @@ def shadowroller(num, edge=False):
             break
         num = count6
     s = 's' if hits != 1 else ''
-    if count1 > rolls / 2:
-        if hits == 0:
-            result = 'Critical glitch.'
-        else:
-            result = f'Glitch with {hits} hit{s}.'
-    else:
+    if count1 < rolls / 2:
         result = f'{hits} hit{s}.'
-    return result
+    elif hits == 0:
+        result = 'Critical glitch.'
+    else:
+        result = f'Glitch with {hits} hit{s}.'
 
-
-class Result:
-    def __init__(self, advantages=0, hits=0, triumphs=0):
-        self.advantages = advantages
-        self.hits = hits
-        self.triumphs = triumphs
-
-    def __repr__(self):
-        return (f'{type(self).__name__}'
-                f'({self.advantages}, {self.hits}, {self.triumphs})')
-
-    def __str__(self):
-        ret = []
-
-        if self.hits > 0:
-            s = 's' if self.hits > 1 else ''
-            ret.append(f'{self.hits} hit{s}')
-        elif self.hits < 0:
-            misses = -self.hits
-            es = 'es' if misses > 1 else ''
-            ret.append(f'{misses} miss{es}')
-
-        if self.advantages > 0:
-            s = 's' if self.advantages > 1 else ''
-            ret.append(f'{self.advantages} advantage{s}')
-        elif self.advantages < 0:
-            disadvantages = -self.advantages
-            s = 's' if disadvantages > 1 else ''
-            ret.append(f'{disadvantages} disadvantage{s}')
-
-        if self.triumphs > 0:
-            s = 's' if self.triumphs > 1 else ''
-            ret.append(f'{self.triumphs} triumph{s}')
-        elif self.triumphs < 0:
-            despairs = -self.triumphs
-            s = 's' if despairs > 1 else ''
-            ret.append(f'{despairs} despair{s}')
-
-        if ret:
-            ret = ', '.join(ret) + '.'
-        else:
-            ret = 'Wash.'
-        return ret
-
-    def __add__(self, other):
-        if isinstance(other, Result):
-            return type(self)(self.advantages + other.advantages,
-                              self.hits + other.hits,
-                              self.triumphs + other.triumphs)
-        elif isinstance(other, int):
-            return type(self)(self.advantages + other,
-                              self.hits + other,
-                              self.triumphs + other)
-        else:
-            return NotImplemented
-
-    __radd__ = __add__
-
-    def __mul__(self, other):
-        ret = type(self)(self.advantages * other,
-                         self.hits * other,
-                         self.triumphs * other)
-        return ret
-
-    __rmul__ = __mul__
-
-    def __neg__(self):
-        return type(self)(-self.advantages, -self.hits, -self.triumphs)
-
-
-class Force:
-    def __init__(self, light=0, dark=0):
-        self.light = light
-        self.dark = dark
-
-    def __repr__(self):
-        return f'{type(self).__name__}({self.light}, {self.dark})'
-
-    def __str__(self):
-        ret = []
-        if self.light:
-            ret.append(f'{self.light} light side')
-        if self.dark:
-            ret.append(f'{self.dark} dark side')
-        if not ret:
-            ret = 'Wash.'
-        else:
-            ret = ', '.join(ret) + '.'
-        return ret
-
-    def __add__(self, other):
-        if isinstance(other, Force):
-            return type(self)(self.light + other.light,
-                              self.dark + other.dark)
-        elif isinstance(other, int):
-            return type(self)(self.light + other,
-                              self.dark + other)
-        return NotImplemented
-
-    __radd__ = __add__
-
-    def __mul__(self, other):
-        return type(self)(self.light * other, self.dark * other)
-
-    __rmul__ = __mul__
-
-
-wash = Result()
-adv = Result(advantages=1)
-hit = Result(hits=1)
-triumph = Result(triumphs=1)
-dis = -adv
-miss = -hit
-despair = -triumph
-light = Force(light=1)
-dark = Force(dark=1)
-
-die_names = {'b': 'boost',
-             's': 'setback',
-             'a': 'ability',
-             'd': 'difficulty',
-             'p': 'proficiency',
-             'c': 'challenge',
-             'f': 'force'}
-
-stardice = {'boost': (wash, wash, hit, hit + adv, 2 * adv, adv),
-            'setback': (wash, wash, miss, miss, dis, dis),
-            'ability': (wash, hit, hit, 2 * hit, 2 * adv, adv,
-                        hit + adv, 2 * adv),
-            'difficulty': (wash, miss, 2 * miss, dis, dis, dis,
-                           2 * dis, miss + dis),
-            'proficiency': (wash, hit, hit, 2 * hit, 2 * hit, adv, hit + adv,
-                            hit + adv, hit + adv, adv * 2, adv * 2, triumph),
-            'challenge': (wash, miss, miss, 2 * miss, 2 * miss, dis, dis,
-                          miss + dis, miss + dis, 2 * dis, 2 * dis, despair),
-            'force': (dark, dark, dark, dark, dark, dark, 2 * dark,
-                      light, light, 2 * light, 2 * light, 2 * light),
-            }
-
-
-def starroller(**kwargs):
-    if 'force' in kwargs:
-        if len(kwargs) > 1:
-            raise ValueError
-        return sum(random.choice(stardice['force'])
-                   for _ in range(kwargs['force']))
-    result = Result()
-    for die, times in kwargs.items():
-        result += sum(random.choice(stardice[die])
-                      for _ in range(times))
     return result
 
 
