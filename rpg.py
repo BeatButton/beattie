@@ -33,61 +33,74 @@ class RPG:
         x repeats the roll N times
         s sorts the results
         t totals each roll
+        You can join rolls with commas
         """
         if inp == 'stats':
             inp = '4d6v1x6t'
         inp = ''.join(inp.split()).lower()
-        expr = r'^[\d]*d?\d+(?:[+\-^v]\d+)?(?:x\d+)?(?:[ts]{1,2})?$'
+        expr = r'^([\d]*d?\d+([+\-^v]\d+)?(x\d+)?([ts]{1,2})?,?)+(?<!,)$'
         if re.match(expr, inp) is None:
             raise commands.BadArgument
 
-        if 'd' not in inp:
-            inp = f'1d{inp}'
-        elif inp[0] == 'd':
-            inp = f'1{inp}'
-        args = tuple(int(arg) for arg in re.findall(r'\d+', inp))
+        rolls = inp.split(',')
+        args_batch = []
+        for roll in rolls:
+            if 'd' not in roll:
+                inp = f'1d{roll}'
+            elif inp[0] == 'd':
+                inp = f'1{roll}'
+            args = tuple(int(arg) for arg in re.findall(r'\d+', roll))
 
-        num = args[0]
-        sides = args[1]
+            num = args[0]
+            sides = args[1]
 
-        hi_drop = 0
-        lo_drop = 0
-        mod = 0
+            hi_drop = 0
+            lo_drop = 0
+            mod = 0
 
-        if '^' in inp:
-            hi_drop = args[2]
-        elif 'v' in inp:
-            lo_drop = args[2]
-        elif '+' in inp:
-            mod = args[2]
-        elif '-' in inp:
-            mod = -args[2]
+            if '^' in inp:
+                hi_drop = args[2]
+            elif 'v' in inp:
+                lo_drop = args[2]
+            elif '+' in inp:
+                mod = args[2]
+            elif '-' in inp:
+                mod = -args[2]
 
-        if 'x' in inp:
-            times = args[-1]
-        else:
-            times = 1
+            if 'x' in inp:
+                times = args[-1]
+            else:
+                times = 1
 
-        loop = self.bot.loop
-        args = (num, sides, lo_drop, hi_drop, mod, times)
-        future = loop.run_in_executor(None, roller, *args)
+            loop = self.bot.loop
+            args = (num, sides, lo_drop, hi_drop, mod, times)
+            args_batch.append(args)
+
+        future = loop.run_in_executor(None, self.roll_helper, args_batch)
         async with ctx.typing():
-            result = await asyncio.wait_for(future, 10, loop=loop)
+            results = await asyncio.wait_for(future, 10, loop=loop)
 
-        total = 't' in inp
+        out = []
+        for roll, result in zip(rolls, results):
+            total = 't' in roll
+            if total:
+                result = [[sum(roll_)] for roll_ in result]
+            if 's' in inp:
+                for roll_ in result:
+                    roll_.sort()
+                result.sort()
+            if total or len(result) == 1:
+                result = [roll_[0] for roll_ in result]
+            if times == 1:
+                result = result[0]
+            out.append(f'{roll}: {result}')
+        await ctx.reply('\n'.join(out))
 
-        if total:
-            result = [[sum(roll_)] for roll_ in result]
-        if 's' in inp:
-            for roll_ in result:
-                roll_.sort()
-            result.sort()
-        if total or num == 1:
-            result = [roll_[0] for roll_ in result]
-        if times == 1:
-            result = result[0]
-
-        await ctx.reply(f'{inp}: {result}')
+    def roll_helper(self, rolls):
+        out = []
+        for roll in rolls:
+            out.append(roller(*roll))
+        return out
 
     @roll.error
     async def roll_error(self, e, ctx):
