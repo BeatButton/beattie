@@ -11,12 +11,12 @@ from utils import contextmanagers, exceptions
 class BContext(commands.Context):
     """An extension of Context to add reply and mention methods,
     as well as support use with self bots"""
-    async def reply(self, content, sep='\n,'):
+    async def reply(self, content, sep=',\n'):
         if self.me.bot:
             content = f'{self.author.display_name}{sep}{content}'
         return await self.send(content)
 
-    async def mention(self, content, sep='\n,'):
+    async def mention(self, content, sep=',\n'):
         if self.me.bot:
             content = f'{self.author.mention}{sep}{content}'
         return await self.send(content)
@@ -97,6 +97,13 @@ class BeattieBot(commands.Bot):
         guild = member.guild
         guild_conf = self.config.get(guild.id, {})
         message = guild_conf.get('welcome_message')
+        if message is not None:
+            await guild.default_channel.send(message.format(member.mention))
+
+    async def on_member_leave(self, member):
+        guild = member.guild
+        guild_conf = self.config.get(guild.id, {})
+        message = guild_conf.get('leave_message')
         if message is not None:
             await guild.default_channel.send(message.format(member.mention))
 
