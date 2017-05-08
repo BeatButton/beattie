@@ -9,26 +9,14 @@ from utils import checks
 class Default:
     def __init__(self, bot):
         self.bot = bot
-        try:
-            with open('config/guilds.yaml') as file:
-                self.bot.config = yaml.load(file)
-        except FileNotFoundError:
-            self.bot.config = {}
-        else:
-            if self.bot.config is None:
-                self.bot.config = {}
 
     async def __global_check(self, ctx):
         if await self.bot.is_owner(ctx.author):
             return True
         cog = ctx.command.cog_name
-        guild_conf = self.bot.config.get(ctx.guild.id, {})
-        blacklist = guild_conf.get('cog_blacklist', set())
+        guild_conf = await self.bot.config.get(ctx.guild.id, {})
+        blacklist = guild_conf.get('cog_blacklist', '')
         return cog not in blacklist
-
-    def _update_config(self):
-        with open('config/guilds.yaml', 'w') as file:
-            yaml.dump(self.bot.config, file)
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -49,16 +37,15 @@ class Default:
         if self.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = self.bot.config.setdefault(ctx.guild.id, {})
-        blacklist = guild.conf.get('cog_blacklist', set())
-        try:
-            blacklist.remove(cog)
-        except KeyError:
+        guild_conf = await self.bot.config.get(ctx.guild.id, {})
+        blacklist = guild_conf.get('cog_blacklist')
+        if f'{cog},' not in blacklist:
             await ctx.send('Cog is already enabled.')
-        else:
-            guild_conf['cog_blacklist'] = blacklist
-            await ctx.send('Cog enabled for this guild.')
-            self._update_config()
+            return
+        blacklist = blacklist.replace(f'{cog},', '')
+        guild_conf['cog_blacklist'] = blacklist
+        await self.bot.config.set(**guild_conf)
+        await ctx.send('Cog enabled for this guild.')
 
     @commands.command()
     @checks.is_owner_or(manage_guild=True)
@@ -67,15 +54,15 @@ class Default:
         if self.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = self.bot.config.setdefault(ctx.guild.id, {})
-        blacklist = guild.conf.get('cog_blacklist', set())
-        if cog in blacklist:
+        guild_conf = await self.bot.config.get(ctx.guild.id, {})
+        blacklist = guild_conf.get('cog_blacklist', '')
+        if f'{cog},' in blacklist:
             await ctx.send('Cog is already disabled.')
             return
-        blacklist.add(cog)
+        blacklist += f'{cog},'
         guild_conf['cog_blacklist'] = blacklist
+        await self.bot.config.set(**guild_conf)
         await ctx.send('Cog disabled for this guild.')
-        self._update_config()
 
     @commands.command(aliases=['p'])
     async def ping(self, ctx):

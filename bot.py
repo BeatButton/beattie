@@ -5,6 +5,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 
+from config import Config
 from utils import contextmanagers, exceptions
 
 
@@ -49,6 +50,7 @@ class BeattieBot(commands.Bot):
         super().__init__(*args, **kwargs)
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.uptime = datetime.datetime.utcnow()
+        self.config = Config(self)
 
     def __del__(self):
         self.session.close()
@@ -95,15 +97,15 @@ class BeattieBot(commands.Bot):
 
     async def on_member_join(self, member):
         guild = member.guild
-        guild_conf = self.config.get(guild.id, {})
-        message = guild_conf.get('welcome_message')
+        guild_conf = await self.config.get(guild.id, {})
+        message = guild_conf.get('welcome')
         if self.user.bot and message is not None:
             await guild.default_channel.send(message.format(member.mention))
 
     async def on_member_leave(self, member):
         guild = member.guild
-        guild_conf = self.config.get(guild.id, {})
-        message = guild_conf.get('leave_message')
+        guild_conf = await self.config.get(guild.id, {})
+        message = guild_conf.get('farewell')
         if self.user.bot and message is not None:
             await guild.default_channel.send(message.format(member.mention))
 
