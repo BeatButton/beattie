@@ -22,17 +22,18 @@ class RPG:
         await ctx.send(random.choice(options))
 
     @commands.command()
-    async def tarot(self, ctx, card=None):
-        cards = os.listdir('data/tarot')
-        card = random.choice(cards)
-        match = re.match(r'[IVX_]*([\w_]+)\.jpg', card)
-        name = match.groups()[0].replace('_', ' ')
-        embed = discord.Embed()
-        embed.title = name
-        filename = card.replace('_', '')
-        embed.set_image(url=f'attachment://{filename}')
-        await ctx.send(file=discord.File(f'data/tarot/{card}', filename),
-                       embed=embed)
+    async def tarot(self, ctx):
+        async with ctx.typing():
+            cards = os.listdir('data/tarot')
+            card = random.choice(cards)
+            match = re.match(r'[IVX_]*([\w_]+)\.jpg', card)
+            name = match.groups()[0].replace('_', ' ')
+            embed = discord.Embed()
+            embed.title = name
+            filename = card.replace('_', '')
+            embed.set_image(url=f'attachment://{filename}')
+            await ctx.send(file=discord.File(f'data/tarot/{card}', filename),
+                           embed=embed)
 
     @commands.command(aliases=['r'])
     async def roll(self, ctx, *, inp='1d20'):
