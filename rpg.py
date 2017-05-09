@@ -35,8 +35,12 @@ class RPG:
             for root, dirs, files in os.walk('data/tarot'):
                 if any(suit in root for suit in suits):
                     cards += [f'{root}/{card}' for card in files]
-            card = random.choice(cards).replace('\\', '/')
-            match = re.match(r'(?:\w+/)+[IVX0_]*([\w_]+)\.jpg', card)
+            try:
+                card = random.choice(cards).replace('\\', '/')
+            except IndexError:
+                await ctx.send('Please specify a valid suit, or no suit.')
+                return
+            match = re.match(r'(?:\w+\/)+[IVX0_]*([\w_]+)\.jpg', card)
             name = match.groups()[0].replace('_', ' ')
             url = self.tarot_url.format(name.lower().replace(' ', '-'))
             embed = discord.Embed()
