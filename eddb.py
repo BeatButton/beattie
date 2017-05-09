@@ -7,7 +7,7 @@ from discord.ext import commands
 from katagawa.kg import Katagawa
 import yaml
 
-from eddb_schema import Commodity, System, Station, Listing
+from schema.eddb import Commodity, System, Station, Listing
 from utils.aioutils import areader, make_batches
 
 
@@ -286,8 +286,9 @@ class EDDB:
     async def single_json(file):
         text = await file.read()
         data = json.loads(text)
-        while data:
-            yield data.pop(0)
+        # yield from in asynchronous generators when
+        for item in data:
+            yield item
 
     @staticmethod
     async def multi_json(file):
