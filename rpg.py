@@ -15,6 +15,7 @@ from starwars import starroller, die_names
 class RPG:
     def __init__(self, bot):
         self.bot = bot
+        self.tarot_url = 'http://www.tarotlore.com/tarot-cards/{}/'
 
     @commands.command()
     async def choose(self, ctx, *options):
@@ -22,17 +23,28 @@ class RPG:
         await ctx.send(random.choice(options))
 
     @commands.command()
-    async def tarot(self, ctx):
+    async def tarot(self, ctx, *suits):
+        """Get a random tarot card."""
         async with ctx.typing():
-            cards = os.listdir('data/tarot')
-            card = random.choice(cards)
-            match = re.match(r'[IVX_]*([\w_]+)\.jpg', card)
+            cards = []
+            if not suits:
+                suits = ('cups', 'swords', 'wands', 'pentacles', 'major')
+            if 'minor' in suits:
+                suits = suits + ('cups', 'swords', 'wands', 'pentacles')
+            suits = set(suit.lower() for suit in suits)
+            for root, dirs, files in os.walk('data/tarot'):
+                if any(suit in root for suit in suits):
+                    cards += [f'{root}/{card}' for card in files]
+            card = random.choice(cards).replace('\\', '/')
+            match = re.match(r'(?:\w+/)+[IVX0_]*([\w_]+)\.jpg', card)
             name = match.groups()[0].replace('_', ' ')
+            url = self.tarot_url.format(name.lower().replace(' ', '-'))
             embed = discord.Embed()
             embed.title = name
-            filename = card.replace('_', '')
+            embed.url = url
+            filename = card.replace('_', '').rpartition('/')[-1]
             embed.set_image(url=f'attachment://{filename}')
-            await ctx.send(file=discord.File(f'data/tarot/{card}', filename),
+            await ctx.send(file=discord.File(f'{card}', filename),
                            embed=embed)
 
     @commands.command(aliases=['r'])
