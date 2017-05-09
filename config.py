@@ -1,6 +1,6 @@
 from katagawa.kg import Katagawa
 
-from config_schema import Guild
+from schema.config import Guild
 
 
 class Config:
