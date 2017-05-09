@@ -21,15 +21,15 @@ with open('config/config.yaml') as file:
 self_bot = 'self' in sys.argv
 
 if self_bot:
+    prefixes = ['self>']
     token = config['self']
-    bot = BeattieBot('self>', self_bot=True)
+elif config['debug']:
+    prefixes = [config['test_prefix']]
+    token = config['test_token']
 else:
+    prefixes = config['prefixes']
     token = config['token']
-    if config['debug']:
-        prefixes = [config['test_prefix']]
-    else:
-        prefixes = config['prefixes']
-    bot = BeattieBot(when_mentioned_or(*prefixes))
+bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
 extensions = ('cat', 'default', 'eddb', 'japanese', 'osu', 'nsfw', 'repl',
               'rpg', 'stats', 'wolfram', 'xkcd')
