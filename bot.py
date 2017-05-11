@@ -67,7 +67,7 @@ class BeattieBot(commands.Bot):
         else:
             return True
 
-    async def handle_error(self, e, ctx):
+    async def handle_error(self, ctx, e):
         e = getattr(e, 'original', e)
         if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send('Missing required arguments.')
@@ -95,6 +95,12 @@ class BeattieBot(commands.Bot):
                 ctx.command = self.get_command(command.lower())
                 await self.invoke(ctx)
 
+    async def on_guild_join(self, guild):
+        await self.config.add(guild.id)
+
+    async def on_guild_remove(self, guild):
+        await self.config.remove(guild.id)
+
     async def on_member_join(self, member):
         guild = member.guild
         guild_conf = await self.config.get(guild.id, {})
@@ -109,9 +115,9 @@ class BeattieBot(commands.Bot):
         if self.user.bot and message is not None:
             await guild.default_channel.send(message.format(member.mention))
 
-    async def on_command_error(self, e, ctx):
+    async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, 'on_error'):
-            await self.handle_error(e, ctx)
+            await self.handle_error(ctx, e)
 
     async def on_error(self, event_method, *args, **kwargs):
         _, e, _ = sys.exc_info()
