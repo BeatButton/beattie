@@ -22,15 +22,14 @@ class Config:
             else:
                 return default
 
-    async def set(self, **kwargs):
+    async def set(self, gid, **kwargs):
         async with self.db.get_session() as s:
-            gid = kwargs['id']
-            query = s.select(Guild).where(Guild.id == gid)
-            guild = await query.first()
-            if guild:
-                del kwargs['id']
-                values = ','.join(f"{k}='{v}'" for k, v in kwargs.items())
-                print(f'update guild set {values} where id = {gid}')
-                await s.execute(f'update guild set {values} where id = {gid}')
-            else:
-                s.insert(Guild(**kwargs))
+            s.merge(Guild(id=gid, **kwargs))
+
+    async def add(self, gid, **kwargs):
+        async with self.db.get_session() as s:
+            s.add(Guild(id=gid, **kwargs))
+
+    async def remove(self, gid):
+        async with self.db.get_session() as s:
+            await s.execute(f'delete from guild where id = {gid}')
