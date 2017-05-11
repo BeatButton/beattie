@@ -87,9 +87,7 @@ class Default:
         """Set the member greeting for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the newcomer"""
-        guild_conf = self.bot.config.setdefault(ctx.guild.id, {})
-        guild_conf['welcome_message'] = message
-        self._update_config()
+        await self.bot.config.set(ctx.guild.id, welcome=message)
         await ctx.send('Welcome message set.')
 
     @commands.command()
@@ -98,9 +96,7 @@ class Default:
         """Set the member-left message for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the deserter"""
-        guild_conf = self.bot.config.setdefault(ctx.guild.id, {})
-        guild_conf['leave_message'] = message
-        self._update_config()
+        await self.bot.config.set(ctx.guild.id, farewell=message)
         await ctx.send('Leave message set.')
 
 
