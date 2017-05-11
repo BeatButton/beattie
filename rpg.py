@@ -24,7 +24,15 @@ class RPG:
 
     @commands.command()
     async def tarot(self, ctx, *suits):
-        """Get a random tarot card."""
+        """Get a random tarot card.
+
+        You can specify the suits from which to pull, options are:
+        minor:
+            cups
+            swords
+            wands
+            pentacles
+        major"""
         async with ctx.typing():
             cards = []
             if not suits:
@@ -136,7 +144,7 @@ class RPG:
         return out
 
     @roll.error
-    async def roll_error(self, e, ctx):
+    async def roll_error(self, ctx, e):
         e = getattr(e, 'original', e)
         if isinstance(e, (commands.MissingRequiredArgument,
                       commands.BadArgument)):
@@ -151,7 +159,7 @@ class RPG:
         elif isinstance(e, discord.HTTPException):
             await ctx.reply('Your results were too long. Maybe sum them?')
         else:
-            await self.bot.handle_error(e, ctx)
+            await self.bot.handle_error(ctx, e)
 
     @commands.command(aliases=['shadroll', 'sr'])
     async def shadowroll(self, ctx, *, inp):
@@ -178,7 +186,7 @@ class RPG:
         await ctx.reply(result)
 
     @shadowroll.error
-    async def shadowroll_error(self, e, ctx):
+    async def shadowroll_error(self, ctx, e):
         e = getattr(e, 'original', e)
         if isinstance(e, (commands.MissingRequiredArgument,
                       commands.BadArgument)):
@@ -188,7 +196,7 @@ class RPG:
         elif isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
-            await self.bot.handle_error(e, ctx)
+            await self.bot.handle_error(ctx, e)
 
     @commands.command(aliases=['sw'])
     async def starroll(self, ctx, *, inp):
@@ -233,12 +241,12 @@ class RPG:
                 await ctx.reply(result)
 
     @starroll.error
-    async def starroll_error(self, e, ctx):
+    async def starroll_error(self, ctx, e):
         e = getattr(e, 'original', e)
         if isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
-            await self.bot.handle_error(e, ctx)
+            await self.bot.handle_error(ctx, e)
 
 
 def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):

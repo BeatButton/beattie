@@ -34,7 +34,7 @@ class Cat:
         await ctx.send(url)
 
     @cat.error
-    async def cat_error(self, e, ctx):
+    async def cat_error(self, ctx, e):
         e = getattr(e, 'original', e)
         if isinstance(e, aiohttp.ServerDisconnectedError):
             await ctx.invoke(self.cat)

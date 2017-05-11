@@ -234,9 +234,9 @@ class EDDB:
         await ctx.send('Database update complete.')
 
     @update.error
-    async def update_error(self, exception, ctx):
+    async def update_error(self, ctx, e):
         self.updating = False
-        await self.bot.handle_error(exception, ctx)
+        await self.bot.handle_error(ctx, e)
 
     async def make_table(self, file, name, cols):
         file_ext = name.rpartition('.')[-1]
@@ -254,8 +254,8 @@ class EDDB:
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
                 async for row in batch:
-                    s.insert(column(**{col: self.coerce(row[col], cols[col])
-                                       for col in cols}))
+                    s.add(column(**{col: self.coerce(row[col], cols[col])
+                                    for col in cols}))
 
     @staticmethod
     def coerce(value, type_):
