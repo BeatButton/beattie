@@ -13,14 +13,11 @@ class Config:
     def __del__(self):
         self.bot.loop.create_task(self.db.close())
 
-    async def get(self, key, default=None):
+    async def get(self, key):
         async with self.db.get_session() as s:
             query = s.select(Guild).where(Guild.id == key)
             guild = await query.first()
-            if guild:
-                return {k.name: v for k, v in guild.to_dict().items()}
-            else:
-                return default
+            return {k.name: v for k, v in guild.to_dict().items()}
 
     async def set(self, gid, **kwargs):
         async with self.db.get_session() as s:

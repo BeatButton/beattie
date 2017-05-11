@@ -103,16 +103,16 @@ class BeattieBot(commands.Bot):
 
     async def on_member_join(self, member):
         guild = member.guild
-        guild_conf = await self.config.get(guild.id, {})
-        message = guild_conf.get('welcome')
-        if self.user.bot and message is not None:
+        guild_conf = await self.config.get(guild.id)
+        message = guild_conf['welcome']
+        if self.user.bot and message:
             await guild.default_channel.send(message.format(member.mention))
 
     async def on_member_leave(self, member):
         guild = member.guild
-        guild_conf = await self.config.get(guild.id, {})
-        message = guild_conf.get('farewell')
-        if self.user.bot and message is not None:
+        guild_conf = await self.config.get(guild.id)
+        message = guild_conf['farewell']
+        if self.user.bot and message:
             await guild.default_channel.send(message.format(member.mention))
 
     async def on_command_error(self, ctx, e):
