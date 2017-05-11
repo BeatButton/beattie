@@ -13,12 +13,12 @@ class BContext(commands.Context):
     """An extension of Context to add reply and mention methods,
     as well as support use with self bots"""
     async def reply(self, content, sep=',\n'):
-        if self.me.bot:
+        if self.me.bot and not isinsance(self.channel, dicord.DMChannel):
             content = f'{self.author.display_name}{sep}{content}'
         return await self.send(content)
 
     async def mention(self, content, sep=',\n'):
-        if self.me.bot:
+        if self.me.bot and not isinsance(self.channel, dicord.DMChannel):
             content = f'{self.author.mention}{sep}{content}'
         return await self.send(content)
 
