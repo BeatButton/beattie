@@ -27,6 +27,7 @@ class tmp_dl:
         self.session = session
         self.encoding = encoding
         self.path = f'tmp/{self.url.rpartition("/")[-1]}'
+        self.file = None
 
     async def __aenter__(self):
         if not os.path.isdir('tmp'):
@@ -46,10 +47,8 @@ class tmp_dl:
         return self.file
 
     async def __aexit__(self, exc_type, exc, tb):
-        try:
+        if self.file:
             await self.file.close()
-        except AttributeError:
-            pass
         try:
             os.remove(self.path)
         except FileNotFoundError:
