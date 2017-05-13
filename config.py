@@ -21,7 +21,10 @@ class Config:
 
     async def set(self, gid, **kwargs):
         async with self.db.get_session() as s:
-            s.merge(Guild(id=gid, **kwargs))
+            guild = await s.select(Guild).where(Guild.id == gid).first()
+            for key, value in kwargs.items():
+                setattr(guild, key, value)
+            s.merge(guild)
 
     async def add(self, gid, **kwargs):
         async with self.db.get_session() as s:
