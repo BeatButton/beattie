@@ -132,7 +132,7 @@ class RPG:
                 result.sort()
             if total or len(result) == 1:
                 result = [roll_[0] for roll_ in result]
-            if times == 1:
+            if 'x' not in inp:
                 result = result[0]
             out.append(f'{roll}: {result}')
         await ctx.reply('\n'.join(out))
