@@ -1,35 +1,47 @@
-from katagawa.kg import Katagawa
-
-from schema.config import Guild
+import asyncpg
+import yaml
 
 
 class Config:
     def __init__(self, bot):
-        dsn = f'postgresql://beattie:passwd@localhost/config'
-        self.db = Katagawa(dsn)
+        with open('config/config.yaml') as file:
+            data = yaml.load(file)
+        self.password = data.get('config_password', '')
         self.bot = bot
-        self.bot.loop.create_task(self.db.connect())
+        self.bot.loop.create_task(self._create_pool())
+
+    async def _create_pool(self):
+        self.pool = await asyncpg.create_pool(user='beattie',
+                                              password=self.password,
+                                              database='config',
+                                              host='localhost')
 
     def __del__(self):
         self.bot.loop.create_task(self.db.close())
 
-    async def get(self, key):
-        async with self.db.get_session() as s:
-            query = s.select(Guild).where(Guild.id == key)
-            guild = await query.first()
-            return {k.name: v for k, v in guild.to_dict().items()}
+    async def get(self, gid):
+        async with self.pool.acquire() as conn:
+            query = 'SELECT * FROM guild WHERE id == $1;'
+            args = (gid,)
+            guild = conn.fetchrow(query, args)
+            return dict(guild.items())
 
     async def set(self, gid, **kwargs):
-        async with self.db.get_session() as s:
-            guild = await s.select(Guild).where(Guild.id == gid).first()
-            for key, value in kwargs.items():
-                setattr(guild, key, value)
-            s.merge(guild)
+        async with self.pool.acquire() as conn:
+            fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs, 2))
+            query = f'UPDATE guild SET {fmt} WHERE id == $1;'
+            args = (gid, *kwargs.values())
+            await conn.execute(query, args)
 
     async def add(self, gid, **kwargs):
-        async with self.db.get_session() as s:
-            s.add(Guild(id=gid, **kwargs))
+        async with self.conn.acquire() as conn:
+            kwargs['id'] = gid
+            fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs))
+            query = f'INSERT INTO guild VALUES ({fmt});'
+            await conn.execute(query, *kwargs.values())
 
     async def remove(self, gid):
         async with self.db.get_session() as s:
-            await s.execute(f'delete from guild where id = {gid}')
+            query = 'DELETE FROM guild WHERE id = $1;'
+            args = (gid,)
+            await s.execute(query, args)
