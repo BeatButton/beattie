@@ -105,6 +105,7 @@ class EDDB:
                 system = await sys_query.first()
 
                 if system:
+                    target_system = system.name
                     query = query.where(Station.system_id == system.id)
                 else:
                     await ctx.send(f'No system {target_system} found.')
@@ -115,12 +116,9 @@ class EDDB:
             if len(stations) == 1:
                 station = stations[0].to_dict()
                 station = {k.name: v for k, v in station.items()}
-                query = s.select(System)
-                query = query.where(System.id == station['system_id'])
-                system = await query.first()
                 del station['id']
                 del station['system_id']
-                output = f'System: {system.name}\n'
+                output = f'System: {target_system}\n'
                 output += '\n'.join(f'{key.replace("_", " ").title()}: {val}'
                                     for key, val in station.items() if val)
             elif not stations:
