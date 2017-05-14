@@ -23,7 +23,7 @@ class Config:
         async with self.pool.acquire() as conn:
             query = 'SELECT * FROM guild WHERE id = $1;'
             args = (gid,)
-            guild = await conn.fetchrow(query, args)
+            guild = await conn.fetchrow(query, *args)
             return dict(guild.items())
 
     async def set(self, gid, **kwargs):
@@ -31,7 +31,7 @@ class Config:
             fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs, 2))
             query = f'UPDATE guild SET {fmt} WHERE id = $1;'
             args = (gid, *kwargs.values())
-            await conn.execute(query, args)
+            await conn.execute(query, *args)
 
     async def add(self, gid, **kwargs):
         async with self.conn.acquire() as conn:
@@ -41,7 +41,7 @@ class Config:
             await conn.execute(query, *kwargs.values())
 
     async def remove(self, gid):
-        async with self.db.get_session() as s:
+        async with self.conn.acquire() as conn:
             query = 'DELETE FROM guild WHERE id = $1;'
             args = (gid,)
-            await s.execute(query, args)
+            await conn.execute(query, *args)
