@@ -21,7 +21,7 @@ class Config:
 
     async def get(self, gid):
         async with self.pool.acquire() as conn:
-            query = 'SELECT * FROM guild WHERE id == $1;'
+            query = 'SELECT * FROM guild WHERE id = $1;'
             args = (gid,)
             guild = conn.fetchrow(query, args)
             return dict(guild.items())
@@ -29,7 +29,7 @@ class Config:
     async def set(self, gid, **kwargs):
         async with self.pool.acquire() as conn:
             fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs, 2))
-            query = f'UPDATE guild SET {fmt} WHERE id == $1;'
+            query = f'UPDATE guild SET {fmt} WHERE id = $1;'
             args = (gid, *kwargs.values())
             await conn.execute(query, args)
 
