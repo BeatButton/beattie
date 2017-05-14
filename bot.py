@@ -110,7 +110,7 @@ class BeattieBot(commands.Bot):
         if message:
             await guild.default_channel.send(message.format(member.mention))
 
-    async def on_member_leave(self, member):
+    async def on_member_remove(self, member):
         if not self.user.bot:
             return
         guild = member.guild
