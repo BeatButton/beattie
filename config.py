@@ -23,7 +23,7 @@ class Config:
         async with self.pool.acquire() as conn:
             query = 'SELECT * FROM guild WHERE id = $1;'
             args = (gid,)
-            guild = conn.fetchrow(query, args)
+            guild = await conn.fetchrow(query, args)
             return dict(guild.items())
 
     async def set(self, gid, **kwargs):
