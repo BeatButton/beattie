@@ -287,4 +287,4 @@ def setup(bot):
 
 
 def teardown(cog):
-    cog.bot.loop.create_task(cog.db.close())
+    cog.bot.loop.create_task(cog.pool.close())
