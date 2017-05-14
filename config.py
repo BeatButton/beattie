@@ -16,9 +16,6 @@ class Config:
                                               database='config',
                                               host='localhost')
 
-    def __del__(self):
-        self.bot.loop.create_task(self.db.close())
-
     async def get(self, gid):
         query = 'SELECT * FROM guild WHERE id = $1;'
         args = (gid,)
