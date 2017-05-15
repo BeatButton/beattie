@@ -193,7 +193,7 @@ class EDDB:
         self.updating = True
         await ctx.send('Database update in progress...')
 
-        with open('config/eddb_schema.json') as file:
+        with open('schema/eddb_schema.json') as file:
             schema = json.load(file)
 
         for name in schema:
