@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 from lxml import etree
 
-from starwars import starroller, die_names
+from utils.starwars import starroller, die_names
 
 
 class RPG:
