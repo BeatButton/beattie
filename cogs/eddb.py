@@ -142,7 +142,7 @@ class EDDB:
                         query += ' AND system_id = $2'
                         args = (search[1], dict(system.items())['id'])
                     else:
-                        await ctx.send(f'No system {target_system} found.')
+                        await ctx.send(f'No system {search[2]} found.')
                         return
                 else:
                     args = (search[1],)
