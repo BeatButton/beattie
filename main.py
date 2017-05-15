@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import asyncio
 import logging
+from pathlib import Path
 import sys
 
 from discord.ext.commands import when_mentioned_or
@@ -31,8 +32,7 @@ else:
     token = config['token']
 bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
-extensions = ('cat', 'default', 'eddb', 'japanese', 'osu', 'nsfw', 'repl',
-              'rpg', 'stats', 'wolfram', 'xkcd')
+extensions = [f'cogs.{f.stem}' for f in Path('cogs').glob('*.py')]
 
 for extension in extensions:
     try:
