@@ -21,7 +21,7 @@ class Default:
     @commands.command(hidden=True)
     @commands.is_owner()
     async def reload(self, ctx, *, cog):
-        cog = f'{cogs}.cog.lower()'
+        cog = f'cogs.{cog.lower()}'
         try:
             self.bot.unload_extension(cog)
             self.bot.load_extension(cog)
