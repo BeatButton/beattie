@@ -135,9 +135,9 @@ class EDDB:
 
             elif len(search) < 4:
                 query = 'SELECT id FROM station WHERE name ILIKE $1'
-                if target_system:
+                if len(search) == 3:
                     sys_query = 'SELECT id FROM system WHERE name ILIKE $1;'
-                    system = await conn.fetchrow(sys_query, target_system)
+                    system = await conn.fetchrow(sys_query, search[2])
                     if system:
                         query += ' AND system_id = $2'
                         args = (search[1], dict(system.items())['id'])
