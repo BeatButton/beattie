@@ -16,7 +16,7 @@ class Default:
         cog = ctx.command.cog_name
         guild_conf = await self.bot.config.get(ctx.guild.id, {})
         blacklist = guild_conf.get('cog_blacklist', '')
-        return cog not in blacklist
+        return f'{cog},' not in blacklist
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -38,13 +38,12 @@ class Default:
             await ctx.send("That cog doesn't exist.")
             return
         guild_conf = await self.bot.config.get(ctx.guild.id, {})
-        blacklist = guild_conf.get('cog_blacklist')
+        blacklist = guild_conf.get('cog_blacklist', '')
         if f'{cog},' not in blacklist:
             await ctx.send('Cog is already enabled.')
             return
         blacklist = blacklist.replace(f'{cog},', '')
-        guild_conf['cog_blacklist'] = blacklist
-        await self.bot.config.set(**guild_conf)
+        await self.bot.config.set(ctx.guild.id, cog_blacklist=blacklist)
         await ctx.send('Cog enabled for this guild.')
 
     @commands.command()
@@ -60,8 +59,7 @@ class Default:
             await ctx.send('Cog is already disabled.')
             return
         blacklist += f'{cog},'
-        guild_conf['cog_blacklist'] = blacklist
-        await self.bot.config.set(**guild_conf)
+        await self.bot.config.set(ctx.guild.id, cog_blacklist=blacklist)
         await ctx.send('Cog disabled for this guild.')
 
     @commands.command(aliases=['p'])
