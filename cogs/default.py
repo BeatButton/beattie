@@ -53,7 +53,7 @@ class Default:
         if self.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = await self.bot.config.get(ctx.guild.id, {})
+        guild_conf = await self.bot.config.get(ctx.guild.id)
         blacklist = guild_conf.get('cog_blacklist', '')
         if f'{cog},' in blacklist:
             await ctx.send('Cog is already disabled.')
