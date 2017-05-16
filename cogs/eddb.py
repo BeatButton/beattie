@@ -244,8 +244,11 @@ class EDDB:
     def coerce(value, type_):
         if isinstance(value, dict):
             value = value['name']
-        if type_ == 'BOOLEAN':
-            return bool(value)
+        if type_ == 'TEXT':
+            if not value:
+                return ''
+            else:
+                return str(value)
         if type_ in ('INTEGER', 'BIGINT'):
             try:
                 return int(value)
@@ -256,11 +259,8 @@ class EDDB:
                 return float(value)
             except (ValueError, TypeError):
                 return 0.0
-        if type_ == 'TEXT':
-            if not value:
-                return ''
-            else:
-                return str(value)
+        if type_ == 'BOOLEAN':
+            return bool(value)
         return value
 
     @staticmethod
