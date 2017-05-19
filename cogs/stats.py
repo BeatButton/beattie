@@ -25,7 +25,7 @@ class Stats:
         try:
             self.owner
         except AttributeError:
-            self.owner = await self.bot.get_user_info(140293604726800385)
+            self.owner = self.bot.get_user(140293604726800385)
 
         embed.set_author(name=str(self.owner), icon_url=self.owner.avatar_url)
 
@@ -55,7 +55,7 @@ class Stats:
 
         process = psutil.Process()
         cpu_usage = process.cpu_percent()
-        memory_usage = process.memory_full_info().uss / 1024**2
+        memory_usage = process.memory_full_info().uss / 2 ** 20
         embed.add_field(name='CPU Usage', value=f'{cpu_usage}%')
         embed.add_field(name='Memory Usage', value=f'{memory_usage:.2f} MiB')
         await ctx.send(embed=embed)
