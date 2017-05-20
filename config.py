@@ -32,8 +32,9 @@ class Config:
 
     async def add(self, gid, **kwargs):
         kwargs['id'] = gid
+        keys = ', '.join(kwargs)
         fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs))
-        query = f'INSERT INTO guild VALUES ({fmt});'
+        query = f'INSERT INTO guild ({keys}) VALUES ({fmt});'
         async with self.pool.acquire() as conn:
             await conn.execute(query, *kwargs.values())
 
