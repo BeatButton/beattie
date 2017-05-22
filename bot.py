@@ -98,7 +98,11 @@ class BeattieBot(commands.Bot):
                 await self.invoke(ctx)
 
     async def on_guild_join(self, guild):
-        await self.config.add(guild.id)
+        bots = sum(m.bot for m in guild.members)
+        if bots / len(guild.members) > 0.5:
+            await guild.leave()
+        else:
+            await self.config.add(guild.id)
 
     async def on_guild_remove(self, guild):
         await self.config.remove(guild.id)
