@@ -11,8 +11,8 @@ class Dictionary:
         self.bot = bot
         self.jisho = Jisho()
 
-    @commands.command()
-    async def lookup(self, ctx, *, keyword):
+    @commands.command(name='jisho')
+    async def jisho_(self, ctx, *, keyword):
         """Get results from Jisho.org, Japanese dictionary"""
         data = await self.jisho.lookup(keyword)
         if not data:
@@ -28,6 +28,7 @@ class Dictionary:
         embed.add_field(name='Readings', value=res['readings'])
         embed.add_field(name='Parts of Speech', value=res['parts_of_speech'])
         embed.add_field(name='Meanings', value=res['english'])
+        embed.color = discord.Color(0x56d926)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['ud', 'urbandict'])
