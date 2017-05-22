@@ -1,3 +1,4 @@
+import io
 import json
 import time
 
@@ -226,10 +227,10 @@ class EDDB:
                      f'{",".join(f"{k} {v}" for k, v in cols.items())},'
                      'PRIMARY KEY(id));')
             await conn.execute(query)
-            fmt = ','.join(['{}'] * len(cols))
+            fmt = ', '.join(['{}'] * len(cols))
             query = f'INSERT INTO {table_name} VALUES({fmt});'
             async for batch in make_batches(file, batch_size):
-                commit = ''
+                commit = io.StringIO()
                 async for row in batch:
                     row = {col: self.coerce(row[col], cols[col])
                            for col in cols}
@@ -237,8 +238,8 @@ class EDDB:
                         if cols[col] == 'TEXT':
                             val = val.replace("'", "''")
                             val = row[col] = f"'{val}'"
-                    commit += query.format(*row.values())
-                await conn.execute(commit)
+                    commit.write(query.format(*row.values()))
+                await conn.execute(commit.getvalue())
 
     @staticmethod
     def coerce(value, type_):
