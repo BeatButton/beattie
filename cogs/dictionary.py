@@ -14,7 +14,8 @@ class Dictionary:
     @commands.command(name='jisho')
     async def jisho_(self, ctx, *, keyword):
         """Get results from Jisho.org, Japanese dictionary"""
-        data = await self.jisho.lookup(keyword)
+        async with ctx.typing():
+            data = await self.jisho.lookup(keyword)
         if not data:
             await ctx.send('No words found.')
             return
@@ -31,11 +32,12 @@ class Dictionary:
         embed.color = discord.Color(0x56d926)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['ud', 'urbandict'])
+    @commands.command(aliases=['ud', 'urban', 'urbandict'])
     async def urbandictionary(self, ctx, *, word):
         """Look up a word on urbandictionary.com"""
         params = {'term': word}
-        async with self.bot.session.get(self.urban_url, params=params) as resp:
+        get = self.bot.session.get
+        async with ctx.typing(), get(self.urban_url, params=params) as resp:
             data = await resp.json()
         try:
             res = data['list'][0]
