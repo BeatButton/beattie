@@ -10,6 +10,8 @@ class Stats:
 
     def __init__(self, bot):
         self.bot = bot
+        self.process = psutil.Process()
+        _ = self.process.cpu_percent()
 
     @commands.command()
     async def uptime(self, ctx):
@@ -53,9 +55,8 @@ class Stats:
 
         embed.add_field(name='Guilds', value=len(self.bot.guilds))
 
-        process = psutil.Process()
-        cpu_usage = process.cpu_percent()
-        memory_usage = process.memory_full_info().uss / 2 ** 20
+        cpu_usage = self.process.cpu_percent()
+        memory_usage = self.process.memory_full_info().uss / 2 ** 20
         embed.add_field(name='CPU Usage', value=f'{cpu_usage}%')
         embed.add_field(name='Memory Usage', value=f'{memory_usage:.2f} MiB')
         await ctx.send(embed=embed)
