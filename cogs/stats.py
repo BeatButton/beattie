@@ -57,7 +57,7 @@ class Stats:
 
         cpu_usage = self.process.cpu_percent()
         memory_usage = self.process.memory_full_info().uss / 2 ** 20
-        embed.add_field(name='CPU Usage', value=f'{cpu_usage}%')
+        embed.add_field(name='CPU Usage', value=f'{cpu_usage:.2f}%')
         embed.add_field(name='Memory Usage', value=f'{memory_usage:.2f} MiB')
         await ctx.send(embed=embed)
 
