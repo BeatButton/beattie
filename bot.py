@@ -47,7 +47,17 @@ class BeattieBot(commands.Bot):
     general_ignore = (ConnectionResetError, )
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self_bot = kwargs.get('self_bot')
+        if self_bot:
+            game = None
+            status = discord.Status.idle
+        else:
+            game = discord.Game(name='b>help')
+            status = None
+        super().__init__(*args, **kwargs, game=game, status=status)
+        if self_bot:
+            self.loop.create_task(self.change_presence(afk=True))
+            self.owner_id = self.user.id
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.uptime = datetime.datetime.utcnow()
         self.config = Config(self)
@@ -60,12 +70,6 @@ class BeattieBot(commands.Bot):
             pass
         else:
             delete()
-
-    async def is_owner(self, member):
-        if self.user.bot:
-            return await super().is_owner(member)
-        else:
-            return True
 
     async def handle_error(self, ctx, e):
         e = getattr(e, 'original', e)
@@ -84,10 +88,6 @@ class BeattieBot(commands.Bot):
         print(self.user.name)
         print(self.user.id)
         print('------')
-        if self.user.bot:
-            await self.change_presence(game=discord.Game(name='b>help'))
-        else:
-            await self.change_presence(status=discord.Status.idle, afk=True)
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
