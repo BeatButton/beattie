@@ -57,7 +57,6 @@ class BeattieBot(commands.Bot):
         super().__init__(*args, **kwargs, game=game, status=status)
         if self_bot:
             self.loop.create_task(self.change_presence(afk=True))
-            self.owner_id = self.user.id
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.uptime = datetime.datetime.utcnow()
         self.config = Config(self)
@@ -88,6 +87,8 @@ class BeattieBot(commands.Bot):
         print(self.user.name)
         print(self.user.id)
         print('------')
+        if not self.user.bot:
+            self.owner_id = self.user.id
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
