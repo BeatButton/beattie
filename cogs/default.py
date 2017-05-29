@@ -14,7 +14,7 @@ class Default:
         if await self.bot.is_owner(ctx.author):
             return True
         cog = ctx.command.cog_name
-        guild_conf = await self.bot.config.get(ctx.guild.id, {})
+        guild_conf = await self.bot.config.get(ctx.guild.id)
         blacklist = guild_conf.get('cog_blacklist', '')
         return f'{cog},' not in blacklist
 
