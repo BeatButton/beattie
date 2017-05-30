@@ -21,6 +21,7 @@ class Dictionary:
             return
         res = data[0]
         res = {k: '\n'.join(v) for k, v in res.items()}
+        res['english'] = ', '.join(res['english'].split('\n'))
         embed = discord.Embed()
         embed.url = self.jisho_url.format(keyword)
         embed.title = keyword
