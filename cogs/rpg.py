@@ -7,7 +7,6 @@ from urllib.parse import parse_qs
 
 import discord
 from discord.ext import commands
-from lxml import etree
 
 from utils.starwars import starroller, die_names
 
