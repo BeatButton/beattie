@@ -40,11 +40,10 @@ for extension in extensions:
     except Exception as e:
         print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
+logger = logging.getLogger('discord')
 if self_bot:
-    logger = logging.getLogger('discord')
     logger.setLevel(logging.CRITICAL)
 else:
-    logger = logging.getLogger('discord')
     logger.setLevel(logging.DEBUG)
     handler = logging.FileHandler(
         filename='discord.log', encoding='utf-8', mode='w')
