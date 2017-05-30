@@ -10,9 +10,8 @@ from discord.ext import commands
 # imports for REPL env
 import asyncio  # noqa: F401
 import math  # noqa: F401
-import sys  # noqa: F401
-
 import objgraph   # noqa: F401
+import sys  # noqa: F401
 
 
 class REPL:
