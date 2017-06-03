@@ -11,7 +11,7 @@ class Default:
         self.bot = bot
 
     async def __global_check(self, ctx):
-        if await self.bot.is_owner(ctx.author):
+        if await self.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
         cog = ctx.command.cog_name
         guild_conf = await self.bot.config.get(ctx.guild.id)
