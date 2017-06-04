@@ -22,6 +22,7 @@ class Remind:
         self.bot = bot
         self.queue = []
         self.bot.loop.create_task(self.init())
+        self.timer = None
 
     async def init(self):
         self.pool = await asyncpg.create_pool(user='beattie',
@@ -61,6 +62,7 @@ class Remind:
         if old is not self.queue[0]:
             if self.timer:
                 self.timer.cancel()
+                self.timer = None
             await self.start_timer()
 
     async def send_message(self, task):
