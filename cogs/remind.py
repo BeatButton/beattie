@@ -36,6 +36,8 @@ class Remind:
 
     @commands.command()
     async def remind(self, ctx, *, inp):
+        """Have the bot remind you about something.
+           First put time, then optionally a topic after a comma."""
         try:
             time, topic = (i.strip() for i in inp.split(','))
         except ValueError:
@@ -43,10 +45,10 @@ class Remind:
         time = await Time().convert(ctx, time)
         message = (f'{ctx.author.mention}\n'
                    f'You asked to be reminded about {topic}.')
-        await self.schedule_message(ctx.channel.id, message, time)
+        await self.schedule_message(time, ctx.channel.id, message)
 
-    async def schedule_message(self, channel, message, time):
-        args = (channel, message, time)
+    async def schedule_message(self, time, channel, message):
+        args = (time, channel, message)
         async with self.pool.acquire() as conn:
             query = 'INSERT INTO message VALUES($1, $2, $3);'
             await conn.execute(query, *args)
