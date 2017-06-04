@@ -70,20 +70,23 @@ class Remind:
         await channel.send(task.message)
         async with self.pool.acquire() as conn:
             query = ('DELETE FROM message WHERE '
-                     'channel = $1 AND message = $2 AND time = $3;')
+                     'time = $1 AND channel = $2 AND message = $3;')
             await conn.execute(query, *task)
 
     async def start_timer(self):
         self.timer = self.bot.loop.create_task(self.sleep())
 
     async def sleep(self):
-        while self.queue:
-            delta = (self.queue[0].time - datetime.now()).total_seconds()
-            if delta <= 0:
-                await self.send_message(self.queue[0])
-                del self.queue[0]
-            else:
-                await asyncio.sleep(min(delta, 1_000_000))
+        try:
+            while self.queue:
+                delta = (self.queue[0].time - datetime.now()).total_seconds()
+                if delta <= 0:
+                    await self.send_message(self.queue[0])
+                    del self.queue[0]
+                else:
+                    await asyncio.sleep(min(delta, 1_000_000))
+        except Exception as e:
+            print(e)
 
 
 def setup(bot):
