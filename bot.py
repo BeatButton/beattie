@@ -2,11 +2,13 @@ import datetime
 import sys
 
 import aiohttp
+import asyncpg
 import discord
 from discord.ext import commands
 
 from config import Config
 from utils import contextmanagers, exceptions
+import yaml
 
 
 class BContext(commands.Context):
@@ -55,9 +57,12 @@ class BeattieBot(commands.Bot):
             game = discord.Game(name='b>help')
             status = None
         super().__init__(*args, **kwargs, game=game, status=status)
+        with open('config/config.yaml') as file:
+            data = yaml.load(file)
+        password = data.get('config_password', '')
+        self.loop.create_task(self.create_pool(password))
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.uptime = datetime.datetime.utcnow()
-        self.config = Config(self)
 
     def __del__(self):
         self.session.close()
@@ -67,6 +72,13 @@ class BeattieBot(commands.Bot):
             pass
         else:
             delete()
+
+    async def create_pool(self, password):
+        self.pool = await asyncpg.create_pool(user='beattie',
+                                              password=password,
+                                              database='config',
+                                              host='localhost')
+        self.config = Config(self)
 
     async def handle_error(self, ctx, e):
         e = getattr(e, 'original', e)

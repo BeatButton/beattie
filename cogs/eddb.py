@@ -22,22 +22,12 @@ class EDDB:
         self.updating = False
         self.bot = bot
         self.url = 'https://eddb.io/archive/v5/'
-        with open('config/config.yaml') as file:
-            data = yaml.load(file)
-        self.password = data.get('eddb_password', '')
-
-        self.bot.loop.create_task(self._create_pool())
+        self.pool = self.bot.pool
         self.parsers = {
             'csv': self.csv_formatter,
             'json': self.single_json,
             'jsonl': self.multi_json,
         }
-
-    async def _create_pool(self):
-        self.pool = await asyncpg.create_pool(user='postgres',
-                                              password=self.password,
-                                              database='ed.db',
-                                              host='localhost')
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
