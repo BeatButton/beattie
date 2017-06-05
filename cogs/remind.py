@@ -21,14 +21,11 @@ class Remind:
         self.password = data.get('config_password', '')
         self.bot = bot
         self.queue = []
+        self.pool = self.bot.pool
         self.bot.loop.create_task(self.init())
         self.timer = None
 
     async def init(self):
-        self.pool = await asyncpg.create_pool(user='beattie',
-                                              password=self.password,
-                                              database='schedule',
-                                              host='localhost')
         async with self.pool.acquire() as conn:
             query = 'SELECT * from message;'
             for record in await conn.fetch(query):
