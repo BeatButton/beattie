@@ -1,35 +1,31 @@
-import asyncpg
-import yaml
+from schema.config import Table, Guild
+from utils.asyncqlio import to_dict
 
 
 class Config:
     def __init__(self, bot):
-        self.pool = bot.pool
+        self.db = bot.db
+        self.db.bind_tables(Table)
 
     async def get(self, gid):
-        query = 'SELECT * FROM guild WHERE id = $1;'
-        args = (gid,)
-        async with self.pool.acquire() as conn:
-            guild = await conn.fetchrow(query, *args)
-        return {k: v for k, v in guild.items() if v}
+        async with self.db.get_session() as s:
+            query = s.select(Guild).where(Guild.id == gid)
+            guild = await query.first()
+        return {k: v for k, v in to_dict(guild).items() if v}
 
     async def set(self, gid, **kwargs):
-        fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs, 2))
-        query = f'UPDATE guild SET {fmt} WHERE id = $1;'
-        args = (gid, *kwargs.values())
-        async with self.pool.acquire() as conn:
-            await conn.execute(query, *args)
+        async with self.db.get_session() as s:
+            query = s.select(Guild).where(Guild.id == gid)
+            guild = await query.first()
+            for attr, value in kwargs.items():
+                setattr(guild, attr, value)
+            await s.merge(guild)
 
     async def add(self, gid, **kwargs):
-        kwargs['id'] = gid
-        keys = ', '.join(kwargs)
-        fmt = ', '.join(f'{k} = ${i}' for i, k in enumerate(kwargs))
-        query = f'INSERT INTO guild ({keys}) VALUES ({fmt});'
-        async with self.pool.acquire() as conn:
-            await conn.execute(query, *kwargs.values())
+        async with self.db.get_session() as s:
+            await s.add(Guild(id=gid, **kwargs))
 
     async def remove(self, gid):
-        query = 'DELETE FROM guild WHERE id = $1;'
-        args = (gid,)
-        async with self.pool.acquire() as conn:
-            await conn.execute(query, *args)
+        query = f'DELETE FROM guild WHERE id = {gid};'
+        async with self.db.get_session() as s:
+            await s.execute(query, {})
