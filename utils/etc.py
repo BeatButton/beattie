@@ -3,7 +3,7 @@ def reverse_insort(seq, val):
     hi = len(seq)
     while lo < hi:
         mid = (lo + hi) // 2
-        if val > a[mid]:
+        if val > seq[mid]:
             hi = mid
         else:
             lo = mid + 1
