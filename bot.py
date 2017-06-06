@@ -3,6 +3,7 @@ import sys
 
 import aiohttp
 import asyncpg
+from asyncqlio.db import DatabaseInterface
 import discord
 from discord.ext import commands
 
@@ -60,25 +61,22 @@ class BeattieBot(commands.Bot):
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         password = data.get('config_password', '')
-        self.loop.create_task(self.create_pool(password))
         self.session = aiohttp.ClientSession(loop=self.loop)
+        dsn = f'postgresql://beattie:{password}@localhost/beattie'
+        self.db = DatabaseInterface(dsn)
+        self.loop.create_task(self.db.connect())
+        self.config = Config(self)
         self.uptime = datetime.datetime.utcnow()
 
     def __del__(self):
         self.session.close()
+        self.db.close()
         try:
             delete = super().__del__
         except AttributeError:
             pass
         else:
             delete()
-
-    async def create_pool(self, password):
-        self.pool = await asyncpg.create_pool(user='beattie',
-                                              password=password,
-                                              database='config',
-                                              host='localhost')
-        self.config = Config(self)
 
     async def handle_error(self, ctx, e):
         e = getattr(e, 'original', e)
@@ -112,7 +110,13 @@ class BeattieBot(commands.Bot):
     async def on_guild_join(self, guild):
         bots = sum(m.bot for m in guild.members)
         if bots / len(guild.members) > 0.5:
-            await guild.leave()
+            try:
+                dest = guild.default_channel
+                await dest.send("This gulid's bot to user ratio is too high.")
+            except discord.Forbidden:
+                pass
+            finally:
+                await guild.leave()
         else:
             await self.config.add(guild.id)
 
