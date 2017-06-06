@@ -128,7 +128,7 @@ class BeattieBot(commands.Bot):
             return
         guild = member.guild
         guild_conf = await self.config.get(guild.id)
-        message = guild_conf['welcome']
+        message = guild_conf.get('welcome')
         if message:
             await guild.default_channel.send(message.format(member.mention))
 
@@ -137,7 +137,7 @@ class BeattieBot(commands.Bot):
             return
         guild = member.guild
         guild_conf = await self.config.get(guild.id)
-        message = guild_conf['farewell']
+        message = guild_conf.get('farewell')
         if message:
             await guild.default_channel.send(message.format(member.mention))
 
