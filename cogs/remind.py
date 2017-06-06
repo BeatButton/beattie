@@ -22,9 +22,9 @@ class Remind:
         self.bot.loop.create_task(self.init())
 
     async def init(self):
+        await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             return
-        await self.bot.wait_until_ready()
         async with self.db.get_session() as s:
             query = s.select(Message).order_by(Message.time)
             self.queue = [Task(*record.to_dict().values())
