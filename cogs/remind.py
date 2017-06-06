@@ -74,15 +74,12 @@ class Remind:
         self.timer = self.bot.loop.create_task(self.sleep())
 
     async def sleep(self):
-        try:
-            while self.queue:
-                delta = (self.queue[-1].time - datetime.now()).total_seconds()
-                if delta <= 0:
-                    await self.send_message(self.queue.pop())
-                else:
-                    await asyncio.sleep(min(delta, 3_000_000))
-        except Exception as e:
-            print(e)
+        while self.queue:
+            delta = (self.queue[-1].time - datetime.now()).total_seconds()
+            if delta <= 0:
+                await self.send_message(self.queue.pop())
+            else:
+                await asyncio.sleep(min(delta, 3_000_000))
 
 
 def setup(bot):
