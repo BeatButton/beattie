@@ -1,5 +1,4 @@
 import asyncio
-from bisect import insort_left
 from collections import namedtuple
 from datetime import datetime
 
@@ -7,6 +6,7 @@ from discord.ext import commands
 
 from schema.remind import Table, Message
 from utils.converters import Time
+from utils.etc import reverse_insort
 
 
 Task = namedtuple('Task', 'time channel message')
@@ -26,7 +26,8 @@ class Remind:
         async with self.db.get_session() as s:
             query = s.select(Message).order_by(Message.time)
             self.queue = [Task(*record.to_dict().values())
-                          async for r in await query.all()]
+                          async for record in await query.all()]
+        self.queue.sort(reverse=True)
         await self.start_timer()
 
     @commands.command()
@@ -47,12 +48,12 @@ class Remind:
         async with self.db.get_session() as s:
             await s.add(Message(time=time, channel=channel, message=message))
         if self.queue:
-            old = self.queue[0]
+            old = self.queue[-1]
         else:
             old = None
         task = Task(time, channel, message)
-        insort_left(self.queue, task)
-        if old is not self.queue[0]:
+        reverse_insort(self.queue, task)
+        if old is not self.queue[-1]:
             if self.timer:
                 self.timer.cancel()
                 self.timer = None
@@ -75,10 +76,9 @@ class Remind:
     async def sleep(self):
         try:
             while self.queue:
-                delta = (self.queue[0].time - datetime.now()).total_seconds()
+                delta = (self.queue[-1].time - datetime.now()).total_seconds()
                 if delta <= 0:
-                    await self.send_message(self.queue[0])
-                    del self.queue[0]
+                    await self.send_message(self.queue.pop())
                 else:
                     await asyncio.sleep(min(delta, 3_000_000))
         except Exception as e:
