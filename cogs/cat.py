@@ -41,6 +41,14 @@ class Cat:
         else:
             raise e
 
+    @commands.command()
+    async def dog(self, ctx):
+        """Gets a picture of a random dog from random.dog!"""
+        async with ctx.typing():
+            async with self.bot.get('http://random.dog/woof') as resp:
+                url = 'http://random.dog/{}'.format(await resp.text())
+        await ctx.send(url)
+
 
 def setup(bot):
     bot.add_cog(Cat(bot))
