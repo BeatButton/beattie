@@ -8,4 +8,4 @@ Table = table_base()
 class Message(Table):
     time = Column(Timestamp, primary_key=True)
     channel = Column(BigInt, primary_key=True)
-    message = Column(Text, primary_key=True)
+    text = Column(Text, primary_key=True)
