@@ -9,7 +9,7 @@ from utils.converters import Time
 from utils.etc import reverse_insort
 
 
-Task = namedtuple('Task', 'time channel message')
+Task = namedtuple('Task', 'time channel text')
 
 
 class Remind:
@@ -46,10 +46,10 @@ class Remind:
         await self.schedule_message(time, ctx.channel.id, message)
         await ctx.send(f"Okay, I'll remind you.")
 
-    async def schedule_message(self, time, channel, message):
+    async def schedule_message(self, time, channel, text):
         async with self.db.get_session() as s:
-            await s.add(Message(time=time, channel=channel, message=message))
-        task = Task(time, channel, message)
+            await s.add(Message(time=time, channel=channel, text=message))
+        task = Task(time, channel, text)
         if not self.queue or task < self.queue[-1]:
             self.queue.append(task)
             self.timer.cancel()
@@ -59,12 +59,14 @@ class Remind:
 
     async def send_message(self, task):
         channel = self.bot.get_channel(task.channel)
-        await channel.send(task.message)
+        await channel.send(task.text)
         async with self.db.get_session() as s:
-            query = ('DELETE FROM message WHERE '
-                     'time = $1 AND channel = $2 AND message = $3;')
-            await s.execute(query, {f'param_{i}': val
-                                    for i, val in enumerate(task)})
+
+            query = s.select(Message).where((Message.time == task.time)
+                                            & (Message.channel == task.channel)
+                                            & (Message.text == task.text))
+            message = await query.first()
+            await s.remove(message)
 
     async def start_timer(self):
         self.timer = self.bot.loop.create_task(self.sleep())

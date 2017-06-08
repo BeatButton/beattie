@@ -26,6 +26,7 @@ class Config:
             await s.add(Guild(id=gid, **kwargs))
 
     async def remove(self, gid):
-        query = f'DELETE FROM guild WHERE id = {gid};'
         async with self.db.get_session() as s:
-            await s.execute(query, {})
+            query = s.select(Guild).where(Guild.id == gid)
+            guild = await query.first()
+            await s.remove(guild)
