@@ -18,7 +18,7 @@ class Remind:
         self.queue = []
         self.db = self.bot.db
         self.db.bind_tables(Table)
-        self.timer = None
+        self.timer = self.bot.loop.create_task(asyncio.sleep(0))
         self.bot.loop.create_task(self.init())
 
     async def init(self):
@@ -49,28 +49,22 @@ class Remind:
     async def schedule_message(self, time, channel, message):
         async with self.db.get_session() as s:
             await s.add(Message(time=time, channel=channel, message=message))
-        if self.queue:
-            old = self.queue[-1]
-        else:
-            old = None
         task = Task(time, channel, message)
-        reverse_insort(self.queue, task)
-        if old is not self.queue[-1]:
-            if self.timer:
-                self.timer.cancel()
-                self.timer = None
+        if not self.queue or task < self.queue[-1]:
+            self.queue.append(task)
+            self.timer.cancel()
             await self.start_timer()
+        else:
+            reverse_insort(self.queue, task, hi=len(self.queue) - 1)
 
     async def send_message(self, task):
         channel = self.bot.get_channel(task.channel)
         await channel.send(task.message)
         async with self.db.get_session() as s:
-            message = task.message.replace("'", "''")
             query = ('DELETE FROM message WHERE '
-                     f"time = '{task.time}' "
-                     f'AND channel = {task.channel} '
-                     f"AND message = '{message}';")
-            await s.execute(query, {})
+                     'time = $1 AND channel = $2 AND message = $3;')
+            await s.execute(query, {f'param_{i}': val
+                                    for i, val in enumerate(task)})
 
     async def start_timer(self):
         self.timer = self.bot.loop.create_task(self.sleep())
