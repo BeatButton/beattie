@@ -127,7 +127,11 @@ class BeattieBot(commands.Bot):
         if not self.user.bot:
             return
         guild = member.guild
-        guild_conf = await self.config.get(guild.id)
+        try:
+            guild_conf = await self.config.get(guild.id)
+        except AttributeError:
+            print(f'Guild conf failed for id {member.guild.id}')
+            return
         message = guild_conf.get('welcome')
         if message:
             await guild.default_channel.send(message.format(member.mention))
