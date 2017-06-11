@@ -48,7 +48,7 @@ class Remind:
 
     async def schedule_message(self, time, channel, text):
         async with self.db.get_session() as s:
-            await s.add(Message(time=time, channel=channel, text=message))
+            await s.add(Message(time=time, channel=channel, text=text))
         task = Task(time, channel, text)
         if not self.queue or task < self.queue[-1]:
             self.queue.append(task)
