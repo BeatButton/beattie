@@ -68,15 +68,10 @@ class BeattieBot(commands.Bot):
         self.config = Config(self)
         self.uptime = datetime.datetime.utcnow()
 
-    def __del__(self):
+    def _do_cleanup(self):
         self.session.close()
-        self.db.close()
-        try:
-            delete = super().__del__
-        except AttributeError:
-            pass
-        else:
-            delete()
+        self.loop.create_task(self.db.close())
+        super()._do_cleanup()
 
     async def handle_error(self, ctx, e):
         e = getattr(e, 'original', e)
