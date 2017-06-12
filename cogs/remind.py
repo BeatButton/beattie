@@ -33,18 +33,23 @@ class Remind:
         await self.start_timer()
 
     @commands.command()
-    async def remind(self, ctx, *, inp):
+    async def remind(self, ctx, time: Time, *, topic='something'):
         """Have the bot remind you about something.
-           First put time, then optionally a topic after a comma."""
-        try:
-            time, topic = (i.strip() for i in inp.split(','))
-        except ValueError:
-            time, topic = inp, 'something'
-        time = await Time().convert(ctx, time)
+           First put time (in quotes if there are spaces), then topic"""
         message = (f'{ctx.author.mention}\n'
                    f'You asked to be reminded about {topic}.')
         await self.schedule_message(time, ctx.channel.id, message)
         await ctx.send(f"Okay, I'll remind you.")
+
+    @remind.error
+    async def remind_error(self, ctx, e):
+        if isinstance(e, commands.BadArgument):
+            await ctx.send('Bad input. Valid input examples:\n'
+                           'remind 10m pizza\n'
+                           'remind "two days" check progress'
+                           )
+        else:
+            await self.bot.handle_error(ctx, e)
 
     async def schedule_message(self, time, channel, text):
         async with self.db.get_session() as s:
