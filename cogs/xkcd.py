@@ -8,8 +8,7 @@ from discord.ext import commands
 
 
 class XKCD:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         with open('data/why.txt', encoding='utf8') as file:
             self.questions = tuple(file.readlines())
 
@@ -23,7 +22,7 @@ class XKCD:
         """Commands for getting xkcd comics"""
         async with ctx.typing():
             url = 'https://xkcd.com/info.0.json'
-            async with self.bot.get(url) as resp:
+            async with ctx.bot.get(url) as resp:
                 self.xkcd_data = await resp.json()
             if inp == 'random':
                 await ctx.invoke(self.random)
@@ -54,7 +53,7 @@ class XKCD:
         except ValueError:
             url = 'https://duckduckgo.com/html/'
             params = {'q': f'{inp} xkcd'}
-            async with self.bot.get(url, params=params) as resp:
+            async with ctx.bot.get(url, params=params) as resp:
                 text = await resp.text()
             match = re.search(r'xkcd\.com/(\d+)/\s', text)
             if match:
@@ -68,7 +67,7 @@ class XKCD:
                 return
 
         url = f'https://xkcd.com/{number}/info.0.json'
-        async with self.bot.get(url) as resp:
+        async with ctx.bot.get(url) as resp:
             try:
                 data = await resp.json()
             # JSONDecodeError on Windows and ClientResponseError on Linux
@@ -84,7 +83,7 @@ class XKCD:
 
     @commands.command(hidden=True)
     async def sudo(self, ctx, *_):
-        if await self.bot.is_owner(ctx.author):
+        if await ctx.bot.is_owner(ctx.author):
             await ctx.send('Operation successful.')
         else:
             await ctx.send('Unable to lock /var/lib/dpkg/, are you root?')
@@ -100,4 +99,4 @@ def format_comic(data):
 
 
 def setup(bot):
-    bot.add_cog(XKCD(bot))
+    bot.add_cog(XKCD())

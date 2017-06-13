@@ -15,8 +15,7 @@ import sys  # noqa: F401
 
 
 class REPL:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self._last_result = None
         self.sessions = set()
 
@@ -37,7 +36,7 @@ class REPL:
     async def eval_(self, ctx, *, body: str):
         env = {
             'author': ctx.author,
-            'bot': self.bot,
+            'bot': ctx.bot,
             'ctx': ctx,
             'channel': ctx.channel,
             'guild': ctx.guild,
@@ -85,7 +84,7 @@ class REPL:
     async def repl(self, ctx):
         env = {
             'author': ctx.author,
-            'bot': self.bot,
+            'bot': ctx.bot,
             'ctx': ctx,
             'channel': ctx.channel,
             'guild': ctx.guild,
@@ -105,10 +104,10 @@ class REPL:
                        '`exit()` or `quit` to exit.')
         while True:
             response = await (
-                 self.bot.wait_for('message',
-                                   check=lambda m: m.content.startswith('<')
-                                   and (m.author, m.channel) ==
-                                   (ctx.author, ctx.channel)))
+                 ctx.bot.wait_for('message',
+                                  check=lambda m: m.content.startswith('<')
+                                  and (m.author, m.channel) ==
+                                  (ctx.author, ctx.channel)))
 
             cleaned = self.cleanup_code(response.content)
 
@@ -168,4 +167,4 @@ class REPL:
 
 
 def setup(bot):
-    bot.add_cog(REPL(bot))
+    bot.add_cog(REPL())

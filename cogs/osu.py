@@ -4,8 +4,7 @@ import yaml
 
 
 class OSU:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.key = data['osu_key']
@@ -24,7 +23,7 @@ class OSU:
             name = ctx.author.display_name
         url = 'api/get_user'
         params = {'k': self.key, 'u': name}
-        async with self.bot.get(f'{self.base}{url}', params=params) as resp:
+        async with ctx.bot.get(f'{self.base}{url}', params=params) as resp:
             data = await resp.json()
         if not data:
             await ctx.send(f'No user with name or id {name} found.')
@@ -48,4 +47,4 @@ class OSU:
 
 
 def setup(bot):
-    bot.add_cog(OSU(bot))
+    bot.add_cog(OSU())

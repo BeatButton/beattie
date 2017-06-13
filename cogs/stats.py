@@ -8,8 +8,7 @@ from discord.ext import commands
 class Stats:
     """Bot usage statistics."""
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self.process = psutil.Process()
         _ = self.process.cpu_percent()
 
@@ -27,16 +26,16 @@ class Stats:
         try:
             self.owner
         except AttributeError:
-            self.owner = self.bot.get_user(140293604726800385)
+            self.owner = ctx.bot.get_user(140293604726800385)
 
         embed.set_author(name=str(self.owner), icon_url=self.owner.avatar_url)
 
-        total_members = sum(len(s.members) for s in self.bot.guilds)
-        unique_members = len(self.bot.users)
+        total_members = sum(len(s.members) for s in ctx.bot.guilds)
+        unique_members = len(ctx.bot.users)
 
         voice = 0
         text = 0
-        for channel in self.bot.get_all_channels():
+        for channel in ctx.bot.get_all_channels():
             if isinstance(channel, discord.TextChannel):
                 text += 1
             else:
@@ -49,11 +48,11 @@ class Stats:
         embed.set_footer(text='Made with discord.py',
                          icon_url='http://i.imgur.com/5BFecvA.png')
         try:
-            embed.timestamp = self.bot.uptime
+            embed.timestamp = ctx.bot.uptime
         except AttributeError:
             pass
 
-        embed.add_field(name='Guilds', value=len(self.bot.guilds))
+        embed.add_field(name='Guilds', value=len(ctx.bot.guilds))
 
         cpu_usage = self.process.cpu_percent()
         memory_usage = self.process.memory_full_info().uss / 2 ** 20
@@ -64,7 +63,7 @@ class Stats:
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
         try:
-            delta = now - self.bot.uptime
+            delta = now - ctx.bot.uptime
         except AttributeError:
             delta = datetime.timedelta()
         hours, remainder = divmod(int(delta.total_seconds()), 3600)
@@ -85,4 +84,4 @@ class Stats:
 
 
 def setup(bot):
-    bot.add_cog(Stats(bot))
+    bot.add_cog(Stats())

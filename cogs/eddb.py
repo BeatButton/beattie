@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import json
 import logging
@@ -20,9 +21,9 @@ class EDDB:
 
     def __init__(self, bot):
         self.updating = False
-        self.bot = bot
+        self.loop = bot.loop
         self.url = 'https://eddb.io/archive/v5/'
-        self.db = self.bot.db
+        self.db = bot.db
         self.db.bind_tables(Table)
         self.parsers = {
             'csv': self.csv_formatter,
@@ -165,19 +166,19 @@ class EDDB:
         await ctx.send('Database update in progress...')
 
         for name, table in self.file_to_table.items():
-            self.bot.logger.info(f'Downloading {name}')
-            async with self.bot.tmp_dl(f'{self.url}{name}') as file:
-                self.bot.logger.info(f'Creating table for {name}')
+            ctx.bot.logger.info(f'Downloading {name}')
+            async with ctx.bot.tmp_dl(f'{self.url}{name}') as file:
+                ctx.bot.logger.info(f'Creating table for {name}')
                 await self.make_table(file, name, table)
 
         self.updating = False
-        self.bot.logger.info('ed.db update complete')
+        ctx.bot.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
 
     @update.error
     async def update_error(self, ctx, e):
         self.updating = False
-        await self.bot.handle_error(ctx, e)
+        await ctx.bot.handle_error(ctx, e)
 
     async def make_table(self, file, name, table):
         file_ext = name.rpartition('.')[-1]
@@ -252,4 +253,4 @@ def setup(bot):
 
 
 def teardown(cog):
-    cog.bot.loop.create_task(cog.pool.close())
+    asyncio.get_event_loop().create_task(cog.pool.close())
