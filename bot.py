@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from config import Config
-from utils import contextmanagers, exceptions
+from utils import contextmanagers, decorators, exceptions
 import yaml
 
 
@@ -102,6 +102,7 @@ class BeattieBot(commands.Bot):
                 ctx.command = self.get_command(command.lower())
                 await self.invoke(ctx)
 
+    @decorators.bot_only
     async def on_guild_join(self, guild):
         bots = sum(m.bot for m in guild.members)
         if bots / len(guild.members) > 0.5:
@@ -115,12 +116,12 @@ class BeattieBot(commands.Bot):
         else:
             await self.config.add(guild.id)
 
+    @decorators.bot_only
     async def on_guild_remove(self, guild):
         await self.config.remove(guild.id)
 
+    @decorators.bot_only
     async def on_member_join(self, member):
-        if not self.user.bot:
-            return
         guild = member.guild
         try:
             guild_conf = await self.config.get(guild.id)
@@ -131,9 +132,8 @@ class BeattieBot(commands.Bot):
         if message:
             await guild.default_channel.send(message.format(member.mention))
 
+    @decorators.bot_only
     async def on_member_remove(self, member):
-        if not self.user.bot:
-            return
         guild = member.guild
         guild_conf = await self.config.get(guild.id)
         message = guild_conf.get('farewell')
