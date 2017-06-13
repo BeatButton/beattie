@@ -11,8 +11,7 @@ class Wolfram:
              0xf7d9: ' = ',
              }
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self.url = 'http://api.wolframalpha.com/v2/query'
         with open('config/config.yaml') as file:
             data = yaml.load(file)
@@ -23,7 +22,7 @@ class Wolfram:
         """Query Wolfram|Alpha."""
         async with ctx.typing():
             params = {'input': inp, 'appid': self.key, 'format': 'plaintext'}
-            async with self.bot.get(self.url, params=params) as resp:
+            async with ctx.bot.get(self.url, params=params) as resp:
                 text = await resp.text()
             root = etree.fromstring(text.encode(), etree.XMLParser())
             try:
@@ -43,4 +42,4 @@ class Wolfram:
 
 
 def setup(bot):
-    bot.add_cog(Wolfram(bot))
+    bot.add_cog(Wolfram())

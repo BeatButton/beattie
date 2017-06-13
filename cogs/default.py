@@ -8,13 +8,13 @@ from utils import checks
 
 class Default:
     def __init__(self, bot):
-        self.bot = bot
+        self.config = bot.config
 
     async def __global_check(self, ctx):
-        if await self.bot.is_owner(ctx.author) or ctx.guild is None:
+        if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
         cog = ctx.command.cog_name
-        guild_conf = await self.bot.config.get(ctx.guild.id)
+        guild_conf = await self.config.get(ctx.guild.id)
         blacklist = guild_conf.get('cog_blacklist', '')
         return f'{cog},' not in blacklist
 
@@ -23,8 +23,8 @@ class Default:
     async def reload(self, ctx, *, cog):
         cog = f'cogs.{cog.lower()}'
         try:
-            self.bot.unload_extension(cog)
-            self.bot.load_extension(cog)
+            ctx.bot.unload_extension(cog)
+            ctx.bot.load_extension(cog)
         except ModuleNotFoundError:
             await ctx.send('Cog does not exist.')
         else:
@@ -34,32 +34,32 @@ class Default:
     @checks.is_owner_or(manage_guild=True)
     async def enable(self, ctx, cog):
         """Enable a cog in the guild."""
-        if self.bot.get_cog(cog) is None:
+        if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = await self.bot.config.get(ctx.guild.id)
+        guild_conf = await self.config.get(ctx.guild.id)
         blacklist = guild_conf.get('cog_blacklist', '')
         if f'{cog},' not in blacklist:
             await ctx.send('Cog is already enabled.')
             return
         blacklist = blacklist.replace(f'{cog},', '')
-        await self.bot.config.set(ctx.guild.id, cog_blacklist=blacklist)
+        await self.config.set(ctx.guild.id, cog_blacklist=blacklist)
         await ctx.send('Cog enabled for this guild.')
 
     @commands.command()
     @checks.is_owner_or(manage_guild=True)
     async def disable(self, ctx, cog):
         """Disable a cog in the guild."""
-        if self.bot.get_cog(cog) is None:
+        if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = await self.bot.config.get(ctx.guild.id)
+        guild_conf = await self.config.get(ctx.guild.id)
         blacklist = guild_conf.get('cog_blacklist', '')
         if f'{cog},' in blacklist:
             await ctx.send('Cog is already disabled.')
             return
         blacklist += f'{cog},'
-        await self.bot.config.set(ctx.guild.id, cog_blacklist=blacklist)
+        await self.config.set(ctx.guild.id, cog_blacklist=blacklist)
         await ctx.send('Cog disabled for this guild.')
 
     @commands.command(aliases=['p'])
@@ -68,7 +68,7 @@ class Default:
         msg = await ctx.send("Pong! :ping_pong:")
 
         before = time.monotonic()
-        await (await self.bot.ws.ping())
+        await (await ctx.bot.ws.ping())
         after = time.monotonic()
         ping_time = (after - before) * 1000
 
@@ -85,7 +85,7 @@ class Default:
         """Set the member greeting for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the newcomer"""
-        await self.bot.config.set(ctx.guild.id, welcome=message)
+        await self.config.set(ctx.guild.id, welcome=message)
         await ctx.send('Welcome message set.')
 
     @commands.command()
@@ -94,7 +94,7 @@ class Default:
         """Set the member-left message for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the deserter"""
-        await self.bot.config.set(ctx.guild.id, farewell=message)
+        await self.config.set(ctx.guild.id, farewell=message)
         await ctx.send('Leave message set.')
 
 

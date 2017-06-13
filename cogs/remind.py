@@ -14,16 +14,16 @@ Task = namedtuple('Task', 'time channel text')
 
 class Remind:
     def __init__(self, bot):
-        self.bot = bot
         self.queue = []
-        self.db = self.bot.db
+        self.loop = bot.loop
+        self.db = bot.db
         self.db.bind_tables(Table)
-        self.timer = self.bot.loop.create_task(asyncio.sleep(0))
-        self.bot.loop.create_task(self.init())
+        self.timer = self.loop.create_task(asyncio.sleep(0))
+        self.loop.create_task(self.init())
 
     async def init(self):
-        await self.bot.wait_until_ready()
-        if not self.bot.user.bot:
+        await ctx.bot.wait_until_ready()
+        if not ctx.bot.user.bot:
             return
         async with self.db.get_session() as s:
             query = s.select(Message).order_by(Message.time)
@@ -49,7 +49,7 @@ class Remind:
                            'remind "two days" check progress'
                            )
         else:
-            await self.bot.handle_error(ctx, e)
+            await ctx.bot.handle_error(ctx, e)
 
     async def schedule_message(self, time, channel, text):
         async with self.db.get_session() as s:
@@ -63,7 +63,7 @@ class Remind:
             reverse_insort(self.queue, task, hi=len(self.queue) - 1)
 
     async def send_message(self, task):
-        channel = self.bot.get_channel(task.channel)
+        channel = ctx.bot.get_channel(task.channel)
         await channel.send(task.text)
         async with self.db.get_session() as s:
 
@@ -74,7 +74,7 @@ class Remind:
             await s.remove(message)
 
     async def start_timer(self):
-        self.timer = self.bot.loop.create_task(self.sleep())
+        self.timer = self.loop.create_task(self.sleep())
 
     async def sleep(self):
         while self.queue:

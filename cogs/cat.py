@@ -7,8 +7,7 @@ import yaml
 
 
 class Cat:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         self.key = data.get('cat_key', '')
@@ -22,7 +21,7 @@ class Cat:
     async def cat(self, ctx):
         """Gets a picture of a random cat from thecatapi.com!"""
         async with ctx.typing():
-            async with self.bot.get(self.url, params=self.params) as resp:
+            async with ctx.bot.get(self.url, params=self.params) as resp:
                 root = etree.fromstring(await resp.text())
             url = root.find('.//url').text
             if not url.startswith('http://'):
@@ -30,7 +29,7 @@ class Cat:
             pattern = r'http://\d+\.media\.tumblr\.com'
             replace = 'http://media.tumblr.com'
             url = re.sub(pattern, replace, url)
-            self.bot.logger.debug(f'Cat URL: {url}')
+            ctx.bot.logger.debug(f'Cat URL: {url}')
         await ctx.send(url)
 
     @cat.error
@@ -45,10 +44,10 @@ class Cat:
     async def dog(self, ctx):
         """Gets a picture of a random dog from random.dog!"""
         async with ctx.typing():
-            async with self.bot.get('http://random.dog/woof') as resp:
+            async with ctx.bot.get('http://random.dog/woof') as resp:
                 url = 'http://random.dog/{}'.format(await resp.text())
         await ctx.send(url)
 
 
 def setup(bot):
-    bot.add_cog(Cat(bot))
+    bot.add_cog(Cat())

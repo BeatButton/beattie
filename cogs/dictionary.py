@@ -8,8 +8,7 @@ class Dictionary:
     urban_url = 'http://api.urbandictionary.com/v0/define'
 
     def __init__(self, bot):
-        self.bot = bot
-        self.jisho = Jisho()
+        self.jisho = Jisho(session=bot.session)
 
     @commands.command(name='jisho')
     async def jisho_(self, ctx, *, keyword):
@@ -37,9 +36,9 @@ class Dictionary:
     async def urbandictionary(self, ctx, *, word):
         """Look up a word on urbandictionary.com"""
         params = {'term': word}
-        get = self.bot.session.get
+        get = ctx.bot.get
         async with ctx.typing(), get(self.urban_url, params=params) as resp:
-            data = await resp.json()
+                data = await resp.json()
         try:
             res = data['list'][0]
         except IndexError:

@@ -13,7 +13,7 @@ from utils.starwars import starroller, die_names
 
 class RPG:
     def __init__(self, bot):
-        self.bot = bot
+        self.loop = bot.loop
         self.tarot_url = 'http://www.tarotlore.com/tarot-cards/{}/'
 
     @commands.command()
@@ -112,13 +112,12 @@ class RPG:
             else:
                 times = 1
 
-            loop = self.bot.loop
             args = (num, sides, lo_drop, hi_drop, mod, times)
             args_batch.append(args)
 
-        future = loop.run_in_executor(None, self.roll_helper, args_batch)
+        future = self.loop.run_in_executor(None, self.roll_helper, args_batch)
         async with ctx.typing():
-            results = await asyncio.wait_for(future, 10, loop=loop)
+            results = await asyncio.wait_for(future, 10, loop=self.loop)
 
         out = []
         for roll, result in zip(rolls, results):
@@ -158,7 +157,7 @@ class RPG:
         elif isinstance(e, discord.HTTPException):
             await ctx.reply('Your results were too long. Maybe sum them?')
         else:
-            await self.bot.handle_error(ctx, e)
+            await ctx.bot.handle_error(ctx, e)
 
     @commands.command(aliases=['shadroll', 'sr'])
     async def shadowroll(self, ctx, *, inp):
@@ -176,11 +175,10 @@ class RPG:
             inp = inp[:-1]
         num = int(inp)
 
-        loop = self.bot.loop
         args = (num, edge)
-        future = loop.run_in_executor(None, shadowroller, *args)
+        future = self.loop.run_in_executor(None, shadowroller, *args)
         async with ctx.typing():
-            result = await asyncio.wait_for(future, 10, loop=loop)
+            result = await asyncio.wait_for(future, 10, loop=self.loop)
 
         await ctx.reply(result)
 
@@ -195,7 +193,7 @@ class RPG:
         elif isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
-            await self.bot.handle_error(ctx, e)
+            await ctx.bot.handle_error(ctx, e)
 
     @commands.command(aliases=['sw'])
     async def starroll(self, ctx, *, inp):
@@ -229,11 +227,10 @@ class RPG:
                 return
             dice[die] = num
 
-        loop = self.bot.loop
-        future = loop.run_in_executor(None, lambda: starroller(**dice))
+        future = self.loop.run_in_executor(None, lambda: starroller(**dice))
         async with ctx.typing():
             try:
-                result = await asyncio.wait_for(future, 10, loop=loop)
+                result = await asyncio.wait_for(future, 10, loop=self.loop)
             except ValueError:
                 await ctx.send('Force dice cannot be used with other dice.')
             else:
@@ -245,7 +242,7 @@ class RPG:
         if isinstance(e, futures.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         else:
-            await self.bot.handle_error(ctx, e)
+            await ctx.bot.handle_error(ctx, e)
 
 
 def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
