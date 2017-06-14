@@ -79,6 +79,10 @@ class Default:
         """Get the source for the bot."""
         await ctx.send('https://github.com/BeatButton/beattie-bot')
 
+    @commands.command(hidden=True)
+    async def thanks(self, ctx):
+        await ctx.send('no u')
+
     @commands.command()
     @checks.is_owner_or(manage_guild=True)
     async def greet(self, ctx, *, message=None):
