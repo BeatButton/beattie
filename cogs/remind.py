@@ -38,7 +38,7 @@ class Remind:
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
         message = (f'{ctx.author.mention}\n'
-                   f'You asked to be reminded about {topic}.')
+                   f'You asked to be reminded that {topic}.')
         await self.schedule_message(time, ctx.channel.id, message)
         await ctx.send(f"Okay, I'll remind you.")
 
