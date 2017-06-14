@@ -17,13 +17,14 @@ class Remind:
         self.queue = []
         self.loop = bot.loop
         self.db = bot.db
+        self.bot = bot
         self.db.bind_tables(Table)
         self.timer = self.loop.create_task(asyncio.sleep(0))
-        self.loop.create_task(self.init(bot))
+        self.loop.create_task(self.init())
 
-    async def init(self, bot):
-        await bot.wait_until_ready()
-        if not bot.user.bot:
+    async def init(self):
+        await self.bot.wait_until_ready()
+        if not self.bot.user.bot:
             return
         async with self.db.get_session() as s:
             query = s.select(Message).order_by(Message.time)
@@ -63,7 +64,7 @@ class Remind:
             reverse_insort(self.queue, task, hi=len(self.queue) - 1)
 
     async def send_message(self, task):
-        channel = ctx.bot.get_channel(task.channel)
+        channel = self.bot.get_channel(task.channel)
         await channel.send(task.text)
         async with self.db.get_session() as s:
 
