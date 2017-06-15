@@ -2,7 +2,6 @@ import datetime
 import sys
 
 import aiohttp
-import asyncpg
 from asyncqlio.db import DatabaseInterface
 import discord
 from discord.ext import commands
@@ -16,12 +15,12 @@ class BContext(commands.Context):
     """An extension of Context to add reply and mention methods,
     as well as support use with self bots"""
     async def reply(self, content, sep=',\n'):
-        if self.me.bot and not isinsance(self.channel, dicord.DMChannel):
+        if self.me.bot and not isinstance(self.channel, discord.DMChannel):
             content = f'{self.author.display_name}{sep}{content}'
         return await self.send(content)
 
     async def mention(self, content, sep=',\n'):
-        if self.me.bot and not isinsance(self.channel, dicord.DMChannel):
+        if self.me.bot and not isinstance(self.channel, discord.DMChannel):
             content = f'{self.author.mention}{sep}{content}'
         return await self.send(content)
 
