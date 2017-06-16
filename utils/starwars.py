@@ -39,7 +39,7 @@ class Result:
             ret.append(f'{despairs} despair{s}')
 
         if ret:
-            ret = ', '.join(ret) + '.'
+            ret = f'{", ".join(ret)}.'
         else:
             ret = 'Wash.'
         return ret
@@ -59,10 +59,9 @@ class Result:
     __radd__ = __add__
 
     def __mul__(self, other):
-        ret = type(self)(self.advantages * other,
-                         self.hits * other,
-                         self.triumphs * other)
-        return ret
+        return type(self)(self.advantages * other,
+                          self.hits * other,
+                          self.triumphs * other)
 
     __rmul__ = __mul__
 
