@@ -1,7 +1,6 @@
 import time
 
 from discord.ext import commands
-import yaml
 
 from utils import checks
 
