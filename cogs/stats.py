@@ -10,7 +10,7 @@ class Stats:
 
     def __init__(self):
         self.process = psutil.Process()
-        _ = self.process.cpu_percent()
+        self.process.cpu_percent()
 
     @commands.command()
     async def uptime(self, ctx):
