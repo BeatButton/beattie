@@ -76,7 +76,7 @@ class Default:
     @commands.command()
     async def source(self, ctx):
         """Get the source for the bot."""
-        await ctx.send('https://github.com/BeatButton/beattie-bot')
+        await ctx.send('https://github.com/BeatButton/beattie')
 
     @commands.command(hidden=True, aliases=['thank', 'thx'])
     async def thanks(self, ctx):
