@@ -61,6 +61,13 @@ class Default:
         await self.config.set(ctx.guild.id, cog_blacklist=blacklist)
         await ctx.send('Cog disabled for this guild.')
 
+    @commands.command()
+    @checks.is_owner_or(manage_guild=True)
+    async def prefix(self, ctx, prefix=''):
+        """Set a custom prefix for this guild. Pass no prefix to reset."""
+        await self.config.set(ctx.guild.id, prefix=prefix)
+        await ctx.send('Guild prefix set.')
+
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
         """Get the ping to the websocket."""

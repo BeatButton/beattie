@@ -10,3 +10,4 @@ class Guild(Table):
     cog_blacklist = Column(Text)
     welcome = Column(Text)
     farewell = Column(Text)
+    prefix = Column(Text)

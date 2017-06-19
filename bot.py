@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import sys
 
 import aiohttp
@@ -48,7 +49,7 @@ class BeattieBot(commands.Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, prefix='b>', *args, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
             game = None
@@ -56,7 +57,25 @@ class BeattieBot(commands.Bot):
         else:
             game = discord.Game(name='b>help')
             status = None
-        super().__init__(*args, **kwargs, game=game, status=status)
+
+        async def pre_func(self, message):
+            nonlocal prefix
+            if callable(prefix):
+                prefix = prefix(self, message)
+            if inspect.isawaitable(prefix):
+                prefix = await prefix
+            if isinstance(prefix, str):
+                prefix = (prefix,)
+            elif isinstance(prefix, list):
+                prefix = tuple(prefix)
+            guild_conf = await self.config.get(message.guild.id)
+            pre = guild_conf.get('prefix')
+            if not pre:
+                return prefix
+            else:
+                return prefix + (pre,)
+
+        super().__init__(pre_func, *args, **kwargs, game=game, status=status)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         password = data.get('config_password', '')
