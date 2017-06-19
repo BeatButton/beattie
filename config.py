@@ -6,12 +6,18 @@ class Config:
     def __init__(self, bot):
         self.db = bot.db
         self.db.bind_tables(Table)
+        self._cache = {}
 
     async def get(self, gid):
-        async with self.db.get_session() as s:
-            query = s.select(Guild).where(Guild.id == gid)
-            guild = await query.first()
-        return {k: v for k, v in to_dict(guild).items() if v}
+        try:
+            return self._cache[gid]
+        except KeyError:
+            async with self.db.get_session() as s:
+                query = s.select(Guild).where(Guild.id == gid)
+                guild = await query.first()
+            res = {k: v for k, v in to_dict(guild).items() if v}
+            self._cache[gid] = res
+            return res
 
     async def set(self, gid, **kwargs):
         async with self.db.get_session() as s:
@@ -20,6 +26,7 @@ class Config:
             for attr, value in kwargs.items():
                 setattr(guild, attr, value)
             await s.merge(guild)
+        self._cache[gid] = {k: v for k, v in to_dict(guild).items() if v}
 
     async def add(self, gid, **kwargs):
         async with self.db.get_session() as s:
@@ -30,3 +37,4 @@ class Config:
             query = s.select(Guild).where(Guild.id == gid)
             guild = await query.first()
             await s.remove(guild)
+        self._cache.pop(gid, None)
