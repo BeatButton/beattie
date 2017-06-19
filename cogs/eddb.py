@@ -250,7 +250,3 @@ class EDDB:
 
 def setup(bot):
     bot.add_cog(EDDB(bot))
-
-
-def teardown(cog):
-    asyncio.get_event_loop().create_task(cog.pool.close())
