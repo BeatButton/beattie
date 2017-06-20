@@ -1,5 +1,6 @@
 import random
 
+import discord
 from discord.ext import commands
 from lxml import etree
 
@@ -11,26 +12,26 @@ class NSFW:
     @commands.command(aliases=['gel'], hidden=True)
     async def gelbooru(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru('http://gelbooru.com/index.php', tags)
+            url = await self.booru(ctx, 'http://gelbooru.com/index.php', tags)
             await ctx.send(url)
 
     @commands.command(aliases=['r34'], hidden=True)
     async def rule34(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru('http://rule34.xxx/index.php', tags)
+            url = await self.booru(ctx, 'http://rule34.xxx/index.php', tags)
             await ctx.send(url)
 
     @commands.command(hidden=True)
     async def shota(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru('http://booru.shotachan.net/post/index.xml',
+            url = await self.booru(ctx, 'http://booru.shotachan.net/post/index.xml',
                                    tags)
             await ctx.send(url)
 
     @commands.command(aliases=['fur'], hidden=True)
     async def e621(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru('https://e621.net/post/index.xml',
+            url = await self.booru(ctx, 'https://e621.net/post/index.xml',
                                    tags, limit=240)
             await ctx.send(url)
 
@@ -38,7 +39,7 @@ class NSFW:
     async def massage(self, ctx, *, tags=''):
         await ctx.invoke(self.gelbooru, tags=f'massage {tags}')
 
-    async def booru(self, url, tags, limit=100):
+    async def booru(self, ctx, url, tags, limit=100):
         entries = []
         params = {'page': 'dapi',
                   's': 'post',
@@ -60,11 +61,13 @@ class NSFW:
         try:
             url = random.choice(entries)
         except IndexError:
-            return 'No images found.'
+            await ctx.send('No images found.')
         else:
             if not url.startswith('http'):
                 url = f'https:{url}'
-            return url
+            async with ctx.bot.get(url) as resp:
+                file = await resp.read()
+            await ctx.send(discord.File(file, url.rpartition('/')[-1]))
 
 
 def setup(bot):
