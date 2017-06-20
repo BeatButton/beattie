@@ -33,14 +33,8 @@ class tmp_dl:
         if not os.path.isdir('tmp'):
             os.mkdir('tmp')
 
-        headers = {'Accept-Encoding': 'gzip, deflate, sdch',
-                   }
-        kwargs = {'timeout': None,
-                  'headers': headers,
-                  }
-
         async with aiofiles.open(self.path, 'wb') as file:
-            async with get(self.session, self.url, **kwargs) as resp:
+            async with get(self.session, self.url) as resp:
                 async for block in resp.content.iter_any():
                     await file.write(block)
         self.file = await aiofiles.open(self.path, encoding=self.encoding)
@@ -60,6 +54,10 @@ class get:
     def __init__(self, session, url, **kwargs):
         self.session = session
         self.url = url
+        if 'headers' not in kwargs:
+            kwargs['headers'] = {'Accept-Encoding': 'gzip, deflate, sdch'}
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = None
         self.kwargs = kwargs
 
     async def __aenter__(self):
