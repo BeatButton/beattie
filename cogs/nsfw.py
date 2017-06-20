@@ -12,28 +12,24 @@ class NSFW:
     @commands.command(aliases=['gel'], hidden=True)
     async def gelbooru(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru(ctx, 'http://gelbooru.com/index.php', tags)
-            await ctx.send(url)
+            await self.booru(ctx, 'http://gelbooru.com/index.php', tags)
 
     @commands.command(aliases=['r34'], hidden=True)
     async def rule34(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru(ctx, 'http://rule34.xxx/index.php', tags)
-            await ctx.send(url)
+            await self.booru(ctx, 'http://rule34.xxx/index.php', tags)
 
     @commands.command(hidden=True)
     async def shota(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru(ctx, 'http://booru.shotachan.net/post/index.xml',
-                                   tags)
-            await ctx.send(url)
+            await self.booru(ctx, 'http://booru.shotachan.net/post/index.xml',
+                             tags)
 
     @commands.command(aliases=['fur'], hidden=True)
     async def e621(self, ctx, *, tags=''):
         async with ctx.typing():
-            url = await self.booru(ctx, 'https://e621.net/post/index.xml',
-                                   tags, limit=240)
-            await ctx.send(url)
+            await self.booru(ctx, 'https://e621.net/post/index.xml',
+                             tags, limit=240)
 
     @commands.command(hidden=True)
     async def massage(self, ctx, *, tags=''):
@@ -67,7 +63,7 @@ class NSFW:
                 url = f'https:{url}'
             async with ctx.bot.get(url) as resp:
                 file = await resp.read()
-            await ctx.send(discord.File(file, url.rpartition('/')[-1]))
+            await ctx.send(file=discord.File(file, url.rpartition('/')[-1]))
 
 
 def setup(bot):
