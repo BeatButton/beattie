@@ -1,6 +1,7 @@
 import re
 
 import aiohttp
+import discord
 from discord.ext import commands
 from lxml import etree
 import yaml
@@ -46,7 +47,9 @@ class Cat:
         async with ctx.typing():
             async with ctx.bot.get('http://random.dog/woof') as resp:
                 url = 'http://random.dog/{}'.format(await resp.text())
-        await ctx.send(url)
+            async with ctx.bot.get(url) as resp:
+                file = await resp.read()
+            await ctx.send(file=discord.File(file, url.rpartition('/')[-1]))
 
 
 def setup(bot):
