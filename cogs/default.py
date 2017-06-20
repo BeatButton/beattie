@@ -85,6 +85,11 @@ class Default:
         """Get the source for the bot."""
         await ctx.send('https://github.com/BeatButton/beattie')
 
+    @commands.command()
+    async def invite(self, ctx):
+        """Get the invite for the bot."""
+        await ctx.send('https://discordapp.com/oauth2/authorize?client_id=247476468022640640&scope=bot')
+
     @commands.command(hidden=True, aliases=['thank', 'thx'])
     async def thanks(self, ctx):
         await ctx.send('no u')
