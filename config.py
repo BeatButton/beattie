@@ -15,7 +15,10 @@ class Config:
             async with self.db.get_session() as s:
                 query = s.select(Guild).where(Guild.id == gid)
                 guild = await query.first()
-            res = {k: v for k, v in to_dict(guild).items() if v}
+            if guild is None:
+                res = {}
+            else:
+                res = {k: v for k, v in to_dict(guild).items() if v}
             self._cache[gid] = res
             return res
 
