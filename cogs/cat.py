@@ -30,8 +30,9 @@ class Cat:
             pattern = r'http://\d+\.media\.tumblr\.com'
             replace = 'http://media.tumblr.com'
             url = re.sub(pattern, replace, url)
-            ctx.bot.logger.debug(f'Cat URL: {url}')
-        await ctx.send(url)
+            async with ctx.bot.get(url) as resp:
+                file = await resp.read()
+            await ctx.send(file=discord.File(file, url.rpartition('/')[-1]))
 
     @cat.error
     async def cat_error(self, ctx, e):
