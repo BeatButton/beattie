@@ -49,17 +49,18 @@ class BeattieBot(commands.Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
-    def __init__(self, prefix='b>', *args, **kwargs):
+    def __init__(self, command_prefix='b>', *args, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
             game = None
             status = discord.Status.idle
+            pre = command_prefix
         else:
             game = discord.Game(name='b>help')
             status = None
 
             async def pre(self, message):
-                nonlocal prefix
+                prefix = command_prefix
                 if callable(prefix):
                     prefix = prefix(self, message)
                 if inspect.isawaitable(prefix):
