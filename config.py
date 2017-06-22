@@ -39,5 +39,6 @@ class Config:
         async with self.db.get_session() as s:
             query = s.select(Guild).where(Guild.id == gid)
             guild = await query.first()
-            await s.remove(guild)
+            if guild is not None:
+                await s.remove(guild)
         self._cache.pop(gid, None)
