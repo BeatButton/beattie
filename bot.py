@@ -58,24 +58,26 @@ class BeattieBot(commands.Bot):
             game = discord.Game(name='b>help')
             status = None
 
-        async def pre_func(self, message):
-            nonlocal prefix
-            if callable(prefix):
-                prefix = prefix(self, message)
-            if inspect.isawaitable(prefix):
-                prefix = await prefix
-            if isinstance(prefix, str):
-                prefix = (prefix,)
-            elif isinstance(prefix, list):
-                prefix = tuple(prefix)
-            guild_conf = await self.config.get(message.guild.id)
-            pre = guild_conf.get('prefix')
-            if not pre:
-                return prefix
-            else:
-                return prefix + (pre,)
+            async def pre(self, message):
+                nonlocal prefix
+                if callable(prefix):
+                    prefix = prefix(self, message)
+                if inspect.isawaitable(prefix):
+                    prefix = await prefix
+                if isinstance(prefix, str):
+                    prefix = (prefix,)
+                elif isinstance(prefix, list):
+                    prefix = tuple(prefix)
+                if message.guild is None:
+                    return prefix
+                guild_conf = await self.config.get(message.guild.id)
+                guild_pre = guild_conf.get('prefix')
+                if not guild_pre:
+                    return prefix
+                else:
+                    return prefix + (guild_pre,)
 
-        super().__init__(pre_func, *args, **kwargs, game=game, status=status)
+        super().__init__(pre, *args, **kwargs, game=game, status=status)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         password = data.get('config_password', '')
