@@ -116,7 +116,7 @@ class EDDB:
         comm, *rest = search + [None, None]
         sta, sys, *_ = rest
         async with ctx.typing(), self.db.get_session() as s:
-            if not (sta or sys):
+            if sta is None and sys is None:
                 comm = search[0]
                 query = s.select(Commodity).where(Commodity.name.ilike(comm))
                 commodity = await query.first()
@@ -132,12 +132,12 @@ class EDDB:
                 query = s.select(Listing)
                 query = query.where(Listing.commodity.name.ilike(comm))
                 query = query.where(Listing.station.name.ilike(sta))
-                if sys:
+                if sys is not None:
                     query = query.where(Listing.station.system.name.ilike(sys))
 
                 listing = await query.first()
 
-                if listing:
+                if listing is not None:
                     commodity = listing.commodity.name
                     station = listing.station.name
                     system = listing.station.system.name
@@ -188,7 +188,7 @@ class EDDB:
         # postgresql can only have up to 2 ^ 15 paramters. So, this
         batch_size = 2 ** 15 // len(cols) - 1
         async with self.db.get_session() as s:
-            query = (f'DROP TABLE IF EXISTS {table_name};'
+            query = (f'DROP TABLE IF EXISTS {table_name} CASCADE;'
                      f'CREATE TABLE {table_name}('
                      f'{",".join(f"{k} {v}" for k, v in cols.items())},'
                      'PRIMARY KEY(id));')
