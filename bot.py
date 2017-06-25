@@ -134,8 +134,6 @@ class BeattieBot(commands.Bot):
                 pass
             finally:
                 await guild.leave()
-        else:
-            await self.config.add(guild.id)
 
     @decorators.bot_only
     async def on_guild_remove(self, guild):
