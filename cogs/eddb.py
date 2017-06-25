@@ -200,6 +200,21 @@ class EDDB:
                            for col in cols}
                     await s.add(table(**row))
 
+        async with self.db.get_session() as s:
+            # ddl when
+            await s.execute('CREATE INDEX ON system(name);'
+                            'CREATE INDEX ON station(name);'
+                            'CREATE INDEX ON commodity(name);'
+                            'ALTER TABLE station '
+                            'ADD FOREIGN KEY (system_id)'
+                            'REFERENCES system(id);'
+                            'ALTER TABLE listing '
+                            'ADD FOREIGN KEY (station_id)'
+                            'REFERENCES station(id);'
+                            'ALTER TABLE listing '
+                            'ADD FOREIGN KEY (commodity_id)'
+                            'REFERENCES commodity(id);')
+
     @staticmethod
     def coerce(value, type_):
         if isinstance(value, dict):
