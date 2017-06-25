@@ -80,4 +80,3 @@ class Config:
                 ret = to_dict(member)
             self._member_cache.setdefault(gid, {})[uid] = ret
             return ret
-
