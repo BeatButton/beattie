@@ -46,8 +46,10 @@ class Cat:
     async def dog(self, ctx):
         """Gets a picture of a random dog from random.dog!"""
         async with ctx.typing():
-            async with ctx.bot.get('http://random.dog/woof') as resp:
-                url = 'http://random.dog/{}'.format(await resp.text())
+            url = '.mp4'
+            while url.endswith('.mp4'):
+                async with ctx.bot.get('http://random.dog/woof') as resp:
+                    url = 'http://random.dog/{}'.format(await resp.text())
             async with ctx.bot.get(url) as resp:
                 file = await resp.read()
             await ctx.send(file=discord.File(file, url.rpartition('/')[-1]))
