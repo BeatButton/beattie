@@ -12,7 +12,7 @@ class Manage:
         cog = ctx.command.cog_name
         guild_conf = await self.config.get(ctx.guild.id)
         blacklist = guild_conf.get('cog_blacklist', '')
-        return f'{cog},' not in blacklist
+        return blacklist is not None and f'{cog},' not in blacklist
 
     async def __global_check_once(self, ctx):
         member_conf = await self.config.get_member(ctx.guild.id, ctx.author.id)
