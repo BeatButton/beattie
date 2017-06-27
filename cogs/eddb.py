@@ -170,6 +170,21 @@ class EDDB:
                 ctx.bot.logger.info(f'Creating table for {name}')
                 await self.make_table(file, name, table)
 
+        async with self.db.get_session() as s:
+            # ddl when
+            await s.execute('CREATE INDEX ON system(name);'
+                            'CREATE INDEX ON station(name);'
+                            'CREATE INDEX ON commodity(name);'
+                            'ALTER TABLE station '
+                            'ADD FOREIGN KEY (system_id)'
+                            'REFERENCES system(id);'
+                            'ALTER TABLE listing '
+                            'ADD FOREIGN KEY (station_id)'
+                            'REFERENCES station(id);'
+                            'ALTER TABLE listing '
+                            'ADD FOREIGN KEY (commodity_id)'
+                            'REFERENCES commodity(id);')
+
         self.updating = False
         ctx.bot.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
@@ -198,21 +213,6 @@ class EDDB:
                     row = {col: self.coerce(row[col], cols[col])
                            for col in cols}
                     await s.add(table(**row))
-
-        async with self.db.get_session() as s:
-            # ddl when
-            await s.execute('CREATE INDEX ON system(name);'
-                            'CREATE INDEX ON station(name);'
-                            'CREATE INDEX ON commodity(name);'
-                            'ALTER TABLE station '
-                            'ADD FOREIGN KEY (system_id)'
-                            'REFERENCES system(id);'
-                            'ALTER TABLE listing '
-                            'ADD FOREIGN KEY (station_id)'
-                            'REFERENCES station(id);'
-                            'ALTER TABLE listing '
-                            'ADD FOREIGN KEY (commodity_id)'
-                            'REFERENCES commodity(id);')
 
     @staticmethod
     def coerce(value, type_):
