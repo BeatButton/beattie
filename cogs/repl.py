@@ -172,7 +172,7 @@ class REPL:
             stdout=asyncio.subprocess.PIPE)
         await proc.wait()
         res = (await proc.stdout.read()).decode()
-        await ctx.send(f'```py\n{res}```')
+        await ctx.send(f'```\n{res}```')
 
 
 def setup(bot):
