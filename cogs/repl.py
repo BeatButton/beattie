@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import redirect_stdout
 import inspect
 import io
@@ -8,7 +9,6 @@ from discord.ext import commands
 
 
 # imports for REPL env
-import asyncio  # noqa: F401
 import math  # noqa: F401
 import objgraph   # noqa: F401
 import sys  # noqa: F401
@@ -18,6 +18,9 @@ class REPL:
     def __init__(self):
         self._last_result = None
         self.sessions = set()
+
+    async def __local_check(self, ctx):
+        return await ctx.bot.is_owner(ctx.author)
 
     def cleanup_code(self, content):
         """Automatically removes code blocks from the code."""
@@ -32,7 +35,6 @@ class REPL:
         return f'```py\n{e.text}{"^":>{e.offset}}\n{type(e).__name__}: {e}```'
 
     @commands.command(hidden=True, name='eval')
-    @commands.is_owner()
     async def eval_(self, ctx, *, body: str):
         env = {
             'author': ctx.author,
@@ -74,13 +76,11 @@ class REPL:
                 await ctx.send(f'```py\n{value}{ret}\n```')
 
     @commands.command(hidden=True)
-    @commands.is_owner()
     async def peval(self, ctx, *, body: str):
         body = self.cleanup_code(body)
         await ctx.invoke(self.eval_, body=f'print({body})')
 
     @commands.command(hidden=True)
-    @commands.is_owner()
     async def repl(self, ctx):
         env = {
             'author': ctx.author,
@@ -164,6 +164,15 @@ class REPL:
                 pass
             except discord.HTTPException as e:
                 await ctx.send(f'Unexpected error: `{e}`')
+
+    @commands.command()
+    async def run(self, ctx, *, command):
+        proc = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE)
+        await proc.wait()
+        res = (await proc.stdout.read()).decode()
+        await ctx.send(f'```py\n{res}```')
 
 
 def setup(bot):
