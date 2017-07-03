@@ -126,7 +126,7 @@ class BeattieBot(commands.Bot):
     @decorators.bot_only
     async def on_guild_join(self, guild):
         bots = sum(m.bot for m in guild.members)
-        if bots / len(guild.members) > 0.5:
+        if bots > 10 and bots / len(guild.members) > 0.5:
             try:
                 dest = guild.default_channel
                 await dest.send("This gulid's bot to user ratio is too high.")
@@ -142,11 +142,7 @@ class BeattieBot(commands.Bot):
     @decorators.bot_only
     async def on_member_join(self, member):
         guild = member.guild
-        try:
-            guild_conf = await self.config.get(guild.id)
-        except AttributeError:
-            print(f'Guild conf failed for id {member.guild.id}')
-            return
+        guild_conf = await self.config.get(guild.id)
         message = guild_conf.get('welcome')
         if message:
             await guild.default_channel.send(message.format(member.mention))
