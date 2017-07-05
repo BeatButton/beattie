@@ -176,9 +176,9 @@ class REPL:
         stderr = (await proc.stderr.read()).decode()
         res = ''
         if stdout:
-            res = f'```Output:\n{stdout}```'
+            res = f'Output:```\n{stdout}```'
         if stderr:
-            res += f'```Error:\n{stderr}```'
+            res += f'Error:```\n{stderr}```'
         if not res:
             res = 'No result.'
         await ctx.send(res)
