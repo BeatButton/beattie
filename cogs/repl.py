@@ -169,10 +169,19 @@ class REPL:
     async def run(self, ctx, *, command):
         proc = await asyncio.create_subprocess_shell(
             command,
-            stdout=asyncio.subprocess.PIPE)
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
         await proc.wait()
-        res = (await proc.stdout.read()).decode()
-        await ctx.send(f'```\n{res}```')
+        stdout = (await proc.stdout.read()).decode()
+        stderr = (await proc.stderr.read()).decode()
+        res = ''
+        if stdout:
+            res = f'```Output:\n{stdout}```'
+        if stderr:
+            res += f'```Error:\n{stderr}```'
+        if not res:
+            res = 'No result.'
+        await ctx.send(res)
 
 
 def setup(bot):
