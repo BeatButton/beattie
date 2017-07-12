@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import io
 import sys
 
 import aiohttp
@@ -26,15 +27,25 @@ class BContext(commands.Context):
         return await self.send(content)
 
     async def send(self, content=None, *, embed=None, **kwargs):
+        content = str(content)
+        if len(content) > 2000:
+            fp = io.StringIO()
+            fp.write(content)
+            fp.seek(0)
+            content = None
+            file = discord.File(fp, filename=f'{self.message.id}.txt')
+            if kwargs['files'] is not None:
+                kwargs['files'].append(file)
+            else:
+                kwargs['file'] = file
         if self.me.bot:
             return await super().send(content, embed=embed, **kwargs)
-        elif content is not None:
+        else:
             content = f'{self.message.content}\n{content}'
-            await self.message.edit(content=content)
+            await self.message.edit(content=content, embed=embed)
+            if kwargs:
+                return await super().send(**kwargs)
             return self.message
-        elif embed is not None:
-            await self.message.delete()
-            return await super().send(embed=embed, **kwargs)
 
     def typing(self):
         if self.me.bot:
