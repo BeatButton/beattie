@@ -220,10 +220,11 @@ class RPG:
         dice = {}
         for roll in match.groups():
             num = int(roll[:-1])
+            die_code = roll[-1]
             try:
-                die = die_names[roll[-1]]
+                die = die_names[die_code]
             except KeyError:
-                await ctx.send(f'Die "{roll[-1]}" does not exist.')
+                await ctx.send(f'Die "{die_code}" does not exist.')
                 return
             dice[die] = num
 
