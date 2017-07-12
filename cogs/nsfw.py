@@ -6,9 +6,6 @@ from lxml import etree
 
 
 class NSFW:
-    def __init__(self, bot):
-        self.bot = bot
-
     @commands.command(aliases=['gel'], hidden=True)
     async def gelbooru(self, ctx, *, tags=''):
         async with ctx.typing():
@@ -42,7 +39,7 @@ class NSFW:
                   'q': 'index',
                   'limit': limit,
                   'tags': tags}
-        async with self.bot.get(url, params=params) as resp:
+        async with ctx.bot.get(url, params=params) as resp:
             root = etree.fromstring(await resp.read(), etree.HTMLParser())
         # We check for posts and images because some booru APIs are different
         posts = root.findall('.//post')
@@ -51,9 +48,7 @@ class NSFW:
                          if item[0] == 'file_url'), None)
             if image is not None:
                 entries.append(image)
-        images = root.findall('.//file_url')
-        for image in images:
-            entries.append(image.text)
+        entries.extend(image.text for image in root.findall('.//file_url'))
         try:
             url = random.choice(entries)
         except IndexError:
@@ -67,4 +62,4 @@ class NSFW:
 
 
 def setup(bot):
-    bot.add_cog(NSFW(bot))
+    bot.add_cog(NSFW())
