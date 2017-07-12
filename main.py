@@ -12,7 +12,8 @@ from bot import BeattieBot
 try:
     import uvloop
 except ImportError:
-    pass
+    loop = asyncio.ProactorEventLoop()
+    asyncio.set_event_loop(loop)
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
