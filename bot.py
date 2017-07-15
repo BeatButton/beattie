@@ -27,10 +27,10 @@ class BContext(commands.Context):
         return await self.send(content)
 
     async def send(self, content=None, *, embed=None, **kwargs):
-        content = str(content)
-        if len(content) > 2000:
+        str_content = str(content)
+        if len(str_content) > 2000:
             fp = io.StringIO()
-            fp.write(content)
+            fp.write(str_content)
             fp.seek(0)
             content = None
             file = discord.File(fp, filename=f'{self.message.id}.txt')
