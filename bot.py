@@ -41,9 +41,10 @@ class BContext(commands.Context):
         if self.me.bot:
             return await super().send(content, embed=embed, **kwargs)
         else:
+            edit_content = self.message.content
             if content is not None:
-                content = f'{self.message.content}\n{content}'
-            await self.message.edit(content=content, embed=embed)
+                edit_content = f'{edit_content}\n{content}'
+            await self.message.edit(content=edit_content, embed=embed)
             if kwargs:
                 return await super().send(**kwargs)
             return self.message
