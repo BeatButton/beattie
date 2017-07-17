@@ -15,6 +15,8 @@ class Manage:
         return blacklist is not None and f'{cog},' not in blacklist
 
     async def __global_check_once(self, ctx):
+        if ctx.guild is None:
+            return True
         member_conf = await self.config.get_member(ctx.guild.id, ctx.author.id)
         plonked = member_conf.get('plonked', False)
         return not plonked
