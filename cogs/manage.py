@@ -11,8 +11,8 @@ class Manage:
             return True
         cog = ctx.command.cog_name
         guild_conf = await self.config.get(ctx.guild.id)
-        blacklist = guild_conf.get('cog_blacklist', '')
-        return blacklist is not None and f'{cog},' not in blacklist
+        blacklist = guild_conf.get('cog_blacklist') or ''
+        return f'{cog},' not in blacklist
 
     async def __global_check_once(self, ctx):
         if ctx.guild is None:
@@ -44,7 +44,7 @@ class Manage:
             await ctx.send("That cog doesn't exist.")
             return
         guild_conf = await self.config.get(ctx.guild.id)
-        blacklist = guild_conf.get('cog_blacklist', '')
+        blacklist = guild_conf.get('cog_blacklist') or ''
         if f'{cog},' not in blacklist:
             await ctx.send('Cog is already enabled.')
             return
@@ -59,7 +59,7 @@ class Manage:
             await ctx.send("That cog doesn't exist.")
             return
         guild_conf = await self.config.get(ctx.guild.id)
-        blacklist = guild_conf.get('cog_blacklist', '')
+        blacklist = guild_conf.get('cog_blacklist') or ''
         if f'{cog},' in blacklist:
             await ctx.send('Cog is already disabled.')
             return
