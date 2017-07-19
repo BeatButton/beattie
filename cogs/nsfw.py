@@ -11,6 +11,7 @@ class NSFW:
         self.cache = {}
         self.titles = {}
         self.get = bot.get
+        self.log = bot.logger.debug
 
     @commands.command(aliases=['gel'], hidden=True)
     async def gelbooru(self, ctx, *, tags=''):
@@ -83,6 +84,7 @@ class NSFW:
             if not image.startswith('//'):
                 image = f'//{image}'
             image = f'https:{image}'
+        self.log(f'booru url: {url}'')
         embed.set_image(url=image)
         embed.title = self.titles[url]
         try:
