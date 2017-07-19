@@ -84,7 +84,7 @@ class NSFW:
             if not image.startswith('//'):
                 image = f'//{image}'
             image = f'https:{image}'
-        self.log(f'booru url: {url}')
+        self.log(f'booru url: {image}')
         embed.set_image(url=image)
         embed.title = self.titles[url]
         try:
