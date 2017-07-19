@@ -1,4 +1,5 @@
 import random
+import re
 
 import discord
 from discord.ext import commands
@@ -6,6 +7,11 @@ from lxml import etree
 
 
 class NSFW:
+    def __init__(self, bot):
+        self.cache = {}
+        self.titles = {}
+        self.get = bot.get
+
     @commands.command(aliases=['gel'], hidden=True)
     async def gelbooru(self, ctx, *, tags=''):
         async with ctx.typing():
@@ -33,33 +39,66 @@ class NSFW:
         await ctx.invoke(self.gelbooru, tags=f'massage {tags}')
 
     async def booru(self, ctx, url, tags, limit=100):
-        entries = []
-        params = {'page': 'dapi',
-                  's': 'post',
-                  'q': 'index',
-                  'limit': limit,
-                  'tags': tags}
-        async with ctx.bot.get(url, params=params) as resp:
-            root = etree.fromstring(await resp.read(), etree.HTMLParser())
-        # We check for posts and images because some booru APIs are different
-        posts = root.findall('.//post')
-        for post in posts:
-            image = next((item[1] for item in post.items()
-                         if item[0] == 'file_url'), None)
-            if image is not None:
-                entries.append(image)
-        entries.extend(image.text for image in root.findall('.//file_url'))
+        tags = tuple(sorted(tags.split()))
         try:
-            url = random.choice(entries)
-        except IndexError:
+            self.titles[url]
+        except KeyError:
+            await self.set_metadata(url)
+        try:
+            posts = self.cache.setdefault(url, {})[tags]
+        except KeyError:
+            params = {'page': 'dapi',
+                      's': 'post',
+                      'q': 'index',
+                      'limit': limit,
+                      'tags': ' '.join(tags)}
+            async with ctx.bot.get(url, params=params) as resp:
+                root = etree.fromstring(await resp.read(), etree.HTMLParser())
+            posts = root.findall('.//post')
+            random.shuffle(posts)
+            self.cache[url][tags] = posts
+        if not posts:
             await ctx.send('No images found.')
+            return
+        embed, file = self.make_embed(posts.pop(), url)
+        await ctx.send(embed=embed, file=file)
+        if not posts:
+            self.cache[url].pop(tags, None)
+
+    def make_embed(self, post_element, url):
+        post = dict(post_element.items())
+        if not post:
+            post = {child.tag: child.text
+                    for child in post_element.getchildren()}
+        embed = discord.Embed()
+        pattern = r'https?:\/\/(?:[\w\d]+\.)*([\w\d]+)\.'
+        name = re.match(pattern, url).groups()[0]
+        file = discord.File(f'data/favicons/{name}.png', 'favicon.png')
+        embed.set_thumbnail(url=f'attachment://favicon.png')
+        try:
+            image = post['file_url']
+        except KeyError:
+            image = post['jpeg_url']
+        if not image.startswith('http'):
+            if not image.startswith('//'):
+                image = f'//{image}'
+            image = f'https:{image}'
+        embed.set_image(url=image)
+        embed.title = self.titles[url]
+        try:
+            source = post['source']
+        except KeyError:
+            pass
         else:
-            if not url.startswith('http'):
-                url = f'https:{url}'
-            async with ctx.bot.get(url) as resp:
-                file = await resp.read()
-            await ctx.send(file=discord.File(file, url.rpartition('/')[-1]))
+            embed.url = source
+        return embed, file
+
+    async def set_metadata(self, url):
+        base = re.match(r'(https?:\/\/[\w\d\.]+\/)', url).groups()[0]
+        async with self.get(base) as resp:
+            root = etree.fromstring(await resp.read(), etree.HTMLParser())
+        self.titles[url] = root.find('.//title').text
 
 
 def setup(bot):
-    bot.add_cog(NSFW())
+    bot.add_cog(NSFW(bot))
