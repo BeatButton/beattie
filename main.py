@@ -35,12 +35,6 @@ bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
 extensions = [f'cogs.{f.stem}' for f in Path('cogs').glob('*.py')]
 
-for extension in extensions:
-    try:
-        bot.load_extension(extension)
-    except Exception as e:
-        print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
-
 logger = logging.getLogger('discord')
 if self_bot:
     logger.setLevel(logging.CRITICAL)
@@ -53,5 +47,10 @@ else:
     logger.addHandler(handler)
 bot.logger = logger
 
+for extension in extensions:
+    try:
+        bot.load_extension(extension)
+    except Exception as e:
+        print(f'Failed to load extension {extension}\n{type(e).__name__}: {e}')
 
 bot.run(token, bot=not self_bot)
