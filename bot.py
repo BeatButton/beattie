@@ -28,7 +28,7 @@ class BContext(commands.Context):
 
     async def send(self, content=None, *, embed=None, **kwargs):
         str_content = str(content)
-        if len(str_content) > 2000:
+        if len(str_content) >= 2000:
             fp = io.StringIO()
             fp.write(str_content)
             fp.seek(0)
