@@ -34,7 +34,7 @@ class BContext(commands.Context):
             fp.seek(0)
             content = None
             file = discord.File(fp, filename=f'{self.message.id}.txt')
-            if kwargs['files'] is not None:
+            if kwargs.get('files') is not None:
                 kwargs['files'].append(file)
             else:
                 kwargs['file'] = file
