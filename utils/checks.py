@@ -3,8 +3,9 @@ from discord.ext import commands
 
 def is_owner_or(**perms):
     async def predicate(ctx):
-        owner = await ctx.bot.is_owner(ctx.author)
+        if await ctx.bot.is_owner(ctx.author):
+            return True
         permissions = ctx.channel.permissions_for(ctx.author)
         return all(getattr(permissions, perm, None) == value
-                   for perm, value in perms.items()) or owner
+                   for perm, value in perms.items())
     return commands.check(predicate)
