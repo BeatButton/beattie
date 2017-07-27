@@ -1,4 +1,4 @@
-from schema.config import Table, Guild, Member
+from schema.config import Table, Guild, Member, Channel
 from utils.asyncqlio import to_dict
 
 
@@ -7,7 +7,8 @@ class Config:
         self.db = bot.db
         self.db.bind_tables(Table)
         self._cache = {}
-        self._member_cache = {}
+        self._cache['member'] = {}
+        self._cache['channel'] = {}
 
     async def get(self, gid):
         try:
@@ -44,11 +45,10 @@ class Config:
             guild = await query.first()
             if guild is not None:
                 await s.remove(guild)
-            query = s.select(Member).where(Member.guild_id == gid).delete()
-            async for record in query:
-                await s.remove(record)
+            await s.delete(Member).where(Member.guild_id == gid)
         self._cache.pop(gid, None)
-        self._member_cache.pop(gid, None)
+        self._cache['member'].pop(gid, None)
+        self._cache['channel'].pop(gid, None)
 
     async def update_member(self, gid, uid, **kwargs):
         async with self.db.get_session() as s:
@@ -59,24 +59,57 @@ class Config:
                 await s.add(Member(id=uid, guild_id=gid, **kwargs))
                 cache_dict = {'guild_id': gid, 'id': uid}
                 cache_dict.update(kwargs)
-                self._member_cache.setdefault(gid, {})[uid] = cache_dict
+                self._cache['member'].setdefault(gid, {})[uid] = cache_dict
             else:
                 for attr, value in kwargs.items():
                     setattr(member, attr, value)
                 await s.merge(member)
-                self._member_cache.setdefault(gid, {})[uid] = to_dict(member)
+                cache = self._cache['member']
+                cache.setdefault(gid, {})[uid] = to_dict(member)
 
     async def get_member(self, gid, uid):
         try:
-            return self._member_cache[gid][uid]
+            return self._cache['member'].setdefault(gid, {})[uid]
         except KeyError:
             async with self.db.get_session() as s:
                 query = s.select(Member).where((Member.id == uid)
                                                & (Member.guild_id == gid))
                 member = await query.first()
             if member is None:
-                ret = {'guild_id': gid, '_id': uid}
+                ret = {'guild_id': gid, 'id': uid}
             else:
                 ret = to_dict(member)
-            self._member_cache.setdefault(gid, {})[uid] = ret
+            self._cache['member'][gid][uid] = ret
+            return ret
+
+    async def update_channel(self, gid, cid, **kwargs):
+        async with self.db.get_session() as s:
+            query = s.select(Channel).where((Channel.id == cid)
+                                            & (Channel.guild_id == gid))
+            channel = await query.first()
+            if channel is None:
+                await s.add(Channel(id=cid, guild_id=gid, **kwargs))
+                cache_dict = {'guild_id': gid, 'id': cid}
+                cache_dict.update(kwargs)
+                self._cache['channel'].setdefault(gid, {})[cid] = cache_dict
+            else:
+                for attr, value in kwargs.items():
+                    setattr(channel, attr, value)
+                await s.merge(channel)
+                cache = self._cache['channel']
+                cache.setdefault(gid, {})[cid] = to_dict(channel)
+
+    async def get_channel(self, gid, cid):
+        try:
+            return self._cache['channel'].setdefault(gid, {})[cid]
+        except KeyError:
+            async with self.db.get_session() as s:
+                query = s.select(Channel).where((Channel.id == cid)
+                                                & (Channel.guild_id == gid))
+                channel = await query.first()
+            if channel is None:
+                ret = {'guild_id': gid, 'id': cid}
+            else:
+                ret = to_dict(channel)
+            self._cache['channel'][gid][cid] = ret
             return ret

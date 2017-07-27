@@ -17,3 +17,9 @@ class Member(Table):
     guild_id = Column(BigInt, primary_key=True)
     id = Column(BigInt, primary_key=True)
     plonked = Column(Boolean)
+
+
+class Channel(Table):
+    id = Column(BigInt, primary_key=True)
+    guild_id = Column(BigInt)
+    plonked = Column(Boolean)
