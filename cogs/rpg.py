@@ -136,10 +136,7 @@ class RPG:
         await ctx.reply('\n'.join(out))
 
     def roll_helper(self, rolls):
-        out = []
-        for roll in rolls:
-            out.append(roller(*roll))
-        return out
+        return [roller(*roll) for roll in rolls]
 
     @roll.error
     async def roll_error(self, ctx, e):
@@ -170,10 +167,9 @@ class RPG:
         expr = r'^\d+e?$'
         if not re.match(expr, inp):
             raise commands.BadArgument
+
         edge = 'e' in inp
-        if edge:
-            inp = inp[:-1]
-        num = int(inp)
+        num = int(inp.lstrip('e'))
 
         args = (num, edge)
         future = self.loop.run_in_executor(None, shadowroller, *args)
