@@ -140,8 +140,8 @@ class BeattieBot(commands.Bot):
     async def on_guild_join(self, guild):
         bots = sum(m.bot for m in guild.members)
         if bots > 10 and bots / len(guild.members) > 0.5:
+            dest = guild.default_channel
             try:
-                dest = guild.default_channel
                 await dest.send("This gulid's bot to user ratio is too high.")
             except discord.Forbidden:
                 pass
