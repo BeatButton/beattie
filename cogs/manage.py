@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 
+from utils.converters import Union
+
+member_or_channel = Union(discord.Member, discord.TextChannel)
+
 
 class Manage:
     def __init__(self, bot):
@@ -15,11 +19,14 @@ class Manage:
         return f'{cog},' not in blacklist
 
     async def __global_check_once(self, ctx):
-        if ctx.guild is None:
+        if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
-        member_conf = await self.config.get_member(ctx.guild.id, ctx.author.id)
-        plonked = member_conf.get('plonked', False)
-        return not plonked
+        guild = ctx.guild
+        member_conf = await self.config.get_member(guild.id, ctx.author.id)
+        member_plonked = member_conf.get('plonked', False)
+        channel_conf = await self.config.get_channel(guild.id, ctx.channel.id)
+        channel_plonked = channel_conf.get('plonked', False)
+        return not (member_plonked or channel_plonked)
 
     async def __local_check(self, ctx):
         return (await ctx.bot.is_owner(ctx.author)
@@ -91,16 +98,27 @@ class Manage:
         await ctx.send('Leave message set.')
 
     @commands.command()
-    async def plonk(self, ctx, member: discord.Member):
-        """Disallow a member from using commands on this server."""
-        await self.config.update_member(ctx.guild.id, member.id, plonked=True)
-        await ctx.send('Member plonked.')
+    async def plonk(self, ctx, target: member_or_channel):
+        """Disallow a member from using commands on this server, or disallow
+        commands from being used in a channel."""
+        await self._plonker(ctx, target, True)
 
     @commands.command()
-    async def unplonk(self, ctx, member: discord.Member):
-        """Allow a member to use commands on this server."""
-        await self.config.update_member(ctx.guild.id, member.id, plonked=False)
-        await ctx.send('Member unplonked.')
+    async def unplonk(self, ctx, target: member_or_channel):
+        """Allow a member to use commands on this server, or allow commands
+        to be used in a channel."""
+        await self._plonker(ctx, target, False)
+
+    async def _plonker(self, ctx, target, plonked):
+        if isinstance(target, discord.Member):
+            type_ = 'Member'
+            update = self.config.update_member
+        else:
+            type_ = 'Channel'
+            update = self.config.update_channel
+        un = 'un' if not plonked else ''
+        await update(ctx.guild.id, target.id, plonked=plonked)
+        await ctx.send(f'{type_} {un}plonked.')
 
 
 def setup(bot):
