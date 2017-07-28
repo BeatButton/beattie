@@ -54,7 +54,7 @@ class NSFW:
                       'limit': limit,
                       'tags': ' '.join(tags)}
             async with ctx.bot.get(url, params=params) as resp:
-                root = etree.fromstring(await resp.read(), etree.HTMLParser())
+                root = etree.fromstring(await resp.read())
             posts = root.findall('.//post')
             random.shuffle(posts)
             self.cache[url][tags] = posts
