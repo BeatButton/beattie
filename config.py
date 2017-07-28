@@ -46,6 +46,7 @@ class Config:
             if guild is not None:
                 await s.remove(guild)
             await s.delete(Member).where(Member.guild_id == gid)
+            await s.delete(Channel).where(Channel.guild_id == gid)
         self._cache.pop(gid, None)
         self._cache['member'].pop(gid, None)
         self._cache['channel'].pop(gid, None)
