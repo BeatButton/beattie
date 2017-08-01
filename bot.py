@@ -10,6 +10,7 @@ from discord.ext import commands
 
 from config import Config
 from utils import contextmanagers, decorators, exceptions
+from utils.etc import default_channel
 import yaml
 
 
@@ -140,15 +141,10 @@ class BeattieBot(commands.Bot):
     async def on_guild_join(self, guild):
         bots = sum(m.bot for m in guild.members)
         if bots > 10 and bots / len(guild.members) > 0.5:
-            try:
-                dest = next(channel for channel in guild.text_channels
-                            if channel.permissions_for(guild.me).read_messages)
-            except StopIteration:
-                pass
-            else:
+            dest = default_channel(guild.me)
+            if dest:
                 await dest.send("This gulid's bot to user ratio is too high.")
-            finally:
-                await guild.leave()
+            await guild.leave()
 
     @decorators.bot_only
     async def on_guild_remove(self, guild):
@@ -160,7 +156,9 @@ class BeattieBot(commands.Bot):
         guild_conf = await self.config.get(guild.id)
         message = guild_conf.get('welcome')
         if message:
-            await guild.default_channel.send(message.format(member.mention))
+            dest = default_channel(guild.me)
+            if dest:
+                await dest.send(message.format(member.mention))
 
     @decorators.bot_only
     async def on_member_remove(self, member):
@@ -168,7 +166,9 @@ class BeattieBot(commands.Bot):
         guild_conf = await self.config.get(guild.id)
         message = guild_conf.get('farewell')
         if message:
-            await guild.default_channel.send(message.format(member.mention))
+            dest = default_channel(guild.me)
+            if dest:
+                await dest.send(message.format(member.mention))
 
     async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, 'on_error'):
