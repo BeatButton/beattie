@@ -140,11 +140,13 @@ class BeattieBot(commands.Bot):
     async def on_guild_join(self, guild):
         bots = sum(m.bot for m in guild.members)
         if bots > 10 and bots / len(guild.members) > 0.5:
-            dest = guild.default_channel
             try:
-                await dest.send("This gulid's bot to user ratio is too high.")
-            except discord.Forbidden:
+                dest = next(channel for channel in guild.text_channels
+                            if channel.permissions_for(guild.me).read_messages)
+            except StopIteration:
                 pass
+            else:
+                await dest.send("This gulid's bot to user ratio is too high.")
             finally:
                 await guild.leave()
 
