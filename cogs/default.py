@@ -34,16 +34,11 @@ class Default:
 
     @commands.command(hidden=True)
     async def confetti(self, ctx, num: int=1):
-        await ctx.send('🎉' * num)
-
-    @confetti.error
-    async def confetti_error(self, ctx, e):
-        e = getattr(e, 'original', e)
-        if isinstance(e, discord.HTTPException):
+        if num > 200:
             await ctx.send("I don't have that much confetti "
                            '<:blobpensive:337436989676716033>')
         else:
-            await ctx.bot.handle_error(ctx, e)
+            await ctx.send('🎉' * num)
 
 
 def setup(bot):
