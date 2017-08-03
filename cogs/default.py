@@ -31,6 +31,10 @@ class Default:
     async def thanks(self, ctx):
         await ctx.send('no u')
 
+    @commands.command(hidden=True)
+    async def confetti(self, ctx, num: int=1):
+        await ctx.send('🎉' * num)
+
 
 def setup(bot):
     bot.add_cog(Default())
