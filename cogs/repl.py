@@ -10,7 +10,8 @@ from discord.ext import commands
 
 # imports for REPL env
 import math  # noqa: F401
-import objgraph   # noqa: F401
+import objgraph  # noqa: F401
+import os  # noqa: F401
 import sys  # noqa: F401
 
 
@@ -37,15 +38,10 @@ class REPL:
     @commands.command(hidden=True, name='eval')
     async def eval_(self, ctx, *, body: str):
         env = {
-            'author': ctx.author,
-            'bot': ctx.bot,
-            'ctx': ctx,
-            'channel': ctx.channel,
-            'guild': ctx.guild,
-            'message': ctx.message,
             '_': self._last_result,
         }
 
+        env.update(vars(ctx))
         env.update(globals())
 
         body = self.cleanup_code(body)
