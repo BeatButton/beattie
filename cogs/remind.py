@@ -65,7 +65,8 @@ class Remind:
 
     async def send_message(self, task):
         channel = self.bot.get_channel(task.channel)
-        await channel.send(task.text)
+        if channel is not None:
+            await channel.send(task.text)
         async with self.db.get_session() as s:
 
             query = s.select(Message).where((Message.time == task.time)
