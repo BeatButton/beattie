@@ -25,11 +25,14 @@ class Wolfram:
             async with ctx.bot.get(self.url, params=params) as resp:
                 text = await resp.text()
             root = etree.fromstring(text.encode(), etree.XMLParser())
-            try:
-                interpret = root.xpath("//pod[@title='Input interpretation']"
-                                       "/subpod/plaintext/text()")[0]
-            except IndexError:
-                interpret = ''
+            interpret = root.xpath("//pod[@title='Input interpretation']"
+                                   "/subpod/plaintext/text()")
+            if not interpret:
+                interpret = root.xpath("//pod[@title='Input']"
+                                       "/subpod/plaintext/text()")
+            if not interpret:
+                interpret = ['']
+            interpret = interpret[0]
             try:
                 result = root.xpath("//pod[@title!='Input interpretation']"
                                     "/subpod/plaintext/text()")[0]
