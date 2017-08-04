@@ -12,4 +12,4 @@ def reverse_insort(seq, val, lo=0, hi=None):
 
 def default_channel(member):
     return next((channel for channel in member.guild.text_channels
-                 if channel.permissions_for(member).read_messages), None)
+                 if channel.permissions_for(member).send_messages), None)
