@@ -22,6 +22,9 @@ class Remind:
         self.timer = self.loop.create_task(asyncio.sleep(0))
         self.loop.create_task(self.init())
 
+    def __unload(self):
+        self.timer.cancel()
+
     async def init(self):
         await self.bot.wait_until_ready()
         if not self.bot.user.bot:
