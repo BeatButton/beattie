@@ -19,6 +19,8 @@ class Manage:
         return f'{cog},' not in blacklist
 
     async def __global_check_once(self, ctx):
+        if not ctx.channel.permissions_for(ctx.me).send_messages:
+            return False
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
         guild = ctx.guild
@@ -30,7 +32,7 @@ class Manage:
 
     async def __local_check(self, ctx):
         return (await ctx.bot.is_owner(ctx.author)
-                or ctx.author.permissions_in(ctx.channel).manage_guild)
+                or ctx.channel.permissions_for(ctx.author).manage_guild)
 
     @commands.command()
     @commands.is_owner()
