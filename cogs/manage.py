@@ -26,11 +26,15 @@ class Manage:
         guild = ctx.guild
         member_conf = await self.config.get_member(guild.id, ctx.author.id)
         member_plonked = member_conf.get('plonked', False)
+        if member_plonked:
+            return False
         channel_conf = await self.config.get_channel(guild.id, ctx.channel.id)
         channel_plonked = channel_conf.get('plonked', False)
-        return not (member_plonked or channel_plonked)
+        return not channel_plonked
 
     async def __local_check(self, ctx):
+        if ctx.guild is None:
+            return False
         return (await ctx.bot.is_owner(ctx.author)
                 or ctx.channel.permissions_for(ctx.author).manage_guild)
 
