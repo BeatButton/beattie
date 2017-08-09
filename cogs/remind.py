@@ -36,11 +36,15 @@ class Remind:
         await self.start_timer()
 
     @commands.command()
-    async def remind(self, ctx, time: Time, *, topic='something'):
+    async def remind(self, ctx, time: Time, *, topic=None):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
+        if topic is not None:
+            topic = f'that {topic}'
+        else:
+            topic = 'about something'
         message = (f'{ctx.author.mention}\n'
-                   f'You asked to be reminded that {topic}.')
+                   f'You asked to be reminded {topic}.')
         await self.schedule_message(time, ctx.channel.id, message)
         await ctx.send(f"Okay, I'll remind you.")
 
