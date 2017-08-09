@@ -26,14 +26,13 @@ class Remind:
         self.timer.cancel()
 
     async def init(self):
-        await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             return
+        await self.bot.wait_until_ready()
         async with self.db.get_session() as s:
-            query = s.select(Message).order_by(Message.time)
+            query = s.select(Message).order_by(Message.time, sort_order='desc')
             self.queue = [Task(*record.to_dict().values())
                           async for record in await query.all()]
-        self.queue.sort(reverse=True)
         await self.start_timer()
 
     @commands.command()
