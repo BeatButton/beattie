@@ -2,6 +2,8 @@ import asyncio
 from contextlib import redirect_stdout
 import inspect
 import io
+import os
+import sys
 import textwrap
 import traceback
 import discord
@@ -11,7 +13,6 @@ from discord.ext import commands
 # imports for REPL env
 import math  # noqa: F401
 import objgraph   # noqa: F401
-import sys  # noqa: F401
 
 
 class REPL:
@@ -182,6 +183,11 @@ class REPL:
         if not res:
             res = 'No result.'
         await ctx.send(res)
+
+    @commands.command()
+    async def restart(self, ctx):
+        ctx.bot.logout()
+        os.execl(sys.executable, os.path.realpath(__file__), *sys.argv)
 
 
 def setup(bot):
