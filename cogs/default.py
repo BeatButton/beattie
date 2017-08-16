@@ -1,5 +1,3 @@
-import time
-
 from discord.ext import commands
 
 
@@ -7,14 +5,7 @@ class Default:
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
         """Get the ping to the websocket."""
-        msg = await ctx.send("Pong! :ping_pong:")
-
-        before = time.monotonic()
-        await (await ctx.bot.ws.ping())
-        after = time.monotonic()
-        ping_time = (after - before) * 1000
-
-        await msg.edit(content=f'{msg.content} **{ping_time:.0f}ms**')
+        await ctx.send(f'Pong! :ping_pong: **{ctx.bot.latency*1000:.0f}ms**')
 
     @commands.command()
     async def source(self, ctx):
