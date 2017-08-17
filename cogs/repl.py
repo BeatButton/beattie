@@ -187,7 +187,7 @@ class REPL:
     @commands.command()
     async def restart(self, ctx):
         ctx.bot.logout()
-        os.execl(sys.executable, os.path.realpath(__file__), *sys.argv)
+        os.execl(sys.executable, 'main.py', *sys.argv)
 
 
 def setup(bot):
