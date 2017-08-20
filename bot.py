@@ -158,7 +158,10 @@ class BeattieBot(commands.Bot):
         if message:
             dest = default_channel(guild.me)
             if dest:
-                message = message.format(mention=member.mention)
+                try:
+                    message = message.format(mention=member.mention)
+                except:
+                    message = 'You broke something with your message.'
                 await dest.send(message)
 
     @decorators.bot_only
@@ -169,7 +172,10 @@ class BeattieBot(commands.Bot):
         if message:
             dest = default_channel(guild.me)
             if dest:
-                message = message.format(mention=member.mention)
+                try:
+                    message = message.format(mention=member.mention)
+                except:
+                    message = 'You broke something with your message.'
                 await dest.send(message)
 
     async def on_command_error(self, ctx, e):
