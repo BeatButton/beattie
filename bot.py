@@ -158,7 +158,8 @@ class BeattieBot(commands.Bot):
         if message:
             dest = default_channel(guild.me)
             if dest:
-                await dest.send(message.format(member.mention))
+                message = message.format(mention=member.mention)
+                await dest.send(message)
 
     @decorators.bot_only
     async def on_member_remove(self, member):
@@ -168,7 +169,8 @@ class BeattieBot(commands.Bot):
         if message:
             dest = default_channel(guild.me)
             if dest:
-                await dest.send(message.format(member.mention))
+                message = message.format(mention=member.mention)
+                await dest.send(message)
 
     async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, 'on_error'):
