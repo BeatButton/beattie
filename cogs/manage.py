@@ -91,7 +91,7 @@ class Manage:
         """Set the member greeting for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the newcomer"""
-        message = message.replace('{}', '{member.mention}')
+        message = message.replace('{}', '{mention}')
         await self.config.set(ctx.guild.id, welcome=message)
         await ctx.send('Welcome message set.')
 
@@ -100,6 +100,7 @@ class Manage:
         """Set the member-left message for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the deserter"""
+        message = message.replace('{}', '{mention}')
         await self.config.set(ctx.guild.id, farewell=message)
         await ctx.send('Leave message set.')
 
