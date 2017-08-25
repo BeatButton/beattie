@@ -143,7 +143,7 @@ class BeattieBot(commands.Bot):
         if bots > 10 and bots / len(guild.members) > 0.5:
             dest = default_channel(guild.me)
             if dest:
-                await dest.send("This gulid's bot to user ratio is too high.")
+                await dest.send("This guild's bot to user ratio is too high.")
             await guild.leave()
 
     @decorators.bot_only
