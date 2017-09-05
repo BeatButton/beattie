@@ -172,9 +172,7 @@ class REPL:
             command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
-        await proc.wait()
-        stdout = (await proc.stdout.read()).decode()
-        stderr = (await proc.stderr.read()).decode()
+        stdout, stderr = (text.decode() for text in await proc.communicate())
         res = ''
         if stdout:
             res = f'Output:```\n{stdout}```'
