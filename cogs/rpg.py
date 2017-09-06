@@ -3,7 +3,6 @@ from concurrent import futures
 import os
 import random
 import re
-from urllib.parse import parse_qs
 
 import discord
 from discord.ext import commands
@@ -121,6 +120,10 @@ class RPG:
 
         out = []
         for roll, result in zip(rolls, results):
+            if 'd' not in roll:
+                roll = f'1d{roll}'
+            elif roll[0] == 'd':
+                roll = f'1{roll}'
             total = 't' in roll
             if total:
                 result = [[sum(roll_)] for roll_ in result]
