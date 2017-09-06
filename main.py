@@ -21,11 +21,12 @@ with open('config/config.yaml') as file:
     config = yaml.load(file)
 
 self_bot = 'self' in sys.argv
+debug = 'debug' in sys.argv
 
 if self_bot:
     prefixes = ['self>']
     token = config['self']
-elif config['debug']:
+elif config['debug'] or debug:
     prefixes = [config['test_prefix']]
     token = config['test_token']
 else:
