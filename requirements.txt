@@ -1,0 +1,12 @@
+git+https://github.com/Rapptz/discord.py.git@rewrite#egg=discord.py
+git+https://github.com/SunDwarf/asyncqlio.git#egg=asyncqlio
+aiofiles
+aitertools
+asyncjisho
+asyncpg
+lxml
+objgraph
+parsedatetime
+psutil
+pyyaml
+uvloop
