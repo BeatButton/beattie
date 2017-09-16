@@ -169,22 +169,6 @@ class EDDB:
             async with ctx.bot.tmp_dl(f'{self.url}{name}') as file:
                 ctx.bot.logger.info(f'Creating table for {name}')
                 await self.make_table(file, name, table)
-
-        async with self.db.get_session() as s:
-            # ddl when
-            await s.execute('CREATE INDEX ON system(name);'
-                            'CREATE INDEX ON station(name);'
-                            'CREATE INDEX ON commodity(name);'
-                            'ALTER TABLE station '
-                            'ADD FOREIGN KEY (system_id)'
-                            'REFERENCES system(id);'
-                            'ALTER TABLE listing '
-                            'ADD FOREIGN KEY (station_id)'
-                            'REFERENCES station(id);'
-                            'ALTER TABLE listing '
-                            'ADD FOREIGN KEY (commodity_id)'
-                            'REFERENCES commodity(id);')
-
         self.updating = False
         ctx.bot.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
@@ -201,12 +185,8 @@ class EDDB:
         cols = {col.name: col.type.sql() for col in table.iter_columns()}
         # postgresql can only have up to 2 ^ 15 paramters. So, this
         batch_size = 2 ** 15 // len(cols) - 1
-        async with self.db.get_session() as s:
-            query = (f'DROP TABLE IF EXISTS {table_name} CASCADE;'
-                     f'CREATE TABLE {table_name}('
-                     f'{",".join(f"{k} {v}" for k, v in cols.items())},'
-                     'PRIMARY KEY(id));')
-            await s.execute(query, {})
+        await table.drop(cascade=True)
+        await table.create()
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
                 async for row in batch:

@@ -1,4 +1,5 @@
 from asyncqlio.orm.schema.column import Column
+from asyncqlio.orm.schema.index import Index
 from asyncqlio.orm.schema.relationship import Relationship, ForeignKey
 from asyncqlio.orm.schema.table import table_base
 from asyncqlio.orm.schema.types import \
@@ -13,6 +14,7 @@ class Commodity(Table):
     average_price = Column(Integer)
     is_rare = Column(Boolean)
     category = Column(Text)
+    idx_name = Index(name)
     listings = Relationship(id, 'listing.commodity_id')
 
 
@@ -26,6 +28,7 @@ class System(Table):
     state = Column(Text)
     security = Column(Text)
     power = Column(Text)
+    idx_name = Index(name)
     stations = Relationship(id, 'station.system_id')
 
 
@@ -47,6 +50,7 @@ class Station(Table):
     economies = Column(Text)
     is_planetary = Column(Boolean)
     selling_ships = Column(Text)
+    idx_name = Index(name)
     listings = Relationship(id, 'listing.station_id')
     system = Relationship(system_id, System.id, load='joined', use_iter=False)
 
