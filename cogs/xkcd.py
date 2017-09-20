@@ -6,6 +6,7 @@ from aiohttp import ClientResponseError
 import discord
 from discord.ext import commands
 
+from utils.exceptions import ResponseError
 
 class XKCD:
     def __init__(self):
@@ -67,18 +68,16 @@ class XKCD:
                 return
 
         url = f'https://xkcd.com/{number}/info.0.json'
-        async with ctx.bot.get(url) as resp:
-            try:
+        try:
+            async with ctx.bot.get(url) as resp:
                 data = await resp.json()
-            # JSONDecodeError on Windows and ClientResponseError on Linux
-            # aiohttp is not a good library
-            except (JSONDecodeError, ClientResponseError):
-                data = {'title': '404',
-                        'img': 'http://www.explainxkcd.com/wiki/'
-                               'images/9/92/not_found.png',
-                        'alt': 'Comic not found.',
-                        'num': 404,
-                        }
+        except ResponseError:
+            data = {'title': '404',
+                    'img': 'http://www.explainxkcd.com/wiki/'
+                           'images/9/92/not_found.png',
+                    'alt': 'Comic not found.',
+                    'num': 404,
+                    }
         await ctx.send(embed=format_comic(data))
 
     @commands.command(hidden=True)
