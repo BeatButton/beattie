@@ -50,7 +50,7 @@ class BeattieBot(commands.Bot):
                 else:
                     return prefix + (guild_pre,)
 
-        super().__init__(pre, *args, **kwargs, game=game, status=status)
+        super().__init__(pre, *args, **kwargs, game=game, status=status, pm_help=True)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         password = data.get('config_password', '')
