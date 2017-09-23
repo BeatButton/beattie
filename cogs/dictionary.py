@@ -11,10 +11,10 @@ class Dictionary:
         self.jisho = Jisho(session=bot.session)
 
     @commands.command(name='jisho')
-    async def jisho_(self, ctx, *, keyword):
+    async def jisho_(self, ctx, *, keywords):
         """Get results from Jisho.org, Japanese dictionary"""
         async with ctx.typing():
-            data = await self.jisho.lookup(keyword)
+            data = await self.jisho.lookup(keywords)
         if not data:
             await ctx.send('No words found.')
             return
@@ -22,8 +22,8 @@ class Dictionary:
         res = {k: '\n'.join(v) for k, v in res.items()}
         res['english'] = ', '.join(res['english'].split('\n'))
         embed = discord.Embed()
-        embed.url = self.jisho_url.format(keyword)
-        embed.title = keyword
+        embed.url = self.jisho_url.format('%20'.join(keywords.split()))
+        embed.title = keywords
         res = {k: self.format(v) for k, v in res.items()}
         embed.add_field(name='Words', value=res['words'])
         embed.add_field(name='Readings', value=res['readings'])
