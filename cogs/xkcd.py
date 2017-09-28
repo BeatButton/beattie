@@ -8,6 +8,7 @@ from discord.ext import commands
 
 from utils.exceptions import ResponseError
 
+
 class XKCD:
     def __init__(self):
         with open('data/why.txt', encoding='utf8') as file:
