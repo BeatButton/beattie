@@ -87,7 +87,7 @@ class Manage:
         await ctx.send('Guild prefix set.')
 
     @commands.command()
-    async def greet(self, ctx, *, message=None):
+    async def greet(self, ctx, *, message=''):
         """Set the member greeting for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the newcomer"""
@@ -96,7 +96,7 @@ class Manage:
         await ctx.send('Welcome message set.')
 
     @commands.command()
-    async def leave(self, ctx, *, message=None):
+    async def leave(self, ctx, *, message=''):
         """Set the member-left message for this guild. Disables if no message.
 
         Include a {} in the message where you want to mention the deserter"""
