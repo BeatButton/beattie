@@ -22,7 +22,8 @@ class Twitter:
         async with self.bot.get(link) as resp:
             root = etree.fromstring(await resp.read(), etree.HTMLParser())
         for img_link in root.findall(self.selector)[1:]:
-            await destination.send(dict(img_link.items())['src'])
+            url = dict(img_link.items())['src']
+            await destination.send(f'{url}:large')
 
     @commands.command()
     async def twitter(self, ctx, enabled: bool=True):
