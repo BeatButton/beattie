@@ -11,6 +11,7 @@ class Guild(Table):
     welcome = Column(Text)
     farewell = Column(Text)
     prefix = Column(Text)
+    twitter = Column(Boolean)
 
 
 class Member(Table):
