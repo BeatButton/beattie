@@ -21,7 +21,7 @@ class BeattieBot(commands.Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
-    def __init__(self, command_prefix='b>', *args, **kwargs):
+    def __init__(self, command_prefix='b>', *args, pm_help=True, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
             game = None
@@ -50,7 +50,7 @@ class BeattieBot(commands.Bot):
                 else:
                     return prefix + (guild_pre,)
 
-        super().__init__(pre, *args, **kwargs, game=game, status=status, pm_help=True)
+        super().__init__(pre, *args, **kwargs, game=game, status=status, pm_help=pm_help)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
         password = data.get('config_password', '')
