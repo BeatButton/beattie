@@ -14,7 +14,6 @@ from utils import contextmanagers, decorators, exceptions
 from utils.etc import default_channel
 
 
-
 class BeattieBot(commands.Bot):
     """An extension of Bot. Allow use with self bots and handles errors in an
     ordered way"""
@@ -118,9 +117,11 @@ class BeattieBot(commands.Bot):
             if dest:
                 try:
                     message = message.format(mention=member.mention)
-                except:
+                except Exception as e:
                     message = 'You broke something with your message.'
-                await dest.send(message)
+                    raise e from None
+                finally:
+                    await dest.send(message)
 
     @decorators.bot_only
     async def on_member_remove(self, member):
@@ -132,9 +133,11 @@ class BeattieBot(commands.Bot):
             if dest:
                 try:
                     message = message.format(mention=member.mention)
-                except:
+                except Exception as e:
                     message = 'You broke something with your message.'
-                await dest.send(message)
+                    raise e from None
+                finally:
+                    await dest.send(message)
 
     async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, 'on_error'):
