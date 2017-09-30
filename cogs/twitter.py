@@ -7,13 +7,19 @@ from discord.ext import commands
 
 class Twitter:
     url_expr = re.compile(r'https?:\/\/twitter\.com\/\S+\/status\/\d+')
-    selector = (".//img[@data-aria-label-part]")
+    selector = './/img[@data-aria-label-part]'
 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(self.__init())
+
+    async def __init(self):
+        await self.bot.wait_until_ready()
+        if not self.bot.user.bot:
+            self.bot.unload_extension(__name__)
 
     async def on_message(self, message):
-        if not (await self.bot.config.get(message.guild.id))['twitter']:
+        if not (await self.bot.config.get(message.guild.id)).get('twitter'):
             return
         for link in self.url_expr.findall(message.content):
             await self.display_images(link, message.channel)
