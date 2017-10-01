@@ -7,7 +7,8 @@ from discord.ext import commands
 
 class Twitter:
     url_expr = re.compile(r'https?:\/\/twitter\.com\/\S+\/status\/\d+')
-    selector = './/img[@data-aria-label-part]'
+    tweet_selector = ".//div[@class='AdaptiveMediaOuterContainer']"
+    img_selector = './/img[@data-aria-label-part]'
 
     def __init__(self, bot):
         self.bot = bot
@@ -27,7 +28,8 @@ class Twitter:
     async def display_images(self, link, destination):
         async with self.bot.get(link) as resp:
             root = etree.fromstring(await resp.read(), etree.HTMLParser())
-        for img_link in root.findall(self.selector)[1:]:
+        tweet = root.find(self.tweet_selector)
+        for img_link in tweet.findall(self.img_selector)[1:]:
             url = dict(img_link.items())['src']
             await destination.send(f'{url}:large')
 
