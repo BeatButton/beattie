@@ -20,6 +20,8 @@ class Twitter:
             self.bot.unload_extension(__name__)
 
     async def on_message(self, message):
+        if message.guild is None:
+            return
         if not (await self.bot.config.get(message.guild.id)).get('twitter'):
             return
         for link in self.url_expr.findall(message.content):
