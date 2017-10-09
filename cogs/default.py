@@ -2,6 +2,7 @@ from discord.ext import commands
 
 
 class Default:
+    """Default useful commands."""
     @commands.command(aliases=['p'])
     async def ping(self, ctx):
         """Get the ping to the websocket."""
@@ -20,10 +21,12 @@ class Default:
 
     @commands.command(hidden=True, aliases=['thank', 'thx'])
     async def thanks(self, ctx):
+        """thanks"""
         await ctx.send('no u')
 
     @commands.command(hidden=True)
     async def confetti(self, ctx, num: int=1):
+        """Throw some confetti."""
         if num > 200:
             await ctx.send("I don't have that much confetti "
                            '<:blobpensive:337436989676716033>')
