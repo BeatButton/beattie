@@ -1,13 +1,15 @@
 import re
 
 import aiohttp
-import discord
-from discord.ext import commands
 from lxml import etree
 import yaml
 
+import discord
+from discord.ext import commands
+
 
 class Cat:
+    """Commands for getting pictures of animals."""
     def __init__(self):
         with open('config/config.yaml') as file:
             data = yaml.load(file)
@@ -27,7 +29,7 @@ class Cat:
             url = root.find('.//url').text
             if not url.startswith('http://'):
                 url = f'http://{url}'
-            pattern = r'http://\d+\.media\.tumblr\.com'
+            pattern = r'https?://\d+\.media\.tumblr\.com'
             replace = 'http://media.tumblr.com'
             url = re.sub(pattern, replace, url)
             async with ctx.bot.get(url) as resp:
@@ -40,7 +42,7 @@ class Cat:
         if isinstance(e, aiohttp.ServerDisconnectedError):
             await ctx.invoke(self.cat)
         else:
-            raise e
+            raise e from None
 
     @commands.command()
     async def dog(self, ctx):
