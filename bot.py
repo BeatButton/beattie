@@ -96,16 +96,13 @@ class BeattieBot(commands.Bot):
 
     @decorators.bot_only
     async def on_guild_join(self, guild):
-        bots = sum(m.bot for m in guild.members)
-        if bots > 10 and bots / len(guild.members) > 0.5:
-            dest = default_channel(guild.me)
-            if dest:
-                await dest.send("This guild's bot to user ratio is too high.")
-            await guild.leave()
-
-    @decorators.bot_only
-    async def on_guild_remove(self, guild):
-        await self.config.remove(guild.id)
+        for member in guild.members:
+            if member.id == self.owner_id:
+                return
+        dest = default_channel(guild.me)
+        if dest:
+            await dest.send("This bot currently can't be added to guilds.")
+        await guild.leave()
 
     @decorators.bot_only
     async def on_member_join(self, member):
