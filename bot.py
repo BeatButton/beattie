@@ -115,7 +115,7 @@ class BeattieBot(commands.Bot):
                 try:
                     message = message.format(mention=member.mention)
                 except Exception as e:
-                    message = 'You broke something with your message.'
+                    message = 'Join message broken, please re-set.'
                     raise e from None
                 finally:
                     await dest.send(message)
@@ -131,7 +131,7 @@ class BeattieBot(commands.Bot):
                 try:
                     message = message.format(mention=member.mention)
                 except Exception as e:
-                    message = 'You broke something with your message.'
+                    message = 'Join message broken, please re-set.'
                     raise e from None
                 finally:
                     await dest.send(message)
