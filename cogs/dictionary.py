@@ -1,4 +1,5 @@
 from asyncjisho import Jisho
+
 import discord
 from discord.ext import commands
 
