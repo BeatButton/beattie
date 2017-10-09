@@ -31,6 +31,8 @@ class Twitter:
         async with self.bot.get(link) as resp:
             root = etree.fromstring(await resp.read(), etree.HTMLParser())
         tweet = root.find(self.tweet_selector)
+        if tweet is None:
+            return
         for img_link in tweet.findall(self.img_selector)[1:]:
             url = dict(img_link.items())['src']
             await destination.send(f'{url}:large')
