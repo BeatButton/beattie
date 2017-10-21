@@ -34,8 +34,7 @@ class Wolfram:
                 interpret = ['']
             interpret = interpret[0]
             try:
-                result = root.xpath("//pod[not(@title='Input interpretation' "
-                                    "or @title='Input')]"
+                result = root.xpath("//pod[not(starts-with(@title, 'Input'))]"
                                     "/subpod/plaintext/text()")[0]
             except IndexError:
                 result = 'No results found.'
