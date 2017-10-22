@@ -13,6 +13,9 @@ class Twitter:
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.__init())
+        self.headers = {'User-Agent':
+                        'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) '
+                        'Chrome/41.0.2228.0 Safari/537.36'}
 
     async def __init(self):
         await self.bot.wait_until_ready()
@@ -28,7 +31,7 @@ class Twitter:
             await self.display_images(link, message.channel)
 
     async def display_images(self, link, destination):
-        async with self.bot.get(link) as resp:
+        async with self.bot.get(link, headers=self.headers) as resp:
             root = etree.fromstring(await resp.read(), etree.HTMLParser())
         tweet = root.find(self.tweet_selector)
         if tweet is None:
