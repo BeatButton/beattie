@@ -20,15 +20,16 @@ class Remind:
         self.bot = bot
         self.db.bind_tables(Table)
         self.timer = self.loop.create_task(asyncio.sleep(0))
-        self.loop.create_task(self.init())
+        self.loop.create_task(self.__init())
 
     def __unload(self):
         self.timer.cancel()
 
-    async def init(self):
+    async def __init(self):
         await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             return
+        await Message.create(if_not_exists=True)
         async with self.db.get_session() as s:
             query = s.select(Message).order_by(Message.time, sort_order='desc')
             self.queue = [Task(*record.to_dict().values())

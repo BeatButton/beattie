@@ -30,6 +30,11 @@ class EDDB:
             'jsonl': self.multi_json,
         }
 
+    async def __init(self, bot):
+        await self.bot.wait_until_ready()
+        for table in [Commodity, System, Station, Listing]:
+            await table.create(if_not_exists=True)
+
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
         """Commands for getting data from EDDB.io"""
