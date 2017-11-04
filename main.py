@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from pathlib import Path
+import os
 import sys
 
 from discord.ext.commands import when_mentioned_or
@@ -16,6 +17,8 @@ except ImportError:
     asyncio.set_event_loop(loop)
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 with open('config/config.yaml') as file:
     config = yaml.load(file)
