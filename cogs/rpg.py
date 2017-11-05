@@ -133,7 +133,7 @@ class RPG:
                 for roll_ in result:
                     roll_.sort()
                 result.sort()
-            if total or len(result) == 1:
+            if total or len(result[0]) == 1:
                 result = [roll_[0] for roll_ in result]
             if 'x' not in inp:
                 result = result[0]
