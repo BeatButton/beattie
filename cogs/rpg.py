@@ -92,6 +92,8 @@ class RPG:
 
             num = args[0]
             sides = args[1]
+            if sides == 0:
+                raise commands.BadArgument
 
             hi_drop = 0
             lo_drop = 0
