@@ -95,16 +95,6 @@ class BeattieBot(commands.Bot):
                 await self.invoke(ctx)
 
     @decorators.bot_only
-    async def on_guild_join(self, guild):
-        for member in guild.members:
-            if member.id == self.owner_id:
-                return
-        dest = default_channel(guild.me)
-        if dest:
-            await dest.send("This bot currently can't be added to guilds.")
-        await guild.leave()
-
-    @decorators.bot_only
     async def on_member_join(self, member):
         guild = member.guild
         guild_conf = await self.config.get(guild.id)
