@@ -24,9 +24,7 @@ class Config:
                 query = s.select(Guild).where(Guild.id == gid)
                 guild = await query.first()
             if guild is None:
-                res = {col.name: col.type.create_default()
-                       for col in Guild.iter_columns()}
-                res['id'] = gid
+                res = {'id': gid}
             else:
                 res = to_dict(guild)
             self._cache[gid] = res
