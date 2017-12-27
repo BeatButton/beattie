@@ -184,10 +184,7 @@ class REPL:
 
     @commands.command()
     async def restart(self, ctx):
-        ctx.bot.logout()
-        with open('main.py') as file:
-            os.fsync(file)
-        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
+        await ctx.invoke(self.run, command='sudo systemctl restart beattie.service')
 
 
 def setup(bot):
