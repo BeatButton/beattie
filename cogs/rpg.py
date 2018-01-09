@@ -174,7 +174,7 @@ class RPG:
             raise commands.BadArgument
 
         edge = 'e' in inp
-        num = int(inp.lstrip('e'))
+        num = int(inp.rstrip('e'))
 
         args = (num, edge)
         future = self.loop.run_in_executor(None, shadowroller, *args)
