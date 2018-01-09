@@ -11,16 +11,16 @@ class Guild(Table):
     welcome = Column(Text, nullable=True)
     farewell = Column(Text, nullable=True)
     prefix = Column(Text, nullable=True)
-    twitter = Column(Boolean)
+    twitter = Column(Boolean, nullable=True)
 
 
 class Member(Table):
     guild_id = Column(BigInt, primary_key=True)
     id = Column(BigInt, primary_key=True)
-    plonked = Column(Boolean)
+    plonked = Column(Boolean, nullable=True)
 
 
 class Channel(Table):
     id = Column(BigInt, primary_key=True)
-    guild_id = Column(BigInt)
-    plonked = Column(Boolean)
+    guild_id = Column(BigInt, primary_key=True)
+    plonked = Column(Boolean, nullable=True)
