@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+o#!/usr/bin/env python
 import asyncio
 import logging
 from pathlib import Path
@@ -14,6 +14,7 @@ try:
     import uvloop
 except ImportError:
     loop = asyncio.ProactorEventLoop()
+    loop = asyncio.get_event_loop()
     asyncio.set_event_loop(loop)
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
