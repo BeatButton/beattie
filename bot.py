@@ -54,8 +54,7 @@ class BeattieBot(commands.Bot):
             data = yaml.load(file)
 
         password = data.get('config_password', '')
-        connector = aiohttp.TCPConnector(verify_ssl=False)
-        self.session = aiohttp.ClientSession(loop=self.loop, connector=connector)
+        self.session = aiohttp.ClientSession(loop=self.loop)
         dsn = f'postgresql://beattie:{password}@localhost/beattie'
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
