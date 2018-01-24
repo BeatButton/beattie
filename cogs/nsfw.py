@@ -46,7 +46,7 @@ class NSFW:
     @commands.command(aliases=['fur'], hidden=True)
     async def e621(self, ctx, *, tags=''):
         async with ctx.typing():
-            await self.booru(ctx, tags, limit=240)
+            await self.booru(ctx, tags, limit=320)
 
     @commands.command(hidden=True)
     async def massage(self, ctx, *, tags=''):
