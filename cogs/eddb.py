@@ -21,6 +21,7 @@ class EDDB:
     def __init__(self, bot):
         self.updating = False
         self.loop = bot.loop
+        self.bot = bot
         self.url = 'https://eddb.io/archive/v5/'
         self.db = bot.db
         self.db.bind_tables(Table)
@@ -168,12 +169,12 @@ class EDDB:
             return
         self.updating = True
         await ctx.send('Database update in progress...')
-
         for name, table in self.file_to_table.items():
             ctx.bot.logger.info(f'Downloading {name}')
-            async with ctx.bot.tmp_dl(f'{self.url}{name}') as file:
+            async with self.bot.tmp_dl(f'{self.url}{name}') as file:
                 ctx.bot.logger.info(f'Creating table for {name}')
                 await self.make_table(file, name, table)
+
         self.updating = False
         ctx.bot.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
@@ -184,9 +185,9 @@ class EDDB:
         await ctx.bot.handle_error(ctx, e)
 
     async def make_table(self, file, name, table):
-        file_ext = name.rpartition('.')[-1]
+        file_ext = name.rpartition('.')[2]
         file = self.parsers[file_ext](file)
-        table_name = table.__name__
+        table_name = table.__tablename__
         cols = {col.name: col.type.sql() for col in table.iter_columns()}
         # postgresql can only have up to 2 ^ 15 paramters. So, this
         batch_size = 2 ** 15 // len(cols) - 1
