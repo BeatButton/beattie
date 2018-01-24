@@ -54,8 +54,10 @@ class get:
     def __init__(self, session, url, **kwargs):
         self.session = session
         self.url = url
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {'Accept-Encoding': 'gzip, deflate, sdch'}
+        headers = kwargs.get('headers', {})
+        if 'Accept-Encoding' not in headers:
+            headers['Accept-Encoding'] = 'gzip, deflate, sdch'
+        kwargs['headers'] = headers
         if 'timeout' not in kwargs:
             kwargs['timeout'] = None
         self.kwargs = kwargs
