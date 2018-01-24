@@ -1,45 +1,118 @@
+from io import BytesIO
 import re
 
+import aiohttp
 from lxml import etree
+import yaml
 
 from discord.ext import commands
+from discord import File
 
+from utils.contextmanagers import get as _get
 
 class Twitter:
-    url_expr = re.compile(r'https?:\/\/twitter\.com\/\S+\/status\/\d+')
+    """Contains the capability to link images from tweets and other social media"""
+    twit_url_expr = re.compile(r'https?:\/\/twitter\.com\/\S+\/status\/\d+')
     tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
-    img_selector = './/img[@data-aria-label-part]'
+    twit_img_selector = './/img[@data-aria-label-part]'
+
+    pixiv_url_expr = re.compile(r'https:\/\/www\.pixiv\.net\/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
+    pixiv_img_selector = ".//img[@class='original-image']"
+    pixiv_read_more_selector = ".//a[contains(@class, 'read-more')]"
+    pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
 
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.__init())
         self.headers = {'User-Agent':
-                        'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) '
-                        'Chrome/41.0.2228.0 Safari/537.36'}
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) '
+                        'Gecko/20100101 Firefox/58.0'}
+        with open('config/cookies.yaml') as fp:
+            cookies = yaml.load(fp)
+        self.session = aiohttp.ClientSession(loop=bot.loop, cookies=cookies)
+        self.parser = etree.HTMLParser()
 
     async def __init(self):
         await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             self.bot.unload_extension(__name__)
 
+    def __unload(self):
+        self.session.close()
+
+    def get(self, *args, **kwargs):
+        headers = self.headers.copy()
+        headers.update(kwargs.pop('headers', {}))
+        return _get(self.session, *args, headers=headers, **kwargs)
+
     async def on_message(self, message):
         if message.guild is None:
             return
         if not (await self.bot.config.get(message.guild.id)).get('twitter'):
             return
-        for link in self.url_expr.findall(message.content):
-            await self.display_images(link, message.channel)
+        for link in self.twit_url_expr.findall(message.content):
+            await self.display_twitter_images(link, message.channel)
+        for link in self.pixiv_url_expr.findall(message.content):
+            await self.display_pixiv_images(link, message.channel)
 
-    async def display_images(self, link, destination):
-        async with self.bot.get(link, headers=self.headers) as resp:
-            root = etree.fromstring(await resp.read(), etree.HTMLParser())
+    async def display_twitter_images(self, link, destination):
+        async with self.get(link, headers=self.headers) as resp:
+            root = etree.fromstring(await resp.read(), self.parser)
         try:
             tweet = root.xpath(self.tweet_selector)[0]
         except IndexError:
             return
-        for img_link in tweet.findall(self.img_selector)[1:]:
-            url = dict(img_link.items())['src']
+        for img_link in tweet.findall(self.twit_img_selector)[1:]:
+            url = img_link.get('src')
             await destination.send(f'{url}:large')
+
+    async def display_pixiv_images(self, link, destination):
+        request = self.get(link)
+        async with request as resp:
+            root = etree.fromstring(await resp.read(), self.parser)
+        is_manga = root.xpath(self.pixiv_read_more_selector)
+        if is_manga:
+            manga_url = link.replace('medium', 'manga')
+            heads = {'referer': manga_url}
+            heads.update(self.headers)
+            async with self.get(manga_url) as resp:
+                root = etree.fromstring(await resp.read(), self.parser)
+            pages = root.xpath(self.pixiv_manga_page_selector)
+            for page in pages[:4]:
+                href = page.get('href')
+                fullsize_url = f'https://{resp.host}{href}'
+                async with self.get(fullsize_url, headers=heads) as page_resp:
+                    page_root = etree.fromstring(await page_resp.read(), self.parser)
+                page_heads = heads.copy()
+                page_heads['referer'] = fullsize_url
+                img_url = page_root.find('.//img').get('src')
+                filename = img_url.rpartition('/')[2]
+                async with self.get(img_url, headers=heads) as img_resp:
+                    content = await img_resp.read()
+                img = BytesIO()
+                img.write(content)
+                img.seek(0)
+                file = File(img, filename)
+                await destination.send(file=file)
+            if pages[4:]:
+                num = len(pages) - 4
+                s = 's' if num > 1 else ''
+                message = f'{num} more image{s} at <{manga_url}>'
+                await destination.send(message)
+        else:
+            heads = {'referer': link}
+            heads.update(self.headers)
+            img_elem = root.xpath(self.pixiv_img_selector)[0]
+            url = img_elem.get('data-src')
+            filename = url.rpartition('/')[2]
+            img_request = self.get(url, headers=heads)
+            async with img_request as resp:
+                content = await resp.read()
+            img = BytesIO()
+            img.write(content)
+            img.seek(0)
+            file = File(img, filename)
+            await destination.send(file=file)
 
     @commands.command()
     async def twitter(self, ctx, enabled: bool=True):
