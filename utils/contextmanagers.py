@@ -57,6 +57,8 @@ class get:
         headers = kwargs.get('headers', {})
         if 'Accept-Encoding' not in headers:
             headers['Accept-Encoding'] = 'gzip, deflate, sdch'
+        if 'user-agent' not in headers:
+            headers['user-agent'] = 'BeattieBot/1.0 (BeatButton)'
         kwargs['headers'] = headers
         if 'timeout' not in kwargs:
             kwargs['timeout'] = None
