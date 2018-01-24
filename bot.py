@@ -52,8 +52,10 @@ class BeattieBot(commands.Bot):
         super().__init__(pre, *args, **kwargs, game=game, status=status, pm_help=pm_help)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
+
         password = data.get('config_password', '')
-        self.session = aiohttp.ClientSession(loop=self.loop)
+        connector = aiohttp.TCPConnector(verify_ssl=False)
+        self.session = aiohttp.ClientSession(loop=self.loop, connector=connector)
         dsn = f'postgresql://beattie:{password}@localhost/beattie'
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
@@ -84,7 +86,7 @@ class BeattieBot(commands.Bot):
         print('------')
         if not self.user.bot:
             self.owner_id = self.user.id
-            await self.change_presence(afk=True)
+            await self.change_presence(afk=True, status=discord.Status.invisible)
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
