@@ -16,7 +16,7 @@ class Twitter:
     tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
     twit_img_selector = './/img[@data-aria-label-part]'
 
-    pixiv_url_expr = re.compile(r'https:\/\/www\.pixiv\.net\/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
+    pixiv_url_expr = re.compile(r'https?:\/\/www\.pixiv\.net\/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
     pixiv_img_selector = ".//img[@class='original-image']"
     pixiv_read_more_selector = ".//a[contains(@class, 'read-more')]"
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
@@ -68,6 +68,7 @@ class Twitter:
 
     async def display_pixiv_images(self, link, destination):
         link = re.sub('(?<=mode=)\w+', 'medium', link)
+        link = link.replace('http://', 'https://')
         request = self.get(link)
         async with request as resp:
             root = etree.fromstring(await resp.read(), self.parser)
