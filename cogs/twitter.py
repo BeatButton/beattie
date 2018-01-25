@@ -67,6 +67,7 @@ class Twitter:
             await destination.send(f'{url}:large')
 
     async def display_pixiv_images(self, link, destination):
+        link = re.sub('(?<=mode=)\w+', 'medium', link)
         request = self.get(link)
         async with request as resp:
             root = etree.fromstring(await resp.read(), self.parser)
