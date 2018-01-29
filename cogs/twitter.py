@@ -48,6 +48,8 @@ class Twitter:
     async def on_message(self, message):
         if message.guild is None:
             return
+        if message.author == self.bot.user:
+            return
         if not (await self.bot.config.get(message.guild.id)).get('twitter'):
             return
         for link in self.twit_url_expr.findall(message.content):
