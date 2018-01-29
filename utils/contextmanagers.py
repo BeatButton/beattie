@@ -1,6 +1,7 @@
 import os
 
 import aiofiles
+from aiohttp import ServerDisconnectedError
 
 from .exceptions import ResponseError
 
@@ -65,7 +66,10 @@ class get:
         self.kwargs = kwargs
 
     async def __aenter__(self):
-        self.resp = await self.session.get(self.url, **self.kwargs)
+        try:
+            self.resp = await self.session.get(self.url, **self.kwargs)
+        except ServerDisconnectedError:
+            return await self.__aenter__()
         if self.resp.status != 200:
             self.resp.close()
             raise ResponseError(code=self.resp.status)
