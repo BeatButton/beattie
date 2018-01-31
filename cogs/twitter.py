@@ -21,6 +21,10 @@ class Twitter:
     pixiv_read_more_selector = ".//a[contains(@class, 'read-more')]"
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
 
+    hiccears_url_expr = re.compile(r'https?:\/\/hiccears\.com\/(?:(?:gallery)|(?:picture))\.php\?(?:g|p)id=\d+')
+    hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
+    hiccears_img_selector = ".//a[contains(@href, 'imgs')]"
+
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.__init())
@@ -56,9 +60,11 @@ class Twitter:
             await self.display_twitter_images(link, message.channel)
         for link in self.pixiv_url_expr.findall(message.content):
             await self.display_pixiv_images(link, message.channel)
+        for link in self.hiccears_url_expr.findall(message.content):
+            await self.display_hiccears_images(link, message.channel)
 
     async def display_twitter_images(self, link, destination):
-        async with self.get(link, headers=self.headers) as resp:
+        async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         try:
             tweet = root.xpath(self.tweet_selector)[0]
@@ -98,8 +104,8 @@ class Twitter:
                 img.seek(0)
                 file = File(img, filename)
                 await destination.send(file=file)
-            if pages[4:]:
-                num = len(pages) - 4
+            num = len(pages) - 4
+            if num:
                 s = 's' if num > 1 else ''
                 message = f'{num} more image{s} at <{manga_url}>'
                 await destination.send(message)
@@ -117,6 +123,35 @@ class Twitter:
             img.seek(0)
             file = File(img, filename)
             await destination.send(file=file)
+
+    async def display_hiccears_images(self, link, destination):
+        async with self.get(link) as resp:
+            root = etree.fromstring(await resp.read(), self.parser)
+        single_image = root.xpath(self.hiccears_img_selector)
+        if single_image:
+            a = single_image[0]
+            href = a.get('href')
+            url = f'https://{resp.host}{href}'
+            await destination.send(url)
+            return
+
+
+        images = root.xpath(self.hiccears_link_selector)
+        for image in images [:5]:
+            href = image.get('href')
+            url = f'https://{resp.host}{href[1:]}'
+            async with self.get(url) as page_resp:
+                page = etree.fromstring(await page_resp.read(), self.parser)
+            a = page.xpath(self.hiccears_img_selector)[0]
+            href = a.get('href')
+            url = f'https://{resp.host}{href}'
+            await destination.send(url)
+        num = len(images) - 5
+        if num:
+            s = 's' if num > 1 else ''
+            message = f'{num} more image{s} at <{link}>'
+            await destination.send(message)
+            
 
     @commands.command()
     async def twitter(self, ctx, enabled: bool=True):
