@@ -31,7 +31,7 @@ class Default:
             await ctx.send("I don't have that much confetti "
                            '<:blobpensive:337436989676716033>')
         else:
-            await ctx.send('🎉' * num)
+            await ctx.send('\U0001f389' * num)
 
 
 def setup(bot):
