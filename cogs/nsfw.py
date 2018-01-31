@@ -1,3 +1,4 @@
+from collections import defaultdict
 import random
 import re
 
@@ -21,8 +22,11 @@ class NSFW:
         'e621': 'https://e621.net/post/index.xml',
     }
 
+    def __local_check(self, ctx):
+        return ctx.channel.is_nsfw()
+
     def __init__(self, bot):
-        self.cache = {}
+        self.cache = defaultdict(dict)
         self.titles = {}
         self.get = bot.get
         self.log = bot.logger.debug
@@ -55,12 +59,13 @@ class NSFW:
     async def booru(self, ctx, tags, limit=100):
         tags = tuple(sorted(tags.split()))
         site = ctx.command.name
+        channel = ctx.channel
         try:
             self.titles[site]
         except KeyError:
             await self.set_metadata(site)
         try:
-            posts = self.cache.setdefault(site, {})[tags]
+            posts = self.cache[channel].setdefault(site, {})[tags]
         except KeyError:
             params = {'page': 'dapi',
                       's': 'post',
@@ -71,14 +76,14 @@ class NSFW:
                 root = etree.fromstring(await resp.read())
             posts = root.findall('.//post')
             random.shuffle(posts)
-            self.cache[site][tags] = posts
+            self.cache[channel][site][tags] = posts
         if not posts:
             await ctx.send('No images found.')
             return
         embed, file = self.make_embed(posts.pop(), site)
         await ctx.send(embed=embed, file=file)
         if not posts:
-            self.cache[site].pop(tags, None)
+            self.cache[channel][site].pop(tags, None)
 
     def make_embed(self, post_element, site):
         post = dict(post_element.items())
