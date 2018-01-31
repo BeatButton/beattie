@@ -105,7 +105,7 @@ class Twitter:
                 file = File(img, filename)
                 await destination.send(file=file)
             num = len(pages) - 4
-            if num:
+            if num > 0:
                 s = 's' if num > 1 else ''
                 message = f'{num} more image{s} at <{manga_url}>'
                 await destination.send(message)
@@ -147,7 +147,7 @@ class Twitter:
             url = f'https://{resp.host}{href}'
             await destination.send(url)
         num = len(images) - 5
-        if num:
+        if num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
             await destination.send(message)
