@@ -45,9 +45,9 @@ class Twitter:
         self.session.close()
 
     def get(self, *args, **kwargs):
-        headers = self.headers.copy()
-        headers.update(kwargs.pop('headers', {}))
-        return _get(self.session, *args, headers=headers, **kwargs)
+        kwargs.setdefault('headers', {}).update(self.headers)
+        kwargs['headers'] = {**self.headers, **kwargs.get('headers', {})}
+        return _get(self.session, *args, **kwargs)
 
     async def on_message(self, message):
         if message.guild is None:
@@ -72,7 +72,7 @@ class Twitter:
             return
         for img_link in tweet.findall(self.twit_img_selector)[1:]:
             url = img_link.get('src')
-            await destination.send(f'{url}:large')
+            await destination.send(f'{url}:orig')
 
     async def display_pixiv_images(self, link, destination):
         link = re.sub('(?<=mode=)\w+', 'medium', link)
@@ -135,9 +135,8 @@ class Twitter:
             await destination.send(url)
             return
 
-
         images = root.xpath(self.hiccears_link_selector)
-        for image in images [:5]:
+        for image in images[:5]:
             href = image.get('href')
             url = f'https://{resp.host}{href[1:]}'
             async with self.get(url) as page_resp:
