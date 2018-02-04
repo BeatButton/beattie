@@ -20,7 +20,7 @@ class BeattieBot(commands.Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
-    def __init__(self, command_prefix='b>', *args, pm_help=True, **kwargs):
+    def __init__(self, command_prefix='b>', *args, pm_help=None, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
             game = None
