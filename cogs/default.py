@@ -1,3 +1,4 @@
+from discord import File
 from discord.ext import commands
 
 
@@ -32,6 +33,11 @@ class Default:
                            '<:blobpensive:337436989676716033>')
         else:
             await ctx.send('\U0001f389' * num)
+
+    @commands.command(hidden=True)
+    async def doubt(self, ctx):
+        """doubt"""
+        await ctx.send(file=File('data/doubt.jpg'))
 
 
 def setup(bot):
