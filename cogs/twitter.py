@@ -12,16 +12,16 @@ from utils.contextmanagers import get as _get
 
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
-    twit_url_expr = re.compile(r'https?:\/\/twitter\.com\/\S+\/status\/\d+')
+    twit_url_expr = re.compile(r'https?:\/\/(?:www\.)?twitter\.com\/\S+\/status\/\d+')
     tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
     twit_img_selector = './/img[@data-aria-label-part]'
 
-    pixiv_url_expr = re.compile(r'https?:\/\/www\.pixiv\.net\/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
+    pixiv_url_expr = re.compile(r'https?:\/\/(?:www\.)?pixiv\.net\/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
     pixiv_img_selector = ".//img[@class='original-image']"
     pixiv_read_more_selector = ".//a[contains(@class, 'read-more')]"
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
 
-    hiccears_url_expr = re.compile(r'https?:\/\/hiccears\.com\/(?:(?:gallery)|(?:picture))\.php\?(?:g|p)id=\d+')
+    hiccears_url_expr = re.compile(r'https?:\/\/(?:www\.)?hiccears\.com\/(?:(?:gallery)|(?:picture))\.php\?(?:g|p)id=\d+')
     hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
     hiccears_img_selector = ".//a[contains(@href, 'imgs')]"
 
