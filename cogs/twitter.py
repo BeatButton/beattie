@@ -45,7 +45,6 @@ class Twitter:
         self.session.close()
 
     def get(self, *args, **kwargs):
-        kwargs.setdefault('headers', {}).update(self.headers)
         kwargs['headers'] = {**self.headers, **kwargs.get('headers', {})}
         return _get(self.session, *args, **kwargs)
 
