@@ -10,20 +10,24 @@ from discord import File
 
 from utils.contextmanagers import get as _get
 
+
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
-    twit_url_expr = re.compile(r'https?:\/\/(?:www\.)?twitter\.com\/\S+\/status\/\d+')
+    twit_url_expr = re.compile(r'https?://(?:www\.)?twitter\.com/\S+/status/\d+')
     tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
     twit_img_selector = './/img[@data-aria-label-part]'
 
-    pixiv_url_expr = re.compile(r'https?:\/\/(?:www\.)?pixiv\.net\/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
+    pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
     pixiv_img_selector = ".//img[@class='original-image']"
     pixiv_read_more_selector = ".//a[contains(@class, 'read-more')]"
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
 
-    hiccears_url_expr = re.compile(r'https?:\/\/(?:www\.)?hiccears\.com\/(?:(?:gallery)|(?:picture))\.php\?(?:g|p)id=\d+')
+    hiccears_url_expr = re.compile(r'https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+')
     hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
     hiccears_img_selector = ".//a[contains(@href, 'imgs')]"
+
+    tumblr_url_expr = re.compile(r'https?://[\w-]+\.tumblr\.com/post/\d+')
+    tumblr_img_selector = ".//meta[@property='og:image']"
 
     def __init__(self, bot):
         self.bot = bot
@@ -61,6 +65,8 @@ class Twitter:
             await self.display_pixiv_images(link, message.channel)
         for link in self.hiccears_url_expr.findall(message.content):
             await self.display_hiccears_images(link, message.channel)
+        for link in self.tumblr_url_expr.findall(message.content):
+            await self.display_tumblr_images(link, message.channel)
 
     async def display_twitter_images(self, link, destination):
         async with self.get(link) as resp:
@@ -149,7 +155,13 @@ class Twitter:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
             await destination.send(message)
-            
+
+    async def display_tumblr_images(self, link, destination):
+        async with self.get(link) as resp:
+            root = etree.fromstring(await resp.read(), self.parser)
+        images = root.xpath(self.tumblr_img_selector)[1:]
+        for image in images:
+            await destination.send(image.get('content'))
 
     @commands.command()
     async def twitter(self, ctx, enabled: bool=True):
