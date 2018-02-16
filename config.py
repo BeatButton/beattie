@@ -5,14 +5,13 @@ from utils.asyncqlio import to_dict
 class Config:
     def __init__(self, bot):
         self.db = bot.db
+        self.bot = bot
         self.db.bind_tables(Table)
-        bot.loop.create_task(self.__init(bot))
-        self._cache = {}
-        self._cache['member'] = {}
-        self._cache['channel'] = {}
+        bot.loop.create_task(self.__init())
+        self._cache = {'member': {}, 'channel': {}}
 
-    async def __init(self, bot):
-        await bot.wait_until_ready()
+    async def __init(self):
+        await self.bot.wait_until_ready()
         for table in [Guild, Member, Channel]:
             await table.create(if_not_exists=True)
 
