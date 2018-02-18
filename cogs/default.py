@@ -31,6 +31,8 @@ class Default:
         if num > 200:
             await ctx.send("I don't have that much confetti "
                            '<:blobpensive:337436989676716033>')
+        elif num < 1:
+            await ctx.send('<:blobthinkingdown:337436994353365002>')
         else:
             await ctx.send('\U0001f389' * num)
 
