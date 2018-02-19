@@ -53,11 +53,12 @@ class Twitter:
         return _get(self.session, *args, **kwargs)
 
     async def on_message(self, message):
-        if message.guild is None:
+        guild = message.guild
+        if guild is None:
             return
-        if message.author == self.bot.user:
+        if message.author == guild.me:
             return
-        if not (await self.bot.config.get(message.guild.id)).get('twitter'):
+        if not (await self.bot.config.get(guild.id)).get('twitter'):
             return
         for link in self.twit_url_expr.findall(message.content):
             await self.display_twitter_images(link, message.channel)
