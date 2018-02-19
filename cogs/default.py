@@ -23,7 +23,7 @@ class Default:
     @commands.command(hidden=True, aliases=['thank', 'thx'])
     async def thanks(self, ctx):
         """thanks"""
-        await ctx.send('no u')
+        await ctx.send(':purple_heart:')
 
     @commands.command(hidden=True)
     async def confetti(self, ctx, num: int=1):
@@ -40,6 +40,11 @@ class Default:
     async def doubt(self, ctx):
         """doubt"""
         await ctx.send(file=File('data/doubt.jpg'))
+
+    @commands.command(hidden=True)
+    async def mystery(selfself, ctx):
+        """???"""
+        await ctx.send(file=File('data/mystery.webm'))
 
 
 def setup(bot):
