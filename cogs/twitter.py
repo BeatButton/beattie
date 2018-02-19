@@ -81,10 +81,12 @@ class Twitter:
             await destination.send(f'{url}:orig')
 
     async def display_pixiv_images(self, link, destination):
-        link = re.sub('(?<=mode=)\w+', 'medium', link)
+        if 'mode' in link:
+            link = re.sub('(?<=mode=)\w+', 'medium', link)
+        else:
+            link = f'{link}&mode=medium'
         link = link.replace('http://', 'https://')
-        request = self.get(link)
-        async with request as resp:
+        async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         is_manga = root.xpath(self.pixiv_read_more_selector)
         if is_manga:
