@@ -30,10 +30,10 @@ class BeattieBot(commands.Bot):
             game = discord.Game(name='b>help')
             status = None
 
-            async def pre(self, message):
+            async def pre(bot, message):
                 prefix = command_prefix
                 if callable(prefix):
-                    prefix = prefix(self, message)
+                    prefix = prefix(bot, message)
                 if inspect.isawaitable(prefix):
                     prefix = await prefix
                 if isinstance(prefix, str):
@@ -42,7 +42,7 @@ class BeattieBot(commands.Bot):
                     prefix = tuple(prefix)
                 if message.guild is None:
                     return prefix
-                guild_conf = await self.config.get(message.guild.id)
+                guild_conf = await bot.config.get(message.guild.id)
                 guild_pre = guild_conf.get('prefix')
                 if not guild_pre:
                     return prefix
@@ -85,7 +85,17 @@ class BeattieBot(commands.Bot):
         print('------')
         if not self.user.bot:
             self.owner_id = self.user.id
-            await self.change_presence(afk=True, status=discord.Status.invisible)
+            afk = True
+            status = discord.Status.invisible
+            game = None
+        else:
+            afk = False
+            status = discord.Status.online
+            game = discord.Game(name='b>help')
+        await self.change_presence(game=game,
+                                   status=status,
+                                   afk=afk
+                                   )
 
     async def on_message(self, message):
         ctx = await self.get_context(message, cls=BContext)
