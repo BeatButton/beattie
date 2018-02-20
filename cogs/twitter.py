@@ -17,7 +17,7 @@ class Twitter:
     tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
     twit_img_selector = './/img[@data-aria-label-part]'
 
-    pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>]*)*')
+    pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
     pixiv_img_selector = ".//img[@class='original-image']"
     pixiv_read_more_selector = ".//a[contains(@class, 'read-more')]"
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
