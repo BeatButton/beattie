@@ -163,13 +163,18 @@ class Twitter:
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         images = root.xpath(self.tumblr_img_selector)[1:]
-        for image in images:
+        for image in images[:5]:
             url = image.get('content')
             raw_url = re.sub('https?://\w+.media.tumblr.com',
                              'https://s3.amazonaws.com/data.tumblr.com',
                             url).replace('_1280.', '_raw.')
             async with self.session.get(raw_url) as resp:
                 await destination.send(raw_url if resp.status == 200 else url)
+        num = len(images) - 5
+        if num > 0:
+            s = 's' if num > 1 else ''
+            message = f'{num} more image{s} at <{link}>'
+            await destination.send(message)
 
     @commands.command()
     async def twitter(self, ctx, enabled: bool=True):
