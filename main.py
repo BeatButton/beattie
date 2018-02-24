@@ -13,8 +13,7 @@ from bot import BeattieBot
 try:
     import uvloop
 except ImportError:
-    loop = asyncio.ProactorEventLoop()
-    asyncio.set_event_loop(loop)
+    pass
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -37,8 +36,6 @@ else:
     token = config['token']
 bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
-extensions = [f'cogs.{f.stem}' for f in Path('cogs').glob('*.py')]
-
 logger = logging.getLogger('discord')
 if self_bot:
     logger.setLevel(logging.CRITICAL)
@@ -50,6 +47,8 @@ else:
         logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
 bot.logger = logger
+
+extensions = [f'cogs.{f.stem}' for f in Path('cogs').glob('*.py')]
 
 for extension in extensions:
     try:
