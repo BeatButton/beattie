@@ -1,6 +1,7 @@
 from collections import defaultdict
 import random
 import re
+from urllib import parse
 
 import discord
 from discord.ext import commands
@@ -32,37 +33,35 @@ class NSFW:
         self.log = bot.logger.debug
 
     @commands.command(aliases=['gel'], hidden=True)
-    async def gelbooru(self, ctx, *, tags=''):
+    async def gelbooru(self, ctx, *tags=()):
         async with ctx.typing():
             await self.booru(ctx, tags)
 
     @commands.command(aliases=['r34'], hidden=True)
-    async def rule34(self, ctx, *, tags=''):
+    async def rule34(self, ctx, *tags=()):
         async with ctx.typing():
             await self.booru(ctx, tags)
 
     @commands.command(aliases=['shota'], hidden=True)
-    async def shotachan(self, ctx, *, tags=''):
+    async def shotachan(self, ctx, *tags=()):
         async with ctx.typing():
             await self.booru(ctx,
                              tags)
 
     @commands.command(aliases=['fur'], hidden=True)
-    async def e621(self, ctx, *, tags=''):
+    async def e621(self, ctx, *tags=()):
         async with ctx.typing():
             await self.booru(ctx, tags, limit=320)
 
     @commands.command(hidden=True)
-    async def massage(self, ctx, *, tags=''):
-        await ctx.invoke(self.gelbooru, tags=f'massage {tags}')
+    async def massage(self, ctx, *tags=()):
+        await ctx.invoke(self.gelbooru, tags=('massage',) + tags)
 
     async def booru(self, ctx, tags, limit=100):
-        tags = tuple(sorted(tags.split()))
+        tags = frozenset(tags)
         site = ctx.command.name
         channel = ctx.channel
-        try:
-            self.titles[site]
-        except KeyError:
+        if site not in self.titles:
             await self.set_metadata(site)
         try:
             posts = self.cache[channel].setdefault(site, {})[tags]
@@ -92,7 +91,7 @@ class NSFW:
                     for child in post_element.getchildren()}
         embed = discord.Embed()
         file = discord.File(f'data/favicons/{site}.png', 'favicon.png')
-        embed.set_thumbnail(url=f'attachment://favicon.png')
+        embed.set_thumbnail(url='attachment://favicon.png')
         try:
             image = post['file_url']
         except KeyError:
@@ -105,19 +104,15 @@ class NSFW:
         embed.set_image(url=image)
         embed.title = self.titles[site]
         embed.url = self.view[site].format(post['id'])
-        try:
-            source = post['source']
-        except KeyError:
-            pass
-        else:
-            if source:
-                embed.description = f'[source]({source})'
+        source = post.get('source')
+        if source is not None:
+            embed.description = f'[source]({source})'
         return embed, file
 
     async def set_metadata(self, site):
         url = self.urls[site]
-        base = re.match(r'(https?:\/\/[\w\d\.]+\/)', url).groups()[0]
-        async with self.get(base) as resp:
+        netloc = parse.urlsplit(url).netloc
+        async with self.get(f'https://{netloc}') as resp:
             root = etree.fromstring(await resp.read(), etree.HTMLParser())
         self.titles[site] = root.find('.//title').text
 
