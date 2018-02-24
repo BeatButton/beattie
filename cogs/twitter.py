@@ -165,8 +165,8 @@ class Twitter:
         images = root.xpath(self.tumblr_img_selector)[1:]
         for image in images[:5]:
             url = image.get('content')
-            raw_url = re.sub('https?://\w+.media.tumblr.com',
-                             'https://s3.amazonaws.com/data.tumblr.com',
+            raw_url = re.sub('https?://\w+\.media',
+                             'https://s3.amazonaws.com/data',
                             url).replace('_1280.', '_raw.')
             async with self.session.get(raw_url) as resp:
                 await destination.send(raw_url if resp.status == 200 else url)
