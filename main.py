@@ -24,6 +24,7 @@ with open('config/config.yaml') as file:
 
 self_bot = 'self' in sys.argv
 debug = 'debug' in sys.argv
+loop = asyncio.get_event_loop()
 
 if self_bot:
     prefixes = ['self>']
@@ -31,10 +32,13 @@ if self_bot:
 elif config['debug'] or debug:
     prefixes = [config['test_prefix']]
     token = config['test_token']
+    loop.set_debug(True)
 else:
     prefixes = config['prefixes']
     token = config['token']
 bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
+
+
 
 logger = logging.getLogger('discord')
 if self_bot:
