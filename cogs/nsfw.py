@@ -34,55 +34,51 @@ class NSFW:
 
     @commands.command(aliases=['gel'], hidden=True)
     async def gelbooru(self, ctx, *tags):
-        async with ctx.typing():
-            await self.booru(ctx, tags)
+        await self.booru(ctx, tags)
 
     @commands.command(aliases=['r34'], hidden=True)
     async def rule34(self, ctx, *tags):
-        async with ctx.typing():
-            await self.booru(ctx, tags)
+        await self.booru(ctx, tags)
 
     @commands.command(aliases=['shota'], hidden=True)
     async def shotachan(self, ctx, *tags):
-        async with ctx.typing():
-            await self.booru(ctx,
-                             tags)
+        await self.booru(ctx, tags)
 
     @commands.command(aliases=['fur'], hidden=True)
     async def e621(self, ctx, *tags):
-        async with ctx.typing():
-            await self.booru(ctx, tags, limit=320)
+        await self.booru(ctx, tags, limit=320)
 
     @commands.command(hidden=True)
     async def massage(self, ctx, *tags):
         await ctx.invoke(self.gelbooru, tags=('massage',) + tags)
 
     async def booru(self, ctx, tags, limit=100):
-        tags = frozenset(tags)
-        site = ctx.command.name
-        channel = ctx.channel
-        if site not in self.titles:
-            await self.set_metadata(site)
-        try:
-            posts = self.cache[channel].setdefault(site, {})[tags]
-        except KeyError:
-            params = {'page': 'dapi',
-                      's': 'post',
-                      'q': 'index',
-                      'limit': limit,
-                      'tags': ' '.join(tags)}
-            async with ctx.bot.get(self.urls[site], params=params) as resp:
-                root = etree.fromstring(await resp.read())
-            posts = root.findall('.//post')
-            random.shuffle(posts)
-            self.cache[channel][site][tags] = posts
-        if not posts:
-            await ctx.send('No images found.')
-            return
-        embed, file = self.make_embed(posts.pop(), site)
-        await ctx.send(embed=embed, file=file)
-        if not posts:
-            self.cache[channel][site].pop(tags, None)
+        async with ctx.typing():
+            tags = frozenset(tags)
+            site = ctx.command.name
+            channel = ctx.channel
+            if site not in self.titles:
+                await self.set_metadata(site)
+            try:
+                posts = self.cache[channel].setdefault(site, {})[tags]
+            except KeyError:
+                params = {'page': 'dapi',
+                          's': 'post',
+                          'q': 'index',
+                          'limit': limit,
+                          'tags': ' '.join(tags)}
+                async with ctx.bot.get(self.urls[site], params=params) as resp:
+                    root = etree.fromstring(await resp.read())
+                posts = root.findall('.//post')
+                random.shuffle(posts)
+                self.cache[channel][site][tags] = posts
+            if not posts:
+                await ctx.send('No images found.')
+                return
+            embed, file = self.make_embed(posts.pop(), site)
+            await ctx.send(embed=embed, file=file)
+            if not posts:
+                self.cache[channel][site].pop(tags, None)
 
     def make_embed(self, post_element, site):
         post = dict(post_element.items())
