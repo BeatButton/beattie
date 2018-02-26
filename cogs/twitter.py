@@ -150,7 +150,7 @@ class Twitter:
             async with self.get(url) as page_resp:
                 page = etree.fromstring(await page_resp.read(), self.parser)
             a = page.xpath(self.hiccears_img_selector)[0]
-            href = a.get('href')
+            href = a.get('href')[1:]  # trim leading '.'
             url = f'https://{resp.host}{href}'
             await destination.send(url)
         num = len(images) - 5
