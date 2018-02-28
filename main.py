@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import asyncio
+from datetime import datetime
 import logging
+import lzma
 from pathlib import Path
 import os
 import sys
+import tarfile
 
 from discord.ext.commands import when_mentioned_or
 import yaml
@@ -38,15 +41,32 @@ else:
     token = config['token']
 bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
-
-
 logger = logging.getLogger('discord')
 if self_bot:
     logger.setLevel(logging.CRITICAL)
 else:
+    old_logs = Path('.').glob('discord*.log')
+    logname = 'logs.tar'
+    if os.path.exists(logname):
+        mode = 'a'
+    else:
+        mode = 'w'
+    with tarfile.open(logname, mode) as tar:
+        for log in old_logs:
+            with open(log, 'rb') as fp:
+                data = lzma.compress(fp.read())
+            name = f'{log.name}.xz'
+            with open(name, 'wb') as fp:
+                fp.write(data)
+            tar.add(name)
+            os.remove(name)
+            log.unlink()
+
     logger.setLevel(logging.DEBUG)
+    now = datetime.utcnow()
+    filename = now.strftime('discord%Y%m%d%H%M.log')
     handler = logging.FileHandler(
-        filename='discord.log', encoding='utf-8', mode='w')
+        filename=filename, encoding='utf-8', mode='w')
     handler.setFormatter(
         logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
