@@ -116,6 +116,12 @@ class Manage:
         to be used in a channel."""
         await self._plonker(ctx, target, False)
 
+    @commands.command()
+    @commands.bot_has_permissions(manage_messages=True)
+    async def clear(self, ctx, num: int):
+        """Delete the last num messages from the channel."""
+        await ctx.channel.purge(limit=num)
+
     async def _plonker(self, ctx, target, plonked):
         if isinstance(target, discord.Member):
             type_ = 'Member'
