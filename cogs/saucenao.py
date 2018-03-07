@@ -9,7 +9,7 @@ class SauceNao:
         self.session = bot. session
         self.parser = etree.HTMLParser()
 
-    @commands.command(aliases=['sauce', 'source'])
+    @commands.command(aliases=['sauce'])
     async def saucenao(self, ctx, *, link=''):
         if not link:
             if len(ctx.message.attachments) == 1:
