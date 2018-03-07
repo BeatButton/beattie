@@ -53,6 +53,12 @@ class Twitter:
         return _get(self.session, *args, **kwargs)
 
     async def on_message(self, message):
+        try:
+            await self._on_message(message)
+        except Exception as e:
+            await message.channel.send(f'{type(e).__name__}: {e}')
+
+    async def _on_message(self, message):
         guild = message.guild
         if guild is None:
             return
@@ -160,9 +166,14 @@ class Twitter:
             await destination.send(message)
 
     async def display_tumblr_images(self, link, destination):
+        idx = 1
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
-        images = root.xpath(self.tumblr_img_selector)[1:]
+        if not str(resp.url).startswith(link): # explicit blog redirect
+            async with self.bot.session.get(link) as resp: # somehow this doesn't get redirected?
+                root = etree.fromstring(await resp.read(), self.parser)
+            idx = 0
+        images = root.xpath(self.tumblr_img_selector)[idx:]
         for image in images[:5]:
             url = image.get('content')
             raw_url = re.sub('https?://\w+\.media',
