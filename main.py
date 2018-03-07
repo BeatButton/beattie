@@ -30,12 +30,11 @@ debug = 'debug' in sys.argv
 loop = asyncio.get_event_loop()
 
 if self_bot:
-    prefixes = ['self>']
+    prefixes = config['self_prefix']
     token = config['self']
 elif config['debug'] or debug:
     prefixes = [config['test_prefix']]
     token = config['test_token']
-    loop.set_debug(True)
 else:
     prefixes = config['prefixes']
     token = config['token']
