@@ -9,7 +9,7 @@ class SauceNao:
         self.session = bot. session
         self.parser = etree.HTMLParser()
 
-    @commands.command(aliases=['sauce'])
+    @commands.command(aliases=['sauce', 'source'])
     async def saucenao(self, ctx, *, link=''):
         if not link:
             if len(ctx.message.attachments) == 1:
@@ -41,7 +41,8 @@ class SauceNao:
     async def saucenao_error(self, ctx, e):
         if isinstance(e, commands.BadArgument):
             await ctx.send('Please include a link or attach a single image.')
-        await ctx.bot.handle_error(ctx, e)
+        else:
+            await ctx.bot.handle_error(ctx, e)
 
 
 def setup(bot):
