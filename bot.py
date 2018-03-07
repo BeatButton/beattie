@@ -92,7 +92,7 @@ class BeattieBot(commands.Bot):
             afk = False
             status = discord.Status.online
             game = discord.Game(name='b>help')
-        await self.change_presence(game=game,
+        await self.change_presence(activity=game,
                                    status=status,
                                    afk=afk
                                    )
