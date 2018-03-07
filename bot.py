@@ -20,7 +20,7 @@ class BeattieBot(commands.Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
-    def __init__(self, command_prefix='b>', *args, pm_help=None, **kwargs):
+    def __init__(self, command_prefix='b>', *args, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
             game = None
@@ -49,7 +49,7 @@ class BeattieBot(commands.Bot):
                 else:
                     return prefix + (guild_pre,)
 
-        super().__init__(pre, *args, **kwargs, game=game, status=status, pm_help=pm_help)
+        super().__init__(pre, *args, **kwargs, activity=game, status=status, pm_help=None, case_insensitive=True)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
 
@@ -97,13 +97,9 @@ class BeattieBot(commands.Bot):
                                    afk=afk
                                    )
 
-    async def on_message(self, message):
+    async def process_commands(self, message):
         ctx = await self.get_context(message, cls=BContext)
-        if ctx.prefix is not None:
-            command = ctx.invoked_with
-            if command:
-                ctx.command = self.get_command(command.lower())
-                await self.invoke(ctx)
+        await self.invoke(ctx)
 
     @decorators.bot_only
     async def on_member_join(self, member):
