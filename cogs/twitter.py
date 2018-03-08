@@ -111,10 +111,11 @@ class Twitter:
                 page_heads['referer'] = fullsize_url
                 img_url = page_root.find('.//img').get('src')
                 filename = img_url.rpartition('/')[2]
-                async with self.get(img_url, headers=heads) as img_resp:
-                    content = await img_resp.read()
                 img = BytesIO()
-                img.write(content)
+                async with self.get(img_url, headers=heads) as img_resp:
+                    async for chunk in img_resp.content.iter_any():
+                        if chunk:
+                            img.write(chunk)
                 img.seek(0)
                 file = File(img, filename)
                 await destination.send(file=file)
@@ -150,7 +151,7 @@ class Twitter:
             return
 
         images = root.xpath(self.hiccears_link_selector)
-        for image in images[:5]:
+        for image in images[:4]:
             href = image.get('href')
             url = f'https://{resp.host}{href[1:]}'
             async with self.get(url) as page_resp:
@@ -159,7 +160,7 @@ class Twitter:
             href = a.get('href')[1:]  # trim leading '.'
             url = f'https://{resp.host}{href}'
             await destination.send(url)
-        num = len(images) - 5
+        num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
@@ -173,15 +174,17 @@ class Twitter:
             async with self.bot.session.get(link) as resp: # somehow this doesn't get redirected?
                 root = etree.fromstring(await resp.read(), self.parser)
             idx = 0
-        images = root.xpath(self.tumblr_img_selector)[idx:]
-        for image in images[:5]:
+        images = root.xpath(self.tumblr_img_selector)
+        for image in images[idx:4]:
             url = image.get('content')
-            raw_url = re.sub('https?://\w+\.media',
+            raw_url = re.sub(r'https?://\w+\.media',
                              'https://s3.amazonaws.com/data',
-                            url).replace('_1280.', '_raw.')
-            async with self.session.get(raw_url) as resp:
-                await destination.send(raw_url if resp.status == 200 else url)
-        num = len(images) - 5
+                            url)
+            raw_url = re.sub(r'_\d+\.',
+                             '_raw.',
+                             raw_url)
+            await destination.send(raw_url)
+        num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
