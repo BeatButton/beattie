@@ -4,10 +4,17 @@ from discord.ext import commands
 
 class Default:
     """Default useful commands."""
-    @commands.command(aliases=['p'])
+    @commands.command()
+    async def latency(self, ctx):
+        """Get the latency to the websocket."""
+        await ctx.send(f'WS latency: **{ctx.bot.latency*1000:.0f}ms**')
+
+    @commands.command()
     async def ping(self, ctx):
-        """Get the ping to the websocket."""
-        await ctx.send(f'Pong! :ping_pong: **{ctx.bot.latency*1000:.0f}ms**')
+        """Get how fast the bot reacts to a command message"""
+        msg = await ctx.send('...')
+        delta = msg.created_at - ctx.message.created_at
+        await msg.edit(content=f':ping_pong: **{delta.total_seconds()*1000:.0f}ms**')
 
     @commands.command()
     async def source(self, ctx):
