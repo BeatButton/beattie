@@ -13,7 +13,7 @@ from utils.starwars import starroller, die_names
 class RPG:
     def __init__(self, bot):
         self.loop = bot.loop
-        self.tarot_url = 'http://www.tarotlore.com/tarot-cards/{}/'
+        self.tarot_url = 'https://www.trustedtarot.com/cards/{}/'
 
     @commands.command()
     async def choose(self, ctx, *options):
