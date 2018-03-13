@@ -53,12 +53,6 @@ class Twitter:
         return _get(self.session, *args, **kwargs)
 
     async def on_message(self, message):
-        try:
-            await self._on_message(message)
-        except Exception as e:
-            await message.channel.send(f'{type(e).__name__}: {e}')
-
-    async def _on_message(self, message):
         guild = message.guild
         if guild is None:
             return
