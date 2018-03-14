@@ -18,7 +18,8 @@ class RPG:
     @commands.command()
     async def choose(self, ctx, *options):
         """Choose between some options. Use quotes if they have spaces."""
-        await ctx.send(random.choice(options))
+        choice = random.choice(options)
+        await ctx.send(f'I choose:\n{choice}')
 
     @commands.command()
     async def tarot(self, ctx, *suits):
