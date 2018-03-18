@@ -87,24 +87,6 @@ class Manage:
         await ctx.send('Guild prefix set.')
 
     @commands.command()
-    async def greet(self, ctx, *, message=''):
-        """Set the member greeting for this guild. Disables if no message.
-
-        Include a {} in the message where you want to mention the newcomer"""
-        message = message.replace('{}', '{mention}')
-        await self.config.set(ctx.guild.id, welcome=message)
-        await ctx.send('Welcome message set.')
-
-    @commands.command()
-    async def leave(self, ctx, *, message=''):
-        """Set the member-left message for this guild. Disables if no message.
-
-        Include a {} in the message where you want to mention the deserter"""
-        message = message.replace('{}', '{mention}')
-        await self.config.set(ctx.guild.id, farewell=message)
-        await ctx.send('Leave message set.')
-
-    @commands.command()
     async def plonk(self, ctx, target: member_or_channel):
         """Disallow a member from using commands on this server, or disallow
         commands from being used in a channel."""
