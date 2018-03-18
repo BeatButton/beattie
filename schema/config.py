@@ -8,8 +8,6 @@ Table = table_base()
 class Guild(Table):
     id = Column(BigInt, primary_key=True)
     cog_blacklist = Column(Text, nullable=True)
-    welcome = Column(Text, nullable=True)
-    farewell = Column(Text, nullable=True)
     prefix = Column(Text, nullable=True)
     twitter = Column(Boolean, nullable=True)
 
