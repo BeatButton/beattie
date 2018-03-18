@@ -101,38 +101,6 @@ class BeattieBot(commands.Bot):
         ctx = await self.get_context(message, cls=BContext)
         await self.invoke(ctx)
 
-    @decorators.bot_only
-    async def on_member_join(self, member):
-        guild = member.guild
-        guild_conf = await self.config.get(guild.id)
-        message = guild_conf.get('welcome')
-        if message:
-            dest = default_channel(guild.me)
-            if dest:
-                try:
-                    message = message.format(mention=member.mention)
-                except Exception as e:
-                    message = 'Join message broken, please re-set.'
-                    raise e from None
-                finally:
-                    await dest.send(message)
-
-    @decorators.bot_only
-    async def on_member_remove(self, member):
-        guild = member.guild
-        guild_conf = await self.config.get(guild.id)
-        message = guild_conf.get('farewell')
-        if message:
-            dest = default_channel(guild.me)
-            if dest:
-                try:
-                    message = message.format(mention=member.mention)
-                except Exception as e:
-                    message = 'Leave message broken, please re-set.'
-                    raise e from None
-                finally:
-                    await dest.send(message)
-
     async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, 'on_error'):
             await self.handle_error(ctx, e)
