@@ -171,7 +171,9 @@ class REPL:
         proc = await asyncio.create_subprocess_shell(
             command,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
+            stderr=asyncio.subprocess.PIPE,
+            executable='/usr/bin/fish',
+        )
         stdout, stderr = (text.decode() for text in await proc.communicate())
         res = ''
         if stdout:
