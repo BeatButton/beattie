@@ -31,7 +31,7 @@ class EDDB:
             'jsonl': self.multi_json,
         }
         self.logger = bot.logger
-        self.tmp_dl = bot.tmp_dl
+        self.get = bot.get
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -182,9 +182,9 @@ class EDDB:
 
     async def update_task(self, bot, name, table):
         self.logger.info(f'Downloading {name}')
-        async with self.tmp_dl(f'{self.url}{name}') as file:
+        async with self.get(f'{self.url}{name}') as resp:
             self.logger.info(f'Creating table for {name}')
-            await self.make_table(file, name, table)
+            await self.make_table(resp.content, name, table)
             self.logger.info(f'Table {name} created.')
         
 
