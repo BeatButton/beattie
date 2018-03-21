@@ -76,6 +76,7 @@ class BeattieBot(commands.Bot):
             await ctx.send(f'An HTTP request failed with error code {e.code}')
         elif not isinstance(e, self.command_ignore):
             await ctx.send(f'{type(e).__name__}: {e}')
+            self.logger.exception(f'An error occurred in {ctx.command.name}', exc_info=e.__traceback__)
             raise e from None
 
     async def on_ready(self):
