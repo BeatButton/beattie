@@ -20,6 +20,23 @@ except ImportError:
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
+def archive_logs(old_logs):
+   logname = 'logs.tar'
+   if os.path.exists(logname):
+       mode = 'a'
+   else:
+       mode = 'w'
+   with tarfile.open(logname, mode) as tar:
+       for log in old_logs:
+           with open(log, 'rb') as fp:
+               data = lzma.compress(fp.read())
+           name = f'{log.name}.xz'
+           with open(name, 'wb') as fp:
+               fp.write(data)
+           tar.add(name)
+           os.remove(name)
+           log.unlink()
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 with open('config/config.yaml') as file:
@@ -44,23 +61,7 @@ logger = logging.getLogger('discord')
 if self_bot:
     logger.setLevel(logging.CRITICAL)
 else:
-    old_logs = Path('.').glob('discord*.log')
-    logname = 'logs.tar'
-    if os.path.exists(logname):
-        mode = 'a'
-    else:
-        mode = 'w'
-    with tarfile.open(logname, mode) as tar:
-        for log in old_logs:
-            with open(log, 'rb') as fp:
-                data = lzma.compress(fp.read())
-            name = f'{log.name}.xz'
-            with open(name, 'wb') as fp:
-                fp.write(data)
-            tar.add(name)
-            os.remove(name)
-            log.unlink()
-
+    fut = loop.run_in_executor(None, archive_logs, Path('.').glob('discord*.log'))
     logger.setLevel(logging.DEBUG)
     now = datetime.utcnow()
     filename = now.strftime('discord%Y%m%d%H%M.log')
