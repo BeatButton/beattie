@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import json
 import logging
@@ -21,7 +22,6 @@ class EDDB:
     def __init__(self, bot):
         self.updating = False
         self.loop = bot.loop
-        self.bot = bot
         self.url = 'https://eddb.io/archive/v5/'
         self.db = bot.db
         self.db.bind_tables(Table)
@@ -30,11 +30,8 @@ class EDDB:
             'json': self.single_json,
             'jsonl': self.multi_json,
         }
-
-    async def __init(self, bot):
-        await self.bot.wait_until_ready()
-        for table in [Commodity, System, Station, Listing]:
-            await table.create(if_not_exists=True)
+        self.logger = bot.logger
+        self.tmp_dl = bot.tmp_dl
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -169,20 +166,27 @@ class EDDB:
             return
         self.updating = True
         await ctx.send('Database update in progress...')
+        tasks = []
         for name, table in self.file_to_table.items():
-            ctx.bot.logger.info(f'Downloading {name}')
-            async with self.bot.tmp_dl(f'{self.url}{name}') as file:
-                ctx.bot.logger.info(f'Creating table for {name}')
-                await self.make_table(file, name, table)
-
+            tasks.append(self.loop.create_task(self.update_task(ctx.bot, name, table)))
+        for task in tasks:
+            await asyncio.wait_for(task, None)
         self.updating = False
-        ctx.bot.logger.info('ed.db update complete')
+        self.logger.info('ed.db update complete')
         await ctx.send('Database update complete.')
 
     @update.error
     async def update_error(self, ctx, e):
         self.updating = False
         await ctx.bot.handle_error(ctx, e)
+
+    async def update_task(self, bot, name, table):
+        self.logger.info(f'Downloading {name}')
+        async with self.tmp_dl(f'{self.url}{name}') as file:
+            self.logger.info(f'Creating table for {name}')
+            await self.make_table(file, name, table)
+            self.logger.info(f'Table {name} created.')
+        
 
     async def make_table(self, file, name, table):
         file_ext = name.rpartition('.')[2]
