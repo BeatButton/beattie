@@ -61,7 +61,7 @@ logger = logging.getLogger('discord')
 if self_bot:
     logger.setLevel(logging.CRITICAL)
 else:
-    fut = loop.run_in_executor(None, archive_logs, Path('.').glob('discord*.log'))
+    fut = loop.run_in_executor(None, archive_logs, list(Path('.').glob('discord*.log')))
     logger.setLevel(logging.DEBUG)
     now = datetime.utcnow()
     filename = now.strftime('discord%Y%m%d%H%M.log')
