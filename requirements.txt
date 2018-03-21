@@ -2,7 +2,7 @@ git+https://github.com/Rapptz/discord.py.git@rewrite#egg=discord.py
 git+https://github.com/SunDwarf/asyncqlio.git#egg=asyncqlio
 aiofiles
 aitertools
-asyncjisho
+asyncjisho<0.2
 asyncpg
 lxml
 objgraph
