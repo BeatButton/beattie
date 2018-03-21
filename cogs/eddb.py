@@ -184,7 +184,11 @@ class EDDB:
         self.logger.info(f'Downloading {name}')
         async with self.get(f'{self.url}{name}') as resp:
             self.logger.info(f'Creating table for {name}')
-            await self.make_table(resp.content, name, table)
+            if name.endswith('.json'):
+                file = resp.content
+            else:
+                file = (line.decode() async for line in resp.content)
+            await self.make_table(file, name, table)
             self.logger.info(f'Table {name} created.')
         
 
