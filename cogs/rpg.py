@@ -1,5 +1,4 @@
 import asyncio
-from concurrent import futures
 import os
 import random
 import re
@@ -16,7 +15,7 @@ class RPG:
         self.tarot_url = 'https://www.trustedtarot.com/cards/{}/'
 
     @commands.command()
-    async def choose(self, ctx, *options):
+    async def choose(self, ctx, *options: commands.clean_content):
         """Choose between some options. Use quotes if they have spaces."""
         choice = random.choice(options)
         await ctx.send(f'I choose:\n{choice}')
@@ -47,7 +46,7 @@ class RPG:
             except IndexError:
                 await ctx.send('Please specify a valid suit, or no suit.')
                 return
-            match = re.match(r'(?:\w+\/)+[IVX0_]*([\w_]+)\.jpg', card)
+            match = re.match(r'(?:\w+/)+[IVX0_]*([\w_]+)\.jpg', card)
             name = match.groups()[0].replace('_', ' ')
             url = self.tarot_url.format(name.lower().replace(' ', '-'))
             embed = discord.Embed()
@@ -155,7 +154,7 @@ class RPG:
                            '\n2d8-4'
                            '\n2d20^1'
                            '\n4d6v1x6t')
-        elif isinstance(e, futures.TimeoutError):
+        elif isinstance(e, asyncio.TimeoutError):
             await ctx.reply('Your execution took too long. Roll fewer dice.')
         elif isinstance(e, discord.HTTPException):
             await ctx.reply('Your results were too long. Maybe sum them?')
