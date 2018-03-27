@@ -1,6 +1,11 @@
-import datetime
+from datetime import datetime
 import inspect
+import logging
+import lzma
+import os
+from pathlib import Path
 import sys
+import tarfile
 
 import aiohttp
 from asyncqlio.db import DatabaseInterface
@@ -11,6 +16,7 @@ import yaml
 from config import Config
 from context import BContext
 from utils import contextmanagers, decorators, exceptions
+from utils.aioutils import do_every
 from utils.etc import default_channel
 
 
@@ -59,12 +65,48 @@ class BeattieBot(commands.Bot):
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
-        self.uptime = datetime.datetime.utcnow()
+        self.uptime = datetime.utcnow()
+        self.archive_task = do_every(60*60*24, self.archive_logs)
 
     def _do_cleanup(self):
         self.session.close()
         self.loop.create_task(self.db.close())
         super()._do_cleanup()
+
+    async def swap_logs(self, new=True):
+        if new:
+            self.new_logger()
+        await self.loop.run_in_executor(None, self.archive_logs)
+
+    def new_logger(self):
+        logger = logging.getLogger('discord')
+        logger.setLevel(logging.DEBUG)
+        now = datetime.utcnow()
+        filename = now.strftime('discord%Y%m%d%H%M.log')
+        handler = logging.FileHandler(
+            filename=filename, encoding='utf-8', mode='w')
+        handler.setFormatter(
+            logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+        logger.addHandler(handler)
+        self.logger = logger
+
+    def archive_logs(self):
+        logname = 'logs.tar'
+        if os.path.exists(logname):
+           mode = 'a'
+        else:
+           mode = 'w'
+        # get all logfiles but newest
+        old_logs = sorted(Path('.').glob('*.log'), key=os.path.getmtime)[:-1]
+        with tarfile.open(logname, mode) as tar:
+            for log in old_logs:
+                name = f'{log.name}.xz'
+                with open(log, 'rb') as r, lzma.open(name, 'w') as w:
+                    for line in r:
+                        w.write(line)   
+                tar.add(name)
+                os.unlink(name)
+                log.unlink()
 
     async def handle_error(self, ctx, e):
         e = getattr(e, 'original', e)

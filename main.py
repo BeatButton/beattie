@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
-from datetime import datetime
-import logging
-import lzma
 from pathlib import Path
-import os
 import sys
-import tarfile
 
 from discord.ext.commands import when_mentioned_or
 import yaml
@@ -19,25 +14,6 @@ except ImportError:
     pass
 else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-
-def archive_logs(old_logs):
-   logname = 'logs.tar'
-   if os.path.exists(logname):
-       mode = 'a'
-   else:
-       mode = 'w'
-   with tarfile.open(logname, mode) as tar:
-       for log in old_logs:
-           with open(log, 'rb') as fp:
-               data = lzma.compress(fp.read())
-           name = f'{log.name}.xz'
-           with open(name, 'wb') as fp:
-               fp.write(data)
-           tar.add(name)
-           os.remove(name)
-           log.unlink()
-
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 with open('config/config.yaml') as file:
     config = yaml.load(file)
@@ -57,20 +33,13 @@ else:
     token = config['token']
 bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
-logger = logging.getLogger('discord')
 if self_bot:
+    logger = logging.getLogger('discord')
     logger.setLevel(logging.CRITICAL)
+    bot.logger = logger
 else:
-    fut = loop.run_in_executor(None, archive_logs, list(Path('.').glob('discord*.log')))
-    logger.setLevel(logging.DEBUG)
-    now = datetime.utcnow()
-    filename = now.strftime('discord%Y%m%d%H%M.log')
-    handler = logging.FileHandler(
-        filename=filename, encoding='utf-8', mode='w')
-    handler.setFormatter(
-        logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-    logger.addHandler(handler)
-bot.logger = logger
+    bot.new_logger()
+    bot.loop.create_task(bot.swap_logs(False))
 
 extensions = [f'cogs.{f.stem}' for f in Path('cogs').glob('*.py')]
 
