@@ -1,3 +1,4 @@
+import asyncio
 import functools
 
 import aiofiles
@@ -18,3 +19,11 @@ async def make_batches(iterable, size):
     iterator = await aitertools.aiter(iterable)
     async for first in iterator:
         yield aitertools.chain([first], aitertools.islice(iterator, size - 1))
+
+
+def do_every(seconds, coro, *args, **kwargs):
+    async def task():
+        while True:
+            await asyncio.sleep(seconds)
+            await coro(*args, **kwargs)
+    return asyncio.get_event_loop().create_task(task())
