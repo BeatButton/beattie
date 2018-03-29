@@ -66,7 +66,7 @@ class BeattieBot(commands.Bot):
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
         self.uptime = datetime.utcnow()
-        self.archive_task = do_every(60*60*24, self.archive_logs)
+        self.archive_task = do_every(60*60*24, self.swap_logs)
 
     def _do_cleanup(self):
         self.session.close()
