@@ -32,25 +32,25 @@ class NSFW:
         self.get = bot.get
         self.log = bot.logger.debug
 
-    @commands.command(aliases=['gel'], hidden=True)
+    @commands.command(aliases=['gel'])
     async def gelbooru(self, ctx, *tags):
+        """Search gelbooru for images."""
         await self.booru(ctx, tags)
 
-    @commands.command(aliases=['r34'], hidden=True)
+    @commands.command(aliases=['r34'])
     async def rule34(self, ctx, *tags):
+        """Search rule34.xxx for images."""
         await self.booru(ctx, tags)
 
-    @commands.command(aliases=['shota'], hidden=True)
+    @commands.command(aliases=['shota'])
     async def shotachan(self, ctx, *tags):
+        """Search shotabooru for images."""
         await self.booru(ctx, tags)
 
-    @commands.command(aliases=['fur'], hidden=True)
+    @commands.command(aliases=['fur'])
     async def e621(self, ctx, *tags):
+        """Search e621 for images."""
         await self.booru(ctx, tags, limit=320)
-
-    @commands.command(hidden=True)
-    async def massage(self, ctx, *tags):
-        await ctx.invoke(self.gelbooru, tags=('massage',) + tags)
 
     async def booru(self, ctx, tags, limit=100):
         async with ctx.typing():
