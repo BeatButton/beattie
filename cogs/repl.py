@@ -188,6 +188,17 @@ class REPL:
     async def restart(self, ctx):
         await ctx.invoke(self.run, command='sudo systemctl restart beattie.service')
 
+    @commands.command()
+    async def reload(self, ctx, *, cog):
+        cog = f'cogs.{cog.lower()}'
+        try:
+            ctx.bot.unload_extension(cog)
+            ctx.bot.load_extension(cog)
+        except ModuleNotFoundError:
+            await ctx.send('Cog does not exist.')
+        else:
+            await ctx.send('Reload successful.')
+
 
 def setup(bot):
     bot.add_cog(REPL())

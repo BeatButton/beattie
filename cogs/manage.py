@@ -39,18 +39,6 @@ class Manage:
                 or ctx.channel.permissions_for(ctx.author).manage_guild)
 
     @commands.command()
-    @commands.is_owner()
-    async def reload(self, ctx, *, cog):
-        cog = f'cogs.{cog.lower()}'
-        try:
-            ctx.bot.unload_extension(cog)
-            ctx.bot.load_extension(cog)
-        except ModuleNotFoundError:
-            await ctx.send('Cog does not exist.')
-        else:
-            await ctx.send('Reload successful.')
-
-    @commands.command()
     async def enable(self, ctx, cog):
         """Enable a cog in the guild."""
         if ctx.bot.get_cog(cog) is None:
