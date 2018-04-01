@@ -11,6 +11,7 @@ class SauceNao:
 
     @commands.command(aliases=['sauce'])
     async def saucenao(self, ctx, *, link=''):
+        """Find the source of a linked or attached image using saucenao."""
         async with ctx.typing():
             if not link:
                 if len(ctx.message.attachments) == 1:
