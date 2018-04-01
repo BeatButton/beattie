@@ -26,7 +26,7 @@ class SauceNao:
             async with self.session.post(self.sauce_url, data=payload) as resp:
                 root = etree.fromstring(await resp.text(), self.parser)
     
-            results = root.xpath('.//div[@class="resultcontentcolumn"]/a')
+            results = root.xpath('.//div[@class="result"]')
             sim_percent = 0
             if results:
                 similarity = root.find(".//div[@class='resultsimilarityinfo']").text
@@ -35,7 +35,13 @@ class SauceNao:
             if not results or sim_percent <= 60:
                 await ctx.send('No sauce found.')
             else:
-                await ctx.send(f'Sauce found ({similarity}) <{results[0].get("href")}>')
+                result = results[0]
+                booru_link = result.find('.//div[@class="resultmiscinfo"]/a')
+                if booru_link:
+                    link = booru_link.get('href')
+                else:
+                    link = result.find('.//div[@class="resultcontentcolumn"]/a').get('href')
+                await ctx.send(f'Sauce found ({similarity}) <{link}>')
 
     @saucenao.error
     async def saucenao_error(self, ctx, e):
