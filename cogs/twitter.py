@@ -121,17 +121,41 @@ class Twitter:
         else:
             heads = {'referer': link}
             heads.update(self.headers)
-            img_elem = root.xpath(self.pixiv_img_selector)[0]
-            url = img_elem.get('data-src')
-            filename = url.rpartition('/')[2]
-            img_request = self.get(url, headers=heads)
-            async with img_request as resp:
-                content = await resp.read()
-            img = BytesIO()
-            img.write(content)
-            img.seek(0)
-            file = File(img, filename)
-            await destination.send(file=file)
+            img_elem = root.xpath(self.pixiv_img_selector)
+            if img_elem:
+                await destination.send('single image')
+                img_elem = img_elem[0]
+                url = img_elem.get('data-src')
+                filename = url.rpartition('/')[2]
+                img_request = self.get(url, headers=heads)
+                async with img_request as resp:
+                    content = await resp.read()
+                img = BytesIO()
+                img.write(content)
+                img.seek(0)
+                file = File(img, filename)
+                await destination.send(file=file)
+            else:
+                msg = await destination.send('Fetching gif...')
+                params = {
+                    'url': link,
+                    'format': 'gif',
+                    }
+                conv_url = 'http://ugoira.dataprocessingclub.org/convert'
+                async with self.get(conv_url, params=params) as resp:
+                    text = await resp.text()
+                url = re.findall('(http.*\.gif)', text)[0]
+                img = BytesIO()
+                async with self.get(url) as resp:
+                    async for block in resp.content.iter_any():
+                        if not block:
+                            break
+                        img.write(block)
+                img.seek(0)
+                name = url.rpartition('/')[2]
+                file = File(img, name)
+                await destination.send(file=file)
+                await msg.delete()
 
     async def display_hiccears_images(self, link, destination):
         async with self.get(link) as resp:
@@ -194,3 +218,4 @@ class Twitter:
 
 def setup(bot):
     bot.add_cog(Twitter(bot))
+
