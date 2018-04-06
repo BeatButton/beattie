@@ -139,7 +139,7 @@ class Twitter:
         single_image = root.xpath(self.hiccears_img_selector)
         if single_image:
             a = single_image[0]
-            href = a.get('href')
+            href = a.get('href').lstrip('.')
             url = f'https://{resp.host}{href}'
             await destination.send(url)
             return
