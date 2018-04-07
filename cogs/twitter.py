@@ -1,4 +1,5 @@
 from io import BytesIO
+import json
 import re
 
 import aiohttp
@@ -6,16 +7,16 @@ from lxml import etree
 import yaml
 
 from discord.ext import commands
-from discord import File
+from discord import File, HTTPException
 
 from utils.contextmanagers import get as _get
 
 
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
-    twit_url_expr = re.compile(r'https?://(?:www\.)?twitter\.com/\S+/status/\d+')
+    twitter_url_expr = re.compile(r'https?://(?:www\.)?twitter\.com/\S+/status/\d+')
     tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
-    twit_img_selector = './/img[@data-aria-label-part]'
+    twitter_img_selector = './/img[@data-aria-label-part]'
 
     pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
     pixiv_img_selector = ".//img[@class='original-image']"
@@ -39,6 +40,9 @@ class Twitter:
             cookies = yaml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop, cookies=cookies)
         self.parser = etree.HTMLParser()
+        names = (name.partition('_')[0] for name in vars(type(self)) if name.endswith('url_expr'))
+        self.expr_dict = {getattr(self, f'{name}_url_expr'): getattr(self, f'display_{name}_images')
+                          for name in names}
 
     async def __init(self):
         await self.bot.wait_until_ready()
@@ -60,27 +64,23 @@ class Twitter:
             return
         if not (await self.bot.config.get(guild.id)).get('twitter'):
             return
-        for link in self.twit_url_expr.findall(message.content):
-            await self.display_twitter_images(link, message.channel)
-        for link in self.pixiv_url_expr.findall(message.content):
-            await self.display_pixiv_images(link, message.channel)
-        for link in self.hiccears_url_expr.findall(message.content):
-            await self.display_hiccears_images(link, message.channel)
-        for link in self.tumblr_url_expr.findall(message.content):
-            await self.display_tumblr_images(link, message.channel)
+        ctx = await self.bot.get_context(message)
+        for expr, func in self.expr_dict.items():
+            for link in expr.findall(message.content):
+                await func(link, ctx)
 
-    async def display_twitter_images(self, link, destination):
+    async def display_twitter_images(self, link, ctx):
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         try:
             tweet = root.xpath(self.tweet_selector)[0]
         except IndexError:
             return
-        for img_link in tweet.findall(self.twit_img_selector)[1:]:
+        for img_link in tweet.findall(self.twitter_img_selector)[1:]:
             url = img_link.get('src')
-            await destination.send(f'{url}:orig')
+            await ctx.send(f'{url}:orig')
 
-    async def display_pixiv_images(self, link, destination):
+    async def display_pixiv_images(self, link, ctx):
         if 'mode' in link:
             link = re.sub('(?<=mode=)\w+', 'medium', link)
         else:
@@ -112,18 +112,18 @@ class Twitter:
                             img.write(chunk)
                 img.seek(0)
                 file = File(img, filename)
-                await destination.send(file=file)
+                await ctx.send(file=file)
             num = len(pages) - 4
             if num > 0:
                 s = 's' if num > 1 else ''
                 message = f'{num} more image{s} at <{manga_url}>'
-                await destination.send(message)
+                await ctx.send(message)
         else:
             heads = {'referer': link}
             heads.update(self.headers)
             img_elem = root.xpath(self.pixiv_img_selector)
             if img_elem:
-                await destination.send('single image')
+                await ctx.send('single image')
                 img_elem = img_elem[0]
                 url = img_elem.get('data-src')
                 filename = url.rpartition('/')[2]
@@ -134,30 +134,38 @@ class Twitter:
                 img.write(content)
                 img.seek(0)
                 file = File(img, filename)
-                await destination.send(file=file)
+                await ctx.send(file=file)
             else:
-                msg = await destination.send('Fetching gif...')
-                params = {
-                    'url': link,
-                    'format': 'gif',
-                    }
-                conv_url = 'http://ugoira.dataprocessingclub.org/convert'
-                async with self.get(conv_url, params=params) as resp:
-                    text = await resp.text()
-                url = re.findall('(http.*\.gif)', text)[0]
-                img = BytesIO()
-                async with self.get(url) as resp:
-                    async for block in resp.content.iter_any():
-                        if not block:
-                            break
-                        img.write(block)
-                img.seek(0)
-                name = url.rpartition('/')[2]
-                file = File(img, name)
-                await destination.send(file=file)
+                msg = await ctx.send('Fetching gif...')
+                file = await self.get_ugoira(link)
+                try:
+                    await ctx.send(file=file)
+                except HTTPException:
+                    await msg.edit(content='Gif too large, fetching webm...')
+                    file = await self.get_ugoira(link, fmt='webm')
+                    await ctx.send(file=file)
                 await msg.delete()
 
-    async def display_hiccears_images(self, link, destination):
+    async def get_ugoira(self, link, fmt='gif'):
+        params = {
+            'url': link,
+            'format': fmt,
+        }
+        conv_url = 'http://ugoira.dataprocessingclub.org/convert'
+        async with self.get(conv_url, params=params, timeout=None) as resp:
+            text = await resp.text()
+        url = json.loads(text)['url']
+        img = BytesIO()
+        async with self.get(url) as resp:
+            async for block in resp.content.iter_any():
+                if not block:
+                    break
+                img.write(block)
+        img.seek(0)
+        name = url.rpartition('/')[2]
+        return File(img, name)
+
+    async def display_hiccears_images(self, link, ctx):
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         single_image = root.xpath(self.hiccears_img_selector)
@@ -165,7 +173,7 @@ class Twitter:
             a = single_image[0]
             href = a.get('href').lstrip('.')
             url = f'https://{resp.host}{href}'
-            await destination.send(url)
+            await ctx.send(url)
             return
 
         images = root.xpath(self.hiccears_link_selector)
@@ -177,14 +185,14 @@ class Twitter:
             a = page.xpath(self.hiccears_img_selector)[0]
             href = a.get('href')[1:]  # trim leading '.'
             url = f'https://{resp.host}{href}'
-            await destination.send(url)
+            await ctx.send(url)
         num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
-            await destination.send(message)
+            await ctx.send(message)
 
-    async def display_tumblr_images(self, link, destination):
+    async def display_tumblr_images(self, link, ctx):
         idx = 1
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
@@ -201,12 +209,12 @@ class Twitter:
             raw_url = re.sub(r'_\d+\.',
                              '_raw.',
                              raw_url)
-            await destination.send(raw_url)
+            await ctx.send(raw_url)
         num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
-            await destination.send(message)
+            await ctx.send(message)
 
     @commands.command()
     async def twitter(self, ctx, enabled: bool=True):
