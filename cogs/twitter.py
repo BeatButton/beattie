@@ -1,3 +1,4 @@
+from collections import defaultdict 
 from io import BytesIO
 import json
 import re
@@ -11,6 +12,11 @@ from discord import File, HTTPException
 
 from utils.contextmanagers import get as _get
 
+
+class TwitContext(commands.Context):
+    async def send(self, *args, **kwargs):
+        msg = await super().send(*args, **kwargs)
+        self.bot.get_cog('Twitter').record[self.message.id].append(msg)
 
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
@@ -43,6 +49,7 @@ class Twitter:
         names = (name.partition('_')[0] for name in vars(type(self)) if name.endswith('url_expr'))
         self.expr_dict = {getattr(self, f'{name}_url_expr'): getattr(self, f'display_{name}_images')
                           for name in names}
+        self.record = defaultdict(list)
 
     async def __init(self):
         await self.bot.wait_until_ready()
@@ -64,10 +71,18 @@ class Twitter:
             return
         if not (await self.bot.config.get(guild.id)).get('twitter'):
             return
-        ctx = await self.bot.get_context(message)
+        ctx = await self.bot.get_context(message, cls=TwitContext)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(message.content):
-                await func(link, ctx)
+                try:
+                    await func(link, ctx)
+                except Exception as e:
+                    await ctx.send(f'Exception in {func.__name__}:\n'
+                        f'{type(e).__name__}: {e}')
+
+    async def on_message_delete(self, message):
+        for msg in self.record[message.id]:
+            await msg.delete()
 
     async def display_twitter_images(self, link, ctx):
         async with self.get(link) as resp:
@@ -123,7 +138,6 @@ class Twitter:
             heads.update(self.headers)
             img_elem = root.xpath(self.pixiv_img_selector)
             if img_elem:
-                await ctx.send('single image')
                 img_elem = img_elem[0]
                 url = img_elem.get('data-src')
                 filename = url.rpartition('/')[2]
