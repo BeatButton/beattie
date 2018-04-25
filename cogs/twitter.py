@@ -79,10 +79,10 @@ class Twitter:
                     parent.arsenic_session = self.session = await arsenic.start_session(
                         parent.service, parent.browser
                     )
-                await self.session.get(self.link)
-                await self.session.delete_all_cookies()
-                for name, value in parent.cookies.items():
-                    await self.session.add_cookie(name, value)
+                    await self.session.get(self.link)
+                    await self.session.delete_all_cookies()
+                    for name, value in parent.cookies.items():
+                        await self.session.add_cookie(name, value)
                 await self.session.get(self.link)
                 return self.session
 
