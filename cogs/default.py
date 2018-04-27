@@ -27,7 +27,7 @@ class Default:
     @commands.command()
     async def invite(self, ctx):
         """Get the invite for the bot."""
-        url = 'https://discordapp.com/oauth2/authorize?client_id={}&scope=bot'
+        url = '<https://discordapp.com/oauth2/authorize?client_id={}&scope=bot>'
         await ctx.send(url.format(ctx.me.id))
 
     @commands.command(hidden=True, aliases=['thank', 'thx'])
