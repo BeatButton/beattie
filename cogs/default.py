@@ -1,9 +1,22 @@
-from discord import File
+from discord import File, Member
 from discord.ext import commands
 
 
 class Default:
     """Default useful commands."""
+    @commands.command()
+    async def avatar(self, ctx, member: Member = None):
+        if member is None:
+            member = ctx.author
+        await ctx.send(member.avatar_url_as(format='png'))
+
+    @avatar.error
+    async def avatar_error(self, ctx, exc):
+        if isinstance(exc, commands.BadArgument):
+            await ctx.send('Member not found.')
+        else:
+            await ctx.bot.handle_error(ctx, exc)
+    
     @commands.command()
     async def latency(self, ctx):
         """Get the latency to the websocket."""
