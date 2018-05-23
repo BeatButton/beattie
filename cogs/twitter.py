@@ -28,8 +28,8 @@ class Twitter:
     twitter_img_selector = 'img[data-aria-label-part]'
 
     pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
-    pixiv_img_selector = 'a._2dxWuLX._2SoNhPS'
-    pixiv_read_more_selector = 'a._2t-hEST'
+    pixiv_img_selector = 'a[href*="img-original"]'
+    pixiv_read_more_selector = 'a[href*="mode=manga"]'
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
 
     hiccears_url_expr = re.compile(r'https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+')
