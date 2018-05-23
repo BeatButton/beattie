@@ -24,8 +24,8 @@ class TwitContext(commands.Context):
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
     twitter_url_expr = re.compile(r'https?://(?:www\.)?twitter\.com/\S+/status/\d+')
-    tweet_selector = ".//div[contains(@class, 'tweet permalink-tweet')]"
-    twitter_img_selector = './/img[@data-aria-label-part]'
+    tweet_selector = 'div.tweet.permalink-tweet'
+    twitter_img_selector = 'img[data-aria-label-part]'
 
     pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
     pixiv_img_selector = 'a._2dxWuLX._2SoNhPS'
@@ -118,14 +118,14 @@ class Twitter:
             await msg.delete()
 
     async def display_twitter_images(self, link, ctx):
-        async with self.get(link) as resp:
-            root = etree.fromstring(await resp.read(), self.parser)
-        try:
-            tweet = root.xpath(self.tweet_selector)[0]
-        except IndexError:
-            return
-        for img_link in tweet.findall(self.twitter_img_selector)[1:]:
-            url = img_link.get('src')
+        async with self.get_session(link) as sess:
+            try:
+                tweet = await sess.wait_for_element(60, self.tweet_selector)
+            except arsenic.errors.NoSuchElement:
+                return
+
+        for img in (await tweet.get_elements(self.twitter_img_selector))[1:]:
+            url = await img.get_attribute('src')
             await ctx.send(f'{url}:orig')
 
     async def display_pixiv_images(self, link, ctx):
