@@ -124,9 +124,9 @@ class Twitter:
             except arsenic.errors.NoSuchElement:
                 return
 
-        for img in (await tweet.get_elements(self.twitter_img_selector))[1:]:
-            url = await img.get_attribute('src')
-            await ctx.send(f'{url}:orig')
+            for img in (await tweet.get_elements(self.twitter_img_selector))[1:]:
+                url = await img.get_attribute('src')
+                await ctx.send(f'{url}:orig')
 
     async def display_pixiv_images(self, link, ctx):
         if 'mode' in link:
