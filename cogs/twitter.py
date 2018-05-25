@@ -20,6 +20,7 @@ class TwitContext(commands.Context):
     async def send(self, *args, **kwargs):
         msg = await super().send(*args, **kwargs)
         self.bot.get_cog('Twitter').record[self.message.id].append(msg)
+        return msg
 
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
@@ -28,7 +29,7 @@ class Twitter:
     twitter_img_selector = 'img[data-aria-label-part]'
 
     pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
-    pixiv_img_selector = 'a[href*="img-original"]'
+    pixiv_img_selector = 'a[href*="img"]'
     pixiv_read_more_selector = 'a[href*="mode=manga"]'
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
 
@@ -152,7 +153,7 @@ class Twitter:
                         await msg.edit(content='Gif too large, fetching webm...')
                         file = await self.get_ugoira(link, fmt='webm')
                         await ctx.send(file=file)
-                    await msg.delete()                
+                    await msg.delete()
                 else:
                     url = await img_elem.get_attribute('href')
                     filename = url.rpartition('/')[2]
