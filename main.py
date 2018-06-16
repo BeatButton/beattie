@@ -34,7 +34,7 @@ else:
     token = config['token']
 bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
 
-if self_bot:
+if self_bot or debug:
     logger = logging.getLogger('discord')
     logger.setLevel(logging.CRITICAL)
     bot.logger = logger
