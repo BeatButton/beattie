@@ -7,6 +7,7 @@ import traceback
 import aiohttp
 import arsenic
 from arsenic.browsers import Firefox
+from arsenic.errors import ArsenicTimeout, NoSuchElement
 from arsenic.services import Geckodriver
 from lxml import etree
 import yaml
@@ -14,7 +15,7 @@ import yaml
 from discord.ext import commands
 from discord import File, HTTPException
 
-from utils.contextmanagers import get as _get
+from utils.contextmanagers import get as _get, null
 
 class TwitContext(commands.Context):
     async def send(self, *args, **kwargs):
@@ -29,6 +30,7 @@ class Twitter:
     twitter_img_selector = 'img[data-aria-label-part]'
 
     pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
+    pixiv_login_selector = 'a[href*="accounts.pixiv.net/login"]'
     pixiv_img_selector = 'a[href*="img"]'
     pixiv_read_more_selector = 'a[href*="mode=manga"]'
     pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
@@ -44,8 +46,8 @@ class Twitter:
         self.bot = bot
         self.bot.loop.create_task(self.__init())
         self.headers = {'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) '
-                        'Gecko/20100101 Firefox/58.0'}
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:60.0) '
+                        'Gecko/20100101 Firefox/60.0'}
         with open('config/cookies.yaml') as fp:
             self.cookies = yaml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop, cookies=self.cookies)
@@ -57,38 +59,38 @@ class Twitter:
         self.service = Geckodriver(binary='geckodriver', log_file=None)
         self.browser = Firefox(**{'moz:firefoxOptions': {'args': ['-headless']}})
         self.arsenic_session = None
-        self.get_session = self._get_context_manager()
+        self.get_session = null
 
     async def __init(self):
         await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             self.bot.unload_extension(__name__)
+        else:
+            self.arsenic_session = await arsenic.start_session(self.service, self.browser)
+            self.get_session = self._get_context_manager()
 
     def __unload(self):
+        if self.arsenic_session is not None:
+            self.bot.loop.create_task(arsenic.stop_session(self.arsenic_session))
         self.session.close()
-        self.bot.loop.create_task(arsenic.stop_session(self.arsenic_session))
 
     def _get_context_manager(self):
-        parent = self
+        session = self.arsenic_session
+        cookies = self.cookies
         class get_session:
             def __init__(self, link):
                 self.link = link
         
             async def __aenter__(self):
-                self.session = parent.arsenic_session
-                if self.session is None:
-                    parent.arsenic_session = self.session = await arsenic.start_session(
-                        parent.service, parent.browser
-                    )
-                    await self.session.get(self.link)
-                    await self.session.delete_all_cookies()
-                    for name, value in parent.cookies.items():
-                        await self.session.add_cookie(name, value)
-                await self.session.get(self.link)
-                return self.session
+                await session.get(self.link)
+                for name, value in cookies.items():
+                    await session.add_cookie(name, value)
+                await session.get(self.link)
+                return session
 
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 pass
+
         return get_session
                 
     def get(self, *args, **kwargs):
@@ -122,7 +124,7 @@ class Twitter:
         async with self.get_session(link) as sess:
             try:
                 tweet = await sess.wait_for_element(60, self.tweet_selector)
-            except arsenic.errors.NoSuchElement:
+            except ArsenicTimeout:
                 return
 
             for img in (await tweet.get_elements(self.twitter_img_selector))[1:]:
@@ -139,12 +141,19 @@ class Twitter:
             await sess.wait_for_element(60, 'body')
             try:
                 await sess.get_element(self.pixiv_read_more_selector)
-            except arsenic.errors.NoSuchElement:
+            except NoSuchElement:
                 heads = {'referer': link}
                 heads.update(self.headers)
                 try:
-                    img_elem = await sess.get_element(self.pixiv_img_selector)
-                except arsenic.errors.NoSuchElement:
+                    img_elem = await sess.wait_for_element(10, self.pixiv_img_selector)
+                except ArsenicTimeout:
+                    try:
+                        await sess.get_element(self.pixiv_login_selector)
+                    except NoSuchElement:
+                        pass
+                    else:
+                        await ctx.send('Bot is not logged in to Pixiv.')
+                        return
                     msg = await ctx.send('Fetching gif...')
                     file = await self.get_ugoira(link)
                     try:
