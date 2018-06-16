@@ -26,7 +26,7 @@ class BeattieBot(commands.Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError, )
 
-    def __init__(self, command_prefix='b>', *args, **kwargs):
+    def __init__(self, command_prefix, *args, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
             game = None
@@ -71,6 +71,7 @@ class BeattieBot(commands.Bot):
     def _do_cleanup(self):
         self.session.close()
         self.loop.create_task(self.db.close())
+        self.archive_task.cancel()
         super()._do_cleanup()
 
     async def swap_logs(self, new=True):
@@ -141,8 +142,10 @@ class BeattieBot(commands.Bot):
                                    )
 
     async def process_commands(self, message):
-        ctx = await self.get_context(message, cls=BContext)
-        await self.invoke(ctx)
+        assert isinstance(message, discord.Message)
+        if not message.author.bot:
+            ctx = await self.get_context(message, cls=BContext)
+            await self.invoke(ctx)
 
     async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, 'on_error'):
