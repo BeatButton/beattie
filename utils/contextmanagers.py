@@ -7,17 +7,30 @@ from .exceptions import ResponseError
 
 
 class null:
-    def __enter__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        return
+
+    def __enter__(self, *args, **kwargs):
+        return self
 
     def __exit__(self, exc_type, exc, tb):
         pass
 
-    async def __aenter__(self):
-        pass
+    async def __aenter__(self, *args, **kwargs):
+        return self
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
+
+    async def __getattr__(self, attr):
+        return self
+
+    def __call__(self, *_, **__):
+        return self
+
+    def __await__(self):
+        return self
+        yield    
 
 
 class tmp_dl:
