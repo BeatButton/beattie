@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict 
 from io import BytesIO, StringIO
 import json
@@ -15,9 +16,10 @@ import yaml
 from discord.ext import commands
 from discord import File, HTTPException
 
-from utils.contextmanagers import get as _get, null
+from context import BContext
+from utils.contextmanagers import get as _get
 
-class TwitContext(commands.Context):
+class TwitContext(BContext):
     async def send(self, *args, **kwargs):
         msg = await super().send(*args, **kwargs)
         self.bot.get_cog('Twitter').record[self.message.id].append(msg)
@@ -33,7 +35,8 @@ class Twitter:
     pixiv_login_selector = 'a[href*="accounts.pixiv.net/login"]'
     pixiv_img_selector = 'a[href*="img"]'
     pixiv_read_more_selector = 'a[href*="mode=manga"]'
-    pixiv_manga_page_selector = ".//div[contains(@class, 'item-container')]/a"
+    pixiv_manga_page_selector = 'a.full-size-container'
+    pixiv_spoiler_selector = 'button.EZLF3WY'
 
     hiccears_url_expr = re.compile(r'https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+')
     hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
@@ -44,52 +47,60 @@ class Twitter:
 
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.__init())
         self.headers = {'User-Agent':
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:60.0) '
                         'Gecko/20100101 Firefox/60.0'}
         with open('config/cookies.yaml') as fp:
             self.cookies = yaml.load(fp)
+        with open('config/logins.yaml') as fp:
+            self.logins = yaml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop, cookies=self.cookies)
         self.parser = etree.HTMLParser()
         names = (name.partition('_')[0] for name in vars(type(self)) if name.endswith('url_expr'))
         self.expr_dict = {getattr(self, f'{name}_url_expr'): getattr(self, f'display_{name}_images')
                           for name in names}
         self.record = defaultdict(list)
-        self.service = Geckodriver(binary='geckodriver', log_file=None)
-        self.browser = Firefox(**{'moz:firefoxOptions': {'args': ['-headless']}})
         self.arsenic_session = None
-        self.get_session = null
+        self.ready = False
+
+    def __local_check(self, ctx):
+        return self.ready
 
     async def __init(self):
         await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             self.bot.unload_extension(__name__)
         else:
-            self.arsenic_session = await arsenic.start_session(self.service, self.browser)
+            service = Geckodriver(binary='geckodriver', log_file=None)
+            browser = Firefox(**{'moz:firefoxOptions': {'args': ['-headless']}})
+            self.arsenic_session = await arsenic.start_session(service, browser)
             self.get_session = self._get_context_manager()
-
+            self.ready = True
+        
     def __unload(self):
         if self.arsenic_session is not None:
             self.bot.loop.create_task(arsenic.stop_session(self.arsenic_session))
-        self.session.close()
+        self.bot.loop.create_task(self.session.close())
 
     def _get_context_manager(self):
         session = self.arsenic_session
         cookies = self.cookies
-        class get_session:
+        class get_session(asyncio.Lock):
             def __init__(self, link):
+                super().__init__()
                 self.link = link
         
             async def __aenter__(self):
+                await super().__aenter__()
                 await session.get(self.link)
                 for name, value in cookies.items():
                     await session.add_cookie(name, value)
                 await session.get(self.link)
+                session.release = self.release
                 return session
 
             async def __aexit__(self, exc_type, exc_val, exc_tb):
-                pass
+                await super().__aexit__(exc_type, exc_val, exc_tb)
 
         return get_session
                 
@@ -98,6 +109,12 @@ class Twitter:
         return _get(self.session, *args, **kwargs)
 
     async def on_message(self, message):
+        if self.arsenic_session is None:
+            self.arsenic_session = object()
+            await self.__init()
+        elif not self.ready:
+            await asyncio.sleep(5)
+            return await self.on_message(message)
         guild = message.guild
         if guild is None:
             return
@@ -119,6 +136,7 @@ class Twitter:
     async def on_message_delete(self, message):
         for msg in self.record[message.id]:
             await msg.delete()
+        del self.record[message.id]
 
     async def display_twitter_images(self, link, ctx):
         async with self.get_session(link) as sess:
@@ -140,20 +158,36 @@ class Twitter:
         async with self.get_session(link) as sess:
             await sess.wait_for_element(60, 'body')
             try:
+                button = await sess.get_element(self.pixiv_login_selector)
+            except NoSuchElement:
+                pass
+            else:
+                await button.click()
+                creds = self.logins['pixiv']
+                user_input_selector = 'input[autocomplete="username"]'
+                user_input = await sess.wait_for_element(60, user_input_selector)
+                await user_input.send_keys(creds['username'])
+                pass_input = await sess.get_element('input[autocomplete*="password"]')
+                await pass_input.send_keys(creds['password'])
+                await pass_input.send_keys('\ue007') #enter
+                try:
+                    await sess.wait_for_element(10, 'section div a[href*="member.php"]')
+                except ArsenicTimeout:
+                    await ctx.send(await sess.get_url())
+            try:
+                button = await sess.get_element(self.pixiv_spoiler_selector)
+            except NoSuchElement:
+                pass
+            else:
+                await button.click()
+            try:
                 await sess.get_element(self.pixiv_read_more_selector)
             except NoSuchElement:
                 heads = {'referer': link}
                 heads.update(self.headers)
                 try:
-                    img_elem = await sess.wait_for_element(10, self.pixiv_img_selector)
-                except ArsenicTimeout:
-                    try:
-                        await sess.get_element(self.pixiv_login_selector)
-                    except NoSuchElement:
-                        pass
-                    else:
-                        await ctx.send('Bot is not logged in to Pixiv.')
-                        return
+                    img_elem = await sess.get_element(self.pixiv_img_selector)
+                except NoSuchElement:
                     msg = await ctx.send('Fetching gif...')
                     file = await self.get_ugoira(link)
                     try:
@@ -166,45 +200,41 @@ class Twitter:
                 else:
                     url = await img_elem.get_attribute('href')
                     filename = url.rpartition('/')[2]
-                    img_request = self.get(url, headers=heads)
-                    async with img_request as resp:
-                        content = await resp.read()
                     img = BytesIO()
-                    img.write(content)
+                    async with self.get(url, headers=heads) as img_resp:
+                        async for chunk in img_resp.content.iter_any():
+                            if not chunk:
+                                break
+                            img.write(chunk)
                     img.seek(0)
                     file = File(img, filename)
                     await ctx.send(file=file)
                 return
-
-            # it's a manga
-            manga_url = link.replace('medium', 'manga')
-            heads = {'referer': manga_url}
-            heads.update(self.headers)
-            async with self.get(manga_url) as resp:
-                root = etree.fromstring(await resp.read(), self.parser)
-            pages = root.xpath(self.pixiv_manga_page_selector)
-            for page in pages[:4]:
-                href = page.get('href')
-                fullsize_url = f'https://{resp.host}{href}'
-                async with self.get(fullsize_url, headers=heads) as page_resp:
-                    page_root = etree.fromstring(await page_resp.read(), self.parser)
-                page_heads = heads.copy()
-                page_heads['referer'] = fullsize_url
-                img_url = page_root.find('.//img').get('src')
-                filename = img_url.rpartition('/')[2]
-                img = BytesIO()
-                async with self.get(img_url, headers=heads) as img_resp:
-                    async for chunk in img_resp.content.iter_any():
-                        if chunk:
+            else:
+                manga_url = link.replace('medium', 'manga')
+                await sess.get(manga_url)
+                await sess.wait_for_element(60, self.pixiv_manga_page_selector)
+                num_pages = len(await sess.get_elements(self.pixiv_manga_page_selector))
+                illust = re.search('\d+', link).group()
+                for i in range(min(num_pages, 4)):
+                    fullsize_url = f'https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust}&page={i}'
+                    await sess.get(fullsize_url)
+                    img_url = await (await sess.wait_for_element(60, 'img')).get_attribute('src')
+                    filename = img_url.rpartition('/')[2]
+                    img = BytesIO()
+                    async with sess.connection.session.get(img_url, headers={'referer': fullsize_url}) as img_resp:
+                        async for chunk in img_resp.content.iter_any():
+                            if not chunk:
+                                break
                             img.write(chunk)
-                img.seek(0)
-                file = File(img, filename)
-                await ctx.send(file=file)
-            num = len(pages) - 4
-            if num > 0:
-                s = 's' if num > 1 else ''
-                message = f'{num} more image{s} at <{manga_url}>'
-                await ctx.send(message)
+                    img.seek(0)
+                    file = File(img, filename)
+                    await ctx.send(file=file)
+                remaining = num_pages - 4
+                if remaining > 0:
+                    s = 's' if remaining > 1 else ''
+                    message = f'{remaining} more image{s} at <{manga_url}>'
+                    await ctx.send(message)
 
     async def get_ugoira(self, link, fmt='gif'):
         params = {
@@ -286,4 +316,3 @@ class Twitter:
 
 def setup(bot):
     bot.add_cog(Twitter(bot))
-
