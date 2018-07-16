@@ -3,7 +3,7 @@ git+https://github.com/SunDwarf/asyncqlio.git#egg=asyncqlio
 aiofiles
 aitertools
 arsenic
-asyncjisho<0.2
+asyncjisho
 asyncpg
 lxml
 objgraph
