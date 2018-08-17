@@ -293,13 +293,7 @@ class Twitter:
         images = root.xpath(self.tumblr_img_selector)
         for image in images[idx:4]:
             url = image.get('content')
-            raw_url = re.sub(r'https?://\w+\.media',
-                             'https://s3.amazonaws.com/data',
-                            url)
-            raw_url = re.sub(r'_\d+\.',
-                             '_raw.',
-                             raw_url)
-            await ctx.send(raw_url)
+            await ctx.send(url)
         num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
