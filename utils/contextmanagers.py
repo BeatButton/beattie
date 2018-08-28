@@ -1,6 +1,5 @@
 import os
 
-import aiofiles
 from aiohttp import ServerDisconnectedError
 
 from .exceptions import ResponseError
@@ -47,16 +46,16 @@ class tmp_dl:
         if not os.path.isdir('tmp'):
             os.mkdir('tmp')
 
-        async with aiofiles.open(self.path, 'wb') as file:
+        with open(self.path, 'wb') as file:
             async with get(self.session, self.url) as resp:
                 async for block in resp.content.iter_any():
-                    await file.write(block)
-        self.file = await aiofiles.open(self.path, encoding=self.encoding)
+                    file.write(block)
+        self.file = open(self.path, encoding=self.encoding)
         return self.file
 
     async def __aexit__(self, exc_type, exc, tb):
         if self.file:
-            await self.file.close()
+            self.file.close()
         try:
             os.remove(self.path)
         except FileNotFoundError:
