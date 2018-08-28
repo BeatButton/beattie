@@ -3,11 +3,10 @@ from datetime import datetime
 import json
 import logging
 
-from aitertools import anext
 from discord.ext import commands
 
 from schema.eddb import Table, Commodity, System, Station, Listing
-from utils.aioutils import areader, make_batches
+from utils.aioutils import anext, areader, make_batches
 from utils.asyncqlio import to_dict
 
 
@@ -32,6 +31,7 @@ class EDDB:
         }
         self.logger = bot.logger
         self.get = bot.get
+        self.update_tasks = []
 
     @commands.group(aliases=['elite', 'ed'])
     async def eddb(self, ctx):
@@ -166,10 +166,9 @@ class EDDB:
             return
         self.updating = True
         await ctx.send('Database update in progress...')
-        tasks = []
         for name, table in self.file_to_table.items():
-            tasks.append(self.loop.create_task(self.update_task(ctx.bot, name, table)))
-        for task in tasks:
+            self.update_tasks.append(self.loop.create_task(self.update_task(ctx.bot, name, table)))
+        for task in update_tasks:
             await asyncio.wait_for(task, None)
         self.updating = False
         self.logger.info('ed.db update complete')
@@ -177,6 +176,9 @@ class EDDB:
 
     @update.error
     async def update_error(self, ctx, e):
+        for task in self.update_tasks:
+            task.cancel()
+        self.update_tasks.clear()
         self.updating = False
         await ctx.bot.handle_error(ctx, e)
 
@@ -204,8 +206,8 @@ class EDDB:
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
                 async for row in batch:
-                    row = {col: self.coerce(row[col], cols[col])
-                           for col in cols}
+                    row = {col: self.coerce(row[col], val)
+                           for col, val in cols.items()}
                     await s.add(table(**row))
 
     @staticmethod
@@ -238,17 +240,14 @@ class EDDB:
     @staticmethod
     async def csv_formatter(file):
         file = areader(file)
-        header = await anext(file)
+        headers = await anext(file)
         async for line in file:
-            yield dict(zip(header, line))
+            yield dict(zip(headers, line))
 
     @staticmethod
     async def single_json(file):
-        text = await file.read()
-        data = json.loads(text)
-        # yield from in asynchronous generators when
-        for item in data:
-            yield item
+        for line in json.loads(await file.read()):
+            yield line
 
     @staticmethod
     async def multi_json(file):
