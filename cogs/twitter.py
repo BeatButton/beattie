@@ -17,6 +17,7 @@ from discord.ext import commands
 from discord import File, HTTPException
 
 from context import BContext
+from utils.checks import is_owner_or
 from utils.contextmanagers import get as _get
 
 class TwitContext(BContext):
@@ -31,7 +32,7 @@ class Twitter:
     tweet_selector = 'div.tweet.permalink-tweet'
     twitter_img_selector = 'img[data-aria-label-part]'
 
-    pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\??(?:&?[^=&]*=[^=&>\s]*)*')
+    pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*')
     pixiv_login_selector = 'a[href*="accounts.pixiv.net/login"]'
     pixiv_img_selector = 'a[href*="img"]'
     pixiv_read_more_selector = 'a[href*="mode=manga"]'
@@ -61,10 +62,7 @@ class Twitter:
                           for name in names}
         self.record = defaultdict(list)
         self.arsenic_session = None
-        self.ready = False
-
-    def __local_check(self, ctx):
-        return self.ready
+        self.ready = asyncio.Event()
 
     async def __init(self):
         await self.bot.wait_until_ready()
@@ -75,7 +73,7 @@ class Twitter:
             browser = Firefox(**{'moz:firefoxOptions': {'args': ['-headless']}})
             self.arsenic_session = await arsenic.start_session(service, browser)
             self.get_session = self._get_context_manager()
-            self.ready = True
+            self.ready.set()
         
     def __unload(self):
         if self.arsenic_session is not None:
@@ -112,9 +110,8 @@ class Twitter:
         if self.arsenic_session is None:
             self.arsenic_session = object()
             await self.__init()
-        elif not self.ready:
-            await asyncio.sleep(5)
-            return await self.on_message(message)
+        else:
+            await self.ready.wait()
         guild = message.guild
         if guild is None:
             return
@@ -301,6 +298,7 @@ class Twitter:
             await ctx.send(message)
 
     @commands.command()
+    @is_owner_or(manage_guild=True)
     async def twitter(self, ctx, enabled: bool=True):
         """Enable or disable sending non-previewed Twitter images."""
         await self.bot.config.set(ctx.guild.id, twitter=enabled)
