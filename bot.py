@@ -60,6 +60,7 @@ class BeattieBot(commands.Bot):
             data = yaml.load(file)
 
         password = data.get('config_password', '')
+        self.loglevel = data['loglevel']
         self.session = aiohttp.ClientSession(loop=self.loop)
         dsn = f'postgresql://beattie:{password}@localhost/beattie'
         self.db = DatabaseInterface(dsn)
@@ -81,7 +82,8 @@ class BeattieBot(commands.Bot):
 
     def new_logger(self):
         logger = logging.getLogger('discord')
-        logger.setLevel(logging.DEBUG)
+        loglevel = getattr(logging, self.loglevel, logging.CRITICAL)
+        logger.setLevel(loglevel)
         now = datetime.utcnow()
         filename = now.strftime('discord%Y%m%d%H%M.log')
         handler = logging.FileHandler(
