@@ -27,7 +27,7 @@ class NSFW:
         return ctx.channel.is_nsfw()
 
     def __init__(self, bot):
-        self.cache = defaultdict(dict)
+        self.cache = defaultdict(lambda: defaultdict(dict))
         self.titles = {}
         self.get = bot.get
         self.log = bot.logger.debug
@@ -55,12 +55,13 @@ class NSFW:
     async def booru(self, ctx, tags, limit=100):
         async with ctx.typing():
             tags = frozenset(tags)
+            sort = 'order:' in ctx.message.content
             site = ctx.command.name
             channel = ctx.channel
             if site not in self.titles:
                 await self.set_metadata(site)
             try:
-                posts = self.cache[channel].setdefault(site, {})[tags]
+                posts = self.cache[channel][site][tags]
             except KeyError:
                 params = {'page': 'dapi',
                           's': 'post',
@@ -70,7 +71,10 @@ class NSFW:
                 async with ctx.bot.get(self.urls[site], params=params) as resp:
                     root = etree.fromstring(await resp.read())
                 posts = root.findall('.//post')
-                random.shuffle(posts)
+                if sort:
+                    posts = posts[::-1]
+                else:
+                    random.shuffle(posts)
                 self.cache[channel][site][tags] = posts
             if not posts:
                 await ctx.send('No images found.')
