@@ -56,8 +56,11 @@ class Paginator:
 
     async def stop(self):
         self.ctx.bot.remove_listener(self.on_reaction_add)
-        await self.message.delete()
-        
+        try:
+            await self.message.clear_reactions()
+        except discord.Forbidden:
+            pass
+    
     handlers = {
         '⏮': first,
         '◀': back,
