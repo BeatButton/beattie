@@ -59,7 +59,9 @@ class Paginator:
         try:
             await self.message.clear_reactions()
         except discord.Forbidden:
-            pass
+            for emoji in self.handlers:
+                await self.message.remove_reaction(emoji, self.ctx.me)
+                
     
     handlers = {
         '⏮': first,
