@@ -32,12 +32,7 @@ class Twitter:
     tweet_selector = 'div.tweet.permalink-tweet'
     twitter_img_selector = 'img[data-aria-label-part]'
 
-    pixiv_url_expr = re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*')
-    pixiv_login_selector = 'a[href*="accounts.pixiv.net/login"]'
-    pixiv_img_selector = 'a[href*="img"]'
-    pixiv_read_more_selector = 'a[href*="mode=manga"]'
-    pixiv_manga_page_selector = 'a.full-size-container'
-    pixiv_spoiler_selector = 'button.EZLF3WY'
+    pixiv_url_expr =  re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*')
 
     hiccears_url_expr = re.compile(r'https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+')
     hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
@@ -51,11 +46,10 @@ class Twitter:
         self.headers = {'User-Agent':
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:60.0) '
                         'Gecko/20100101 Firefox/60.0'}
-        with open('config/cookies.yaml') as fp:
-            self.cookies = yaml.load(fp)
-        with open('config/logins.yaml') as fp:
-            self.logins = yaml.load(fp)
-        self.session = aiohttp.ClientSession(loop=bot.loop, cookies=self.cookies)
+        with open('config/headers.yaml') as fp:
+            data = yaml.load(fp)
+        self.headers.update(data)
+        self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = etree.HTMLParser()
         names = (name.partition('_')[0] for name in vars(type(self)) if name.endswith('url_expr'))
         self.expr_dict = {getattr(self, f'{name}_url_expr'): getattr(self, f'display_{name}_images')
@@ -63,6 +57,7 @@ class Twitter:
         self.record = defaultdict(list)
         self.arsenic_session = None
         self.ready = asyncio.Event()
+        self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
 
     async def __init(self):
         await self.bot.wait_until_ready()
@@ -74,7 +69,34 @@ class Twitter:
             self.arsenic_session = await arsenic.start_session(service, browser)
             self.get_session = self._get_context_manager()
             self.ready.set()
-        
+
+    async def pixiv_login_loop(self):
+        url = 'https://oauth.secure.pixiv.net/auth/token'
+        while True:
+            with open('config/logins.yaml') as fp:
+                login = yaml.load(fp)
+            data = {
+                'get_secure_url': 1,
+                'client_id': 'MOBrBDS8blbauoSck0ZfDbtuzpyT',
+                'client_secret': 'lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj',
+            }
+            token = login.get('refresh_token')
+            if token is not None:
+                data['grant_type'] = 'refresh_token'
+                data['refresh_token'] = token
+            else:
+                data['grant_type'] = 'password'
+                data['username'] = login['username']
+                data['password'] = login['password']
+    
+            async with self.session.post(url, data=data) as resp:
+                res = (await resp.json())['response']
+            self.headers['Authorization'] = f'Bearer {res["access_token"]}'
+            login['refresh_token'] = res['refresh_token']
+            with open('config/logins.yaml', 'w') as fp:
+                yaml.dump(login, stream=fp)
+            await asyncio.sleep(res['expires_in'])            
+
     def __unload(self):
         if self.arsenic_session is not None:
             self.bot.loop.create_task(arsenic.stop_session(self.arsenic_session))
@@ -82,17 +104,13 @@ class Twitter:
 
     def _get_context_manager(self):
         session = self.arsenic_session
-        cookies = self.cookies
         class get_session(asyncio.Lock):
-            def __init__(self, link):
+            def __init__(self, link, headers=None):
                 super().__init__()
                 self.link = link
         
             async def __aenter__(self):
                 await super().__aenter__()
-                await session.get(self.link)
-                for name, value in cookies.items():
-                    await session.add_cookie(name, value)
                 await session.get(self.link)
                 session.release = self.release
                 return session
@@ -105,6 +123,18 @@ class Twitter:
     def get(self, *args, **kwargs):
         kwargs['headers'] = {**self.headers, **kwargs.get('headers', {})}
         return _get(self.session, *args, **kwargs)
+
+    async def save(self, img_url, headers=None):
+        headers = headers or {}
+        headers = {**self.headers, **headers}
+        img = BytesIO()
+        async with self.get(img_url, headers=headers) as img_resp:
+            async for chunk in img_resp.content.iter_any():
+                if not chunk:
+                    break
+                img.write(chunk)
+        img.seek(0)
+        return img
 
     async def on_message(self, message):
         if self.arsenic_session is None:
@@ -152,86 +182,45 @@ class Twitter:
         else:
             link = f'{link}&mode=medium'
         link = link.replace('http://', 'https://')
-        async with self.get_session(link) as sess:
-            await sess.wait_for_element(60, 'body')
-            try:
-                button = await sess.get_element(self.pixiv_login_selector)
-            except NoSuchElement:
-                pass
+        illust_id = re.search('illust_id=(\d+)', link).groups()[0]
+        headers = {
+            'App-OS': 'ios',
+            'App-OS-Version': '10.3.1',
+            'App-Version': '6.7.1',
+            'User-Agent': 'PixivIOSApp/6.7.1 (ios 10.3.1; iPhone8,1)',
+            'Authorization': self.headers['Authorization'],
+        }
+        params = {'illust_id': illust_id}
+        url = 'https://app-api.pixiv.net/v1/illust/detail'
+        async with self.session.get(url, params=params, headers=headers) as resp:
+            res = await resp.json()
+        res = res['illust']
+        single = res['meta_single_page']
+        multi = res['meta_pages']
+        if single:
+            img_url = single['original_image_url']
+            if 'ugoira' in img_url:
+                file = await self.get_ugoira(link)
             else:
-                await button.click()
-                creds = self.logins['pixiv']
-                user_input_selector = 'input[autocomplete="username"]'
-                user_input = await sess.wait_for_element(60, user_input_selector)
-                await user_input.send_keys(creds['username'])
-                pass_input = await sess.get_element('input[autocomplete*="password"]')
-                await pass_input.send_keys(creds['password'])
-                await pass_input.send_keys('\ue007') #enter
-                try:
-                    await sess.wait_for_element(10, 'section div a[href*="member.php"]')
-                except ArsenicTimeout:
-                    await ctx.send(await sess.get_url())
-            try:
-                button = await sess.get_element(self.pixiv_spoiler_selector)
-            except NoSuchElement:
-                pass
-            else:
-                await button.click()
-            try:
-                await sess.get_element(self.pixiv_read_more_selector)
-            except NoSuchElement:
-                heads = {'referer': link}
-                heads.update(self.headers)
-                try:
-                    img_elem = await sess.get_element(self.pixiv_img_selector)
-                except NoSuchElement:
-                    msg = await ctx.send('Fetching gif...')
-                    file = await self.get_ugoira(link)
-                    try:
-                        await ctx.send(file=file)
-                    except HTTPException:
-                        await msg.edit(content='Gif too large, fetching webm...')
-                        file = await self.get_ugoira(link, fmt='webm')
-                        await ctx.send(file=file)
-                    await msg.delete()
-                else:
-                    url = await img_elem.get_attribute('href')
-                    filename = url.rpartition('/')[2]
-                    img = BytesIO()
-                    async with self.get(url, headers=heads) as img_resp:
-                        async for chunk in img_resp.content.iter_any():
-                            if not chunk:
-                                break
-                            img.write(chunk)
-                    img.seek(0)
-                    file = File(img, filename)
-                    await ctx.send(file=file)
-                return
-            else:
-                manga_url = link.replace('medium', 'manga')
-                await sess.get(manga_url)
-                await sess.wait_for_element(60, self.pixiv_manga_page_selector)
-                num_pages = len(await sess.get_elements(self.pixiv_manga_page_selector))
-                illust = re.search('\d+', link).group()
-                for i in range(min(num_pages, 4)):
-                    fullsize_url = f'https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust}&page={i}'
-                    await sess.get(fullsize_url)
-                    img_url = await (await sess.wait_for_element(60, 'img')).get_attribute('src')
-                    filename = img_url.rpartition('/')[2]
-                    img = BytesIO()
-                    async with sess.connection.session.get(img_url, headers={'referer': fullsize_url}) as img_resp:
-                        async for chunk in img_resp.content.iter_any():
-                            if not chunk:
-                                break
-                            img.write(chunk)
-                    img.seek(0)
-                    file = File(img, filename)
-                    await ctx.send(file=file)
-                remaining = num_pages - 4
-                if remaining > 0:
-                    s = 's' if remaining > 1 else ''
-                    message = f'{remaining} more image{s} at <{manga_url}>'
-                    await ctx.send(message)
+                headers['referer'] = link
+                img = await self.save(img_url, headers)
+            file = File(img, img_url.rpartition('/')[-1])
+            await ctx.send(file=file)
+        elif multi:
+            # multi_image_post        
+            num_pages = len(multi)
+            urls = (page['image_urls']['original'] for page in multi)
+            for img_url, i in zip(urls, range(4)):
+                fullsize_url = f'https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}'
+                headers['referer'] = fullsize_url
+                img = await self.save(img_url, headers)
+                file = File(img, img_url.rpartition('/')[-1])
+                await ctx.send(file=file)
+            remaining = num_pages - 4
+            if remaining > 0:
+                s = 's' if remaining > 1 else ''
+                message = f'{remaining} more image{s} at <{link.replace("medium", "manga")}>'
+                await ctx.send(message)
 
     async def get_ugoira(self, link, fmt='gif'):
         params = {
@@ -242,13 +231,7 @@ class Twitter:
         async with self.get(conv_url, params=params, timeout=None) as resp:
             text = await resp.text()
         url = json.loads(text)['url']
-        img = BytesIO()
-        async with self.get(url) as resp:
-            async for block in resp.content.iter_any():
-                if not block:
-                    break
-                img.write(block)
-        img.seek(0)
+        img = await self.save(url)
         name = url.rpartition('/')[2]
         return File(img, name)
 
