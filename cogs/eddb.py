@@ -168,7 +168,7 @@ class EDDB:
         await ctx.send('Database update in progress...')
         for name, table in self.file_to_table.items():
             self.update_tasks.append(self.loop.create_task(self.update_task(ctx.bot, name, table)))
-        for task in update_tasks:
+        for task in self.update_tasks:
             await asyncio.wait_for(task, None)
         self.updating = False
         self.logger.info('ed.db update complete')
