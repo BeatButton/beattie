@@ -1,9 +1,9 @@
+from typing import Union
+
 import discord
 from discord.ext import commands
 
-from utils.converters import Union
-
-member_or_channel = Union(discord.Member, discord.TextChannel)
+member_or_channel = Union[discord.Member, discord.TextChannel]
 
 
 class Manage:
