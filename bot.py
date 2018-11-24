@@ -29,11 +29,9 @@ class BeattieBot(commands.Bot):
     def __init__(self, command_prefix, *args, **kwargs):
         self_bot = kwargs.get('self_bot')
         if self_bot:
-            game = None
             status = discord.Status.idle
             pre = command_prefix
         else:
-            game = discord.Game(name='b>help')
             status = None
 
             async def pre(bot, message):
@@ -55,7 +53,7 @@ class BeattieBot(commands.Bot):
                 else:
                     return prefix + (guild_pre,)
 
-        super().__init__(pre, *args, **kwargs, activity=game, status=status, pm_help=None, case_insensitive=True)
+        super().__init__(pre, *args, **kwargs, status=status, pm_help=None, case_insensitive=True)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
 
