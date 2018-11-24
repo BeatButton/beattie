@@ -4,6 +4,7 @@ from io import BytesIO, StringIO
 import json
 import re
 import traceback
+from typing import Union
 
 import aiohttp
 import arsenic
@@ -19,6 +20,7 @@ from discord import File, HTTPException
 from context import BContext
 from utils.checks import is_owner_or
 from utils.contextmanagers import get as _get
+from utils.exceptions import ResponseError
 
 class TwitContext(BContext):
     async def send(self, *args, **kwargs):
@@ -165,6 +167,18 @@ class Twitter:
             await msg.delete()
         del self.record[message.id]
 
+    async def send(self, ctx, link):
+        mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
+        if mode == 1:
+            await ctx.send(link)
+        elif mode == 2:
+            img = await self.save(link)
+            filename = re.findall(r'\w+\.\w+', link)[-1]
+            file = File(img, filename)
+            await ctx.send(file=file)
+        else:
+            raise RuntimeError('Invalid twitter mode!')
+
     async def display_twitter_images(self, link, ctx):
         async with self.get_session(link) as sess:
             try:
@@ -172,9 +186,11 @@ class Twitter:
             except ArsenicTimeout:
                 return
 
-            for img in (await tweet.get_elements(self.twitter_img_selector))[1:]:
+            mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
+            idx = 1 if mode == 1 else 0
+            for img in (await tweet.get_elements(self.twitter_img_selector))[idx:]:
                 url = await img.get_attribute('src')
-                await ctx.send(f'{url}:orig')
+                await self.send(ctx, f'{url}:orig')
 
     async def display_pixiv_images(self, link, ctx):
         if 'mode' in link:
@@ -200,7 +216,11 @@ class Twitter:
         if single:
             img_url = single['original_image_url']
             if 'ugoira' in img_url:
-                file = await self.get_ugoira(link)
+                try:
+                    file = await self.get_ugoira(link)
+                except ResponseError:
+                    await ctx.send('Ugoira machine :b:roke')
+                    return
             else:
                 headers['referer'] = link
                 img = await self.save(img_url, headers)
@@ -243,7 +263,7 @@ class Twitter:
             a = single_image[0]
             href = a.get('href').lstrip('.')
             url = f'https://{resp.host}{href}'
-            await ctx.send(url)
+            await self.send(ctx, url)
             return
 
         images = root.xpath(self.hiccears_link_selector)
@@ -255,7 +275,7 @@ class Twitter:
             a = page.xpath(self.hiccears_img_selector)[0]
             href = a.get('href')[1:]  # trim leading '.'
             url = f'https://{resp.host}{href}'
-            await ctx.send(url)
+            await self.send(ctx, url)
         num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
@@ -273,7 +293,7 @@ class Twitter:
         images = root.xpath(self.tumblr_img_selector)
         for image in images[idx:4]:
             url = image.get('content')
-            await ctx.send(url)
+            await self.send(ctx, url)
         num = len(images) - 4
         if num > 0:
             s = 's' if num > 1 else ''
@@ -282,11 +302,18 @@ class Twitter:
 
     @commands.command()
     @is_owner_or(manage_guild=True)
-    async def twitter(self, ctx, enabled: bool=True):
+    async def twitter(self, ctx, enabled: Union[bool, str]=True):
         """Enable or disable sending non-previewed Twitter images."""
-        await self.bot.config.set(ctx.guild.id, twitter=enabled)
-        fmt = 'en' if enabled else 'dis'
-        await ctx.send(f'Sending Twitter images {fmt}abled.')
+        if isinstance(enabled, bool):
+            await self.bot.config.set(ctx.guild.id, twitter=int(enabled))
+            fmt = 'en' if enabled else 'dis'
+            await ctx.send(f'Sending Twitter images {fmt}abled.')
+        elif enabled in ('save', 'upload'):
+            await self.bot.config.set(ctx.guild.id, twitter=2)
+            await ctx.send('Twitter images will be directly uploaded.')
+        else:
+            raise commands.BadArgument(enabled)
+
 
 
 def setup(bot):
