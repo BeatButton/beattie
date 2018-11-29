@@ -37,7 +37,7 @@ class Remind:
         await self.start_timer()
 
     @commands.command()
-    async def remind(self, ctx, time: Time, *, topic=None):
+    async def remind(self, ctx, time: Time, *, topic: commands.clean_content = None):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
         if topic is not None:
