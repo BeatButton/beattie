@@ -24,6 +24,10 @@ from utils.exceptions import ResponseError
 
 class TwitContext(BContext):
     async def send(self, *args, **kwargs):
+        if kwargs.get('file') is not None:
+            if len(kwargs['file'].fp.getvalue()) >= 8_000_000:
+                args = ('Image too large to upload.',)
+                kwargs = {}
         msg = await super().send(*args, **kwargs)
         self.bot.get_cog('Twitter').record[self.message.id].append(msg)
         return msg
@@ -42,6 +46,10 @@ class Twitter:
 
     tumblr_url_expr = re.compile(r'https?://[\w-]+\.tumblr\.com/post/\d+')
     tumblr_img_selector = ".//meta[@property='og:image']"
+
+    mastodon_url_expr = re.compile(r'https?://[^/]+(?:\S+)+?/\d+')
+    mastodon_url_groups = re.compile(r'https?://([^/]+)(?:\S+)+?/(\d+)')
+    mastodon_api_fmt = 'https://{}/api/v1/statuses/{}'
 
     def __init__(self, bot):
         self.bot = bot
@@ -193,6 +201,7 @@ class Twitter:
                 await self.send(ctx, f'{url}:orig')
 
     async def display_pixiv_images(self, link, ctx):
+        mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
         if 'mode' in link:
             link = re.sub('(?<=mode=)\w+', 'medium', link)
         else:
@@ -228,16 +237,21 @@ class Twitter:
             await ctx.send(file=file)
         elif multi:
             # multi_image_post        
-            num_pages = len(multi)
             urls = (page['image_urls']['original'] for page in multi)
-            for img_url, i in zip(urls, range(4)):
+            num_pages = len(multi)
+            if mode == 1:
+                r = range(4)
+            else:
+                r = range(num_pages)
+            for img_url, i in zip(urls, r):
                 fullsize_url = f'https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}'
                 headers['referer'] = fullsize_url
                 img = await self.save(img_url, headers)
                 file = File(img, img_url.rpartition('/')[-1])
                 await ctx.send(file=file)
             remaining = num_pages - 4
-            if remaining > 0:
+            
+            if mode == 1 and remaining > 0:
                 s = 's' if remaining > 1 else ''
                 message = f'{remaining} more image{s} at <{link.replace("medium", "manga")}>'
                 await ctx.send(message)
@@ -265,9 +279,13 @@ class Twitter:
             url = f'https://{resp.host}{href}'
             await self.send(ctx, url)
             return
-
+        
         images = root.xpath(self.hiccears_link_selector)
-        for image in images[:4]:
+        mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
+        num = len(images) - 4
+        if mode == 1:
+            images = images[:4]
+        for image in images:
             href = image.get('href')
             url = f'https://{resp.host}{href[1:]}'
             async with self.get(url) as page_resp:
@@ -276,8 +294,7 @@ class Twitter:
             href = a.get('href')[1:]  # trim leading '.'
             url = f'https://{resp.host}{href}'
             await self.send(ctx, url)
-        num = len(images) - 4
-        if num > 0:
+        if mode == 1 and num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
             await ctx.send(message)
@@ -291,19 +308,45 @@ class Twitter:
                 root = etree.fromstring(await resp.read(), self.parser)
             idx = 0
         images = root.xpath(self.tumblr_img_selector)
-        for image in images[idx:4]:
+        mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
+        if mode == 1:
+            images = images[idx:4]
+            
+        for image in images:
             url = image.get('content')
             await self.send(ctx, url)
         num = len(images) - 4
-        if num > 0:
+        if mode == 1 and num > 0:
             s = 's' if num > 1 else ''
             message = f'{num} more image{s} at <{link}>'
             await ctx.send(message)
 
+    async def display_mastodon_images(self, link, ctx):
+        match = self.mastodon_url_groups.match(link)
+        api_url = self.mastodon_api_fmt.format(*match.groups())
+        async with self.session.get(api_url) as resp:
+            try:
+                post = await resp.json()
+            except:
+                return
+
+        mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
+        idx = 0 if mode != 1 or post['sensitive'] else 1
+
+        for image in post['media_attachments'][idx:]:
+            url = image['remote_url'] or image['url']
+            await self.send(ctx, url)
+
+        
+
     @commands.command()
     @is_owner_or(manage_guild=True)
     async def twitter(self, ctx, enabled: Union[bool, str]=True):
-        """Enable or disable sending non-previewed Twitter images."""
+        """Change settings for sending images from Twitter and other social media platforms.
+
+        off: do nothing
+        on: send links to images that aren't previewed by Discord
+        save: upload all images to the channel"""
         if isinstance(enabled, bool):
             await self.bot.config.set(ctx.guild.id, twitter=int(enabled))
             fmt = 'en' if enabled else 'dis'
