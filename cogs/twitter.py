@@ -47,8 +47,8 @@ class Twitter:
     tumblr_url_expr = re.compile(r'https?://[\w-]+\.tumblr\.com/post/\d+')
     tumblr_img_selector = ".//meta[@property='og:image']"
 
-    mastodon_url_expr = re.compile(r'https?://[^/]+(?:\S+)+?/\d+')
-    mastodon_url_groups = re.compile(r'https?://([^/]+)(?:\S+)+?/(\d+)')
+    mastodon_url_expr = re.compile(r'https?://\S+/\d+')
+    mastodon_url_groups = re.compile(r'https?://(\S+)(?:/.+)+/(\d+)')
     mastodon_api_fmt = 'https://{}/api/v1/statuses/{}'
 
     def __init__(self, bot):
@@ -153,9 +153,7 @@ class Twitter:
         else:
             await self.ready.wait()
         guild = message.guild
-        if guild is None:
-            return
-        if message.author == guild.me:
+        if guild is None or message.author.bot:
             return
         if not (await self.bot.config.get(guild.id)).get('twitter'):
             return
@@ -323,6 +321,8 @@ class Twitter:
 
     async def display_mastodon_images(self, link, ctx):
         match = self.mastodon_url_groups.match(link)
+        if match is None:
+            return
         api_url = self.mastodon_api_fmt.format(*match.groups())
         async with self.session.get(api_url) as resp:
             try:
