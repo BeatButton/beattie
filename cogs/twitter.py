@@ -47,7 +47,7 @@ class Twitter:
     tumblr_url_expr = re.compile(r'https?://[\w-]+\.tumblr\.com/post/\d+')
     tumblr_img_selector = ".//meta[@property='og:image']"
 
-    mastodon_url_expr = re.compile(r'https?://\S+/\d+')
+    mastodon_url_expr = re.compile(r'https?://\S+/\d+/?(?:$|\s)')
     mastodon_url_groups = re.compile(r'https?://(\S+)(?:/.+)+/(\d+)')
     mastodon_api_fmt = 'https://{}/api/v1/statuses/{}'
 
@@ -147,16 +147,19 @@ class Twitter:
         return img
 
     async def on_message(self, message):
-        if self.arsenic_session is None:
-            self.arsenic_session = object()
-            await self.__init()
-        else:
-            await self.ready.wait()
         guild = message.guild
         if guild is None or message.author.bot:
             return
         if not (await self.bot.config.get(guild.id)).get('twitter'):
             return
+        if 'http' not in message.content:
+            return
+
+        if self.arsenic_session is None:
+            self.arsenic_session = object()
+            await self.__init()
+        else:
+            await self.ready.wait()
         ctx = await self.bot.get_context(message, cls=TwitContext)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(message.content):
