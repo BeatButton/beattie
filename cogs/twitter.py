@@ -7,10 +7,6 @@ import traceback
 from typing import Union
 
 import aiohttp
-import arsenic
-from arsenic.browsers import Firefox
-from arsenic.errors import ArsenicTimeout, NoSuchElement
-from arsenic.services import Geckodriver
 from lxml import etree
 import yaml
 
@@ -35,8 +31,8 @@ class TwitContext(BContext):
 class Twitter:
     """Contains the capability to link images from tweets and other social media"""
     twitter_url_expr = re.compile(r'https?://(?:www\.)?twitter\.com/\S+/status/\d+')
-    tweet_selector = 'div.tweet.permalink-tweet'
-    twitter_img_selector = 'img[data-aria-label-part]'
+    tweet_selector = ".//div[contains(@class, 'permalink-tweet')]"
+    twitter_img_selector = './/img[@data-aria-label-part]'
 
     pixiv_url_expr =  re.compile(r'https?://(?:www\.)?pixiv\.net/member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*')
 
@@ -65,20 +61,13 @@ class Twitter:
         self.expr_dict = {getattr(self, f'{name}_url_expr'): getattr(self, f'display_{name}_images')
                           for name in names}
         self.record = defaultdict(list)
-        self.arsenic_session = None
-        self.ready = asyncio.Event()
         self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
+        bot.loop.create_task(self.__init())
 
     async def __init(self):
         await self.bot.wait_until_ready()
         if not self.bot.user.bot:
             self.bot.unload_extension(__name__)
-        else:
-            service = Geckodriver(binary='geckodriver', log_file=None)
-            browser = Firefox(**{'moz:firefoxOptions': {'args': ['-headless']}})
-            self.arsenic_session = await arsenic.start_session(service, browser)
-            self.get_session = self._get_context_manager()
-            self.ready.set()
 
     async def pixiv_login_loop(self):
         url = 'https://oauth.secure.pixiv.net/auth/token'
@@ -108,27 +97,7 @@ class Twitter:
             await asyncio.sleep(res['expires_in'])            
 
     def __unload(self):
-        if self.arsenic_session is not None:
-            self.bot.loop.create_task(arsenic.stop_session(self.arsenic_session))
         self.bot.loop.create_task(self.session.close())
-
-    def _get_context_manager(self):
-        session = self.arsenic_session
-        class get_session(asyncio.Lock):
-            def __init__(self, link, headers=None):
-                super().__init__()
-                self.link = link
-        
-            async def __aenter__(self):
-                await super().__aenter__()
-                await session.get(self.link)
-                session.release = self.release
-                return session
-
-            async def __aexit__(self, exc_type, exc_val, exc_tb):
-                await super().__aexit__(exc_type, exc_val, exc_tb)
-
-        return get_session
                 
     def get(self, *args, **kwargs):
         kwargs['headers'] = {**self.headers, **kwargs.get('headers', {})}
@@ -155,11 +124,6 @@ class Twitter:
         if 'http' not in message.content:
             return
 
-        if self.arsenic_session is None:
-            self.arsenic_session = object()
-            await self.__init()
-        else:
-            await self.ready.wait()
         ctx = await self.bot.get_context(message, cls=TwitContext)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(message.content):
@@ -189,17 +153,15 @@ class Twitter:
             raise RuntimeError('Invalid twitter mode!')
 
     async def display_twitter_images(self, link, ctx):
-        async with self.get_session(link) as sess:
-            try:
-                tweet = await sess.wait_for_element(60, self.tweet_selector)
-            except ArsenicTimeout:
-                return
+        async with self.get(link) as resp:
+             root = etree.fromstring(await resp.read(), self.parser)
+        tweet = root.xpath(self.tweet_selector)[0]
 
-            mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
-            idx = 1 if mode == 1 else 0
-            for img in (await tweet.get_elements(self.twitter_img_selector))[idx:]:
-                url = await img.get_attribute('src')
-                await self.send(ctx, f'{url}:orig')
+        mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
+        idx = 1 if mode == 1 else 0
+        for img in root.xpath(self.twitter_img_selector)[idx:]:
+            url = img.get('src')
+            await self.send(ctx, f'{url}:orig')
 
     async def display_pixiv_images(self, link, ctx):
         mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
