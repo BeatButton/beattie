@@ -159,7 +159,7 @@ class Twitter:
 
         mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
         idx = 1 if mode == 1 else 0
-        for img in root.xpath(self.twitter_img_selector)[idx:]:
+        for img in tweet.xpath(self.twitter_img_selector)[idx:]:
             url = img.get('src')
             await self.send(ctx, f'{url}:orig')
 
