@@ -128,8 +128,7 @@ class Twitter:
         for expr, func in self.expr_dict.items():
             for link in expr.findall(message.content):
                 try:
-                    async with ctx.typing():
-                        await func(link, ctx)
+                    await func(link, ctx)
                 except Exception as e:
                     fp = StringIO()
                     traceback.print_exception(type(e), e, e.__traceback__, file=fp)
@@ -295,10 +294,14 @@ class Twitter:
             except:
                 return
 
+        images = post.get('media_attachments')
+        if not images:
+            return
+
         mode = (await ctx.bot.config.get(ctx.guild.id)).get('twitter')
         idx = 0 if mode != 1 or post['sensitive'] else 1
 
-        for image in post['media_attachments'][idx:]:
+        for image in images[idx:]:
             url = image['remote_url'] or image['url']
             await self.send(ctx, url)
 
