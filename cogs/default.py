@@ -2,7 +2,7 @@ from discord import File, Member
 from discord.ext import commands
 
 
-class Default:
+class Default(commands.Cog):
     """Default useful commands."""
     @commands.command()
     async def avatar(self, ctx, member: Member = None):

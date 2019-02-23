@@ -9,7 +9,7 @@ from discord.ext import commands
 from utils.starwars import starroller, die_names
 
 
-class RPG:
+class RPG(commands.Cog):
     def __init__(self, bot):
         self.loop = bot.loop
         self.tarot_url = 'https://www.trustedtarot.com/cards/{}/'

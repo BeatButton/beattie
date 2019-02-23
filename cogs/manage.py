@@ -6,11 +6,11 @@ from discord.ext import commands
 member_or_channel = Union[discord.Member, discord.TextChannel]
 
 
-class Manage:
+class Manage(commands.Cog):
     def __init__(self, bot):
         self.config = bot.config
 
-    async def __global_check(self, ctx):
+    async def bot_check(self, ctx):
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
         cog = ctx.command.cog_name
@@ -18,7 +18,7 @@ class Manage:
         blacklist = guild_conf.get('cog_blacklist') or ''
         return f'{cog},' not in blacklist
 
-    async def __global_check_once(self, ctx):
+    async def bot_check_oce(self, ctx):
         if not ctx.channel.permissions_for(ctx.me).send_messages:
             return False
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
@@ -32,7 +32,7 @@ class Manage:
         channel_plonked = channel_conf.get('plonked', False)
         return not channel_plonked
 
-    async def __local_check(self, ctx):
+    async def cog_check(self, ctx):
         if ctx.guild is None:
             return False
         return (await ctx.bot.is_owner(ctx.author)

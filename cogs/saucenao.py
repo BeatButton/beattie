@@ -2,7 +2,7 @@ from lxml import etree
 
 from discord.ext import commands
 
-class SauceNao:
+class SauceNao(commands.Cog):
     sauce_url = 'https://saucenao.com/search.php'
 
     def __init__(self, bot):

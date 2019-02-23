@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 
-class Stats:
+class Stats(commands.Cog):
     """Bot usage statistics."""
 
     def __init__(self):

@@ -15,12 +15,12 @@ import math  # noqa: F401
 import objgraph   # noqa: F401
 
 
-class REPL:
+class REPL(commands.Cog):
     def __init__(self):
         self._last_result = None
         self.sessions = set()
 
-    async def __local_check(self, ctx):
+    async def cog_check(self, ctx):
         return await ctx.bot.is_owner(ctx.author)
 
     def cleanup_code(self, content):

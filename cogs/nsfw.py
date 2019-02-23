@@ -8,7 +8,7 @@ from discord.ext import commands
 from lxml import etree
 
 
-class NSFW:
+class NSFW(commands.Cog):
     view = {
         'gelbooru': 'https://gelbooru.com/index.php?page=post&s=view&id={}',
         'rule34': 'https://rule34.xxx/index.php?page=post&s=view&id={}',
@@ -23,7 +23,7 @@ class NSFW:
         'e621': 'https://e621.net/post/index.xml',
     }
 
-    def __local_check(self, ctx):
+    def cog_check(self, ctx):
         return ctx.channel.is_nsfw()
 
     def __init__(self, bot):

@@ -4,7 +4,7 @@ from lxml import etree
 import yaml
 
 
-class Wolfram:
+class Wolfram(commands.Cog):
     chars = {0xf74c: ' d',
              0xf74d: 'e',
              0xf74e: 'i',
