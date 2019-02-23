@@ -12,7 +12,7 @@ from utils.etc import reverse_insort
 Task = namedtuple('Task', 'time channel text')
 
 
-class Remind:
+class Remind(commands.Cog):
     def __init__(self, bot):
         self.queue = []
         self.loop = bot.loop
@@ -22,7 +22,7 @@ class Remind:
         self.timer = self.loop.create_task(asyncio.sleep(0))
         self.loop.create_task(self.__init())
 
-    def __unload(self):
+    def cog_unload(self):
         self.timer.cancel()
 
     async def __init(self):

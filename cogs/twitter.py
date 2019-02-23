@@ -28,7 +28,9 @@ class TwitContext(BContext):
         self.bot.get_cog('Twitter').record[self.message.id].append(msg)
         return msg
 
-class Twitter:
+Cog = commands.Cog
+
+class Twitter(Cog):
     """Contains the capability to link images from tweets and other social media"""
     twitter_url_expr = re.compile(r'https?://(?:www\.)?twitter\.com/\S+/status/\d+')
     tweet_selector = ".//div[contains(@class, 'permalink-tweet')]"
@@ -96,7 +98,7 @@ class Twitter:
                 yaml.dump(login, stream=fp)
             await asyncio.sleep(res['expires_in'])            
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
                 
     def get(self, *args, **kwargs):
@@ -115,6 +117,7 @@ class Twitter:
         img.seek(0)
         return img
 
+    @Cog.listener()
     async def on_message(self, message):
         guild = message.guild
         if guild is None or message.author.bot:
@@ -134,6 +137,7 @@ class Twitter:
                     traceback.print_exception(type(e), e, e.__traceback__, file=fp)
                     await ctx.send(f'```py\n{fp.getvalue()}```')
 
+    @Cog.listener()
     async def on_message_delete(self, message):
         for msg in self.record[message.id]:
             await msg.delete()

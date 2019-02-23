@@ -10,7 +10,7 @@ from utils.aioutils import anext, areader, make_batches
 from utils.asyncqlio import to_dict
 
 
-class EDDB:
+class EDDB(commands.Cog):
     file_to_table = {
         'commodities.json': Commodity,
         'systems_populated.jsonl': System,
