@@ -199,7 +199,7 @@ class Twitter(Cog):
             else:
                 headers['referer'] = link
                 img = await self.save(img_url, headers)
-            file = File(img, img_url.rpartition('/')[-1])
+                file = File(img, img_url.rpartition('/')[-1])
             await ctx.send(file=file)
         elif multi:
             # multi_image_post        
