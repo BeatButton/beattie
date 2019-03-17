@@ -53,7 +53,9 @@ class BeattieBot(commands.Bot):
                 else:
                     return prefix + (guild_pre,)
 
-        super().__init__(pre, *args, **kwargs, status=status, pm_help=None, case_insensitive=True)
+        help_command = commands.DefaultHelpCommand(dm_help=True)
+
+        super().__init__(pre, *args, **kwargs, status=status, case_insensitive=True, help_command=help_command)
         with open('config/config.yaml') as file:
             data = yaml.load(file)
 
