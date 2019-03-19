@@ -18,7 +18,7 @@ class Manage(commands.Cog):
         blacklist = guild_conf.get('cog_blacklist') or ''
         return f'{cog},' not in blacklist
 
-    async def bot_check_oce(self, ctx):
+    async def bot_check_once(self, ctx):
         if not ctx.channel.permissions_for(ctx.me).send_messages:
             return False
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
