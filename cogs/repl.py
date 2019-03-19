@@ -191,14 +191,8 @@ class REPL(commands.Cog):
     @commands.command()
     async def reload(self, ctx, *, cog):
         cog = f'cogs.{cog.lower()}'
-        ctx.bot.unload_extension(cog)
-        try:
-            ctx.bot.load_extension(cog)
-        except ModuleNotFoundError:
-            await ctx.send('Cog does not exist.')
-        else:
-            await ctx.send('Reload successful.')
-
+        ctx.bot.reload_extension(cog)
+        await ctx.send('Reload successful.')
 
 def setup(bot):
     bot.add_cog(REPL())
