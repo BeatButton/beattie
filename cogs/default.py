@@ -28,7 +28,7 @@ class Default(commands.Cog):
         msg = await ctx.send('...')
         delta = msg.created_at - ctx.message.created_at
         await msg.edit(content=f':ping_pong: **{delta.total_seconds()*1000:.0f}ms**')
-        msg = await ctx.channel.get_message(msg.id)
+        msg = await ctx.channel.fetch_message(msg.id)
         delta2 = msg.edited_at - ctx.message.created_at
         await msg.edit(content=f'{msg.content}\n**{delta2.total_seconds()*1000:.0f}ms**')
 
