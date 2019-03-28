@@ -292,11 +292,11 @@ class Twitter(Cog):
         if match is None:
             return
         api_url = self.mastodon_api_fmt.format(*match.groups())
-        async with self.session.get(api_url) as resp:
-            try:
+        try:
+            async with self.session.get(api_url) as resp:
                 post = await resp.json()
-            except:
-                return
+        except (ResponseError, aiohttp.ContentTypeError):
+            return
 
         images = post.get('media_attachments')
         if not images:
