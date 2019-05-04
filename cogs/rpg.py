@@ -12,13 +12,13 @@ from utils.starwars import starroller, die_names
 class RPG(commands.Cog):
     def __init__(self, bot):
         self.loop = bot.loop
-        self.tarot_url = 'https://www.trustedtarot.com/cards/{}/'
+        self.tarot_url = "https://www.trustedtarot.com/cards/{}/"
 
     @commands.command()
     async def choose(self, ctx, *options: commands.clean_content):
         """Choose between some options. Use quotes if they have spaces."""
         choice = random.choice(options)
-        await ctx.send(f'I choose:\n{choice}')
+        await ctx.send(f"I choose:\n{choice}")
 
     @commands.command()
     async def tarot(self, ctx, *suits):
@@ -34,31 +34,30 @@ class RPG(commands.Cog):
         async with ctx.typing():
             cards = []
             if not suits:
-                suits = ('cups', 'swords', 'wands', 'pentacles', 'major')
-            if 'minor' in suits:
-                suits = suits + ('cups', 'swords', 'wands', 'pentacles')
+                suits = ("cups", "swords", "wands", "pentacles", "major")
+            if "minor" in suits:
+                suits = suits + ("cups", "swords", "wands", "pentacles")
             suits = set(suit.lower() for suit in suits)
-            for root, dirs, files in os.walk('data/tarot'):
+            for root, dirs, files in os.walk("data/tarot"):
                 if any(suit in root for suit in suits):
-                    cards += [f'{root}/{card}' for card in files]
+                    cards += [f"{root}/{card}" for card in files]
             try:
-                card = random.choice(cards).replace('\\', '/')
+                card = random.choice(cards).replace("\\", "/")
             except IndexError:
-                await ctx.send('Please specify a valid suit, or no suit.')
+                await ctx.send("Please specify a valid suit, or no suit.")
                 return
-            match = re.match(r'(?:\w+/)+[IVX0_]*([\w_]+)\.jpg', card)
-            name = match.groups()[0].replace('_', ' ')
-            url = self.tarot_url.format(name.lower().replace(' ', '-'))
+            match = re.match(r"(?:\w+/)+[IVX0_]*([\w_]+)\.jpg", card)
+            name = match.groups()[0].replace("_", " ")
+            url = self.tarot_url.format(name.lower().replace(" ", "-"))
             embed = discord.Embed()
             embed.title = name
             embed.url = url
-            filename = card.replace('_', '').rpartition('/')[-1]
-            embed.set_image(url=f'attachment://{filename}')
-            await ctx.send(file=discord.File(f'{card}', filename),
-                           embed=embed)
+            filename = card.replace("_", "").rpartition("/")[-1]
+            embed.set_image(url=f"attachment://{filename}")
+            await ctx.send(file=discord.File(f"{card}", filename), embed=embed)
 
-    @commands.command(aliases=['r'])
-    async def roll(self, ctx, *, inp='1d20'):
+    @commands.command(aliases=["r"])
+    async def roll(self, ctx, *, inp="1d20"):
         """Roll some dice!
 
         Can roll multiple dice of any size, with modifiers.
@@ -74,21 +73,21 @@ class RPG(commands.Cog):
         t totals each roll
         You can join rolls with commas
         """
-        if inp == 'stats':
-            inp = '4d6v1x6t'
-        inp = ''.join(inp.split()).lower()
-        expr = r'^([\d]*d?\d+([+\-^v]\d+)?(x\d+)?([ts]{1,2})?,?)+(?<!,)$'
+        if inp == "stats":
+            inp = "4d6v1x6t"
+        inp = "".join(inp.split()).lower()
+        expr = r"^([\d]*d?\d+([+\-^v]\d+)?(x\d+)?([ts]{1,2})?,?)+(?<!,)$"
         if re.match(expr, inp) is None:
             raise commands.BadArgument
 
-        rolls = inp.split(',')
+        rolls = inp.split(",")
         args_batch = []
         for roll in rolls:
-            if 'd' not in roll:
-                roll = f'1d{roll}'
-            elif roll[0] == 'd':
-                roll = f'1{roll}'
-            args = tuple(int(arg) for arg in re.findall(r'\d+', roll))
+            if "d" not in roll:
+                roll = f"1d{roll}"
+            elif roll[0] == "d":
+                roll = f"1{roll}"
+            args = tuple(int(arg) for arg in re.findall(r"\d+", roll))
 
             num = args[0]
             sides = args[1]
@@ -99,16 +98,16 @@ class RPG(commands.Cog):
             lo_drop = 0
             mod = 0
 
-            if '^' in inp:
+            if "^" in inp:
                 hi_drop = args[2]
-            elif 'v' in inp:
+            elif "v" in inp:
                 lo_drop = args[2]
-            elif '+' in inp:
+            elif "+" in inp:
                 mod = args[2]
-            elif '-' in inp:
+            elif "-" in inp:
                 mod = -args[2]
 
-            if 'x' in inp:
+            if "x" in inp:
                 times = args[-1]
             else:
                 times = 1
@@ -122,46 +121,47 @@ class RPG(commands.Cog):
 
         out = []
         for roll, result in zip(rolls, results):
-            if 'd' not in roll:
-                roll = f'1d{roll}'
-            elif roll[0] == 'd':
-                roll = f'1{roll}'
-            total = 't' in roll
+            if "d" not in roll:
+                roll = f"1d{roll}"
+            elif roll[0] == "d":
+                roll = f"1{roll}"
+            total = "t" in roll
             if total:
                 result = [[sum(roll_)] for roll_ in result]
-            if 's' in inp:
+            if "s" in inp:
                 for roll_ in result:
                     roll_.sort()
                 result.sort()
             if total or len(result[0]) == 1:
                 result = [roll_[0] for roll_ in result]
-            if 'x' not in inp:
+            if "x" not in inp:
                 result = result[0]
-            out.append(f'{roll}: {result}')
-        await ctx.reply('\n'.join(out))
+            out.append(f"{roll}: {result}")
+        await ctx.reply("\n".join(out))
 
     def roll_helper(self, rolls):
         return [roller(*roll) for roll in rolls]
 
     @roll.error
     async def roll_error(self, ctx, e):
-        e = getattr(e, 'original', e)
-        if isinstance(e, (commands.MissingRequiredArgument,
-                      commands.BadArgument)):
-            await ctx.send('Invalid input. Valid input examples:'
-                           '\n1d20+3'
-                           '\n1d6'
-                           '\n2d8-4'
-                           '\n2d20^1'
-                           '\n4d6v1x6t')
+        e = getattr(e, "original", e)
+        if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
+            await ctx.send(
+                "Invalid input. Valid input examples:"
+                "\n1d20+3"
+                "\n1d6"
+                "\n2d8-4"
+                "\n2d20^1"
+                "\n4d6v1x6t"
+            )
         elif isinstance(e, asyncio.TimeoutError):
-            await ctx.reply('Your execution took too long. Roll fewer dice.')
+            await ctx.reply("Your execution took too long. Roll fewer dice.")
         elif isinstance(e, discord.HTTPException):
-            await ctx.reply('Your results were too long. Maybe sum them?')
+            await ctx.reply("Your results were too long. Maybe sum them?")
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    @commands.command(aliases=['shadroll', 'sr'])
+    @commands.command(aliases=["shadroll", "sr"])
     async def shadowroll(self, ctx, *, inp):
         """Roll some dice - for Shadowrun!
 
@@ -169,12 +169,12 @@ class RPG(commands.Cog):
         Roll N six-sided dice and return the number of dice that rolled 5 or 6.
         If you put "e" after the number, 6s are counted and then rerolled."""
         inp = inp.strip()
-        expr = r'^\d+e?$'
+        expr = r"^\d+e?$"
         if not re.match(expr, inp):
             raise commands.BadArgument
 
-        edge = 'e' in inp
-        num = int(inp.rstrip('e'))
+        edge = "e" in inp
+        num = int(inp.rstrip("e"))
 
         args = (num, edge)
         future = self.loop.run_in_executor(None, shadowroller, *args)
@@ -185,18 +185,15 @@ class RPG(commands.Cog):
 
     @shadowroll.error
     async def shadowroll_error(self, ctx, e):
-        e = getattr(e, 'original', e)
-        if isinstance(e, (commands.MissingRequiredArgument,
-                      commands.BadArgument)):
-            await ctx.send('Invalid input. Valid input examples:'
-                           '\n6'
-                           '\n13e')
+        e = getattr(e, "original", e)
+        if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
+            await ctx.send("Invalid input. Valid input examples:" "\n6" "\n13e")
         elif isinstance(e, futures.TimeoutError):
-            await ctx.reply('Your execution took too long. Roll fewer dice.')
+            await ctx.reply("Your execution took too long. Roll fewer dice.")
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    @commands.command(aliases=['sw'])
+    @commands.command(aliases=["sw"])
     async def starroll(self, ctx, *, inp):
         """Roll some dice - for Fantasy Flight Star Wars!
 
@@ -214,7 +211,7 @@ class RPG(commands.Cog):
         3a2p1b4d1c
         2f"""
         inp = inp.lower()
-        expr = r'^(\d+[a-z])+$'
+        expr = r"^(\d+[a-z])+$"
         match = re.match(expr, inp)
         if not match:
             raise commands.BadArgument
@@ -234,15 +231,15 @@ class RPG(commands.Cog):
             try:
                 result = await asyncio.wait_for(future, 10, loop=self.loop)
             except ValueError:
-                await ctx.send('Force dice cannot be used with other dice.')
+                await ctx.send("Force dice cannot be used with other dice.")
             else:
                 await ctx.reply(result)
 
     @starroll.error
     async def starroll_error(self, ctx, e):
-        e = getattr(e, 'original', e)
+        e = getattr(e, "original", e)
         if isinstance(e, futures.TimeoutError):
-            await ctx.reply('Your execution took too long. Roll fewer dice.')
+            await ctx.reply("Your execution took too long. Roll fewer dice.")
         else:
             await ctx.bot.handle_error(ctx, e)
 
@@ -253,7 +250,7 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
         pool = [random.randint(1, sides) for _ in range(num)]
         if lo_drop or hi_drop:
             sorted_pool = sorted(pool)
-            dropped_vals = sorted_pool[:lo_drop] + sorted_pool[num-hi_drop:]
+            dropped_vals = sorted_pool[:lo_drop] + sorted_pool[num - hi_drop :]
             for val in dropped_vals:
                 pool.remove(val)
         if mod:
@@ -278,13 +275,13 @@ def shadowroller(num, edge=False):
         if not (count6 > 0 and edge):
             break
         num = count6
-    s = 's' if hits != 1 else ''
+    s = "s" if hits != 1 else ""
     if count1 < rolls / 2:
-        result = f'{hits} hit{s}.'
+        result = f"{hits} hit{s}."
     elif hits == 0:
-        result = 'Critical glitch.'
+        result = "Critical glitch."
     else:
-        result = f'Glitch with {hits} hit{s}.'
+        result = f"Glitch with {hits} hit{s}."
 
     return result
 

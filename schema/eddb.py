@@ -2,8 +2,7 @@ from asyncqlio.orm.schema.column import Column
 from asyncqlio.orm.schema.index import Index
 from asyncqlio.orm.schema.relationship import Relationship, ForeignKey
 from asyncqlio.orm.schema.table import table_base
-from asyncqlio.orm.schema.types import \
-  BigInt, Boolean, Integer, Text, Timestamp
+from asyncqlio.orm.schema.types import BigInt, Boolean, Integer, Text, Timestamp
 
 Table = table_base()
 
@@ -15,7 +14,7 @@ class Commodity(Table):
     is_rare = Column(Boolean)
     category = Column(Text)
     idx_name = Index(name)
-    listings = Relationship(id, 'listing.commodity_id')
+    listings = Relationship(id, "listing.commodity_id")
 
 
 class System(Table):
@@ -29,7 +28,7 @@ class System(Table):
     security = Column(Text)
     power = Column(Text)
     idx_name = Index(name)
-    stations = Relationship(id, 'station.system_id')
+    stations = Relationship(id, "station.system_id")
 
 
 class Station(Table):
@@ -51,8 +50,8 @@ class Station(Table):
     is_planetary = Column(Boolean)
     selling_ships = Column(Text)
     idx_name = Index(name)
-    listings = Relationship(id, 'listing.station_id')
-    system = Relationship(system_id, System.id, load='joined', use_iter=False)
+    listings = Relationship(id, "listing.station_id")
+    system = Relationship(system_id, System.id, load="joined", use_iter=False)
 
 
 class Listing(Table):
@@ -64,7 +63,5 @@ class Listing(Table):
     sell_price = Column(Integer)
     demand = Column(Integer)
     collected_at = Column(Timestamp)
-    station = Relationship(station_id, Station.id,
-                           load='joined', use_iter=False)
-    commodity = Relationship(commodity_id, Commodity.id,
-                             load='joined', use_iter=False)
+    station = Relationship(station_id, Station.id, load="joined", use_iter=False)
+    commodity = Relationship(commodity_id, Commodity.id, load="joined", use_iter=False)
