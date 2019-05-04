@@ -7,4 +7,5 @@ def bot_only(coro):
         if not self.user.bot:
             return
         return await coro(self, *args, **kwargs)
+
     return inner

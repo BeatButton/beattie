@@ -12,33 +12,32 @@ from utils.asyncqlio import to_dict
 
 class EDDB(commands.Cog):
     file_to_table = {
-        'commodities.json': Commodity,
-        'systems_populated.jsonl': System,
-        'stations.jsonl': Station,
-        'listings.csv': Listing,
+        "commodities.json": Commodity,
+        "systems_populated.jsonl": System,
+        "stations.jsonl": Station,
+        "listings.csv": Listing,
     }
 
     def __init__(self, bot):
         self.updating = False
         self.loop = bot.loop
-        self.url = 'https://eddb.io/archive/v5/'
+        self.url = "https://eddb.io/archive/v5/"
         self.db = bot.db
         self.db.bind_tables(Table)
         self.parsers = {
-            'csv': self.csv_formatter,
-            'json': self.single_json,
-            'jsonl': self.multi_json,
+            "csv": self.csv_formatter,
+            "json": self.single_json,
+            "jsonl": self.multi_json,
         }
         self.logger = bot.logger
         self.get = bot.get
         self.update_tasks = []
 
-    @commands.group(aliases=['elite', 'ed'])
+    @commands.group(aliases=["elite", "ed"])
     async def eddb(self, ctx):
         """Commands for getting data from EDDB.io"""
         if ctx.invoked_subcommand is None:
-            await ctx.send('Invalid command passed. '
-                           f'Try "{ctx.prefix}help eddb"')
+            await ctx.send("Invalid command passed. " f'Try "{ctx.prefix}help eddb"')
 
     @eddb.command(hidden=True)
     @commands.is_owner()
@@ -48,19 +47,20 @@ class EDDB(commands.Cog):
 
     @eddb.command(hidden=True)
     @commands.is_owner()
-    async def log(self, ctx, enabled: bool=True):
+    async def log(self, ctx, enabled: bool = True):
         if enabled:
-            logger = logging.getLogger('asyncqlio')
+            logger = logging.getLogger("asyncqlio")
             logger.setLevel(logging.DEBUG)
             handler = logging.FileHandler(
-                filename='asyncqlio.log', encoding='utf-8', mode='w')
+                filename="asyncqlio.log", encoding="utf-8", mode="w"
+            )
             logger.addHandler(handler)
-            await ctx.send('Logging enabled.')
+            await ctx.send("Logging enabled.")
         else:
             self.logger = None
-            await ctx.send('Logging disabled.')
+            await ctx.send("Logging disabled.")
 
-    @eddb.command(aliases=['sys'])
+    @eddb.command(aliases=["sys"])
     async def system(self, ctx, *, search):
         """Searches the database for a system."""
         async with ctx.typing(), self.db.get_session() as s:
@@ -69,23 +69,26 @@ class EDDB(commands.Cog):
 
             if system:
                 system = to_dict(system)
-                system['population'] = f'{system["population"]:,d}'
-                del system['id']
-                output = '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                   for key, val in system.items() if val)
+                system["population"] = f'{system["population"]:,d}'
+                del system["id"]
+                output = "\n".join(
+                    f'{key.replace("_", " ").title()}: {val}'
+                    for key, val in system.items()
+                    if val
+                )
             else:
-                output = f'System {search} not found.'
+                output = f"System {search} not found."
         await ctx.send(output)
 
-    @eddb.command(aliases=['sta'])
+    @eddb.command(aliases=["sta"])
     async def station(self, ctx, *, search):
         """Searches the database for a station.
            Optionally, specify a system.
 
            Input in the format: station[, system]"""
         target_system = None
-        if ',' in search:
-            search, target_system = (i.strip() for i in search.split(','))
+        if "," in search:
+            search, target_system = (i.strip() for i in search.split(","))
 
         async with ctx.typing(), self.db.get_session() as s:
             query = s.select(Station).where(Station.name.ilike(search))
@@ -97,24 +100,29 @@ class EDDB(commands.Cog):
             if station:
                 system = station.system.name
                 station = to_dict(station)
-                del station['id']
-                del station['system_id']
-                output = (f'System: {system}\n'
-                          f'Station: {station.pop("name")}\n' +
-                          '\n'.join(f'{key.replace("_", " ").title()}: {val}'
-                                    for key, val in station.items() if val))
+                del station["id"]
+                del station["system_id"]
+                output = (
+                    f"System: {system}\n"
+                    f'Station: {station.pop("name")}\n'
+                    + "\n".join(
+                        f'{key.replace("_", " ").title()}: {val}'
+                        for key, val in station.items()
+                        if val
+                    )
+                )
             else:
-                output = 'Station not found.'
+                output = "Station not found."
 
             await ctx.send(output)
 
-    @eddb.command(aliases=['c', 'com', 'comm'])
+    @eddb.command(aliases=["c", "com", "comm"])
     async def commodity(self, ctx, *, search):
         """Searches the database for information on a commodity
            Specify the station to get listing data.
 
            Input in the format: commodity[, station[, system]]"""
-        search = [term.strip() for term in search.split(',')]
+        search = [term.strip() for term in search.split(",")]
         comm, *rest = search + [None, None]
         sta, sys, *_ = rest
         async with ctx.typing(), self.db.get_session() as s:
@@ -124,11 +132,13 @@ class EDDB(commands.Cog):
                 commodity = await query.first()
                 if commodity:
                     commodity = to_dict(commodity)
-                    del commodity['id']
-                    output = '\n'.join(f'{k.replace("_", " ").title()}: {v}'
-                                       for k, v in commodity.items())
+                    del commodity["id"]
+                    output = "\n".join(
+                        f'{k.replace("_", " ").title()}: {v}'
+                        for k, v in commodity.items()
+                    )
                 else:
-                    output = 'Commodity not found.'
+                    output = "Commodity not found."
 
             else:
                 query = s.select(Listing)
@@ -144,35 +154,41 @@ class EDDB(commands.Cog):
                     station = listing.station.name
                     system = listing.station.system.name
                     listing = to_dict(listing)
-                    del listing['id']
-                    del listing['station_id']
-                    del listing['commodity_id']
-                    output = (f'Commodity: {commodity}\n'
-                              f'Station: {station}\n'
-                              f'System: {system}\n' +
-                              '\n'.join(f'{k.replace("_", " ").title()}: {v}'
-                                        for k, v in listing.items()))
+                    del listing["id"]
+                    del listing["station_id"]
+                    del listing["commodity_id"]
+                    output = (
+                        f"Commodity: {commodity}\n"
+                        f"Station: {station}\n"
+                        f"System: {system}\n"
+                        + "\n".join(
+                            f'{k.replace("_", " ").title()}: {v}'
+                            for k, v in listing.items()
+                        )
+                    )
                 else:
-                    output = 'Commodity not found at station.'
+                    output = "Commodity not found at station."
 
         await ctx.send(output)
 
-    @eddb.command(aliases=['u', 'upd'])
+    @eddb.command(aliases=["u", "upd"])
     @commands.is_owner()
     async def update(self, ctx):
         """Updates the database. Will take some time."""
         if self.updating:
-            await ctx.send('Database update still in progress.')
+            await ctx.send("Database update still in progress.")
             return
         self.updating = True
-        await ctx.send('Database update in progress...')
+        await ctx.send("Database update in progress...")
         for name, table in self.file_to_table.items():
-            self.update_tasks.append(self.loop.create_task(self.update_task(ctx.bot, name, table)))
+            self.update_tasks.append(
+                self.loop.create_task(self.update_task(ctx.bot, name, table))
+            )
         for task in self.update_tasks:
             await asyncio.wait_for(task, None)
         self.updating = False
-        self.logger.info('ed.db update complete')
-        await ctx.send('Database update complete.')
+        self.logger.info("ed.db update complete")
+        await ctx.send("Database update complete.")
 
     @update.error
     async def update_error(self, ctx, e):
@@ -183,19 +199,18 @@ class EDDB(commands.Cog):
         await ctx.bot.handle_error(ctx, e)
 
     async def update_task(self, bot, name, table):
-        self.logger.info(f'Downloading {name}')
-        async with self.get(f'{self.url}{name}') as resp:
-            self.logger.info(f'Creating table for {name}')
-            if name.endswith('.json'):
+        self.logger.info(f"Downloading {name}")
+        async with self.get(f"{self.url}{name}") as resp:
+            self.logger.info(f"Creating table for {name}")
+            if name.endswith(".json"):
                 file = resp.content
             else:
                 file = (line.decode() async for line in resp.content)
             await self.make_table(file, name, table)
-            self.logger.info(f'Table {name} created.')
-        
+            self.logger.info(f"Table {name} created.")
 
     async def make_table(self, file, name, table):
-        file_ext = name.rpartition('.')[2]
+        file_ext = name.rpartition(".")[2]
         file = self.parsers[file_ext](file)
         table_name = table.__tablename__
         cols = {col.name: col.type.sql() for col in table.iter_columns()}
@@ -206,34 +221,33 @@ class EDDB(commands.Cog):
         async for batch in make_batches(file, batch_size):
             async with self.db.get_session() as s:
                 async for row in batch:
-                    row = {col: self.coerce(row[col], val)
-                           for col, val in cols.items()}
+                    row = {col: self.coerce(row[col], val) for col, val in cols.items()}
                     await s.add(table(**row))
 
     @staticmethod
     def coerce(value, type_):
         if isinstance(value, dict):
-            value = value['name']
+            value = value["name"]
         if isinstance(value, list):
-            value = ', '.join(value)
-        if type_ == 'TEXT':
+            value = ", ".join(value)
+        if type_ == "TEXT":
             if not value:
-                return ''
+                return ""
             else:
                 return str(value)
-        if type_ in ('INTEGER', 'BIGINT'):
+        if type_ in ("INTEGER", "BIGINT"):
             try:
                 return int(value)
             except (ValueError, TypeError):
                 return 0
-        if type_ == 'REAL':
+        if type_ == "REAL":
             try:
                 return float(value)
             except (ValueError, TypeError):
                 return 0.0
-        if type_ == 'BOOLEAN':
+        if type_ == "BOOLEAN":
             return bool(value)
-        if type_ == 'TIMESTAMP':
+        if type_ == "TIMESTAMP":
             return datetime.fromtimestamp(int(value))
         return value
 

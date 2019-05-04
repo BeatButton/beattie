@@ -29,13 +29,14 @@ class null:
 
     def __await__(self):
         return self
-        yield    
+        yield
 
 
 class tmp_dl:
     """Downloads a file and returns an asynchronous handle to it,
     deleting it after the with block."""
-    def __init__(self, session, url, encoding='utf8'):
+
+    def __init__(self, session, url, encoding="utf8"):
         self.url = url
         self.session = session
         self.encoding = encoding
@@ -43,10 +44,10 @@ class tmp_dl:
         self.file = None
 
     async def __aenter__(self):
-        if not os.path.isdir('tmp'):
-            os.mkdir('tmp')
+        if not os.path.isdir("tmp"):
+            os.mkdir("tmp")
 
-        with open(self.path, 'wb') as file:
+        with open(self.path, "wb") as file:
             async with get(self.session, self.url) as resp:
                 async for block in resp.content.iter_any():
                     file.write(block)
@@ -64,17 +65,18 @@ class tmp_dl:
 
 class get:
     """Returns a response to a URL."""
+
     def __init__(self, session, url, **kwargs):
         self.session = session
         self.url = url
-        headers = kwargs.get('headers', {})
-        if 'Accept-Encoding' not in headers:
-            headers['Accept-Encoding'] = 'gzip, deflate, sdch'
-        if 'user-agent' not in headers:
-            headers['user-agent'] = 'BeattieBot/1.0 (BeatButton)'
-        kwargs['headers'] = headers
-        if 'timeout' not in kwargs:
-            kwargs['timeout'] = None
+        headers = kwargs.get("headers", {})
+        if "Accept-Encoding" not in headers:
+            headers["Accept-Encoding"] = "gzip, deflate, sdch"
+        if "user-agent" not in headers:
+            headers["user-agent"] = "BeattieBot/1.0 (BeatButton)"
+        kwargs["headers"] = headers
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = None
         self.kwargs = kwargs
 
     async def __aenter__(self):

@@ -9,7 +9,7 @@ from utils.converters import Time
 from utils.etc import reverse_insort
 
 
-Task = namedtuple('Task', 'time channel text')
+Task = namedtuple("Task", "time channel text")
 
 
 class Remind(commands.Cog):
@@ -31,9 +31,10 @@ class Remind(commands.Cog):
             return
         await Message.create(if_not_exists=True)
         async with self.db.get_session() as s:
-            query = s.select(Message).order_by(Message.time, sort_order='desc')
-            self.queue = [Task(*record.to_dict().values())
-                          async for record in await query.all()]
+            query = s.select(Message).order_by(Message.time, sort_order="desc")
+            self.queue = [
+                Task(*record.to_dict().values()) async for record in await query.all()
+            ]
         await self.start_timer()
 
     @commands.command()
@@ -41,21 +42,21 @@ class Remind(commands.Cog):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
         if topic is not None:
-            topic = f'that {topic}'
+            topic = f"that {topic}"
         else:
-            topic = 'about something'
-        message = (f'{ctx.author.mention}\n'
-                   f'You asked to be reminded {topic}.')
+            topic = "about something"
+        message = f"{ctx.author.mention}\n" f"You asked to be reminded {topic}."
         await self.schedule_message(time, ctx.channel.id, message)
         await ctx.send(f"Okay, I'll remind you.")
 
     @remind.error
     async def remind_error(self, ctx, e):
         if isinstance(e, commands.BadArgument):
-            await ctx.send('Bad input. Valid input examples:\n'
-                           'remind 10m pizza\n'
-                           'remind "two days" check progress'
-                           )
+            await ctx.send(
+                "Bad input. Valid input examples:\n"
+                "remind 10m pizza\n"
+                'remind "two days" check progress'
+            )
         else:
             await ctx.bot.handle_error(ctx, e)
 
@@ -76,9 +77,11 @@ class Remind(commands.Cog):
             await channel.send(task.text)
         async with self.db.get_session() as s:
 
-            query = s.select(Message).where((Message.time == task.time)
-                                            & (Message.channel == task.channel)
-                                            & (Message.text == task.text))
+            query = s.select(Message).where(
+                (Message.time == task.time)
+                & (Message.channel == task.channel)
+                & (Message.text == task.text)
+            )
             message = await query.first()
             await s.remove(message)
 

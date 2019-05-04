@@ -3,6 +3,7 @@ import sys
 
 DEFAULT = object()
 
+
 async def anext(aiterable, default=DEFAULT):
     try:
         return await aiterable.__anext__()
@@ -11,23 +12,27 @@ async def anext(aiterable, default=DEFAULT):
             return default
         raise e from None
 
+
 def aiter(obj):
-    if hasattr(obj, '__aiter__'):
+    if hasattr(obj, "__aiter__"):
         return obj
-    elif hasattr(obj, '__iter__'):
+    elif hasattr(obj, "__iter__"):
         return iter_to_aiter(obj)
     else:
         raise TypeError
 
+
 async def iter_to_aiter(obj):
     for elem in obj:
         yield elem
+
 
 async def achain(*aiters):
     for aiterator in aiters:
         aiterator = aiter(aiterator)
         async for elem in aiterator:
             yield elem
+
 
 async def azip(*iters):
     sentinel = object()
@@ -41,10 +46,12 @@ async def azip(*iters):
             result.append(elem)
         yield tuple(result)
 
+
 async def aenumerate(aiterator, start=0):
     async for elem in aiterator:
         yield start, elem
         start += 1
+
 
 async def aislice(aiterator, *args):
     s = slice(*args)
@@ -68,10 +75,12 @@ async def aislice(aiterator, *args):
         for _ in zip(range(idx + 1, stop)):
             pass
 
+
 async def areader(aiterable):
     """An async csv reader."""
     async for line in aiterable:
-        yield [field.strip() for field in line.split(',')]
+        yield [field.strip() for field in line.split(",")]
+
 
 async def make_batches(iterable, size):
     """Make batches of size from iterable. This would be equivalent to slices
@@ -80,9 +89,11 @@ async def make_batches(iterable, size):
     async for first in iterator:
         yield achain([first], aislice(iterator, size - 1))
 
+
 def do_every(seconds, coro, *args, **kwargs):
     async def task():
         while True:
             await asyncio.sleep(seconds)
             await coro(*args, **kwargs)
+
     return asyncio.get_event_loop().create_task(task())

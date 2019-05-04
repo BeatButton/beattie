@@ -6,6 +6,8 @@ def is_owner_or(**perms):
         if await ctx.bot.is_owner(ctx.author):
             return True
         permissions = ctx.channel.permissions_for(ctx.author)
-        return all(getattr(permissions, perm, None) == value
-                   for perm, value in perms.items())
+        return all(
+            getattr(permissions, perm, None) == value for perm, value in perms.items()
+        )
+
     return commands.check(predicate)

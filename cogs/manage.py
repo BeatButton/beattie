@@ -15,8 +15,8 @@ class Manage(commands.Cog):
             return True
         cog = ctx.command.cog_name
         guild_conf = await self.config.get(ctx.guild.id)
-        blacklist = guild_conf.get('cog_blacklist') or ''
-        return f'{cog},' not in blacklist
+        blacklist = guild_conf.get("cog_blacklist") or ""
+        return f"{cog}," not in blacklist
 
     async def bot_check_once(self, ctx):
         if not ctx.channel.permissions_for(ctx.me).send_messages:
@@ -25,18 +25,20 @@ class Manage(commands.Cog):
             return True
         guild = ctx.guild
         member_conf = await self.config.get_member(guild.id, ctx.author.id)
-        member_plonked = member_conf.get('plonked', False)
+        member_plonked = member_conf.get("plonked", False)
         if member_plonked:
             return False
         channel_conf = await self.config.get_channel(guild.id, ctx.channel.id)
-        channel_plonked = channel_conf.get('plonked', False)
+        channel_plonked = channel_conf.get("plonked", False)
         return not channel_plonked
 
     async def cog_check(self, ctx):
         if ctx.guild is None:
             return False
-        return (await ctx.bot.is_owner(ctx.author)
-                or ctx.channel.permissions_for(ctx.author).manage_guild)
+        return (
+            await ctx.bot.is_owner(ctx.author)
+            or ctx.channel.permissions_for(ctx.author).manage_guild
+        )
 
     @commands.command()
     async def enable(self, ctx, cog):
@@ -45,13 +47,13 @@ class Manage(commands.Cog):
             await ctx.send("That cog doesn't exist.")
             return
         guild_conf = await self.config.get(ctx.guild.id)
-        blacklist = guild_conf.get('cog_blacklist') or ''
-        if f'{cog},' not in blacklist:
-            await ctx.send('Cog is already enabled.')
+        blacklist = guild_conf.get("cog_blacklist") or ""
+        if f"{cog}," not in blacklist:
+            await ctx.send("Cog is already enabled.")
             return
-        blacklist = blacklist.replace(f'{cog},', '')
+        blacklist = blacklist.replace(f"{cog},", "")
         await self.config.set(ctx.guild.id, cog_blacklist=blacklist)
-        await ctx.send('Cog enabled for this guild.')
+        await ctx.send("Cog enabled for this guild.")
 
     @commands.command()
     async def disable(self, ctx, cog):
@@ -60,19 +62,19 @@ class Manage(commands.Cog):
             await ctx.send("That cog doesn't exist.")
             return
         guild_conf = await self.config.get(ctx.guild.id)
-        blacklist = guild_conf.get('cog_blacklist') or ''
-        if f'{cog},' in blacklist:
-            await ctx.send('Cog is already disabled.')
+        blacklist = guild_conf.get("cog_blacklist") or ""
+        if f"{cog}," in blacklist:
+            await ctx.send("Cog is already disabled.")
             return
-        blacklist += f'{cog},'
+        blacklist += f"{cog},"
         await self.config.set(ctx.guild.id, cog_blacklist=blacklist)
-        await ctx.send('Cog disabled for this guild.')
+        await ctx.send("Cog disabled for this guild.")
 
     @commands.command()
-    async def prefix(self, ctx, prefix=''):
+    async def prefix(self, ctx, prefix=""):
         """Set a custom prefix for this guild. Pass no prefix to reset."""
         await self.config.set(ctx.guild.id, prefix=prefix)
-        await ctx.send('Guild prefix set.')
+        await ctx.send("Guild prefix set.")
 
     @commands.command()
     async def plonk(self, ctx, target: member_or_channel):
@@ -94,14 +96,14 @@ class Manage(commands.Cog):
 
     async def _plonker(self, ctx, target, plonked):
         if isinstance(target, discord.Member):
-            type_ = 'Member'
+            type_ = "Member"
             update = self.config.update_member
         else:
-            type_ = 'Channel'
+            type_ = "Channel"
             update = self.config.update_channel
-        un = 'un' if not plonked else ''
+        un = "un" if not plonked else ""
         await update(ctx.guild.id, target.id, plonked=plonked)
-        await ctx.send(f'{type_} {un}plonked.')
+        await ctx.send(f"{type_} {un}plonked.")
 
 
 def setup(bot):
