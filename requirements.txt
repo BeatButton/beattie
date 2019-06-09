@@ -1,4 +1,4 @@
-git+https://github.com/SunDwarf/asyncqlio.git#egg=asyncqlio
+git+https://github.com/BeatButton/asyncqlio.git#egg=asyncqlio
 asyncjisho
 asyncpg
 discord.py
