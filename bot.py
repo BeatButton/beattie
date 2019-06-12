@@ -54,7 +54,7 @@ class BeattieBot(commands.Bot):
                 else:
                     return prefix + (guild_pre,)
 
-        help_command = commands.DefaultHelpCommand(dm_help=True)
+        help_command = commands.DefaultHelpCommand(dm_help=None)
 
         super().__init__(
             pre,
@@ -126,7 +126,7 @@ class BeattieBot(commands.Bot):
         elif isinstance(e, commands.BadArgument):
             await ctx.send("Bad arguments.")
         elif isinstance(e, exceptions.ResponseError):
-            await ctx.send(f"An HTTP request to {e.url} failed with error code {e.code}")
+            await ctx.send(f"An HTTP request to <{e.url}> failed with error code {e.code}")
         elif not isinstance(e, self.command_ignore):
             await ctx.send(f"{type(e).__name__}: {e}")
             self.logger.exception(
