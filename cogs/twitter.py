@@ -182,11 +182,11 @@ class Twitter(Cog):
     async def display_pixiv_images(self, link, ctx):
         mode = (await ctx.bot.config.get(ctx.guild.id)).get("twitter")
         if "mode" in link:
-            link = re.sub("(?<=mode=)\w+", "medium", link)
+            link = re.sub(r"(?<=mode=)\w+", "medium", link)
         else:
             link = f"{link}&mode=medium"
         link = link.replace("http://", "https://")
-        illust_id = re.search("illust_id=(\d+)", link).groups()[0]
+        illust_id = re.search(r"illust_id=(\d+)", link).groups()[0]
         headers = {
             "App-OS": "ios",
             "App-OS-Version": "10.3.1",
