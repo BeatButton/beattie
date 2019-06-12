@@ -86,7 +86,7 @@ class get:
             return await self.__aenter__()
         if self.resp.status != 200:
             self.resp.close()
-            raise ResponseError(code=self.resp.status)
+            raise ResponseError(code=self.resp.status, url=self.resp.url)
         return self.resp
 
     async def __aexit__(self, exc_type, exc, tb):
