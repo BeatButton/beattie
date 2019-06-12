@@ -148,9 +148,7 @@ class Twitter(Cog):
                 try:
                     await func(link, ctx)
                 except Exception as e:
-                    fp = StringIO()
-                    traceback.print_exception(type(e), e, e.__traceback__, file=fp)
-                    await ctx.send(f"```py\n{fp.getvalue()}```")
+                    await ctx.bot.handle_error(ctx, e)
 
     @Cog.listener()
     async def on_message_delete(self, message):
