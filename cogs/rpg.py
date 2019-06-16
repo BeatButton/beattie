@@ -6,7 +6,7 @@ import re
 import discord
 from discord.ext import commands
 
-from utils.starwars import starroller, die_names
+from utils.starwars import die_names, starroller
 
 
 class RPG(commands.Cog):

@@ -1,7 +1,6 @@
-from discord.ext import commands
-
-from lxml import etree
 import yaml
+from discord.ext import commands
+from lxml import etree
 
 
 class Wolfram(commands.Cog):

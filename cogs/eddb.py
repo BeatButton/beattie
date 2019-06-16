@@ -1,11 +1,11 @@
 import asyncio
-from datetime import datetime
 import json
 import logging
+from datetime import datetime
 
 from discord.ext import commands
 
-from schema.eddb import Table, Commodity, System, Station, Listing
+from schema.eddb import Commodity, Listing, Station, System, Table
 from utils.aioutils import anext, areader, make_batches
 from utils.asyncqlio import to_dict
 

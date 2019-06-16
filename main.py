@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
-from pathlib import Path
 import sys
+from pathlib import Path
 
-from discord.ext.commands import when_mentioned_or
 import yaml
+from discord.ext.commands import when_mentioned_or
 
 from bot import BeattieBot
 

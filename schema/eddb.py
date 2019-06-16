@@ -1,8 +1,9 @@
 from asyncqlio.orm.schema.column import Column
 from asyncqlio.orm.schema.index import Index
-from asyncqlio.orm.schema.relationship import Relationship, ForeignKey
+from asyncqlio.orm.schema.relationship import ForeignKey, Relationship
 from asyncqlio.orm.schema.table import table_base
-from asyncqlio.orm.schema.types import BigInt, Boolean, Integer, Text, Timestamp
+from asyncqlio.orm.schema.types import (BigInt, Boolean, Integer, Text,
+                                        Timestamp)
 
 Table = table_base()
 
