@@ -4,10 +4,9 @@ from datetime import datetime
 
 from discord.ext import commands
 
-from schema.remind import Table, Message
+from schema.remind import Message, Table
 from utils.converters import Time
 from utils.etc import reverse_insort
-
 
 Task = namedtuple("Task", "time channel text")
 

@@ -1,6 +1,5 @@
-from lxml import etree
-
 from discord.ext import commands
+from lxml import etree
 
 
 class SauceNao(commands.Cog):

@@ -1,6 +1,6 @@
-from collections import defaultdict
 import random
 import re
+from collections import defaultdict
 from urllib import parse
 
 import discord

@@ -1,4 +1,4 @@
-from schema.config import Table, Guild, Member, Channel
+from schema.config import Channel, Guild, Member, Table
 from utils.asyncqlio import to_dict
 
 

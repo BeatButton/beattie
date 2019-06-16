@@ -1,18 +1,17 @@
 import asyncio
-from contextlib import redirect_stdout
 import inspect
 import io
+# imports for REPL env
+import math  # noqa: F401
 import os
 import sys
 import textwrap
 import traceback
+from contextlib import redirect_stdout
+
 import discord
-from discord.ext import commands
-
-
-# imports for REPL env
-import math  # noqa: F401
 import objgraph  # noqa: F401
+from discord.ext import commands
 
 
 class REPL(commands.Cog):

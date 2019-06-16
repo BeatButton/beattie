@@ -1,17 +1,16 @@
 import asyncio
-from collections import defaultdict
-from io import BytesIO, StringIO
 import json
 import re
 import traceback
+from collections import defaultdict
+from io import BytesIO, StringIO
 from typing import Union
 
 import aiohttp
-from lxml import etree
 import yaml
-
-from discord.ext import commands
 from discord import File, HTTPException
+from discord.ext import commands
+from lxml import etree
 
 from context import BContext
 from utils.checks import is_owner_or

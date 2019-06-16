@@ -1,8 +1,8 @@
 from datetime import datetime
 from time import mktime
 
-from discord.ext.commands import BadArgument, Converter
 import parsedatetime
+from discord.ext.commands import BadArgument, Converter
 
 
 class Time(Converter):
