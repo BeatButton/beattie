@@ -49,10 +49,9 @@ class BeattieBot(commands.Bot):
                     return prefix
                 guild_conf = await bot.config.get(message.guild.id)
                 guild_pre = guild_conf.get("prefix")
-                if not guild_pre:
-                    return prefix
-                else:
-                    return prefix + (guild_pre,)
+                if guild_pre:
+                    prefix = prefix + (guild_pre,)
+                return prefix
 
         help_command = commands.DefaultHelpCommand(dm_help=None)
 
@@ -120,7 +119,8 @@ class BeattieBot(commands.Bot):
                 log.unlink()
 
     async def handle_error(self, ctx, e):
-        e = getattr(e, "original", e)
+        if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):
+            e = e.original
         if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send("Missing required arguments.")
         elif isinstance(e, commands.BadArgument):
