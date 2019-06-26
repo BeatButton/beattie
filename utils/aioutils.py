@@ -37,7 +37,7 @@ async def achain(*aiters):
 async def azip(*iters):
     sentinel = object()
     aiters = [aiter(it) for it in iters]
-    while iterators:
+    while iters:
         result = []
         for it in aiters:
             elem = await anext(it, sentinel)
@@ -62,7 +62,7 @@ async def aislice(aiterator, *args):
     try:
         next_idx = next(indexes)
     except StopIteration:
-        for _ in azip(range(start), aiterator):
+        async for _ in azip(range(start), aiterator):
             pass
         return
     idx = 0
