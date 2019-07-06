@@ -52,8 +52,8 @@ class Twitter(Cog):
     tumblr_url_expr = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
     tumblr_img_selector = ".//meta[@property='og:image']"
 
-    mastodon_url_expr = re.compile(r"https?://\S+/\d+/?(?:>|$|\s)")
-    mastodon_url_groups = re.compile(r"https?://([^\s/]+)(?:/.+)+/(\d+)")
+    mastodon_url_expr = re.compile(r"https?://\S+/\w+/?(?:>|$|\s)")
+    mastodon_url_groups = re.compile(r"https?://([^\s/]+)(?:/.+)+/(\w+)")
     mastodon_api_fmt = "https://{}/api/v1/statuses/{}"
 
     def __init__(self, bot):
