@@ -4,15 +4,14 @@ from datetime import datetime
 
 from discord.ext import commands
 
-from schema.remind import Table, Message
+from schema.remind import Message, Table
 from utils.converters import Time
 from utils.etc import reverse_insort
 
+Task = namedtuple("Task", "time channel text")
 
-Task = namedtuple('Task', 'time channel text')
 
-
-class Remind:
+class Remind(commands.Cog):
     def __init__(self, bot):
         self.queue = []
         self.loop = bot.loop
@@ -22,7 +21,7 @@ class Remind:
         self.timer = self.loop.create_task(asyncio.sleep(0))
         self.loop.create_task(self.__init())
 
-    def __unload(self):
+    def cog_unload(self):
         self.timer.cancel()
 
     async def __init(self):
@@ -31,31 +30,32 @@ class Remind:
             return
         await Message.create(if_not_exists=True)
         async with self.db.get_session() as s:
-            query = s.select(Message).order_by(Message.time, sort_order='desc')
-            self.queue = [Task(*record.to_dict().values())
-                          async for record in await query.all()]
+            query = s.select(Message).order_by(Message.time, sort_order="desc")
+            self.queue = [
+                Task(*record.to_dict().values()) async for record in await query.all()
+            ]
         await self.start_timer()
 
     @commands.command()
-    async def remind(self, ctx, time: Time, *, topic=None):
+    async def remind(self, ctx, time: Time, *, topic: commands.clean_content = None):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
         if topic is not None:
-            topic = f'that {topic}'
+            topic = f"that {topic}"
         else:
-            topic = 'about something'
-        message = (f'{ctx.author.mention}\n'
-                   f'You asked to be reminded {topic}.')
+            topic = "about something"
+        message = f"{ctx.author.mention}\n" f"You asked to be reminded {topic}."
         await self.schedule_message(time, ctx.channel.id, message)
         await ctx.send(f"Okay, I'll remind you.")
 
     @remind.error
     async def remind_error(self, ctx, e):
         if isinstance(e, commands.BadArgument):
-            await ctx.send('Bad input. Valid input examples:\n'
-                           'remind 10m pizza\n'
-                           'remind "two days" check progress'
-                           )
+            await ctx.send(
+                "Bad input. Valid input examples:\n"
+                "remind 10m pizza\n"
+                'remind "two days" check progress'
+            )
         else:
             await ctx.bot.handle_error(ctx, e)
 
@@ -76,9 +76,11 @@ class Remind:
             await channel.send(task.text)
         async with self.db.get_session() as s:
 
-            query = s.select(Message).where((Message.time == task.time)
-                                            & (Message.channel == task.channel)
-                                            & (Message.text == task.text))
+            query = s.select(Message).where(
+                (Message.time == task.time)
+                & (Message.channel == task.channel)
+                & (Message.text == task.text)
+            )
             message = await query.first()
             await s.remove(message)
 

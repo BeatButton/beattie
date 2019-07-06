@@ -1,13 +1,15 @@
 import discord
 
+
 class Paginator:
     """Paginates between a list of embeds."""
+
     def __init__(self, ctx, pages):
         self.ctx = ctx
         self.pages = pages
         self.message = None
         self.curr = 0
-                
+
     async def run(self):
         self.message = await self.ctx.send(embed=self.pages[0])
         self.ctx.bot.add_listener(self.on_reaction_add)
@@ -35,7 +37,7 @@ class Paginator:
         await self.message.edit(embed=self.pages[self.curr])
 
     async def first(self):
-        self.curr = 0        
+        self.curr = 0
         await self.update()
 
     async def next(self):
@@ -43,7 +45,7 @@ class Paginator:
             return
         self.curr += 1
         await self.update()
-        
+
     async def back(self):
         if self.curr == 0:
             return
@@ -61,12 +63,5 @@ class Paginator:
         except discord.Forbidden:
             for emoji in self.handlers:
                 await self.message.remove_reaction(emoji, self.ctx.me)
-                
-    
-    handlers = {
-        '⏮': first,
-        '◀': back,
-        '⏹': stop,
-        '▶': next,
-        '⏭': last,
-    }
+
+    handlers = {"⏮": first, "◀": back, "⏹": stop, "▶": next, "⏭": last}
