@@ -90,9 +90,25 @@ class Manage(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def clear(self, ctx, num: int):
+    async def purge(self, ctx, num: int):
         """Delete the last num messages from the channel."""
         await ctx.channel.purge(limit=num)
+
+    @commands.command()
+    @commands.bot_has_permissions(manage_messages=True)
+    async def clean(self, ctx, num: int):
+        """Delete the last num messages from the bot in the channel."""
+        await ctx.channel.purge(limit=num, check=lambda msg: msg.author == ctx.me)
+
+    @commands.command()
+    @commands.bot_has_permissions(kick_members=True)
+    async def kick(self, ctx, member: discord.Member, *, reason: str):
+        await member.kick(reason=reason)
+
+    @commands.command()
+    @commands.bot_has_permissions(ban_members=True)
+    async def ban(self, ctx, member: discord.Member, *, reason: str):
+        await member.ban(reason=reason)
 
     async def _plonker(self, ctx, target, plonked):
         if isinstance(target, discord.Member):
