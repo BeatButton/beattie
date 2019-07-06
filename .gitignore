@@ -92,3 +92,4 @@ ENV/
 .ropeproject
 
 /logs.tar
+**/.mypy_cache

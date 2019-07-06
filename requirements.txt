@@ -1,8 +1,7 @@
-git+https://github.com/Rapptz/discord.py.git@rewrite#egg=discord.py
-git+https://github.com/SunDwarf/asyncqlio.git#egg=asyncqlio
-arsenic
+git+https://github.com/BeatButton/asyncqlio.git#egg=asyncqlio
 asyncjisho
 asyncpg
+discord.py
 lxml
 objgraph
 parsedatetime
