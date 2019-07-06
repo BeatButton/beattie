@@ -63,7 +63,7 @@ class Twitter(Cog):
             "Gecko/20100101 Firefox/60.0"
         }
         with open("config/headers.yaml") as fp:
-            data = yaml.load(fp)
+            data = yaml.safe_load(fp)
         self.headers.update(data)
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = etree.HTMLParser()
@@ -89,7 +89,7 @@ class Twitter(Cog):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
             with open("config/logins.yaml") as fp:
-                login = yaml.load(fp)
+                login = yaml.safe_load(fp)
             data = {
                 "get_secure_url": 1,
                 "client_id": "MOBrBDS8blbauoSck0ZfDbtuzpyT",

@@ -17,7 +17,7 @@ else:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 with open("config/config.yaml") as file:
-    config = yaml.load(file)
+    config = yaml.safe_load(file)
 
 self_bot = "self" in sys.argv
 debug = "debug" in sys.argv

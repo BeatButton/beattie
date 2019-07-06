@@ -64,7 +64,7 @@ class BeattieBot(commands.Bot):
             help_command=help_command,
         )
         with open("config/config.yaml") as file:
-            data = yaml.load(file)
+            data = yaml.safe_load(file)
 
         password = data.get("config_password", "")
         self.loglevel = data["loglevel"]
