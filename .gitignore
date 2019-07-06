@@ -2,6 +2,7 @@
 __pycache__/
 config/
 .vscode/
+.idea/
 *.py[cod]
 *$py.class
 
@@ -89,3 +90,5 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+/logs.tar
