@@ -9,7 +9,7 @@ class Wolfram(commands.Cog):
     def __init__(self):
         self.url = "http://api.wolframalpha.com/v2/query"
         with open("config/config.yaml") as file:
-            data = yaml.load(file)
+            data = yaml.safe_load(file)
         self.key = data["wolfram_key"]
 
     @commands.command(aliases=["wolf", "w"])
