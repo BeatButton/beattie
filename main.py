@@ -19,24 +19,20 @@ else:
 with open("config/config.yaml") as file:
     config = yaml.safe_load(file)
 
-self_bot = "self" in sys.argv
 debug = "debug" in sys.argv
 loop = asyncio.get_event_loop()
 
-if self_bot:
-    prefixes = [config["self_prefix"]]
-    token = config["self"]
-elif config["debug"] or debug:
+if config["debug"] or debug:
     prefixes = [config["test_prefix"]]
     token = config["test_token"]
 else:
     prefixes = config["prefixes"]
     token = config["token"]
-bot = BeattieBot(when_mentioned_or(*prefixes), self_bot=self_bot)
+bot = BeattieBot(when_mentioned_or(*prefixes))
 
-if self_bot or debug:
+if debug:
     logger = logging.getLogger("discord")
-    logger.setLevel(logging.CRITICAL)
+    logger.setLevel(logging.DEBUG)
     bot.logger = logger
 else:
     bot.new_logger()
@@ -50,4 +46,4 @@ for extension in extensions:
     except Exception as e:
         print(f"Failed to load extension {extension}\n{type(e).__name__}: {e}")
 
-bot.run(token, bot=not self_bot)
+bot.run(token)
