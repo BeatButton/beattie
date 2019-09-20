@@ -104,8 +104,19 @@ class Twitter(Cog):
                 data["username"] = login["username"]
                 data["password"] = login["password"]
 
-            async with self.session.post(url, data=data) as resp:
+            hash_secret = (
+                "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
+            )
+
+            now = datetime.now().isoformat()
+            headers = {
+                "X-Client-Time": now,
+                "X-Client-Hash": md5((now + hash_secret).encode("utf-8")).hexdigest(),
+            }
+
+            async with self.session.post(url, data=data, headers=headers) as resp:
                 res = (await resp.json())["response"]
+
             self.headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
             with open("config/logins.yaml", "w") as fp:
