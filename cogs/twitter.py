@@ -280,7 +280,11 @@ class Twitter(Cog):
             url = f"https://{resp.host}{href[1:]}"
             async with self.get(url) as page_resp:
                 page = etree.fromstring(await page_resp.read(), self.parser)
-            a = page.xpath(self.hiccears_img_selector)[0]
+            try:
+                a = page.xpath(self.hiccears_img_selector)[0]
+            except IndexError:
+                # hit a premium gallery teaser thumbnail
+                return
             href = a.get("href")[1:]  # trim leading '.'
             url = f"https://{resp.host}{href}"
             await self.send(ctx, url)
