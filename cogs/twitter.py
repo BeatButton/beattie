@@ -198,7 +198,7 @@ class Twitter(Cog):
         else:
             link = f"{link}&mode=medium"
         link = link.replace("http://", "https://")
-        illust_id = re.search(r"iillust_id=(\d+)|artworks/(\d+)", link).groups()[0]
+        illust_id = re.search(r"illust_id=(\d+)|artworks/(\d+)", link).groups()[0]
         headers = {
             "App-OS": "ios",
             "App-OS-Version": "10.3.1",
