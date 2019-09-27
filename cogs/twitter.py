@@ -245,7 +245,7 @@ class Twitter(Cog):
             if mode == 1 and remaining > 0:
                 s = "s" if remaining > 1 else ""
                 message = (
-                    f'{remaining} more image{s} at <{link.replace("medium", "manga")}>'
+                    f'{remaining} more image{s} at <https://www.pixiv.net/en/artworks/{illust_id}>'
                 )
                 await ctx.send(message)
 
