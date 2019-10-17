@@ -17,7 +17,6 @@ from config import Config
 from context import BContext
 from utils import contextmanagers, exceptions
 from utils.aioutils import do_every
-from utils.etc import default_channel
 
 
 class BeattieBot(commands.Bot):
