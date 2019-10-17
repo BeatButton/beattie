@@ -15,7 +15,7 @@ from discord.ext import commands
 
 from config import Config
 from context import BContext
-from utils import contextmanagers, decorators, exceptions
+from utils import contextmanagers, exceptions
 from utils.aioutils import do_every
 from utils.etc import default_channel
 
@@ -139,16 +139,8 @@ class BeattieBot(commands.Bot):
         print(self.user.name)
         print(self.user.id)
         print("------")
-        if not self.user.bot:
-            self.owner_id = self.user.id
-            afk = True
-            status = discord.Status.invisible
-            game = None
-        else:
-            afk = False
-            status = discord.Status.online
-            game = discord.Game(name="b>help")
-        await self.change_presence(activity=game, status=status, afk=afk)
+        game = discord.Game(name="b>help")
+        await self.change_presence(activity=game)
 
     async def process_commands(self, message):
         assert isinstance(message, discord.Message)

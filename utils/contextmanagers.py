@@ -5,64 +5,6 @@ from aiohttp import ServerDisconnectedError
 from .exceptions import ResponseError
 
 
-class null:
-    def __init__(self, *args, **kwargs):
-        return
-
-    def __enter__(self, *args, **kwargs):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        pass
-
-    async def __aenter__(self, *args, **kwargs):
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
-
-    async def __getattr__(self, attr):
-        return self
-
-    def __call__(self, *_, **__):
-        return self
-
-    def __await__(self):
-        return self
-        yield
-
-
-class tmp_dl:
-    """Downloads a file and returns an asynchronous handle to it,
-    deleting it after the with block."""
-
-    def __init__(self, session, url, encoding="utf8"):
-        self.url = url
-        self.session = session
-        self.encoding = encoding
-        self.path = f'tmp/{self.url.rpartition("/")[-1]}'
-        self.file = None
-
-    async def __aenter__(self):
-        if not os.path.isdir("tmp"):
-            os.mkdir("tmp")
-
-        with open(self.path, "wb") as file:
-            async with get(self.session, self.url) as resp:
-                async for block in resp.content.iter_any():
-                    file.write(block)
-        self.file = open(self.path, encoding=self.encoding)
-        return self.file
-
-    async def __aexit__(self, exc_type, exc, tb):
-        if self.file:
-            self.file.close()
-        try:
-            os.remove(self.path)
-        except FileNotFoundError:
-            pass
-
-
 class get:
     """Returns a response to a URL."""
 

@@ -11,12 +11,12 @@ class BContext(commands.Context):
     as well as support use with self bots"""
 
     async def reply(self, content, sep=",\n", **kwargs):
-        if self.me.bot and self.guild:
+        if self.guild:
             content = f"{self.author.display_name}{sep}{content}"
         return await self.send(content, **kwargs)
 
     async def mention(self, content, sep=",\n", **kwargs):
-        if self.me.bot and self.guild:
+        if self.guild:
             content = f"{self.author.mention}{sep}{content}"
         return await self.send(content, **kwargs)
 
@@ -32,20 +32,4 @@ class BContext(commands.Context):
                 kwargs["files"].append(file)
             else:
                 kwargs["file"] = file
-        if self.me.bot:
-            return await super().send(content, embed=embed, **kwargs)
-        else:
-            edit_content = self.message.content
-            if content is not None:
-                edit_content = f"{edit_content}\n{content}"
-            if content or embed:
-                await self.message.edit(content=edit_content, embed=embed)
-            if kwargs:
-                return await super().send(**kwargs)
-            return self.message
-
-    def typing(self):
-        if self.me.bot:
-            return super().typing()
-        else:
-            return contextmanagers.null()
+        return await super().send(content, embed=embed, **kwargs)
