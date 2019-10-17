@@ -8,10 +8,3 @@ def reverse_insort(seq, val, lo=0, hi=None):
         else:
             lo = mid + 1
     seq.insert(lo, val)
-
-
-def default_channel(member):
-    for channel in member.guild.text_channels:
-        if channel.permissions_for(member).send_messages:
-            return channel
-    return None
