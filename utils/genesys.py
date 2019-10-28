@@ -2,27 +2,27 @@ import random
 
 
 class Result:
-    def __init__(self, advantages=0, hits=0, triumphs=0):
+    def __init__(self, advantages=0, successs=0, triumphs=0):
         self.advantages = advantages
-        self.hits = hits
+        self.successs = successs
         self.triumphs = triumphs
 
     def __repr__(self):
         return (
             f"{type(self).__name__}"
-            f"({self.advantages}, {self.hits}, {self.triumphs})"
+            f"({self.advantages}, {self.successs}, {self.triumphs})"
         )
 
     def __str__(self):
         ret = []
 
-        if self.hits > 0:
-            s = "s" if self.hits > 1 else ""
-            ret.append(f"{self.hits} hit{s}")
-        elif self.hits < 0:
-            misses = -self.hits
-            es = "es" if misses > 1 else ""
-            ret.append(f"{misses} miss{es}")
+        if self.successs > 0:
+            s = "s" if self.successs > 1 else ""
+            ret.append(f"{self.successs} success{s}")
+        elif self.successs < 0:
+            failures = -self.successs
+            s = "s" if failures > 1 else ""
+            ret.append(f"{failures} failure{s}")
 
         if self.advantages > 0:
             s = "s" if self.advantages > 1 else ""
@@ -50,12 +50,12 @@ class Result:
         if isinstance(other, Result):
             return type(self)(
                 self.advantages + other.advantages,
-                self.hits + other.hits,
+                self.successs + other.successs,
                 self.triumphs + other.triumphs,
             )
         elif isinstance(other, int):
             return type(self)(
-                self.advantages + other, self.hits + other, self.triumphs + other
+                self.advantages + other, self.successs + other, self.triumphs + other
             )
         else:
             return NotImplemented
@@ -64,13 +64,13 @@ class Result:
 
     def __mul__(self, other):
         return type(self)(
-            self.advantages * other, self.hits * other, self.triumphs * other
+            self.advantages * other, self.successs * other, self.triumphs * other
         )
 
     __rmul__ = __mul__
 
     def __neg__(self):
-        return type(self)(-self.advantages, -self.hits, -self.triumphs)
+        return type(self)(-self.advantages, -self.successs, -self.triumphs)
 
 
 class Force:
@@ -109,11 +109,11 @@ class Force:
 
 
 wash = Result()
-adv = Result(advantages=1)
-hit = Result(hits=1)
+advantage = Result(advantages=1)
+success = Result(successs=1)
 triumph = Result(triumphs=1)
-dis = -adv
-miss = -hit
+disadvantage = -advantage
+failure = -success
 despair = -triumph
 light = Force(light=1)
 dark = Force(dark=1)
@@ -128,37 +128,37 @@ die_names = {
     "f": "force",
 }
 
-stardice = {
-    "boost": (wash, wash, hit, hit + adv, 2 * adv, adv),
-    "setback": (wash, wash, miss, miss, dis, dis),
-    "ability": (wash, hit, hit, 2 * hit, 2 * adv, adv, hit + adv, 2 * adv),
-    "difficulty": (wash, miss, 2 * miss, dis, dis, dis, 2 * dis, miss + dis),
+dice = {
+    "boost": (wash, wash, success, success + advantage, 2 * advantage, advantage),
+    "setback": (wash, wash, failure, failure, disadvantage, disadvantage),
+    "ability": (wash, success, success, 2 * success, 2 * advantage, advantage, success + advantage, 2 * advantage),
+    "difficulty": (wash, failure, 2 * failure, disadvantage, disadvantage, disadvantage, 2 * disadvantage, failure + disadvantage),
     "proficiency": (
         wash,
-        hit,
-        hit,
-        2 * hit,
-        2 * hit,
-        adv,
-        hit + adv,
-        hit + adv,
-        hit + adv,
-        adv * 2,
-        adv * 2,
+        success,
+        success,
+        2 * success,
+        2 * success,
+        advantage,
+        success + advantage,
+        success + advantage,
+        success + advantage,
+        advantage * 2,
+        advantage * 2,
         triumph,
     ),
     "challenge": (
         wash,
-        miss,
-        miss,
-        2 * miss,
-        2 * miss,
-        dis,
-        dis,
-        miss + dis,
-        miss + dis,
-        2 * dis,
-        2 * dis,
+        failure,
+        failure,
+        2 * failure,
+        2 * failure,
+        disadvantage,
+        disadvantage,
+        failure + disadvantage,
+        failure + disadvantage,
+        2 * disadvantage,
+        2 * disadvantage,
         despair,
     ),
     "force": (
@@ -178,12 +178,12 @@ stardice = {
 }
 
 
-def starroller(**kwargs):
+def genesysroller(**kwargs):
     if "force" in kwargs:
         if len(kwargs) > 1:
             raise ValueError
-        return sum(random.choice(stardice["force"]) for _ in range(kwargs["force"]))
+        return sum(random.choice(dice["force"]) for _ in range(kwargs["force"]))
     result = Result()
     for die, times in kwargs.items():
-        result += sum(random.choice(stardice[die]) for _ in range(times))
+        result += sum(random.choice(dice[die]) for _ in range(times))
     return result
