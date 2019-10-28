@@ -2,11 +2,12 @@ import asyncio
 import os
 import random
 import re
+from concurrent import futures
 
 import discord
 from discord.ext import commands
 
-from utils.starwars import die_names, starroller
+from utils.genesys import die_names, genesysroller
 
 
 class RPG(commands.Cog):
@@ -193,9 +194,9 @@ class RPG(commands.Cog):
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    @commands.command(aliases=["sw"])
-    async def starroll(self, ctx, *, inp):
-        """Roll some dice - for Fantasy Flight Star Wars!
+    @commands.command(aliases=["gr"])
+    async def genesysroll(self, ctx, *, inp):
+        """Roll some dice - for Fantasy Flight Genesys!
 
         Available dice:
         b[oost]
@@ -211,12 +212,15 @@ class RPG(commands.Cog):
         3a2p1b4d1c
         2f"""
         inp = inp.lower()
-        expr = r"^(\d+[a-z])+$"
+        expr = r"^(?:\d+[a-z])+$"
         match = re.match(expr, inp)
         if not match:
             raise commands.BadArgument
+        expr = r"\d+[a-z]"
+        matches = re.finditer(expr, inp)
         dice = {}
-        for roll in match.groups():
+        for match in matches:
+            roll = match.group(0)
             num = int(roll[:-1])
             die_code = roll[-1]
             try:
@@ -226,7 +230,7 @@ class RPG(commands.Cog):
                 return
             dice[die] = num
 
-        future = self.loop.run_in_executor(None, lambda: starroller(**dice))
+        future = self.loop.run_in_executor(None, lambda: genesysroller(**dice))
         async with ctx.typing():
             try:
                 result = await asyncio.wait_for(future, 10, loop=self.loop)
@@ -235,8 +239,8 @@ class RPG(commands.Cog):
             else:
                 await ctx.reply(result)
 
-    @starroll.error
-    async def starroll_error(self, ctx, e):
+    @genesysroll.error
+    async def genesysroll_error(self, ctx, e):
         e = getattr(e, "original", e)
         if isinstance(e, futures.TimeoutError):
             await ctx.reply("Your execution took too long. Roll fewer dice.")
