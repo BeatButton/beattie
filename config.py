@@ -15,34 +15,34 @@ class Config:
         for table in [Guild, Member, Channel]:
             await table.create(if_not_exists=True)
 
-    async def get(self, gid):
+    async def get_guild(self, guild_id):
         try:
-            return self._cache[gid]
+            return self._cache[guild_id]
         except KeyError:
             async with self.db.get_session() as s:
-                query = s.select(Guild).where(Guild.id == gid)
+                query = s.select(Guild).where(Guild.id == guild_id)
                 guild = await query.first()
             if guild is None:
-                res = {"id": gid}
+                res = {"id": guild_id}
             else:
                 res = to_dict(guild)
-            self._cache[gid] = res
+            self._cache[guild_id] = res
             return res
 
-    async def set(self, gid, **kwargs):
+    async def set_guild(self, guild_id, **kwargs):
         async with self.db.get_session() as s:
-            row = Guild(id=gid, **kwargs)
+            row = Guild(id=guild_id, **kwargs)
             query = s.insert.rows(row)
             query = query.on_conflict(Guild.id).update(
                 getattr(Guild, name) for name in kwargs
             )
             await query.run()
         try:
-            self._cache[gid].update(kwargs)
+            self._cache[guild_id].update(kwargs)
         except KeyError:
             pass
 
-    async def remove(self, gid):
+    async def remove_guild(self, gid):
         async with self.db.get_session() as s:
             query = s.select(Guild).where(Guild.id == gid)
             guild = await query.first()
@@ -54,7 +54,23 @@ class Config:
         self._cache["member"].pop(gid, None)
         self._cache["channel"].pop(gid, None)
 
-    async def update_member(self, gid, uid, **kwargs):
+    async def get_member(self, guild_id, uid):
+        try:
+            return self._cache["member"].setdefault(guild_id, {})[uid]
+        except KeyError:
+            async with self.db.get_session() as s:
+                query = s.select(Member).where(
+                    (Member.id == uid) & (Member.guild_id == guild_id)
+                )
+                member = await query.first()
+            if member is None:
+                ret = {"guild_id": guild_id, "id": uid}
+            else:
+                ret = to_dict(member)
+            self._cache["member"][guild_id][uid] = ret
+            return ret
+
+    async def set_member(self, gid, uid, **kwargs):
         async with self.db.get_session() as s:
             row = Member(id=uid, guild_id=gid, **kwargs)
             query = s.insert.rows(row)
@@ -67,23 +83,23 @@ class Config:
         except KeyError:
             pass
 
-    async def get_member(self, gid, uid):
+    async def get_channel(self, guild_id, channel_id):
         try:
-            return self._cache["member"].setdefault(gid, {})[uid]
+            return self._cache["channel"].setdefault(guild_id, {})[channel_id]
         except KeyError:
             async with self.db.get_session() as s:
-                query = s.select(Member).where(
-                    (Member.id == uid) & (Member.guild_id == gid)
+                query = s.select(Channel).where(
+                    (Channel.id == channel_id) & (Channel.guild_id == guild_id)
                 )
-                member = await query.first()
-            if member is None:
-                ret = {"guild_id": gid, "id": uid}
+                channel = await query.first()
+            if channel is None:
+                ret = {"guild_id": guild_id, "id": channel_id}
             else:
-                ret = to_dict(member)
-            self._cache["member"][gid][uid] = ret
+                ret = to_dict(channel)
+            self._cache["channel"][guild_id][channel_id] = ret
             return ret
 
-    async def update_channel(self, gid, cid, **kwargs):
+    async def set_channel(self, gid, cid, **kwargs):
         async with self.db.get_session() as s:
             row = Channel(id=cid, guild_id=gid, **kwargs)
             query = s.insert.rows(row)
@@ -95,19 +111,3 @@ class Config:
             self._cache["channel"][gid][cid].update(kwargs)
         except KeyError:
             pass
-
-    async def get_channel(self, gid, cid):
-        try:
-            return self._cache["channel"].setdefault(gid, {})[cid]
-        except KeyError:
-            async with self.db.get_session() as s:
-                query = s.select(Channel).where(
-                    (Channel.id == cid) & (Channel.guild_id == gid)
-                )
-                channel = await query.first()
-            if channel is None:
-                ret = {"guild_id": gid, "id": cid}
-            else:
-                ret = to_dict(channel)
-            self._cache["channel"][gid][cid] = ret
-            return ret
