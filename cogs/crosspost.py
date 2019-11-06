@@ -422,6 +422,7 @@ class Crosspost(Cog):
 
     @crosspost.command()
     async def pages(self, ctx, max_pages: int):
+        """Set the maximum number of images to send. Set to 0 for no limit."""
         await self.bot.config.set_guild(ctx.guild.id, crosspost_max_pages=max_pages)
         await ctx.send(f"Max crosspost pages set to {max_pages}")
 
