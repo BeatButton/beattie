@@ -11,6 +11,7 @@ class Guild(Table):
     prefix = Column(Text, nullable=True)
     crosspost_enabled = Column(Boolean, nullable=True)
     crosspost_mode = Column(Integer, nullable=True)
+    crosspost_max_pages = Column(Integer, nullable=True)
 
 
 class Member(Table):
