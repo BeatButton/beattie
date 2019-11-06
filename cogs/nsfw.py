@@ -24,7 +24,7 @@ class NSFW(commands.Cog):
     }
 
     def cog_check(self, ctx):
-        return ctx.channel.is_nsfw()
+        return isinstance(ctx.channel, discord.DMChannel) or ctx.channel.is_nsfw()
 
     def __init__(self, bot):
         self.cache = defaultdict(lambda: defaultdict(dict))
