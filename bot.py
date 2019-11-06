@@ -46,7 +46,7 @@ class BeattieBot(commands.Bot):
                     prefix = tuple(prefix)
                 if message.guild is None:
                     return prefix
-                guild_conf = await bot.config.get(message.guild.id)
+                guild_conf = await bot.config.get_guild(message.guild.id)
                 guild_pre = guild_conf.get("prefix")
                 if guild_pre:
                     prefix = prefix + (guild_pre,)
