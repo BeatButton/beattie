@@ -292,7 +292,6 @@ class Crosspost(Cog):
             return
 
         images = root.xpath(self.hiccears_link_selector)
-        mode = await self.get_mode(ctx)
         max_pages = await self.get_max_pages(ctx)
 
         num_images = len(images)
