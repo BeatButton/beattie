@@ -198,13 +198,15 @@ class Crosspost(Cog):
 
 
     async def display_twitter_images(self, link, ctx):
+        mode = await self.get_mode(ctx)
+        if mode == 1:
+            return
+
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         tweet = root.xpath(self.tweet_selector)[0]
 
-        mode = await self.get_mode(ctx)
-        idx = 1 if mode == 1 else 0
-        for img in tweet.xpath(self.twitter_img_selector)[idx:]:
+        for img in tweet.xpath(self.twitter_img_selector)[0:]:
             url = img.get("src")
             await self.send(ctx, f"{url}:orig")
 
