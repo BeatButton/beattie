@@ -206,7 +206,7 @@ class Crosspost(Cog):
             root = etree.fromstring(await resp.read(), self.parser)
         tweet = root.xpath(self.tweet_selector)[0]
 
-        for img in tweet.xpath(self.twitter_img_selector)[0:]:
+        for img in tweet.xpath(self.twitter_img_selector):
             url = img.get("src")
             await self.send(ctx, f"{url}:orig")
 
