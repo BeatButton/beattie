@@ -23,8 +23,8 @@ from utils.exceptions import ResponseError
 
 class CrosspostContext(BContext):
     async def send(self, *args, **kwargs):
-        if kwargs.get("file") is not None:
-            if len(kwargs["file"].fp.getvalue()) >= 8_000_000:
+        if (file := kwargs.get("file")):
+            if len(file.fp.getvalue()) >= 8_000_000:
                 args = ("Image too large to upload.",)
                 kwargs = {}
         msg = await super().send(*args, **kwargs)
@@ -95,8 +95,8 @@ class Crosspost(Cog):
                 "client_id": "MOBrBDS8blbauoSck0ZfDbtuzpyT",
                 "client_secret": "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
             }
-            token = login.get("refresh_token")
-            if token is not None:
+            
+            if (token := login.get("refresh_token")) is not None:
                 data["grant_type"] = "refresh_token"
                 data["refresh_token"] = token
             else:
@@ -153,8 +153,7 @@ class Crosspost(Cog):
 
     @Cog.listener()
     async def on_message(self, message):
-        guild = message.guild
-        if guild is None or message.author.bot:
+        if (guild := message.guild) is None or message.author.bot:
             return
         if not (await self.bot.config.get_guild(guild.id)).get("crosspost_enabled"):
             return
@@ -198,8 +197,7 @@ class Crosspost(Cog):
 
 
     async def display_twitter_images(self, link, ctx):
-        mode = await self.get_mode(ctx)
-        if mode == 1:
+        if await self.get_mode(ctx) == 1:
             return
 
         async with self.get(link) as resp:
@@ -211,7 +209,6 @@ class Crosspost(Cog):
             await self.send(ctx, f"{url}:orig")
 
     async def display_pixiv_images(self, link, ctx):
-        mode = await self.get_mode(ctx)
         if "mode" in link:
             link = re.sub(r"(?<=mode=)\w+", "medium", link)
         elif "illust_id" in link:
@@ -234,9 +231,8 @@ class Crosspost(Cog):
         except KeyError:
             await ctx.send(f"This feature works sometimes, but isn't working right now!\nDebug info:\n{res.keys()}")
             return
-        single = res["meta_single_page"]
-        multi = res["meta_pages"]
-        if single:
+        
+        if (single := res["meta_single_page"]):
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
                 try:
@@ -249,23 +245,25 @@ class Crosspost(Cog):
                 img = await self.save(img_url, headers)
                 file = File(img, img_url.rpartition("/")[-1])
             await ctx.send(file=file)
-        elif multi:
+        elif (multi := res["meta_pages"]):
             # multi_image_post
             urls = (page["image_urls"]["original"] for page in multi)
+
+            max_pages = await self.get_max_pages(ctx)
             num_pages = len(multi)
-            if mode == 1:
-                r = range(4)
-            else:
-                r = range(num_pages)
-            for img_url, i in zip(urls, r):
+
+            if max_pages == 0:
+                max_pages = num_pages
+                
+            for img_url, i in zip(urls, range(max_pages)):
                 fullsize_url = f"https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}"
                 headers["referer"] = fullsize_url
                 img = await self.save(img_url, headers)
                 file = File(img, img_url.rpartition("/")[-1])
                 await ctx.send(file=file)
-            remaining = num_pages - 4
+            remaining = num_pages - max_pages
 
-            if mode == 1 and remaining > 0:
+            if remaining > 0:
                 s = "s" if remaining > 1 else ""
                 message = (
                     f'{remaining} more image{s} at <https://www.pixiv.net/en/artworks/{illust_id}>'
@@ -285,8 +283,8 @@ class Crosspost(Cog):
     async def display_hiccears_images(self, link, ctx):
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
-        single_image = root.xpath(self.hiccears_img_selector)
-        if single_image:
+        
+        if (single_image := root.xpath(self.hiccears_img_selector)):
             a = single_image[0]
             href = a.get("href").lstrip(".")
             url = f"https://{resp.host}{href}"
@@ -352,8 +350,7 @@ class Crosspost(Cog):
             await ctx.send(message)
 
     async def display_mastodon_images(self, link, ctx):
-        match = self.mastodon_url_groups.match(link)
-        if match is None:
+        if (match := self.mastodon_url_groups.match(link)) is None:
             return
         api_url = self.mastodon_api_fmt.format(*match.groups())
         try:
@@ -362,8 +359,7 @@ class Crosspost(Cog):
         except (ResponseError, aiohttp.ContentTypeError):
             return
 
-        images = post.get("media_attachments")
-        if not images:
+        if not (images := post.get("media_attachments")):
             return
 
         mode = await self.get_mode(ctx)
@@ -374,23 +370,10 @@ class Crosspost(Cog):
             url = image["remote_url"] or image["url"]
             await self.send(ctx, url)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
     async def twitter(self, ctx, enabled: Union[bool, str] = True):
-        """Change settings for sending images from Twitter and other social media platforms.
-
-        off: do nothing
-        on: send links to images that aren't previewed by Discord
-        save: upload all images to the channel"""
-        if isinstance(enabled, bool):
-            await self.bot.config.set_guild(ctx.guild.id, twitter=int(enabled))
-            fmt = "en" if enabled else "dis"
-            await ctx.send(f"Sending Twitter images {fmt}abled.")
-        elif enabled in ("save", "upload"):
-            await self.bot.config.set_guild(ctx.guild.id, twitter=2)
-            await ctx.send("Twitter images will be directly uploaded.")
-        else:
-            raise commands.BadArgument(enabled)
+        await ctx.send(f"This command is deprecated! Please use `{ctx.prefix}crosspost` to manage settings.")
 
     @commands.group()
     @is_owner_or(manage_guild=True)
@@ -423,7 +406,9 @@ class Crosspost(Cog):
 
     @crosspost.command()
     async def pages(self, ctx, max_pages: int):
-        """Set the maximum number of images to send. Set to 0 for no limit."""
+        """Set the maximum number of images to send.
+        
+        Set to 0 for no limit."""
         await self.bot.config.set_guild(ctx.guild.id, crosspost_max_pages=max_pages)
         await ctx.send(f"Max crosspost pages set to {max_pages}")
 
