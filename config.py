@@ -30,17 +30,15 @@ class Config:
             return res
 
     async def set_guild(self, guild_id, **kwargs):
+        guild = await self.get_guild(guild_id)
+        self._cache[guild_id].update(kwargs)
         async with self.db.get_session() as s:
-            row = Guild(id=guild_id, **kwargs)
+            row = Guild(**guild, **kwargs)
             query = s.insert.rows(row)
             query = query.on_conflict(Guild.id).update(
                 getattr(Guild, name) for name in kwargs
             )
             await query.run()
-        try:
-            self._cache[guild_id].update(kwargs)
-        except KeyError:
-            pass
 
     async def remove_guild(self, gid):
         async with self.db.get_session() as s:
@@ -54,34 +52,32 @@ class Config:
         self._cache["member"].pop(gid, None)
         self._cache["channel"].pop(gid, None)
 
-    async def get_member(self, guild_id, uid):
+    async def get_member(self, guild_id, user_id):
         try:
-            return self._cache["member"].setdefault(guild_id, {})[uid]
+            return self._cache["member"].setdefault(guild_id, {})[user_id]
         except KeyError:
             async with self.db.get_session() as s:
                 query = s.select(Member).where(
-                    (Member.id == uid) & (Member.guild_id == guild_id)
+                    (Member.id == user_id) & (Member.guild_id == guild_id)
                 )
                 member = await query.first()
             if member is None:
-                ret = {"guild_id": guild_id, "id": uid}
+                ret = {"guild_id": guild_id, "id": user_id}
             else:
                 ret = to_dict(member)
-            self._cache["member"][guild_id][uid] = ret
+            self._cache["member"][guild_id][user_id] = ret
             return ret
 
-    async def set_member(self, gid, uid, **kwargs):
+    async def set_member(self, guild_id, user_id, **kwargs):
+        member = await self.get_member(guild_id, user_id)
+        self._cache["member"][guild_id][user_id].update(kwargs)
         async with self.db.get_session() as s:
-            row = Member(id=uid, guild_id=gid, **kwargs)
+            row = Member(**member, **kwargs)
             query = s.insert.rows(row)
             query = query.on_conflict(Member.id, Member.guild_id).update(
                 getattr(Member, name) for name in kwargs
             )
             await query.run()
-        try:
-            self._cache["member"][gid][uid].update(kwargs)
-        except KeyError:
-            pass
 
     async def get_channel(self, guild_id, channel_id):
         try:
@@ -99,15 +95,13 @@ class Config:
             self._cache["channel"][guild_id][channel_id] = ret
             return ret
 
-    async def set_channel(self, gid, cid, **kwargs):
+    async def set_channel(self, guild_id, channel_id, **kwargs):
+        channel = await self.get_channel(guild_id, channel_id)
+        self._cache["channel"][guild_id][channel_id].update(kwargs)
         async with self.db.get_session() as s:
-            row = Channel(id=cid, guild_id=gid, **kwargs)
+            row = Channel(**channel, **kwargs)
             query = s.insert.rows(row)
             query = query.on_conflict(Channel.id).update(
                 getattr(Channel, name) for name in kwargs
             )
             await query.run()
-        try:
-            self._cache["channel"][gid][cid].update(kwargs)
-        except KeyError:
-            pass
