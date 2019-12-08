@@ -69,7 +69,7 @@ class Default(commands.Cog):
         await ctx.send(file=File("data/doubt.jpg"))
 
     @commands.command(hidden=True)
-    async def mystery(selfself, ctx):
+    async def mystery(self, ctx):
         """???"""
         await ctx.send(file=File("data/mystery.webm"))
 
