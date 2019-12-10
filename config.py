@@ -33,7 +33,7 @@ class Config:
         guild = await self.get_guild(guild_id)
         self._cache[guild_id].update(kwargs)
         async with self.db.get_session() as s:
-            row = Guild(**guild, **kwargs)
+            row = Guild(**{**guild, **kwargs})
             query = s.insert.rows(row)
             query = query.on_conflict(Guild.id).update(
                 getattr(Guild, name) for name in kwargs
@@ -72,7 +72,7 @@ class Config:
         member = await self.get_member(guild_id, user_id)
         self._cache["member"][guild_id][user_id].update(kwargs)
         async with self.db.get_session() as s:
-            row = Member(**member, **kwargs)
+            row = Member(**{**member, **kwargs})
             query = s.insert.rows(row)
             query = query.on_conflict(Member.id, Member.guild_id).update(
                 getattr(Member, name) for name in kwargs
@@ -99,7 +99,7 @@ class Config:
         channel = await self.get_channel(guild_id, channel_id)
         self._cache["channel"][guild_id][channel_id].update(kwargs)
         async with self.db.get_session() as s:
-            row = Channel(**channel, **kwargs)
+            row = Channel(**{**channel, **kwargs})
             query = s.insert.rows(row)
             query = query.on_conflict(Channel.id).update(
                 getattr(Channel, name) for name in kwargs
