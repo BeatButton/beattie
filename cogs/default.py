@@ -56,7 +56,7 @@ class Default(commands.Cog):
         """Throw some confetti."""
         if num > 200:
             await ctx.send(
-                "I don't have that much confetti " "<:blobpensive:337436989676716033>"
+                "I don't have that much confetti <:blobpensive:337436989676716033>"
             )
         elif num < 1:
             await ctx.send("<:blobthinkingdown:337436994353365002>")
@@ -72,6 +72,11 @@ class Default(commands.Cog):
     async def mystery(self, ctx):
         """???"""
         await ctx.send(file=File("data/mystery.webm"))
+
+    @commands.command(hidden=True)
+    async def chassis(self, ctx):
+        """So cool! So sleek!"""
+        await ctx.send(file=File("data/Bee_MK1_public.png"))
 
 
 def setup(bot):
