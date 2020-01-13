@@ -23,7 +23,7 @@ from utils.exceptions import ResponseError
 
 class CrosspostContext(BContext):
     async def send(self, *args, **kwargs):
-        if (file := kwargs.get("file")):
+        if file := kwargs.get("file"):
             if len(file.fp.getvalue()) >= 8_000_000:
                 args = ("Image too large to upload.",)
                 kwargs = {}
@@ -395,13 +395,13 @@ class Crosspost(Cog):
         link: send a link to images when available
         upload: always upload image files"""
         if mode == "link":
-            mode = 1
+            crosspost_mode = 1
         elif mode == "upload":
-            mode = 2
+            crosspost_mode = 2
         else:
             raise commands.BadArgument(mode)
             
-        await self.bot.config.set_guild(ctx.guild.id, crosspost_mode=mode)
+        await self.bot.config.set_guild(ctx.guild.id, crosspost_mode=crosspost_mode)
         await ctx.send("Crosspost mode updated.")
 
     @crosspost.command()
