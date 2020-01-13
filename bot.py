@@ -133,10 +133,10 @@ class BeattieBot(commands.Bot):
             if ctx.command is not None:
                 message = f"An error occurred in {ctx.command.name}"
             else:
-                message = f"An error occured in guild {ctx.guild} channel #{ctx.channel}"
-            self.logger.exception(
-                message, exc_info=e.__traceback__
-            )
+                message = (
+                    f"An error occured in guild {ctx.guild} channel #{ctx.channel}"
+                )
+            self.logger.exception(message, exc_info=e.__traceback__)
             raise e from None
 
     async def on_ready(self):
