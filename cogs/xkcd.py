@@ -74,7 +74,7 @@ class XKCD(commands.Cog):
         except ResponseError:
             data = {
                 "title": "404",
-                "img": "http://www.explainxkcd.com/wiki/" "images/9/92/not_found.png",
+                "img": "http://www.explainxkcd.com/wiki/images/9/92/not_found.png",
                 "alt": "Comic not found.",
                 "num": 404,
             }
