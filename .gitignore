@@ -93,4 +93,6 @@ ENV/
 .ropeproject
 
 /logs.tar
+/discord*.log
+/discord*.log.xz
 **/.mypy_cache
