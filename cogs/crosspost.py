@@ -229,10 +229,10 @@ class Crosspost(Cog):
         try:
             res = res["illust"]
         except KeyError:
-            await ctx.send(f"This feature works sometimes, but isn't working right now!\nDebug info:\n{res.keys()}")
+            await ctx.send(f"This feature works sometimes, but isn't working right now!\nDebug info:\n{res.get('error')}")
             return
         
-        if (single := res["meta_single_page"]):
+        if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
                 try:
@@ -245,7 +245,7 @@ class Crosspost(Cog):
                 img = await self.save(img_url, headers)
                 file = File(img, img_url.rpartition("/")[-1])
             await ctx.send(file=file)
-        elif (multi := res["meta_pages"]):
+        elif multi := res["meta_pages"]:
             # multi_image_post
             urls = (page["image_urls"]["original"] for page in multi)
 
@@ -284,7 +284,7 @@ class Crosspost(Cog):
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
         
-        if (single_image := root.xpath(self.hiccears_img_selector)):
+        if single_image := root.xpath(self.hiccears_img_selector):
             a = single_image[0]
             href = a.get("href").lstrip(".")
             url = f"https://{resp.host}{href}"
