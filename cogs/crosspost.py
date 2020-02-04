@@ -17,7 +17,7 @@ from lxml import etree
 
 from context import BContext
 from utils.checks import is_owner_or
-from utils.contextmanagers import get as _get
+from utils.contextmanagers import get as get_
 from utils.exceptions import ResponseError
 
 
@@ -128,7 +128,7 @@ class Crosspost(Cog):
 
     def get(self, *args, **kwargs):
         kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
-        return _get(self.session, *args, **kwargs)
+        return get_(self.session, *args, **kwargs)
 
     async def save(self, img_url, headers=None):
         headers = headers or {}
