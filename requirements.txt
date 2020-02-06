@@ -2,6 +2,7 @@ git+https://github.com/BeatButton/asyncqlio.git#egg=asyncqlio
 asyncjisho
 asyncpg
 discord.py
+jishaku
 lxml
 objgraph
 parsedatetime
