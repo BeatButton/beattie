@@ -39,6 +39,7 @@ else:
     bot.loop.create_task(bot.swap_logs(False))
 
 extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
+extensions.append("jishaku")
 
 for extension in extensions:
     try:
