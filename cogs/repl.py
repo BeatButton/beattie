@@ -198,6 +198,10 @@ class REPL(commands.Cog):
         ctx.bot.reload_extension(cog)
         await ctx.send("Reload successful.")
 
+    @commands.command()
+    async def say(self, ctx, *, message):
+        await ctx.send(message)
+
 
 def setup(bot):
     bot.add_cog(REPL())
