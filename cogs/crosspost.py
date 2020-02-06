@@ -95,7 +95,7 @@ class Crosspost(Cog):
                 "client_id": "MOBrBDS8blbauoSck0ZfDbtuzpyT",
                 "client_secret": "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
             }
-            
+
             if (token := login.get("refresh_token")) is not None:
                 data["grant_type"] = "refresh_token"
                 data["refresh_token"] = token
@@ -150,7 +150,6 @@ class Crosspost(Cog):
                 except Exception as e:
                     await ctx.bot.handle_error(ctx, e)
 
-
     @Cog.listener()
     async def on_message(self, message):
         if (guild := message.guild) is None or message.author.bot:
@@ -184,9 +183,11 @@ class Crosspost(Cog):
 
     async def get_mode(self, ctx):
         return (await ctx.bot.config.get_guild(ctx.guild.id)).get("crosspost_mode") or 1
-    
+
     async def get_max_pages(self, ctx):
-        max_pages = (await ctx.bot.config.get_guild(ctx.guild.id)).get("crosspost_max_pages")
+        max_pages = (await ctx.bot.config.get_guild(ctx.guild.id)).get(
+            "crosspost_max_pages"
+        )
         if max_pages is None:
             mode = await self.get_mode(ctx)
             if mode == 1:
@@ -194,7 +195,6 @@ class Crosspost(Cog):
             else:
                 max_pages = 0
         return max_pages
-
 
     async def display_twitter_images(self, link, ctx):
         if await self.get_mode(ctx) == 1:
@@ -214,7 +214,9 @@ class Crosspost(Cog):
         elif "illust_id" in link:
             link = f"{link}&mode=medium"
         link = link.replace("http://", "https://")
-        illust_id = next(filter(None, re.search(r"illust_id=(\d+)|artworks/(\d+)", link).groups()))
+        illust_id = next(
+            filter(None, re.search(r"illust_id=(\d+)|artworks/(\d+)", link).groups())
+        )
         headers = {
             "App-OS": "ios",
             "App-OS-Version": "10.3.1",
@@ -229,9 +231,11 @@ class Crosspost(Cog):
         try:
             res = res["illust"]
         except KeyError:
-            await ctx.send(f"This feature works sometimes, but isn't working right now!\nDebug info:\n{res.get('error')}")
+            await ctx.send(
+                f"This feature works sometimes, but isn't working right now!\nDebug info:\n{res.get('error')}"
+            )
             return
-        
+
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
@@ -254,7 +258,7 @@ class Crosspost(Cog):
 
             if max_pages == 0:
                 max_pages = num_pages
-                
+
             for img_url, i in zip(urls, range(max_pages)):
                 fullsize_url = f"https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}"
                 headers["referer"] = fullsize_url
@@ -265,9 +269,7 @@ class Crosspost(Cog):
 
             if remaining > 0:
                 s = "s" if remaining > 1 else ""
-                message = (
-                    f'{remaining} more image{s} at <https://www.pixiv.net/en/artworks/{illust_id}>'
-                )
+                message = f"{remaining} more image{s} at <https://www.pixiv.net/en/artworks/{illust_id}>"
                 await ctx.send(message)
 
     async def get_ugoira(self, link, fmt="gif"):
@@ -283,7 +285,7 @@ class Crosspost(Cog):
     async def display_hiccears_images(self, link, ctx):
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
-        
+
         if single_image := root.xpath(self.hiccears_img_selector):
             a = single_image[0]
             href = a.get("href").lstrip(".")
@@ -333,10 +335,10 @@ class Crosspost(Cog):
         max_pages = await self.get_max_pages(ctx)
 
         num_images = len(images)
-        
+
         if max_pages == 0:
             max_pages = num_images
-        
+
         pages_remaining = num_images - max_pages
 
         images = images[idx:max_pages]
@@ -363,7 +365,7 @@ class Crosspost(Cog):
             return
 
         mode = await self.get_mode(ctx)
-        
+
         idx = 0 if mode != 1 or post["sensitive"] else 1
 
         for image in images[idx:]:
@@ -373,7 +375,9 @@ class Crosspost(Cog):
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
     async def twitter(self, ctx, enabled: Union[bool, str] = True):
-        await ctx.send(f"This command is deprecated! Please use `{ctx.prefix}crosspost` to manage settings.")
+        await ctx.send(
+            f"This command is deprecated! Please use `{ctx.prefix}crosspost` to manage settings."
+        )
 
     @commands.group()
     @is_owner_or(manage_guild=True)
@@ -400,7 +404,7 @@ class Crosspost(Cog):
             crosspost_mode = 2
         else:
             raise commands.BadArgument(mode)
-            
+
         await self.bot.config.set_guild(ctx.guild.id, crosspost_mode=crosspost_mode)
         await ctx.send("Crosspost mode updated.")
 

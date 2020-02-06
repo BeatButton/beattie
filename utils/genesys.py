@@ -131,8 +131,26 @@ die_names = {
 dice = {
     "boost": (wash, wash, success, success + advantage, 2 * advantage, advantage),
     "setback": (wash, wash, failure, failure, disadvantage, disadvantage),
-    "ability": (wash, success, success, 2 * success, 2 * advantage, advantage, success + advantage, 2 * advantage),
-    "difficulty": (wash, failure, 2 * failure, disadvantage, disadvantage, disadvantage, 2 * disadvantage, failure + disadvantage),
+    "ability": (
+        wash,
+        success,
+        success,
+        2 * success,
+        2 * advantage,
+        advantage,
+        success + advantage,
+        2 * advantage,
+    ),
+    "difficulty": (
+        wash,
+        failure,
+        2 * failure,
+        disadvantage,
+        disadvantage,
+        disadvantage,
+        2 * disadvantage,
+        failure + disadvantage,
+    ),
     "proficiency": (
         wash,
         success,
