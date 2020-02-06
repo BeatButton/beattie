@@ -66,7 +66,7 @@ class BeattieBot(commands.Bot):
             data = yaml.safe_load(file)
 
         password = data.get("config_password", "")
-        self.loglevel = data["loglevel"]
+        self.loglevel = data.get("loglevel", "WARNING")
         self.session = aiohttp.ClientSession(loop=self.loop)
         dsn = f"postgresql://beattie:{password}@localhost/beattie"
         self.db = DatabaseInterface(dsn)

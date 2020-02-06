@@ -22,7 +22,7 @@ with open("config/config.yaml") as file:
 debug = "debug" in sys.argv
 loop = asyncio.get_event_loop()
 
-if config["debug"] or debug:
+if config.get("debug") or debug:
     prefixes = [config["test_prefix"]]
     token = config["test_token"]
 else:
