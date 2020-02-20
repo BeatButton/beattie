@@ -148,7 +148,6 @@ class BeattieBot(commands.Bot):
         await self.change_presence(activity=game)
 
     async def process_commands(self, message):
-        assert isinstance(message, discord.Message)
         if not message.author.bot:
             ctx = await self.get_context(message, cls=BContext)
             await self.invoke(ctx)
