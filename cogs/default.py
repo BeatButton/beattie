@@ -1,4 +1,6 @@
-from discord import File, Member
+from io import BytesIO
+
+from discord import File, User
 from discord.ext import commands
 
 
@@ -6,15 +8,19 @@ class Default(commands.Cog):
     """Default useful commands."""
 
     @commands.command()
-    async def avatar(self, ctx, member: Member = None):
-        if member is None:
-            member = ctx.author
-        await ctx.send(member.avatar_url_as(format="png"))
+    async def avatar(self, ctx, user: User = None):
+        if user is None:
+            user = ctx.author
+        img = BytesIO()
+        avatar = user.avatar_url_as(format="png")
+        await avatar.save(img)
+        filename = str(avatar).rpartition("/")[2].partition("?")[0]
+        await ctx.send(file=File(img, filename))
 
     @avatar.error
     async def avatar_error(self, ctx, exc):
         if isinstance(exc, commands.BadArgument):
-            await ctx.send("Member not found.")
+            await ctx.send("User not found.")
         else:
             await ctx.bot.handle_error(ctx, exc)
 
