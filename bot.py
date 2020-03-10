@@ -27,38 +27,30 @@ class BeattieBot(commands.Bot):
     general_ignore = (ConnectionResetError,)
 
     def __init__(self, command_prefix, *args, **kwargs):
-        self_bot = kwargs.get("self_bot")
-        if self_bot:
-            status = discord.Status.idle
-            pre = command_prefix
-        else:
-            status = None
-
-            async def pre(bot, message):
-                prefix = command_prefix
-                if callable(prefix):
-                    prefix = prefix(bot, message)
-                if inspect.isawaitable(prefix):
-                    prefix = await prefix
-                if isinstance(prefix, str):
-                    prefix = (prefix,)
-                elif isinstance(prefix, list):
-                    prefix = tuple(prefix)
-                if message.guild is None:
-                    return prefix
-                guild_conf = await bot.config.get_guild(message.guild.id)
-                guild_pre = guild_conf.get("prefix")
-                if guild_pre:
-                    prefix = prefix + (guild_pre,)
+        async def prefix_func(bot, message):
+            prefix = command_prefix
+            if callable(prefix):
+                prefix = prefix(bot, message)
+            if inspect.isawaitable(prefix):
+                prefix = await prefix
+            if isinstance(prefix, str):
+                prefix = (prefix,)
+            elif isinstance(prefix, list):
+                prefix = tuple(prefix)
+            if message.guild is None:
                 return prefix
+            guild_conf = await bot.config.get_guild(message.guild.id)
+            guild_pre = guild_conf.get("prefix")
+            if guild_pre:
+                prefix = prefix + (guild_pre,)
+            return prefix
 
         help_command = commands.DefaultHelpCommand(dm_help=None)
 
         super().__init__(
-            pre,
+            prefix_func,
             *args,
             **kwargs,
-            status=status,
             case_insensitive=True,
             help_command=help_command,
         )
