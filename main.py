@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
+import platform
 import sys
 from pathlib import Path
 
-import yaml
+import toml
 from discord.ext.commands import when_mentioned_or
 
 from bot import BeattieBot
 
-try:
+if platform.system() != "Windows":
     import uvloop
-except ImportError:
-    pass
-else:
+
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-with open("config/config.yaml") as file:
-    config = yaml.safe_load(file)
+with open("config/config.toml") as file:
+    config = toml.load(file)
 
 debug = "debug" in sys.argv
 loop = asyncio.get_event_loop()

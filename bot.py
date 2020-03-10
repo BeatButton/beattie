@@ -9,7 +9,7 @@ from pathlib import Path
 
 import aiohttp
 import discord
-import yaml
+import toml
 from asyncqlio.db import DatabaseInterface
 from discord.ext import commands
 
@@ -62,8 +62,8 @@ class BeattieBot(commands.Bot):
             case_insensitive=True,
             help_command=help_command,
         )
-        with open("config/config.yaml") as file:
-            data = yaml.safe_load(file)
+        with open("config/config.toml") as file:
+            data = toml.load(file)
 
         password = data.get("config_password", "")
         self.loglevel = data.get("loglevel", "WARNING")
