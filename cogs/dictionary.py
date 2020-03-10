@@ -35,8 +35,8 @@ class Dictionary(commands.Cog):
             embed.set_footer(text="Page {}/{}".format(i, size))
             embed.color = discord.Color(0x56D926)
             results.append(embed)
-        paginator = Paginator(ctx, results)
-        await paginator.run()
+        paginator = Paginator(results)
+        await paginator.start(ctx)
 
     @commands.command(aliases=["ud", "urban", "urbandict"])
     async def urbandictionary(self, ctx, *, word):
@@ -61,8 +61,8 @@ class Dictionary(commands.Cog):
                 embed.color = discord.Color(0xE86222)
                 embed.set_footer(text="Page {}/{}".format(i, size))
                 embeds.append(embed)
-            paginator = Paginator(ctx, embeds)
-            await paginator.run()
+            paginator = Paginator(embeds)
+            await paginator.start(ctx)
 
 
 def setup(bot):
