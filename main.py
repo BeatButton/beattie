@@ -22,7 +22,7 @@ debug = "debug" in sys.argv
 loop = asyncio.get_event_loop()
 
 if config.get("debug") or debug:
-    prefixes = [config["test_prefix"]]
+    prefixes = config["test_prefixes"]
     token = config["test_token"]
 else:
     prefixes = config["prefixes"]
