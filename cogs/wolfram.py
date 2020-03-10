@@ -38,7 +38,7 @@ class Wolfram(commands.Cog):
             except IndexError:
                 result = "No results found."
             if interpret:
-                result = f"{interpret}\n{result}"
+                result = f"> {interpret}\n{result}"
             result = result.translate(self.chars)
         await ctx.send(result)
 
