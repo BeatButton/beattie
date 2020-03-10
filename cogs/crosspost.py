@@ -9,7 +9,7 @@ from io import BytesIO, StringIO
 from typing import Union
 
 import aiohttp
-import yaml
+import toml
 from discord import File, HTTPException
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -62,8 +62,8 @@ class Crosspost(Cog):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:60.0) "
             "Gecko/20100101 Firefox/60.0"
         }
-        with open("config/headers.yaml") as fp:
-            data = yaml.safe_load(fp)
+        with open("config/headers.toml") as fp:
+            data = toml.load(fp)
         self.headers.update(data)
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = etree.HTMLParser()
@@ -88,8 +88,8 @@ class Crosspost(Cog):
     async def pixiv_login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
-            with open("config/logins.yaml") as fp:
-                login = yaml.safe_load(fp)
+            with open("config/logins.toml") as fp:
+                login = toml.load(fp)
             data = {
                 "get_secure_url": 1,
                 "client_id": "MOBrBDS8blbauoSck0ZfDbtuzpyT",
@@ -119,8 +119,8 @@ class Crosspost(Cog):
 
             self.headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
-            with open("config/logins.yaml", "w") as fp:
-                yaml.dump(login, stream=fp)
+            with open("config/logins.toml", "w") as fp:
+                toml.dump(login, fp)
             await asyncio.sleep(res["expires_in"])
 
     def cog_unload(self):

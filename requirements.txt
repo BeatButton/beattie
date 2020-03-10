@@ -7,5 +7,5 @@ lxml
 objgraph
 parsedatetime
 psutil
-pyyaml
+toml
 uvloop
