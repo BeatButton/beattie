@@ -17,7 +17,7 @@ class Result:
         ret = []
 
         if self.successs > 0:
-            s = "s" if self.successs > 1 else ""
+            s = "es" if self.successs > 1 else ""
             ret.append(f"{self.successs} success{s}")
         elif self.successs < 0:
             failures = -self.successs
