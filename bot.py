@@ -150,7 +150,8 @@ class BeattieBot(Bot):
 
     async def on_error(self, event_method, *args, **kwargs):
         _, e, _ = sys.exc_info()
-        e = getattr(e, "original", e)
+        if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):
+            e = e.original
         if not isinstance(e, self.general_ignore):
             await super().on_error(event_method, *args, **kwargs)
 
