@@ -78,12 +78,6 @@ class Crosspost(Cog):
         }
         self.sent_images = defaultdict(list)
         self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
-        bot.loop.create_task(self.__init())
-
-    async def __init(self):
-        await self.bot.wait_until_ready()
-        if not self.bot.user.bot:
-            self.bot.unload_extension(__name__)
 
     async def pixiv_login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
@@ -121,7 +115,7 @@ class Crosspost(Cog):
             login["refresh_token"] = res["refresh_token"]
             with open("config/logins.toml", "w") as fp:
                 toml.dump(login, fp)
-            await asyncio.sleep(res["expires_in"])
+            await asyncio.sleep(res["expires_in"] / 2)
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
