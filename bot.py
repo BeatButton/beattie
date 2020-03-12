@@ -12,6 +12,7 @@ import discord
 import toml
 from asyncqlio.db import DatabaseInterface
 from discord.ext import commands
+from discord.ext.commands import Bot
 
 from config import Config
 from context import BContext
@@ -19,7 +20,7 @@ from utils import contextmanagers, exceptions
 from utils.aioutils import do_every
 
 
-class BeattieBot(commands.Bot):
+class BeattieBot(Bot):
     """A very cute robot boy"""
 
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
