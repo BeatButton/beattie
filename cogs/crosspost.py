@@ -418,8 +418,7 @@ class Crosspost(Cog):
 
     @commands.command()
     async def post(self, ctx, *, _):
-        """Embed images in the given links regardles of the global embed setting.
-        """
+        """Embed images in the given links regardles of the global embed setting."""
         await self.process_links(ctx)
 
 
