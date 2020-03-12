@@ -20,8 +20,7 @@ from utils.aioutils import do_every
 
 
 class BeattieBot(commands.Bot):
-    """An extension of Bot. Allow use with self bots and handles errors in an
-    ordered way"""
+    """A very cute robot boy"""
 
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError,)
