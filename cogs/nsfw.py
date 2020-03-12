@@ -5,10 +5,11 @@ from urllib import parse
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import Cog
 from lxml import etree
 
 
-class NSFW(commands.Cog):
+class NSFW(Cog):
     view = {
         "gelbooru": "https://gelbooru.com/index.php?page=post&s=view&id={}",
         "rule34": "https://rule34.xxx/index.php?page=post&s=view&id={}",

@@ -3,6 +3,7 @@ from collections import namedtuple
 from datetime import datetime
 
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 from schema.remind import Message, Table
 from utils.converters import Time
@@ -11,7 +12,7 @@ from utils.etc import reverse_insort
 Task = namedtuple("Task", "time channel text")
 
 
-class Remind(commands.Cog):
+class Remind(Cog):
     def __init__(self, bot):
         self.queue = []
         self.loop = bot.loop

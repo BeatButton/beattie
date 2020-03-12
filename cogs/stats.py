@@ -3,9 +3,10 @@ import datetime
 import discord
 import psutil
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 
-class Stats(commands.Cog):
+class Stats(Cog):
     """Bot usage statistics."""
 
     def __init__(self):

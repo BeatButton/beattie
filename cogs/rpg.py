@@ -6,11 +6,12 @@ from concurrent import futures
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 from utils.genesys import die_names, genesysroller
 
 
-class RPG(commands.Cog):
+class RPG(Cog):
     def __init__(self, bot):
         self.loop = bot.loop
         self.tarot_url = "https://www.trustedtarot.com/cards/{}/"

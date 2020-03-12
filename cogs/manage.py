@@ -2,11 +2,12 @@ from typing import Union
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 member_or_channel = Union[discord.Member, discord.TextChannel]
 
 
-class Manage(commands.Cog):
+class Manage(Cog):
     def __init__(self, bot):
         self.config = bot.config
 

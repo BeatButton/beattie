@@ -1,9 +1,10 @@
 import toml
 from discord.ext import commands
+from discord.ext.commands import Cog
 from lxml import etree
 
 
-class Wolfram(commands.Cog):
+class Wolfram(Cog):
     chars = {0xF74C: " d", 0xF74D: "e", 0xF74E: "i", 0xF7D9: " = "}
 
     def __init__(self):

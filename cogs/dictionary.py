@@ -1,11 +1,12 @@
 import discord
 from asyncjisho import Jisho
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 from utils.paginator import Paginator
 
 
-class Dictionary(commands.Cog):
+class Dictionary(Cog):
     jisho_url = "http://jisho.org/search/{}"
     urban_url = "http://api.urbandictionary.com/v0/define"
 

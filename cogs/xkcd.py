@@ -5,11 +5,12 @@ from json import JSONDecodeError
 import discord
 from aiohttp import ClientResponseError
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 from utils.exceptions import ResponseError
 
 
-class XKCD(commands.Cog):
+class XKCD(Cog):
     def __init__(self):
         with open("data/why.txt", encoding="utf8") as file:
             self.questions = tuple(file.readlines())
