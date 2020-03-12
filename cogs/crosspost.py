@@ -119,6 +119,7 @@ class Crosspost(Cog):
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+        self.login_task.cancel()
 
     def get(self, *args, **kwargs):
         kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
