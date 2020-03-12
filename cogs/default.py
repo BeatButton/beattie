@@ -2,9 +2,10 @@ from io import BytesIO
 
 from discord import File, User
 from discord.ext import commands
+from discord.ext.commands import Cog
 
 
-class Default(commands.Cog):
+class Default(Cog):
     """Default useful commands."""
 
     @commands.command()
