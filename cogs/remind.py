@@ -5,11 +5,9 @@ from datetime import datetime
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from schema.remind import Message, Table
+from schema.remind import Reminder, Table
 from utils.converters import Time
 from utils.etc import reverse_insort
-
-Task = namedtuple("Task", "time channel text")
 
 
 class Remind(Cog):
@@ -27,31 +25,22 @@ class Remind(Cog):
 
     async def __init(self):
         await self.bot.wait_until_ready()
-        if not self.bot.user.bot:
-            return
-        await Message.create(if_not_exists=True)
+        await Reminder.create(if_not_exists=True)
         async with self.db.get_session() as s:
-            query = s.select(Message).order_by(Message.time, sort_order="desc")
-            self.queue = [
-                Task(*record.to_dict().values()) async for record in await query.all()
-            ]
+            query = s.select(Reminder).order_by(Reminder.time, sort_order="desc")
+            self.queue = [reminder async for reminder in await query.all()]
         await self.start_timer()
 
     @commands.command()
     async def remind(self, ctx, time: Time, *, topic: commands.clean_content = None):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
-        if topic is not None:
-            topic = f"that {topic}"
-        else:
-            topic = "about something"
-        message = f"{ctx.author.mention}\n" f"You asked to be reminded {topic}."
-        await self.schedule_message(time, ctx.channel.id, message)
-        await ctx.send(f"Okay, I'll remind you.")
+        await self.schedule_message(ctx, time, topic)
+        await ctx.send("Okay, I'll remind you.")
 
     @remind.error
     async def remind_error(self, ctx, e):
-        if isinstance(e, commands.BadArgument):
+        if isinstance(e, commands.BadArgument, commands.ConversionError):
             await ctx.send(
                 "Bad input. Valid input examples:\n"
                 "remind 10m pizza\n"
@@ -60,30 +49,37 @@ class Remind(Cog):
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    async def schedule_message(self, time, channel, text):
+    async def schedule_message(self, ctx, time, topic):
         async with self.db.get_session() as s:
-            await s.add(Message(time=time, channel=channel, text=text))
-        task = Task(time, channel, text)
-        if not self.queue or task < self.queue[-1]:
-            self.queue.append(task)
+            reminder = await s.add(
+                Reminder(
+                    guild_id=ctx.guild.id,
+                    channel_id=ctx.channel.id,
+                    user_id=ctx.author.id,
+                    time=time,
+                    topic=topic,
+                )
+            )
+        if not self.queue or reminder.time < self.queue[-1].time:
+            self.queue.append(reminder)
             self.timer.cancel()
             await self.start_timer()
         else:
-            reverse_insort(self.queue, task, hi=len(self.queue) - 1)
-
-    async def send_message(self, task):
-        channel = self.bot.get_channel(task.channel)
-        if channel is not None:
-            await channel.send(task.text)
-        async with self.db.get_session() as s:
-
-            query = s.select(Message).where(
-                (Message.time == task.time)
-                & (Message.channel == task.channel)
-                & (Message.text == task.text)
+            reverse_insort_by_key(
+                self.queue, reminder, key=lambda r: r.time, hi=len(self.queue) - 1
             )
-            message = await query.first()
-            await s.remove(message)
+
+    async def send_reminder(self, reminder):
+        if (channel := self.bot.get_channel(reminder.channel_id)) and (
+            member := channel.guild.get_member(reminder.user_id)
+        ):
+            topic = reminder.topic or "something"
+            message = f"{member.mention}\nYou asked to be reminded about {topic}"
+            await channel.send(message)
+        async with self.db.get_session() as s:
+            query = s.select(Reminder).where(Reminder.id == reminder.id)
+            reminder = await query.first()
+            await s.remove(reminder)
 
     async def start_timer(self):
         self.timer = self.loop.create_task(self.sleep())
@@ -92,7 +88,7 @@ class Remind(Cog):
         while self.queue:
             delta = (self.queue[-1].time - datetime.now()).total_seconds()
             if delta <= 0:
-                await self.send_message(self.queue.pop())
+                await self.send_reminder(self.queue.pop())
             else:
                 await asyncio.sleep(min(delta, 3_000_000))
 

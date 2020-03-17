@@ -1,11 +1,14 @@
 from asyncqlio.orm.schema.column import Column
 from asyncqlio.orm.schema.table import table_base
-from asyncqlio.orm.schema.types import BigInt, Text, Timestamp
+from asyncqlio.orm.schema.types import BigInt, Serial, Text, Timestamp
 
 Table = table_base()
 
 
-class Message(Table):
-    time = Column(Timestamp, primary_key=True)
-    channel = Column(BigInt, primary_key=True)
-    text = Column(Text, primary_key=True)
+class Reminder(Table):
+    id = Column(Serial, primary_key=True)
+    guild_id = Column(BigInt)
+    channel_id = Column(BigInt)
+    user_id = Column(BigInt)
+    time = Column(Timestamp)
+    topic = Column(Text)
