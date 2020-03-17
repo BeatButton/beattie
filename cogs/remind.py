@@ -2,6 +2,7 @@ import asyncio
 from collections import namedtuple
 from datetime import datetime
 
+from discord import TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -38,6 +39,17 @@ class Remind(Cog):
         await self.schedule_message(ctx, time, topic)
         await ctx.send("Okay, I'll remind you.")
 
+    @commands.command()
+    async def remind_channel(self, ctx, channel: TextChannel = None):
+        await ctx.bot.config.set_guild(
+            ctx.guild.id, reminder_channel=channel and channel.id
+        )
+        if channel is None:
+            destination = "the channel they were invoked in"
+        else:
+            destination = channel.mention
+        await ctx.send(f"All reminders will be sent to {destination} from now on.")
+
     @remind.error
     async def remind_error(self, ctx, e):
         if isinstance(e, commands.BadArgument, commands.ConversionError):
@@ -70,11 +82,15 @@ class Remind(Cog):
             )
 
     async def send_reminder(self, reminder):
-        if (channel := self.bot.get_channel(reminder.channel_id)) and (
-            member := channel.guild.get_member(reminder.user_id)
+        if (guild := self.bot.get_guild(reminder.guild_id)) and (
+            member := guild.get_member(reminder.user_id)
         ):
-            topic = reminder.topic or "something"
-            message = f"{member.mention}\nYou asked to be reminded about {topic}"
+            guild_conf = await self.bot.config.get_guild(guild.id)
+            if channel := guild.get_channel(
+                guild_conf.get("reminder_channel") or reminder.channel_id
+            ):
+                topic = reminder.topic or "something"
+                message = f"{member.mention}\nYou asked to be reminded about {topic}"
             await channel.send(message)
         async with self.db.get_session() as s:
             query = s.select(Reminder).where(Reminder.id == reminder.id)

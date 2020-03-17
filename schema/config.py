@@ -12,6 +12,7 @@ class Guild(Table):
     crosspost_enabled = Column(Boolean, nullable=True)
     crosspost_mode = Column(Integer, nullable=True)
     crosspost_max_pages = Column(Integer, nullable=True)
+    reminder_channel = Column(BigInt, nullable=True)
 
 
 class Member(Table):
