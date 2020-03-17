@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import Cog
 
 from schema.remind import Reminder, Table
+from utils.checks import is_owner_or
 from utils.converters import Time
 from utils.etc import reverse_insort
 
@@ -32,15 +33,24 @@ class Remind(Cog):
             self.queue = [reminder async for reminder in await query.all()]
         await self.start_timer()
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     async def remind(self, ctx, time: Time, *, topic: commands.clean_content = None):
+        """Commands for setting and managing reminders."""
+        await self.set_reminder(ctx, time, topic=topic)
+
+    @remind.command(aliases=["set"])
+    async def set_reminder(
+        self, ctx, time: Time, *, topic: commands.clean_content = None
+    ):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
         await self.schedule_message(ctx, time, topic)
         await ctx.send("Okay, I'll remind you.")
 
-    @commands.command()
-    async def remind_channel(self, ctx, channel: TextChannel = None):
+    @remind.command(aliases=["channel"])
+    @is_owner_or(manage_guild=True)
+    async def set_channel(self, ctx, channel: TextChannel = None):
+        """Set the channel reminders will appear in. Invoke with no input to reset."""
         await ctx.bot.config.set_guild(
             ctx.guild.id, reminder_channel=channel and channel.id
         )
@@ -50,7 +60,7 @@ class Remind(Cog):
             destination = channel.mention
         await ctx.send(f"All reminders will be sent to {destination} from now on.")
 
-    @remind.error
+    @set_reminder.error
     async def remind_error(self, ctx, e):
         if isinstance(e, commands.BadArgument, commands.ConversionError):
             await ctx.send(
@@ -90,7 +100,7 @@ class Remind(Cog):
                 guild_conf.get("reminder_channel") or reminder.channel_id
             ):
                 topic = reminder.topic or "something"
-                message = f"{member.mention}\nYou asked to be reminded about {topic}"
+                message = f"{member.mention}\nYou asked to be reminded about {topic}."
             await channel.send(message)
         async with self.db.get_session() as s:
             query = s.select(Reminder).where(Reminder.id == reminder.id)
