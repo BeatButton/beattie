@@ -18,16 +18,14 @@ if platform.system() != "Windows":
 with open("config/config.toml") as file:
     config = toml.load(file)
 
-debug = "debug" in sys.argv
-loop = asyncio.get_event_loop()
-
-if config.get("debug") or debug:
+debug = config.get("debug") or "debug" in sys.argv
+if debug:
     prefixes = config["test_prefixes"]
     token = config["test_token"]
 else:
     prefixes = config["prefixes"]
     token = config["token"]
-bot = BeattieBot(when_mentioned_or(*prefixes))
+bot = BeattieBot(when_mentioned_or(*prefixes), debug=debug)
 
 if debug:
     logger = logging.getLogger("discord")
