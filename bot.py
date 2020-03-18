@@ -26,7 +26,7 @@ class BeattieBot(Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError,)
 
-    def __init__(self, command_prefix, *args, **kwargs):
+    def __init__(self, command_prefix, *args, debug=False, **kwargs):
         async def prefix_func(bot, message):
             prefix = command_prefix
             if callable(prefix):
@@ -59,13 +59,15 @@ class BeattieBot(Bot):
 
         password = data.get("config_password", "")
         self.loglevel = data.get("loglevel", "WARNING")
+        self.debug = debug
         self.session = aiohttp.ClientSession(loop=self.loop)
         dsn = f"postgresql://beattie:{password}@localhost/beattie"
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
         self.uptime = datetime.utcnow()
-        self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
+        if not self.debug:
+            self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
 
     async def close(self):
         await self.session.close()
@@ -139,10 +141,8 @@ class BeattieBot(Bot):
         game = discord.Game(name="b>help")
         await self.change_presence(activity=game)
 
-    async def process_commands(self, message):
-        if not message.author.bot:
-            ctx = await self.get_context(message, cls=BContext)
-            await self.invoke(ctx)
+    async def get_context(self, message, *, cls=None):
+        return await super().get_context(message, cls=cls or BContext)
 
     async def on_command_error(self, ctx, e):
         if not hasattr(ctx.command, "on_error"):
