@@ -44,7 +44,7 @@ class Remind(Cog):
     ):
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
-        await self.schedule_message(ctx, time, topic)
+        await self.schedule_reminder(ctx, time, topic)
         await ctx.send("Okay, I'll remind you.")
 
     @remind.command(aliases=["channel"])
@@ -71,7 +71,7 @@ class Remind(Cog):
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    async def schedule_message(self, ctx, time, topic):
+    async def schedule_reminder(self, ctx, time, topic):
         async with self.db.get_session() as s:
             reminder = await s.add(
                 Reminder(
