@@ -47,6 +47,17 @@ class Remind(Cog):
         await self.schedule_reminder(ctx, time, topic)
         await ctx.send("Okay, I'll remind you.")
 
+    @set_reminder.error
+    async def remind_error(self, ctx, e):
+        if isinstance(e, commands.BadArgument, commands.ConversionError):
+            await ctx.send(
+                "Bad input. Valid input examples:\n"
+                "remind 10m pizza\n"
+                'remind "two days" check progress'
+            )
+        else:
+            await ctx.bot.handle_error(ctx, e)
+
     @remind.command(aliases=["channel"])
     @is_owner_or(manage_guild=True)
     async def set_channel(self, ctx, channel: TextChannel = None):
@@ -59,17 +70,6 @@ class Remind(Cog):
         else:
             destination = channel.mention
         await ctx.send(f"All reminders will be sent to {destination} from now on.")
-
-    @set_reminder.error
-    async def remind_error(self, ctx, e):
-        if isinstance(e, commands.BadArgument, commands.ConversionError):
-            await ctx.send(
-                "Bad input. Valid input examples:\n"
-                "remind 10m pizza\n"
-                'remind "two days" check progress'
-            )
-        else:
-            await ctx.bot.handle_error(ctx, e)
 
     async def schedule_reminder(self, ctx, time, topic):
         async with self.db.get_session() as s:
