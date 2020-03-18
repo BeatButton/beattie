@@ -38,6 +38,11 @@ class Remind(Cog):
         """Commands for setting and managing reminders."""
         await self.set_reminder(ctx, time, topic=topic)
 
+    @remind.error
+    async def remind_error(self, ctx, e):
+        if ctx.invoked_subcommand is None:
+            await self.set_reminder_error(ctx, e)
+
     @remind.command(aliases=["set"])
     async def set_reminder(
         self, ctx, time: Time, *, topic: commands.clean_content = None
@@ -48,8 +53,8 @@ class Remind(Cog):
         await ctx.send("Okay, I'll remind you.")
 
     @set_reminder.error
-    async def remind_error(self, ctx, e):
-        if isinstance(e, commands.BadArgument, commands.ConversionError):
+    async def set_reminder_error(self, ctx, e):
+        if isinstance(e, (commands.BadArgument, commands.ConversionError)):
             await ctx.send(
                 "Bad input. Valid input examples:\n"
                 "remind 10m pizza\n"
