@@ -92,16 +92,19 @@ class Remind(Cog):
             )
 
     async def send_reminder(self, reminder):
-        if (guild := self.bot.get_guild(reminder.guild_id)) and (
-            member := guild.get_member(reminder.user_id)
+        if (
+            (guild := self.bot.get_guild(reminder.guild_id))
+            and (member := guild.get_member(reminder.user_id))
+            and (
+                channel := guild.get_channel(
+                    (await self.bot.config.get_guild(guild.id)).get("reminder_channel")
+                    or reminder.channel_id
+                )
+            )
         ):
-            guild_conf = await self.bot.config.get_guild(guild.id)
-            if channel := guild.get_channel(
-                guild_conf.get("reminder_channel") or reminder.channel_id
-            ):
-                topic = reminder.topic or "something"
-                message = f"{member.mention}\nYou asked to be reminded about {topic}."
-                await channel.send(message)
+            topic = reminder.topic or "something"
+            message = f"{member.mention}\nYou asked to be reminded about {topic}."
+            await channel.send(message)
         async with self.db.get_session() as s:
             query = s.select(Reminder).where(Reminder.id == reminder.id)
             reminder = await query.first()
