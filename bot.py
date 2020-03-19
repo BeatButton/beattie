@@ -37,11 +37,11 @@ class BeattieBot(Bot):
                 prefix = (prefix,)
             elif isinstance(prefix, list):
                 prefix = tuple(prefix)
-            if message.guild is None:
-                return prefix
-            guild_conf = await bot.config.get_guild(message.guild.id)
-            guild_pre = guild_conf.get("prefix")
-            if guild_pre:
+            if message.guild and (
+                guild_pre := (await bot.config.get_guild(message.guild.id)).get(
+                    "prefix"
+                )
+            ):
                 prefix = prefix + (guild_pre,)
             return prefix
 
