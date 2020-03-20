@@ -133,12 +133,13 @@ class Remind(Cog):
                 await ctx.send("That reminder belongs to someone else.")
                 return
             await s.remove(reminder)
-            if self.queue[-1] == reminder:
-                self.timer.cancel()
-                self.queue.pop()
-                await self.start_timer()
-            else:
-                self.queue.remove(reminder)
+
+        if self.queue[-1] == reminder:
+            self.timer.cancel()
+            self.queue.pop()
+            await self.start_timer()
+        else:
+            self.queue.remove(reminder)
 
         await ctx.send("Reminder deleted.")
 
