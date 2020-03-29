@@ -150,7 +150,7 @@ class Crosspost(Cog):
         if (guild := message.guild) is None or message.author.bot:
             return
         if not guild.me.permissions_in(message.channel).send_messages:
-            return  
+            return
         if not (await self.bot.config.get_guild(guild.id)).get("crosspost_enabled"):
             return
         if "http" not in message.content:
