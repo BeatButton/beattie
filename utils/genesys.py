@@ -1,52 +1,56 @@
+from __future__ import annotations  # type: ignore
+
 import random
+from numbers import Real
+from typing import Any, Union, Dict, Tuple
 
 
 class Result:
-    def __init__(self, advantages=0, successs=0, triumphs=0):
+    def __init__(self, advantages: int = 0, successs: int = 0, triumphs: int = 0):
         self.advantages = advantages
         self.successs = successs
         self.triumphs = triumphs
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"{type(self).__name__}"
             f"({self.advantages}, {self.successs}, {self.triumphs})"
         )
 
-    def __str__(self):
-        ret = []
+    def __str__(self) -> str:
+        out = []
 
         if self.successs > 0:
             s = "es" if self.successs > 1 else ""
-            ret.append(f"{self.successs} success{s}")
+            out.append(f"{self.successs} success{s}")
         elif self.successs < 0:
             failures = -self.successs
             s = "s" if failures > 1 else ""
-            ret.append(f"{failures} failure{s}")
+            out.append(f"{failures} failure{s}")
 
         if self.advantages > 0:
             s = "s" if self.advantages > 1 else ""
-            ret.append(f"{self.advantages} advantage{s}")
+            out.append(f"{self.advantages} advantage{s}")
         elif self.advantages < 0:
             disadvantages = -self.advantages
             s = "s" if disadvantages > 1 else ""
-            ret.append(f"{disadvantages} disadvantage{s}")
+            out.append(f"{disadvantages} disadvantage{s}")
 
         if self.triumphs > 0:
             s = "s" if self.triumphs > 1 else ""
-            ret.append(f"{self.triumphs} triumph{s}")
+            out.append(f"{self.triumphs} triumph{s}")
         elif self.triumphs < 0:
             despairs = -self.triumphs
             s = "s" if despairs > 1 else ""
-            ret.append(f"{despairs} despair{s}")
+            out.append(f"{despairs} despair{s}")
 
-        if ret:
-            ret = f'{", ".join(ret)}.'
+        if out:
+            ret = f'{", ".join(out)}.'
         else:
             ret = "Wash."
         return ret
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> Result:
         if isinstance(other, Result):
             return type(self)(
                 self.advantages + other.advantages,
@@ -62,48 +66,55 @@ class Result:
 
     __radd__ = __add__
 
-    def __mul__(self, other):
-        return type(self)(
-            self.advantages * other, self.successs * other, self.triumphs * other
-        )
+    def __mul__(self, other: Any) -> Result:
+        if isinstance(other, Real):
+            return type(self)(
+                self.advantages * other, self.successs * other, self.triumphs * other
+            )
+        else:
+            return NotImplemented
 
     __rmul__ = __mul__
 
-    def __neg__(self):
+    def __neg__(self) -> Result:
         return type(self)(-self.advantages, -self.successs, -self.triumphs)
 
 
 class Force:
-    def __init__(self, light=0, dark=0):
+    def __init__(self, light: int = 0, dark: int = 0):
         self.light = light
         self.dark = dark
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({self.light}, {self.dark})"
 
-    def __str__(self):
-        ret = []
+    def __str__(self) -> str:
+        out = []
         if self.light:
-            ret.append(f"{self.light} light side")
+            out.append(f"{self.light} light side")
         if self.dark:
-            ret.append(f"{self.dark} dark side")
-        if not ret:
+            out.append(f"{self.dark} dark side")
+        if not out:
             ret = "Wash."
         else:
-            ret = ", ".join(ret) + "."
+            ret = ", ".join(out) + "."
         return ret
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> Force:
         if isinstance(other, Force):
             return type(self)(self.light + other.light, self.dark + other.dark)
         elif isinstance(other, int):
             return type(self)(self.light + other, self.dark + other)
-        return NotImplemented
+        else:
+            return NotImplemented
 
     __radd__ = __add__
 
-    def __mul__(self, other):
-        return type(self)(self.light * other, self.dark * other)
+    def __mul__(self, other: Any) -> Force:
+        if isinstance(other, Real):
+            return type(self)(self.light * other, self.dark * other)
+        else:
+            return NotImplemented
 
     __rmul__ = __mul__
 
@@ -128,7 +139,7 @@ die_names = {
     "f": "force",
 }
 
-dice = {
+dice: Dict[str, Tuple[Union[Result, Force], ...]] = {
     "boost": (wash, wash, success, success + advantage, 2 * advantage, advantage),
     "setback": (wash, wash, failure, failure, disadvantage, disadvantage),
     "ability": (
@@ -196,11 +207,12 @@ dice = {
 }
 
 
-def genesysroller(**kwargs):
+def genesysroller(**kwargs: int) -> Result:
     if "force" in kwargs:
         if len(kwargs) > 1:
             raise ValueError
-        return sum(random.choice(dice["force"]) for _ in range(kwargs["force"]))
+        result = sum(random.choice(dice["force"]) for _ in range(kwargs["force"]))
+        return result  # type: ignore
     result = Result()
     for die, times in kwargs.items():
         result += sum(random.choice(dice[die]) for _ in range(times))

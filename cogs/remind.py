@@ -2,6 +2,7 @@ import asyncio
 from collections import namedtuple
 from datetime import datetime
 
+from asyncqlio.db import DatabaseInterface
 from discord import Embed, TextChannel
 from discord.ext import commands, menus
 from discord.ext.commands import Cog
@@ -14,12 +15,12 @@ from utils.etc import reverse_insort_by_key
 
 
 class ReminderSource(menus.KeysetPageSource):
-    def __init__(self, db, user_id, guild_id):
+    def __init__(self, db: DatabaseInterface, user_id: int, guild_id: int):
         self.db = db
         self.user_id = user_id
         self.guild_id = guild_id
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
     async def get_page(self, specifier):
@@ -51,7 +52,7 @@ class ReminderSource(menus.KeysetPageSource):
 
         return results
 
-    async def format_page(self, menu, page):
+    async def format_page(self, menu, page) -> Embed:
         return Embed(
             description="\n".join(
                 f'ID {row.id}: "{row.topic}" at {row.time}' for row in page

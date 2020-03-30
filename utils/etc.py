@@ -1,8 +1,25 @@
-def reverse_insort(seq, val, lo=0, hi=None):
+from typing import MutableSequence, TypeVar, Optional, Callable
+
+from .type_hints import Comparable
+
+T = TypeVar("T")
+U = TypeVar("U", bound=Comparable)
+
+
+def reverse_insort(
+    seq: MutableSequence[U], val: U, lo: int = 0, hi: Optional[int] = None
+) -> None:
     reverse_insort_by_key(seq, val, key=lambda x: x, lo=lo, hi=hi)
 
 
-def reverse_insort_by_key(seq, val, *, key, lo=0, hi=None):
+def reverse_insort_by_key(
+    seq: MutableSequence[T],
+    val: T,
+    *,
+    key: Callable[[T], U],
+    lo: int = 0,
+    hi: Optional[int] = None
+) -> None:
     if hi is None:
         hi = len(seq)
     while lo < hi:

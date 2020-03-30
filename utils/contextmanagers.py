@@ -1,6 +1,8 @@
 import os
+from types import TracebackType
+from typing import Dict, Any
 
-from aiohttp import ServerDisconnectedError
+from aiohttp import ServerDisconnectedError, ClientSession, ClientResponse
 
 from .exceptions import ResponseError
 
@@ -8,7 +10,7 @@ from .exceptions import ResponseError
 class get:
     """Returns a response to a URL."""
 
-    def __init__(self, session, url, **kwargs):
+    def __init__(self, session: ClientSession, url: str, **kwargs: Any):
         self.session = session
         self.url = url
         headers = kwargs.get("headers", {})
@@ -21,7 +23,7 @@ class get:
             kwargs["timeout"] = None
         self.kwargs = kwargs
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> ClientResponse:
         try:
             self.resp = await self.session.get(self.url, **self.kwargs)
         except ServerDisconnectedError:
@@ -31,5 +33,7 @@ class get:
             raise ResponseError(code=self.resp.status, url=self.resp.url)
         return self.resp
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(
+        self, exc_type: type, exc: Exception, tb: TracebackType
+    ) -> None:
         self.resp.close()

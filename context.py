@@ -1,26 +1,41 @@
 import io
+from typing import Any, Optional
 
 import discord
+from discord import Embed, Message
 from discord.ext import commands
 
 from utils import contextmanagers
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bot import BeattieBot
 
 
 class BContext(commands.Context):
     """An extension of Context to add reply and mention methods,
     as well as support use with self bots"""
 
-    async def reply(self, content, sep=",\n", **kwargs):
+    bot: BeattieBot
+
+    async def reply(self, content: str, sep: str = ",\n", **kwargs: Any) -> Message:
         if self.guild:
             content = f"{self.author.display_name}{sep}{content}"
         return await self.send(content, **kwargs)
 
-    async def mention(self, content, sep=",\n", **kwargs):
+    async def mention(self, content: str, sep: str = ",\n", **kwargs: Any) -> Message:
         if self.guild:
             content = f"{self.author.mention}{sep}{content}"
         return await self.send(content, **kwargs)
 
-    async def send(self, content=None, *, embed=None, **kwargs):
+    async def send(
+        self,
+        content: Optional[str] = None,
+        *,
+        embed: Optional[Embed] = None,
+        **kwargs: Any,
+    ) -> Message:
         str_content = str(content)
         if len(str_content) >= 2000:
             fp = io.BytesIO()

@@ -5,7 +5,7 @@ from asyncqlio.orm.schema.types import BigInt, Boolean, Integer, Text
 Table = table_base()
 
 
-class Guild(Table):
+class Guild(Table):  # type: ignore
     id = Column(BigInt, primary_key=True)
     cog_blacklist = Column(Text, nullable=True)
     prefix = Column(Text, nullable=True)
@@ -15,13 +15,13 @@ class Guild(Table):
     reminder_channel = Column(BigInt, nullable=True)
 
 
-class Member(Table):
+class Member(Table):  # type: ignore
     guild_id = Column(BigInt, primary_key=True)
     id = Column(BigInt, primary_key=True)
     plonked = Column(Boolean, nullable=True)
 
 
-class Channel(Table):
+class Channel(Table):  # type: ignore
     id = Column(BigInt, primary_key=True)
     guild_id = Column(BigInt, primary_key=True)
     plonked = Column(Boolean, nullable=True)

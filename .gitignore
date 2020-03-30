@@ -96,3 +96,5 @@ ENV/
 /discord*.log
 /discord*.log.xz
 **/.mypy_cache
+/stubs
+/mypy.ini
