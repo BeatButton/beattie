@@ -11,7 +11,7 @@ from discord.ext.commands import when_mentioned_or
 from bot import BeattieBot
 
 if platform.system() != "Windows":
-    import uvloop
+    import uvloop  # type: ignore
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 

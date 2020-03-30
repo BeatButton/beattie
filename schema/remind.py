@@ -5,7 +5,7 @@ from asyncqlio.orm.schema.types import BigInt, Serial, Text, Timestamp
 Table = table_base()
 
 
-class Reminder(Table):
+class Reminder(Table):  # type: ignore
     id = Column(Serial, primary_key=True)
     guild_id = Column(BigInt)
     channel_id = Column(BigInt)

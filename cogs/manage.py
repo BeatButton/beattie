@@ -1,17 +1,19 @@
 from typing import Union
 
 import discord
+from discord import Member, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-member_or_channel = Union[discord.Member, discord.TextChannel]
+from bot import BeattieBot
+from context import BContext
 
 
 class Manage(Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BeattieBot) -> None:
         self.config = bot.config
 
-    async def bot_check(self, ctx):
+    async def bot_check(self, ctx: BContext) -> bool:
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
         cog = ctx.command.cog_name
@@ -19,7 +21,7 @@ class Manage(Cog):
         blacklist = guild_conf.get("cog_blacklist") or ""
         return f"{cog}," not in blacklist
 
-    async def bot_check_once(self, ctx):
+    async def bot_check_once(self, ctx: BContext) -> bool:
         if not ctx.channel.permissions_for(ctx.me).send_messages:
             return False
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
@@ -33,7 +35,7 @@ class Manage(Cog):
         channel_plonked = channel_conf.get("plonked", False)
         return not channel_plonked
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: BContext) -> bool:
         if ctx.guild is None:
             return False
         return (
@@ -42,7 +44,7 @@ class Manage(Cog):
         )
 
     @commands.command()
-    async def enable(self, ctx, cog):
+    async def enable(self, ctx: BContext, cog: str) -> None:
         """Enable a cog in the guild."""
         if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
@@ -57,7 +59,7 @@ class Manage(Cog):
         await ctx.send("Cog enabled for this guild.")
 
     @commands.command()
-    async def disable(self, ctx, cog):
+    async def disable(self, ctx: BContext, cog: str) -> None:
         """Disable a cog in the guild."""
         if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
@@ -72,47 +74,49 @@ class Manage(Cog):
         await ctx.send("Cog disabled for this guild.")
 
     @commands.command()
-    async def prefix(self, ctx, prefix=""):
+    async def prefix(self, ctx: BContext, prefix: str = "") -> None:
         """Set a custom prefix for this guild. Pass no prefix to reset."""
         await self.config.set_guild(ctx.guild.id, prefix=prefix)
         await ctx.send("Guild prefix set.")
 
     @commands.command()
-    async def plonk(self, ctx, target: member_or_channel):
+    async def plonk(self, ctx: BContext, target: Union[Member, TextChannel]) -> None:
         """Disallow a member from using commands on this server, or disallow
         commands from being used in a channel."""
         await self._plonker(ctx, target, True)
 
     @commands.command()
-    async def unplonk(self, ctx, target: member_or_channel):
+    async def unplonk(self, ctx: BContext, target: Union[Member, TextChannel]) -> None:
         """Allow a member to use commands on this server, or allow commands
         to be used in a channel."""
         await self._plonker(ctx, target, False)
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge(self, ctx, num: int):
+    async def purge(self, ctx: BContext, num: int) -> None:
         """Delete the last num messages from the channel."""
         await ctx.channel.purge(limit=num)
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def clean(self, ctx, num: int):
+    async def clean(self, ctx: BContext, num: int) -> None:
         """Delete the last num messages from the bot in the channel."""
         await ctx.channel.purge(limit=num, check=lambda msg: msg.author == ctx.me)
 
     @commands.command()
     @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx, member: discord.Member, *, reason: str):
+    async def kick(self, ctx: BContext, member: Member, *, reason: str) -> None:
         await member.kick(reason=reason)
 
     @commands.command()
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, member: discord.Member, *, reason: str):
+    async def ban(self, ctx: BContext, member: Member, *, reason: str) -> None:
         await member.ban(reason=reason)
 
-    async def _plonker(self, ctx, target, plonked):
-        if isinstance(target, discord.Member):
+    async def _plonker(
+        self, ctx: BContext, target: Union[Member, TextChannel], plonked
+    ) -> None:
+        if isinstance(target, Member):
             type_ = "Member"
             update = self.config.set_member
         else:
@@ -123,5 +127,5 @@ class Manage(Cog):
         await ctx.send(f"{type_} {un}plonked.")
 
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(Manage(bot))
