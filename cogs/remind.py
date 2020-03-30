@@ -143,7 +143,7 @@ class Remind(Cog):
 
         await ctx.send("Reminder deleted.")
 
-    @remind.command(name=["channel"])
+    @remind.command(name="channel")
     @is_owner_or(manage_guild=True)
     async def set_channel(self, ctx, channel: TextChannel = None):
         """Set the channel reminders will appear in. Invoke with no input to reset."""
