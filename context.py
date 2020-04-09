@@ -1,3 +1,5 @@
+from __future__ import annotations #  type: ignore
+
 import io
 from typing import Any, Optional
 

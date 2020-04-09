@@ -55,8 +55,8 @@ class BeattieBot(Bot):
 
         help_command: commands.HelpCommand = commands.DefaultHelpCommand(dm_help=None)
 
-        kwargs["case_insensitive"].setdefault(True)
-        kwargs["help_command"].setdefault(help_command)
+        kwargs.setdefault("case_insensitive", True)
+        kwargs.setdefault("help_command", help_command)
 
         super().__init__(prefix_func, *args, **kwargs)
         with open("config/config.toml") as file:

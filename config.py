@@ -1,3 +1,5 @@
+from __future__ import annotations #  type: ignore
+
 from typing import Any, Dict, Union
 
 from schema.config import Channel, Guild, Member, Table  # type: ignore
