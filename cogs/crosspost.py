@@ -49,7 +49,7 @@ class Crosspost(Cog):
     twitter_img_selector = ".//img[@data-aria-label-part]"
 
     pixiv_url_expr = re.compile(
-        r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*|\w{2}/artworks/\d+)"
+        r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*|\w{2}/artworks/\d+(?:#\w*)?)"
     )
 
     hiccears_url_expr = re.compile(
