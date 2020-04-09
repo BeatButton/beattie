@@ -171,7 +171,7 @@ class Crosspost(Cog):
 
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.command is None:
-            ctx.cog = self
+            ctx.command = self.post
             await self.process_links(ctx)
 
     @Cog.listener()
