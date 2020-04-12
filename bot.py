@@ -77,7 +77,8 @@ class BeattieBot(Bot):
     async def close(self) -> None:
         await self.session.close()
         await self.db.close()
-        self.archive_task.cancel()
+        if not self.debug:
+            self.archive_task.cancel()
         await super().close()
 
     async def swap_logs(self, new: bool = True) -> None:
