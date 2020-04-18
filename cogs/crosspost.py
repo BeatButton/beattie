@@ -21,6 +21,7 @@ from bot import BeattieBot
 from context import BContext
 from utils.checks import is_owner_or
 from utils.contextmanagers import get as get_
+from utils.etc import remove_spoilers
 from utils.exceptions import ResponseError
 
 
@@ -151,8 +152,9 @@ class Crosspost(Cog):
         return img
 
     async def process_links(self, ctx: CrosspostContext) -> None:
+        content = remove_spoilers(ctx.message.content)
         for expr, func in self.expr_dict.items():
-            for link in expr.findall(ctx.message.content):
+            for link in expr.findall(content):
                 try:
                     await func(link, ctx)
                 except Exception as e:
