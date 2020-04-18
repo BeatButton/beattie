@@ -1,9 +1,13 @@
+import re
+
 from typing import MutableSequence, TypeVar, Optional, Callable
 
 from .type_hints import Comparable
 
 T = TypeVar("T")
 U = TypeVar("U", bound=Comparable)
+
+SPOILER_EXPR = re.compile(r"\|\|.*?\|\|")
 
 
 def reverse_insort(
@@ -29,3 +33,7 @@ def reverse_insort_by_key(
         else:
             lo = mid + 1
     seq.insert(lo, val)
+
+
+def remove_spoilers(content: str) -> str:
+    return SPOILER_EXPR.sub("", content)
