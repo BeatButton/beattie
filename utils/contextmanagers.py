@@ -10,7 +10,9 @@ from .exceptions import ResponseError
 class get:
     """Returns a response to a URL."""
 
-    def __init__(self, session: ClientSession, url: str, **kwargs: Any):
+    def __init__(
+        self, session: ClientSession, url: str, method: str = "GET", **kwargs: Any
+    ):
         self.session = session
         self.url = url
         headers = kwargs.get("headers", {})
@@ -22,10 +24,11 @@ class get:
         if "timeout" not in kwargs:
             kwargs["timeout"] = None
         self.kwargs = kwargs
+        self.method = method
 
     async def __aenter__(self) -> ClientResponse:
         try:
-            self.resp = await self.session.get(self.url, **self.kwargs)
+            self.resp = await self.session.request(self.method, self.url, **self.kwargs)
         except ServerDisconnectedError:
             return await self.__aenter__()
         if self.resp.status != 200:
