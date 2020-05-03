@@ -66,6 +66,10 @@ class Crosspost(Cog):
     mastodon_url_groups = re.compile(r"https?://([^\s/]+)(?:/.+)+/(\w+)")
     mastodon_api_fmt = "https://{}/api/v1/statuses/{}"
 
+    inkbunny_url_expr = re.compile(r"https?://inkbunny\.net/s/(\d+)(?:-p\d+-)?(?:#.*)?")
+    inkbunny_api_fmt = "https://inkbunny.net/api_{}.php"
+    inkbunny_sid = ""
+
     sent_images: Dict[int, List[Message]]
 
     def __init__(self, bot: BeattieBot):
@@ -90,12 +94,22 @@ class Crosspost(Cog):
         }
         self.sent_images = defaultdict(list)
         self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
+        self.init_task = bot.loop.create_task(self.__init())
+
+    async def __init(self) -> None:
+        with open("config/logins.toml") as fp:
+            login = toml.load(fp)["inkbunny"]
+        url = self.inkbunny_api_fmt.format("login")
+        async with self.get(url, "POST", params=login) as resp:
+            json = await resp.json()
+            self.inkbunny_sid = json["sid"]
 
     async def pixiv_login_loop(self) -> None:
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
             with open("config/logins.toml") as fp:
-                login = toml.load(fp)
+                logins = toml.load(fp)
+            login = logins["pixiv"]
             data = {
                 "get_secure_url": 1,
                 "client_id": "MOBrBDS8blbauoSck0ZfDbtuzpyT",
@@ -126,16 +140,16 @@ class Crosspost(Cog):
             self.headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
             with open("config/logins.toml", "w") as fp:
-                toml.dump(login, fp)
+                toml.dump(logins, fp)
             await asyncio.sleep(res["expires_in"] / 2)
 
     def cog_unload(self) -> None:
         self.bot.loop.create_task(self.session.close())
         self.login_task.cancel()
 
-    def get(self, *args: Any, **kwargs: Any) -> get_:
+    def get(self, url: str, method: str = "GET", **kwargs: Any) -> get_:
         kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
-        return get_(self.session, *args, **kwargs)
+        return get_(self.session, url, method, **kwargs)
 
     async def save(
         self, img_url: str, headers: Optional[Dict[str, str]] = None
@@ -390,6 +404,18 @@ class Crosspost(Cog):
 
         for image in images[idx:]:
             url = image["remote_url"] or image["url"]
+            await self.send(ctx, url)
+
+    async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> None:
+        url = self.inkbunny_api_fmt.format("submissions")
+        params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
+        async with self.get(url, "POST", params=params) as resp:
+            response = await resp.json()
+
+        sub = response["submissions"][0]
+
+        for file in sub["files"]:
+            url = file["file_url_full"]
             await self.send(ctx, url)
 
     @commands.command(hidden=True)
