@@ -13,14 +13,12 @@ class NSFW(Cog):
     view = {
         "gelbooru": "https://gelbooru.com/index.php?page=post&s=view&id={}",
         "rule34": "https://rule34.xxx/index.php?page=post&s=view&id={}",
-        "shotachan": "http://booru.shotachan.net/post/show/{}",
         "e621": "http://e621.net/post/show/{}",
     }
 
     urls = {
         "gelbooru": "http://gelbooru.com/index.php",
         "rule34": "http://rule34.xxx/index.php",
-        "shotachan": "http://booru.shotachan.net/post/index.xml",
         "e621": "https://e621.net/post/index.xml",
     }
 
@@ -41,11 +39,6 @@ class NSFW(Cog):
     @commands.command(aliases=["r34"])
     async def rule34(self, ctx, *tags):
         """Search rule34.xxx for images."""
-        await self.booru(ctx, tags)
-
-    @commands.command(aliases=["shota"])
-    async def shotachan(self, ctx, *tags):
-        """Search shotabooru for images."""
         await self.booru(ctx, tags)
 
     @commands.command(aliases=["fur"])
