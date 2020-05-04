@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Callable, Awaitable
+from typing import Any, Awaitable, Callable
 
 
 def do_every(

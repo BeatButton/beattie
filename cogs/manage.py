@@ -1,9 +1,10 @@
-from typing import Union
+from typing import Any, Callable, Coroutine, Union
 
 import discord
 from discord import Member, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
+from mypy_extensions import KwArg
 
 from bot import BeattieBot
 from context import BContext
@@ -22,7 +23,11 @@ class Manage(Cog):
         return f"{cog}," not in blacklist
 
     async def bot_check_once(self, ctx: BContext) -> bool:
-        if not ctx.channel.permissions_for(ctx.me).send_messages:
+        me = ctx.me
+        channel = ctx.channel
+        assert isinstance(me, Member)
+        assert isinstance(channel, TextChannel)
+        if not channel.permissions_for(me).send_messages:
             return False
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
@@ -38,9 +43,13 @@ class Manage(Cog):
     async def cog_check(self, ctx: BContext) -> bool:
         if ctx.guild is None:
             return False
+        author = ctx.author
+        channel = ctx.channel
+        assert isinstance(author, Member)
+        assert isinstance(channel, TextChannel)
         return (
-            await ctx.bot.is_owner(ctx.author)
-            or ctx.channel.permissions_for(ctx.author).manage_guild
+            await ctx.bot.is_owner(author)
+            or channel.permissions_for(author).manage_guild
         )
 
     @commands.command()
@@ -49,13 +58,15 @@ class Manage(Cog):
         if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = await self.config.get_guild(ctx.guild.id)
+        guild = ctx.guild
+        assert guild is not None
+        guild_conf = await self.config.get_guild(guild.id)
         blacklist = guild_conf.get("cog_blacklist") or ""
         if f"{cog}," not in blacklist:
             await ctx.send("Cog is already enabled.")
             return
         blacklist = blacklist.replace(f"{cog},", "")
-        await self.config.set_guild(ctx.guild.id, cog_blacklist=blacklist)
+        await self.config.set_guild(guild.id, cog_blacklist=blacklist)
         await ctx.send("Cog enabled for this guild.")
 
     @commands.command()
@@ -64,19 +75,23 @@ class Manage(Cog):
         if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
             return
-        guild_conf = await self.config.get_guild(ctx.guild.id)
+        guild = ctx.guild
+        assert guild is not None
+        guild_conf = await self.config.get_guild(guild.id)
         blacklist = guild_conf.get("cog_blacklist") or ""
         if f"{cog}," in blacklist:
             await ctx.send("Cog is already disabled.")
             return
         blacklist += f"{cog},"
-        await self.config.set_guild(ctx.guild.id, cog_blacklist=blacklist)
+        await self.config.set_guild(guild.id, cog_blacklist=blacklist)
         await ctx.send("Cog disabled for this guild.")
 
     @commands.command()
     async def prefix(self, ctx: BContext, prefix: str = "") -> None:
         """Set a custom prefix for this guild. Pass no prefix to reset."""
-        await self.config.set_guild(ctx.guild.id, prefix=prefix)
+        guild = ctx.guild
+        assert guild is not None
+        await self.config.set_guild(guild.id, prefix=prefix)
         await ctx.send("Guild prefix set.")
 
     @commands.command()
@@ -95,13 +110,17 @@ class Manage(Cog):
     @commands.bot_has_permissions(manage_messages=True)
     async def purge(self, ctx: BContext, num: int) -> None:
         """Delete the last num messages from the channel."""
-        await ctx.channel.purge(limit=num)
+        channel = ctx.channel
+        assert isinstance(channel, TextChannel)
+        await channel.purge(limit=num)
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
     async def clean(self, ctx: BContext, num: int) -> None:
         """Delete the last num messages from the bot in the channel."""
-        await ctx.channel.purge(limit=num, check=lambda msg: msg.author == ctx.me)
+        channel = ctx.channel
+        assert isinstance(channel, TextChannel)
+        await channel.purge(limit=num, check=lambda msg: msg.author == ctx.me)
 
     @commands.command()
     @commands.bot_has_permissions(kick_members=True)
@@ -114,8 +133,9 @@ class Manage(Cog):
         await member.ban(reason=reason)
 
     async def _plonker(
-        self, ctx: BContext, target: Union[Member, TextChannel], plonked
+        self, ctx: BContext, target: Union[Member, TextChannel], plonked: bool
     ) -> None:
+        update: Callable[..., Coroutine[Any, Any, None]]
         if isinstance(target, Member):
             type_ = "Member"
             update = self.config.set_member
@@ -123,9 +143,11 @@ class Manage(Cog):
             type_ = "Channel"
             update = self.config.set_channel
         un = "un" if not plonked else ""
-        await update(ctx.guild.id, target.id, plonked=plonked)
+        guild = ctx.guild
+        assert guild is not None
+        await update(guild.id, target.id, plonked=plonked)
         await ctx.send(f"{type_} {un}plonked.")
 
 
-def setup(bot) -> None:
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(Manage(bot))

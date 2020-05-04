@@ -3,27 +3,32 @@ import os
 import random
 import re
 from concurrent import futures
+from typing import List, Sequence, Tuple
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
 
+from bot import BeattieBot
+from context import BContext
 from utils.genesys import die_names, genesysroller
+
+RollArg = Tuple[int, int, int, int, int, int]
 
 
 class RPG(Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BeattieBot):
         self.loop = bot.loop
         self.tarot_url = "https://www.trustedtarot.com/cards/{}/"
 
     @commands.command()
-    async def choose(self, ctx, *options: commands.clean_content):
+    async def choose(self, ctx: BContext, *options: commands.clean_content) -> None:
         """Choose between some options. Use quotes if they have spaces."""
         choice = random.choice(options)
         await ctx.send(f"I choose:\n{choice}")
 
     @commands.command()
-    async def tarot(self, ctx, *suits):
+    async def tarot(self, ctx: BContext, *suits: str) -> None:
         """Get a random tarot card.
 
         You can specify the suits from which to pull, options are:
@@ -39,9 +44,9 @@ class RPG(Cog):
                 suits = ("cups", "swords", "wands", "pentacles", "major")
             if "minor" in suits:
                 suits = suits + ("cups", "swords", "wands", "pentacles")
-            suits = set(suit.lower() for suit in suits)
+            suit_set = set(suit.lower() for suit in suits)
             for root, dirs, files in os.walk("data/tarot"):
-                if any(suit in root for suit in suits):
+                if any(suit in root for suit in suit_set):
                     cards += [f"{root}/{card}" for card in files]
             try:
                 card = random.choice(cards).replace("\\", "/")
@@ -49,6 +54,7 @@ class RPG(Cog):
                 await ctx.send("Please specify a valid suit, or no suit.")
                 return
             match = re.match(r"(?:\w+/)+[IVX0_]*([\w_]+)\.jpg", card)
+            assert match is not None
             name = match.groups()[0].replace("_", " ")
             url = self.tarot_url.format(name.lower().replace(" ", "-"))
             embed = discord.Embed()
@@ -59,7 +65,7 @@ class RPG(Cog):
             await ctx.send(file=discord.File(f"{card}", filename), embed=embed)
 
     @commands.command(aliases=["r"])
-    async def roll(self, ctx, *, inp="1d20"):
+    async def roll(self, ctx: BContext, *, inp: str = "1d20") -> None:
         """Roll some dice!
 
         Can roll multiple dice of any size, with modifiers.
@@ -83,7 +89,7 @@ class RPG(Cog):
             raise commands.BadArgument
 
         rolls = inp.split(",")
-        args_batch = []
+        args_batch: List[RollArg] = []
         for roll in rolls:
             if "d" not in roll:
                 roll = f"1d{roll}"
@@ -117,7 +123,7 @@ class RPG(Cog):
             args = (num, sides, lo_drop, hi_drop, mod, times)
             args_batch.append(args)
 
-        future = self.loop.run_in_executor(None, self.roll_helper, args_batch)
+        future = self.loop.run_in_executor(None, self.roll_helper, *args_batch)
         async with ctx.typing():
             results = await asyncio.wait_for(future, 10, loop=self.loop)
 
@@ -141,11 +147,11 @@ class RPG(Cog):
             out.append(f"{roll}: {result}")
         await ctx.reply("\n".join(out))
 
-    def roll_helper(self, rolls):
+    def roll_helper(self, *rolls: RollArg) -> List[List[List[int]]]:
         return [roller(*roll) for roll in rolls]
 
     @roll.error
-    async def roll_error(self, ctx, e):
+    async def roll_error(self, ctx: BContext, e: Exception) -> None:
         e = getattr(e, "original", e)
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
             await ctx.send(
@@ -164,7 +170,7 @@ class RPG(Cog):
             await ctx.bot.handle_error(ctx, e)
 
     @commands.command(aliases=["shadroll", "sr"])
-    async def shadowroll(self, ctx, *, inp):
+    async def shadowroll(self, ctx: BContext, *, inp: str) -> None:
         """Roll some dice - for Shadowrun!
 
         Format: N[e]
@@ -186,7 +192,7 @@ class RPG(Cog):
         await ctx.reply(result)
 
     @shadowroll.error
-    async def shadowroll_error(self, ctx, e):
+    async def shadowroll_error(self, ctx: BContext, e: Exception) -> None:
         e = getattr(e, "original", e)
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
             await ctx.send("Invalid input. Valid input examples:" "\n6" "\n13e")
@@ -196,7 +202,7 @@ class RPG(Cog):
             await ctx.bot.handle_error(ctx, e)
 
     @commands.command(aliases=["gr"])
-    async def genesysroll(self, ctx, *, inp):
+    async def genesysroll(self, ctx: BContext, *, inp: str) -> None:
         """Roll some dice - for Fantasy Flight Genesys!
 
         Available dice:
@@ -238,10 +244,10 @@ class RPG(Cog):
             except ValueError:
                 await ctx.send("Force dice cannot be used with other dice.")
             else:
-                await ctx.reply(result)
+                await ctx.reply(str(result))
 
     @genesysroll.error
-    async def genesysroll_error(self, ctx, e):
+    async def genesysroll_error(self, ctx: BContext, e: Exception) -> None:
         e = getattr(e, "original", e)
         if isinstance(e, futures.TimeoutError):
             await ctx.reply("Your execution took too long. Roll fewer dice.")
@@ -249,7 +255,14 @@ class RPG(Cog):
             await ctx.bot.handle_error(ctx, e)
 
 
-def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
+def roller(
+    num: int = 1,
+    sides: int = 20,
+    lo_drop: int = 0,
+    hi_drop: int = 0,
+    mod: int = 0,
+    times: int = 1,
+) -> List[List[int]]:
     rolls = []
     for _ in range(times):
         pool = [random.randint(1, sides) for _ in range(num)]
@@ -264,7 +277,7 @@ def roller(num=1, sides=20, lo_drop=0, hi_drop=0, mod=0, times=1):
     return rolls
 
 
-def shadowroller(num, edge=False):
+def shadowroller(num: int, edge: bool = False) -> str:
     rolls = hits = count1 = 0
     while True:
         count6 = 0
@@ -291,5 +304,5 @@ def shadowroller(num, edge=False):
     return result
 
 
-def setup(bot):
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(RPG(bot))

@@ -1,6 +1,5 @@
 import re
-
-from typing import MutableSequence, TypeVar, Optional, Callable
+from typing import Callable, MutableSequence, Optional, TypeVar
 
 from .type_hints import Comparable
 

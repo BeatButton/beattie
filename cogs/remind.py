@@ -1,13 +1,16 @@
 import asyncio
 from collections import namedtuple
 from datetime import datetime
+from typing import Any, Iterable, List, Optional
 
 from asyncqlio.db import DatabaseInterface
 from discord import Embed, TextChannel
 from discord.ext import commands, menus
 from discord.ext.commands import Cog
-from discord.ext.menus import MenuKeysetPages, PageDirection
+from discord.ext.menus import MenuKeysetPages, PageDirection, PageSpecifier
 
+from bot import BeattieBot
+from context import BContext
 from schema.remind import Reminder, Table
 from utils.checks import is_owner_or
 from utils.converters import Time
@@ -23,7 +26,7 @@ class ReminderSource(menus.KeysetPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def get_page(self, specifier):
+    async def get_page(self, specifier: PageSpecifier) -> List[Reminder]:
         async with self.db.get_session() as s:
             query = (
                 s.select(Reminder)
@@ -52,7 +55,7 @@ class ReminderSource(menus.KeysetPageSource):
 
         return results
 
-    async def format_page(self, menu, page) -> Embed:
+    async def format_page(self, _: Any, page: Iterable[Reminder]) -> Embed:
         return Embed(
             description="\n".join(
                 f'ID {row.id}: "{row.topic}" at {row.time}' for row in page
@@ -61,19 +64,22 @@ class ReminderSource(menus.KeysetPageSource):
 
 
 class Remind(Cog):
-    def __init__(self, bot):
-        self.queue = []
+    def __init__(self, bot: BeattieBot):
+        self.queue: List[Reminder] = []
         self.loop = bot.loop
         self.db = bot.db
         self.bot = bot
         self.db.bind_tables(Table)
-        self.timer = self.loop.create_task(asyncio.sleep(0))
+        self.timer: asyncio.Task = self.loop.create_task(asyncio.sleep(0))
         self.loop.create_task(self.__init())
 
-    def cog_unload(self):
+    def cog_check(self, ctx: BContext) -> bool:
+        return ctx.guild is not None
+
+    def cog_unload(self) -> None:
         self.timer.cancel()
 
-    async def __init(self):
+    async def __init(self) -> None:
         await self.bot.wait_until_ready()
         await Reminder.create(if_not_exists=True)
         async with self.db.get_session() as s:
@@ -82,26 +88,36 @@ class Remind(Cog):
         await self.start_timer()
 
     @commands.group(invoke_without_command=True)
-    async def remind(self, ctx, time: Time, *, topic: commands.clean_content = None):
+    async def remind(
+        self,
+        ctx: BContext,
+        time: Time,
+        *,
+        topic: Optional[commands.clean_content] = None,
+    ) -> None:
         """Commands for setting and managing reminders."""
         await self.set_reminder(ctx, time, topic=topic)
 
     @remind.error
-    async def remind_error(self, ctx, e):
+    async def remind_error(self, ctx: BContext, e: Exception) -> None:
         if ctx.invoked_subcommand is None:
             await self.set_reminder_error(ctx, e)
 
     @remind.command(name="set")
     async def set_reminder(
-        self, ctx, time: Time, *, topic: commands.clean_content = None
-    ):
+        self,
+        ctx: BContext,
+        time: Time,
+        *,
+        topic: Optional[commands.clean_content] = None,
+    ) -> None:
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
-        await self.schedule_reminder(ctx, time, topic)
+        await self.schedule_reminder(ctx, time, str(topic))
         await ctx.send("Okay, I'll remind you.")
 
     @set_reminder.error
-    async def set_reminder_error(self, ctx, e):
+    async def set_reminder_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
             await ctx.send(
                 "Bad input. Valid input examples:\n"
@@ -112,7 +128,9 @@ class Remind(Cog):
             await ctx.bot.handle_error(ctx, e)
 
     @remind.command(name="list")
-    async def list_reminders(self, ctx):
+    async def list_reminders(self, ctx: BContext) -> None:
+        """List all reminders active for you in this server."""
+        assert ctx.guild is not None
         pages = MenuKeysetPages(
             source=ReminderSource(ctx.bot.db, ctx.author.id, ctx.guild.id),
             clear_reactions_after=True,
@@ -122,8 +140,9 @@ class Remind(Cog):
         except ValueError:
             await ctx.send("No reminders to show.")
 
-    @remind.command(name="delete", aliases=["remove", "del"])
-    async def delete_reminder(self, ctx, reminder_id: int):
+    @remind.command(name="delete", aliases=["remove", "del", "cancel"])
+    async def delete_reminder(self, ctx: BContext, reminder_id: int) -> None:
+        """Delete a specific reminder. Use `list` to get IDs."""
         async with ctx.bot.db.get_session() as s:
             query = s.select(Reminder).where(Reminder.id == reminder_id)
             reminder = await query.first()
@@ -146,8 +165,11 @@ class Remind(Cog):
 
     @remind.command(name="channel")
     @is_owner_or(manage_guild=True)
-    async def set_channel(self, ctx, channel: TextChannel = None):
+    async def set_channel(
+        self, ctx: BContext, channel: Optional[TextChannel] = None
+    ) -> None:
         """Set the channel reminders will appear in. Invoke with no input to reset."""
+        assert ctx.guild is not None
         await ctx.bot.config.set_guild(
             ctx.guild.id, reminder_channel=channel and channel.id
         )
@@ -157,7 +179,8 @@ class Remind(Cog):
             destination = channel.mention
         await ctx.send(f"All reminders will be sent to {destination} from now on.")
 
-    async def schedule_reminder(self, ctx, time, topic):
+    async def schedule_reminder(self, ctx: BContext, time: Time, topic: str) -> None:
+        assert ctx.guild is not None
         async with self.db.get_session() as s:
             reminder = await s.add(
                 Reminder(
@@ -177,7 +200,7 @@ class Remind(Cog):
                 self.queue, reminder, key=lambda r: r.time, hi=len(self.queue) - 1
             )
 
-    async def send_reminder(self, reminder):
+    async def send_reminder(self, reminder: Reminder) -> None:
         if (
             (guild := self.bot.get_guild(reminder.guild_id))
             and (member := guild.get_member(reminder.user_id))
@@ -188,6 +211,7 @@ class Remind(Cog):
                 )
             )
         ):
+            assert isinstance(channel, TextChannel)
             topic = reminder.topic or "something"
             message = f"{member.mention}\nYou asked to be reminded about {topic}."
             await channel.send(message)
@@ -196,10 +220,10 @@ class Remind(Cog):
             reminder = await query.first()
             await s.remove(reminder)
 
-    async def start_timer(self):
+    async def start_timer(self) -> None:
         self.timer = self.loop.create_task(self.sleep())
 
-    async def sleep(self):
+    async def sleep(self) -> None:
         while self.queue:
             delta = (self.queue[-1].time - datetime.now()).total_seconds()
             if delta <= 0:
@@ -208,5 +232,5 @@ class Remind(Cog):
                 await asyncio.sleep(min(delta, 3_000_000))
 
 
-def setup(bot):
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(Remind(bot))

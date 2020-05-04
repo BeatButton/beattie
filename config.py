@@ -1,11 +1,9 @@
-from __future__ import annotations  #  type: ignore
+from __future__ import annotations  # type: ignore
 
-from typing import Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, Union
 
-from schema.config import Channel, Guild, Member, Table  # type: ignore
+from schema.config import Channel, Guild, Member, Table
 from utils.asyncqlio import to_dict
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bot import BeattieBot

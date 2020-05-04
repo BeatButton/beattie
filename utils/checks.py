@@ -1,12 +1,12 @@
 from __future__ import annotations  # type: ignore
 
+from typing import TYPE_CHECKING
+
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-    from discord.ext.commands import _CheckDecorator
+    from discord.ext.commands.core import _CheckDecorator
 
 
 def is_owner_or(**perms: bool) -> _CheckDecorator:
