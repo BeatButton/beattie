@@ -3,6 +3,8 @@ from asyncjisho import Jisho
 from discord.ext import commands
 from discord.ext.commands import Cog
 
+from bot import BeattieBot
+from context import BContext
 from utils.paginator import Paginator
 
 
@@ -10,11 +12,11 @@ class Dictionary(Cog):
     jisho_url = "http://jisho.org/search/{}"
     urban_url = "http://api.urbandictionary.com/v0/define"
 
-    def __init__(self, bot):
+    def __init__(self, bot: BeattieBot):
         self.jisho = Jisho(session=bot.session)
 
     @commands.command(name="jisho")
-    async def jisho_(self, ctx, *, keywords):
+    async def jisho_(self, ctx: BContext, *, keywords: str) -> None:
         """Get results from Jisho.org, Japanese dictionary"""
         async with ctx.typing():
             data = await self.jisho.lookup(keywords)
@@ -40,7 +42,7 @@ class Dictionary(Cog):
         await paginator.start(ctx)
 
     @commands.command(aliases=["ud", "urban", "urbandict"])
-    async def urbandictionary(self, ctx, *, word):
+    async def urbandictionary(self, ctx: BContext, *, word: str) -> None:
         """Look up a word on urbandictionary.com"""
         params = {"term": word}
         get = ctx.bot.get
@@ -66,5 +68,5 @@ class Dictionary(Cog):
             await paginator.start(ctx)
 
 
-def setup(bot):
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(Dictionary(bot))

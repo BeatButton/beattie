@@ -1,20 +1,25 @@
+from typing import Mapping
+
 import toml
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
 
+from bot import BeattieBot
+from context import BContext
+
 
 class Wolfram(Cog):
-    chars = {0xF74C: " d", 0xF74D: "e", 0xF74E: "i", 0xF7D9: " = "}
+    chars: Mapping[int, str] = {0xF74C: " d", 0xF74D: "e", 0xF74E: "i", 0xF7D9: " = "}
 
-    def __init__(self):
-        self.url = "http://api.wolframalpha.com/v2/query"
+    def __init__(self) -> None:
+        self.url: str = "http://api.wolframalpha.com/v2/query"
         with open("config/config.toml") as file:
             data = toml.load(file)
-        self.key = data["wolfram_key"]
+        self.key: str = data["wolfram_key"]
 
     @commands.command(aliases=["wolf", "w"])
-    async def wolfram(self, ctx, *, inp):
+    async def wolfram(self, ctx: BContext, *, inp: str) -> None:
         """Query Wolfram|Alpha."""
         async with ctx.typing():
             params = {"input": inp, "appid": self.key, "format": "plaintext"}
@@ -44,5 +49,5 @@ class Wolfram(Cog):
         await ctx.send(result)
 
 
-def setup(bot):
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(Wolfram())

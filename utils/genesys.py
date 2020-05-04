@@ -2,7 +2,7 @@ from __future__ import annotations  # type: ignore
 
 import random
 from numbers import Real
-from typing import Any, Union, Dict, Tuple
+from typing import Any, Dict, Tuple, Union
 
 
 class Result:

@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO, StringIO
-from typing import Any, Union, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
 import toml

@@ -2,16 +2,19 @@ from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
 
+from bot import BeattieBot
+from context import BContext
+
 
 class SauceNao(Cog):
     sauce_url = "https://saucenao.com/search.php"
 
-    def __init__(self, bot):
+    def __init__(self, bot: BeattieBot):
         self.session = bot.session
         self.parser = etree.HTMLParser()
 
     @commands.command(aliases=["sauce"])
-    async def saucenao(self, ctx, *, link=""):
+    async def saucenao(self, ctx: BContext, *, link: str = "") -> None:
         """Find the source of a linked or attached image using saucenao."""
         async with ctx.typing():
             if not link:
@@ -29,7 +32,7 @@ class SauceNao(Cog):
                 root = etree.fromstring(await resp.text(), self.parser)
 
             results = root.xpath('.//div[@class="result"]')
-            sim_percent = 0
+            sim_percent = 0.0
             if results:
                 similarity = root.find(".//div[@class='resultsimilarityinfo']").text
                 sim_percent = float(similarity[:-1])
@@ -48,12 +51,12 @@ class SauceNao(Cog):
                 await ctx.send(f"Sauce found ({similarity}) <{link}>")
 
     @saucenao.error
-    async def saucenao_error(self, ctx, e):
+    async def saucenao_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.BadArgument):
             await ctx.send("Please include a link or attach a single image.")
         else:
             await ctx.bot.handle_error(ctx, e)
 
 
-def setup(bot):
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(SauceNao(bot))

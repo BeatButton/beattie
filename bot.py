@@ -8,13 +8,13 @@ import sys
 import tarfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Union, Iterable, TypeVar, Optional, Type, overload
+from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
 
 import aiohttp
 import discord
-from discord import Message
 import toml
 from asyncqlio.db import DatabaseInterface  # type: ignore
+from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context
 
@@ -22,7 +22,6 @@ from config import Config
 from context import BContext
 from utils import contextmanagers, exceptions
 from utils.aioutils import do_every
-
 
 C = TypeVar("C", bound=Context)
 

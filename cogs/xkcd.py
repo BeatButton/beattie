@@ -1,27 +1,30 @@
 import random
 import re
 from json import JSONDecodeError
+from typing import Any, Mapping, Optional, Tuple
 
 import discord
 from aiohttp import ClientResponseError
 from discord.ext import commands
 from discord.ext.commands import Cog
 
+from bot import BeattieBot
+from context import BContext
 from utils.exceptions import ResponseError
 
 
 class XKCD(Cog):
-    def __init__(self):
+    def __init__(self) -> None:
         with open("data/why.txt", encoding="utf8") as file:
-            self.questions = tuple(file.readlines())
+            self.questions: Tuple[str, ...] = tuple(file.readlines())
 
     @commands.command()
-    async def why(self, ctx):
+    async def why(self, ctx: BContext) -> None:
         """Asks a question."""
         await ctx.send(random.choice(self.questions))
 
     @commands.group()
-    async def xkcd(self, ctx, *, inp=None):
+    async def xkcd(self, ctx: BContext, *, inp: Optional[str] = None) -> None:
         """Commands for getting xkcd comics"""
         async with ctx.typing():
             url = "https://xkcd.com/info.0.json"
@@ -38,17 +41,17 @@ class XKCD(Cog):
                     await ctx.invoke(self.random)
 
     @xkcd.command()
-    async def random(self, ctx):
+    async def random(self, ctx: BContext) -> None:
         """Gets a random xkcd comic."""
         await ctx.invoke(self.comic, inp=random.randint(1, self.xkcd_data["num"]))
 
     @xkcd.command()
-    async def latest(self, ctx):
+    async def latest(self, ctx: BContext) -> None:
         """Gets the latest xkcd comic."""
         await ctx.send(embed=format_comic(self.xkcd_data))
 
     @xkcd.command()
-    async def comic(self, ctx, *, inp):
+    async def comic(self, ctx: BContext, *, inp: str) -> None:
         """Gets an xkcd comic by number or content."""
         try:
             number = int(inp)
@@ -82,14 +85,14 @@ class XKCD(Cog):
         await ctx.send(embed=format_comic(data))
 
     @commands.command(hidden=True)
-    async def sudo(self, ctx, *_):
+    async def sudo(self, ctx: BContext, *_: Any) -> None:
         if await ctx.bot.is_owner(ctx.author):
             await ctx.send("Operation successful.")
         else:
             await ctx.send("Unable to lock /var/lib/dpkg/, are you root?")
 
 
-def format_comic(data):
+def format_comic(data: Mapping[str, Any]) -> discord.Embed:
     embed = discord.Embed()
     embed.title = data["title"]
     embed.set_image(url=data["img"])
@@ -98,5 +101,5 @@ def format_comic(data):
     return embed
 
 
-def setup(bot):
+def setup(bot: BeattieBot) -> None:
     bot.add_cog(XKCD())
