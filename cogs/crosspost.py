@@ -234,7 +234,12 @@ class Crosspost(Cog):
 
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
-        tweet = root.xpath(self.tweet_selector)[0]
+
+        try:
+            tweet = root.xpath(self.tweet_selector)[0]
+        except IndexError:
+            await ctx.send("Failed to get tweet. Maybe the account is locked?")
+            return
 
         for img in tweet.xpath(self.twitter_img_selector):
             url = img.get("src")
