@@ -216,8 +216,6 @@ class Remind(Cog):
             message = f"{member.mention}\nYou asked to be reminded about {topic}."
             await channel.send(message)
         async with self.db.get_session() as s:
-            query = s.select(Reminder).where(Reminder.id == reminder.id)
-            reminder = await query.first()
             await s.remove(reminder)
 
     async def start_timer(self) -> None:
