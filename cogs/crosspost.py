@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO, StringIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple, Iterable
 
 import aiohttp
 import toml
@@ -298,12 +298,20 @@ class Crosspost(Cog):
             if max_pages == 0:
                 max_pages = num_pages
 
+            tasks = []
+
             for img_url, i in zip(urls, range(max_pages)):
                 fullsize_url = f"https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}"
                 headers["referer"] = fullsize_url
-                img = await self.save(img_url, headers)
-                file = File(img, img_url.rpartition("/")[-1])
+                task = self.bot.loop.create_task(self.save(img_url, headers))
+                filename = img_url.rpartition("/")[-1]
+                tasks.append((filename, task))
+
+            for filename, task in tasks:
+                img = await task
+                file = File(img, filename)
                 await ctx.send(file=file)
+
             remaining = num_pages - max_pages
 
             if remaining > 0:
