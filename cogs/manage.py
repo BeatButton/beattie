@@ -23,6 +23,9 @@ class Manage(Cog):
         return f"{cog}," not in blacklist
 
     async def bot_check_once(self, ctx: BContext) -> bool:
+        guild = ctx.guild
+        if guild is None:
+            return True
         me = ctx.me
         channel = ctx.channel
         assert isinstance(me, Member)
@@ -31,7 +34,6 @@ class Manage(Cog):
             return False
         if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
             return True
-        guild = ctx.guild
         member_conf = await self.config.get_member(guild.id, ctx.author.id)
         member_plonked = member_conf.get("plonked", False)
         if member_plonked:
