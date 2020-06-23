@@ -45,7 +45,9 @@ class Crosspost(Cog):
 
     bot: BeattieBot
 
-    twitter_url_expr = re.compile(r"https?://(?:www\.)?twitter\.com/\S+/status/\d+")
+    twitter_url_expr = re.compile(
+        r"https?://(?:(?:www|mobile|m)\.)?twitter\.com/\S+/status/\d+"
+    )
     tweet_selector = ".//div[contains(@class, 'permalink-tweet')]"
     twitter_img_selector = ".//img[@data-aria-label-part]"
 
