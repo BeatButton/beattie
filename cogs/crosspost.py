@@ -46,7 +46,7 @@ class Crosspost(Cog):
     bot: BeattieBot
 
     twitter_url_expr = re.compile(
-        r"https?://(?:(?:www|mobile|m)\.)?twitter\.com/\S+/status/\d+"
+        r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/\S+/status/\d+)"
     )
     tweet_selector = ".//div[contains(@class, 'permalink-tweet')]"
     twitter_img_selector = ".//img[@data-aria-label-part]"
@@ -233,6 +233,8 @@ class Crosspost(Cog):
     async def display_twitter_images(self, link: str, ctx: CrosspostContext) -> None:
         if await self.get_mode(ctx) == 1:
             return
+
+        link = f"https://{link}"
 
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
