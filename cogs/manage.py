@@ -15,10 +15,13 @@ class Manage(Cog):
         self.config = bot.config
 
     async def bot_check(self, ctx: BContext) -> bool:
-        if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
+        if await ctx.bot.is_owner(ctx.author):
             return True
+        guild = ctx.guild
+        if guild is None:
+            return False
         cog = ctx.command.cog_name
-        guild_conf = await self.config.get_guild(ctx.guild.id)
+        guild_conf = await self.config.get_guild(guild.id)
         blacklist = guild_conf.get("cog_blacklist") or ""
         return f"{cog}," not in blacklist
 
