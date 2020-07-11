@@ -173,6 +173,11 @@ class Crosspost(Cog):
             for link in expr.findall(content):
                 try:
                     await func(link, ctx)
+                except ResponseError as e:
+                    if e.code == 404:
+                        await ctx.send("Post not found.")
+                    else:
+                        await ctx.bot.handle_error(ctx, e)
                 except Exception as e:
                     await ctx.bot.handle_error(ctx, e)
 
