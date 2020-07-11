@@ -489,6 +489,13 @@ class Crosspost(Cog):
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self.process_links(new_ctx)
 
+    @commands.command(aliases=["_"])
+    async def nopost(self, ctx, *, _=""):
+        """Ignore links in the following message.
+        
+        You can also use ||spoiler tags|| to achieve the same thing."""
+        pass
+
 
 def setup(bot: BeattieBot) -> None:
     bot.add_cog(Crosspost(bot))
