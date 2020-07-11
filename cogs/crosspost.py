@@ -32,7 +32,7 @@ class CrosspostContext(BContext):
         file: File
         if file := kwargs.get("file"):  # type: ignore
             fp: BytesIO = file.fp  # type: ignore
-            if len(fp.getvalue()) >= 8_000_000:
+            if len(fp.getbuffer()) >= self.guild.filesize_limit:
                 args = ("Image too large to upload.",)
                 kwargs = {}
         msg = await super().send(*args, **kwargs)
