@@ -4,7 +4,6 @@ import discord
 from discord import Member, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
-from mypy_extensions import KwArg
 
 from bot import BeattieBot
 from context import BContext
