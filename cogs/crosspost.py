@@ -495,7 +495,7 @@ class Crosspost(Cog):
         await self.process_links(new_ctx)
 
     @commands.command(aliases=["_"])
-    async def nopost(self, ctx, *, _=""):
+    async def nopost(self, ctx: BContext, *, _: str = "") -> None:
         """Ignore links in the following message.
         
         You can also use ||spoiler tags|| to achieve the same thing."""
