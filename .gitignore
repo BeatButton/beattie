@@ -98,3 +98,4 @@ ENV/
 **/.mypy_cache
 /stubs
 /mypy.ini
+/data/scratch
