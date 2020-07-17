@@ -3,7 +3,7 @@ import os
 import random
 import re
 from concurrent import futures
-from typing import List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import discord
 from discord.ext import commands
@@ -14,6 +14,10 @@ from context import BContext
 from utils.genesys import die_names, genesysroller
 
 RollArg = Tuple[int, int, int, int, int, int]
+
+ROLL_EXPR = re.compile(
+    r"^(?P<num>\d*)d?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$"
+)
 
 
 class RPG(Cog):
@@ -65,90 +69,78 @@ class RPG(Cog):
             await ctx.send(file=discord.File(f"{card}", filename), embed=embed)
 
     @commands.command(aliases=["r"])
-    async def roll(self, ctx: BContext, *, inp: str = "1d20") -> None:
+    async def roll(self, ctx: BContext, *, roll: str = "1d20") -> None:
         """Roll some dice!
 
         Can roll multiple dice of any size, with modifiers.
-        Format: XdY([+-^v]Z)(xN)(s)(t)
+        Format: XdY([^v]Z)([+-]W)(xN)(s)(t)
         X is the number of dice
         Y is the number of sides
-        + adds Z to the result
-        - subtracts Z from the result
         ^ drops the Z highest dice
         v drops the Z lowest dice
+        + adds W to the result
+        - subtracts W from the result
         x repeats the roll N times
         s sorts the results
         t totals each roll
-        You can join rolls with commas
         """
-        if inp == "stats":
-            inp = "4d6v1x6t"
-        inp = "".join(inp.split()).lower()
-        expr = r"^([\d]*d?\d+([+\-^v]\d+)?(x\d+)?([ts]{1,2})?,?)+(?<!,)$"
-        if re.match(expr, inp) is None:
+        if roll == "stats":
+            roll = "4d6v1x6t"
+        roll = "".join(roll.split()).lower()
+
+        if (match := ROLL_EXPR.match(roll)) is None:
             raise commands.BadArgument
 
-        rolls = inp.split(",")
-        args_batch: List[RollArg] = []
-        for roll in rolls:
-            if "d" not in roll:
-                roll = f"1d{roll}"
-            elif roll[0] == "d":
-                roll = f"1{roll}"
-            args = tuple(int(arg) for arg in re.findall(r"\d+", roll))
+        args: Dict[str, int] = {
+            k: int(v) if v else 0 for k, v in match.groupdict().items()
+        }
 
-            num = args[0]
-            sides = args[1]
-            if sides == 0:
+        num = args["num"] or 1
+
+        if (sides := args["sides"]) == 0:
+            raise commands.BadArgument
+
+        hi_drop = 0
+        lo_drop = 0
+
+        if (mod := args["mod"]) and "-" in roll:
+            mod = -mod
+
+        if (drop := args["drop"]) :
+            if drop >= num:
                 raise commands.BadArgument
-
-            hi_drop = 0
-            lo_drop = 0
-            mod = 0
-
-            if "^" in inp:
-                hi_drop = args[2]
-            elif "v" in inp:
-                lo_drop = args[2]
-            elif "+" in inp:
-                mod = args[2]
-            elif "-" in inp:
-                mod = -args[2]
-
-            if "x" in inp:
-                times = args[-1]
+            if "^" in roll:
+                hi_drop = drop
             else:
-                times = 1
+                lo_drop = drop
 
-            args = (num, sides, lo_drop, hi_drop, mod, times)
-            args_batch.append(args)
+        times = args["times"] or 1
 
-        future = self.loop.run_in_executor(None, self.roll_helper, *args_batch)
+        args = (num, sides, lo_drop, hi_drop, mod, times)
+
+        future = self.loop.run_in_executor(None, roller, *args)
         async with ctx.typing():
-            results = await asyncio.wait_for(future, 10, loop=self.loop)
+            result = await asyncio.wait_for(future, 10, loop=self.loop)
 
-        out = []
-        for roll, result in zip(rolls, results):
-            if "d" not in roll:
-                roll = f"1d{roll}"
-            elif roll[0] == "d":
-                roll = f"1{roll}"
-            total = "t" in roll
-            if total:
-                result = [[sum(roll_)] for roll_ in result]
-            if "s" in inp:
-                for roll_ in result:
-                    roll_.sort()
-                result.sort()
-            if total or len(result[0]) == 1:
-                result = [roll_[0] for roll_ in result]
-            if "x" not in inp:
-                result = result[0]
-            out.append(f"{roll}: {result}")
-        await ctx.reply("\n".join(out))
+        if "d" not in roll:
+            roll = f"1d{roll}"
+        elif roll[0] == "d":
+            roll = f"1{roll}"
 
-    def roll_helper(self, *rolls: RollArg) -> List[List[List[int]]]:
-        return [roller(*roll) for roll in rolls]
+        total = "t" in roll
+
+        if total:
+            result = [[sum(roll_)] for roll_ in result]
+
+        if "s" in roll:
+            for roll_ in result:
+                roll_.sort()
+            result.sort()
+        if total or len(result[0]) == 1:
+            result = [roll_[0] for roll_ in result]  # type: ignore
+        if "x" not in roll:
+            result = result[0]  # type: ignore
+        await ctx.reply(f"{roll}: {result}")
 
     @roll.error
     async def roll_error(self, ctx: BContext, e: Exception) -> None:
@@ -159,7 +151,7 @@ class RPG(Cog):
                 "\n1d20+3"
                 "\n1d6"
                 "\n2d8-4"
-                "\n2d20^1"
+                "\n2d20+2v1"
                 "\n4d6v1x6t"
             )
         elif isinstance(e, asyncio.TimeoutError):
