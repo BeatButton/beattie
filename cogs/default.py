@@ -57,38 +57,6 @@ class Default(Cog):
         url = "<https://discordapp.com/oauth2/authorize?client_id={}&scope=bot>"
         await ctx.send(url.format(ctx.me.id))
 
-    @commands.command(hidden=True, aliases=["thank", "thx"])
-    async def thanks(self, ctx: BContext) -> None:
-        """thanks"""
-        await ctx.send(":purple_heart:")
-
-    @commands.command(hidden=True)
-    async def confetti(self, ctx: BContext, num: int = 1) -> None:
-        """Throw some confetti."""
-        if num > 200:
-            await ctx.send(
-                "I don't have that much confetti <:blobpensive:337436989676716033>"
-            )
-        elif num < 1:
-            await ctx.send("<:blobthinkingdown:337436994353365002>")
-        else:
-            await ctx.send("\U0001f389" * num)
-
-    @commands.command(hidden=True)
-    async def doubt(self, ctx: BContext) -> None:
-        """doubt"""
-        await ctx.send(file=File("data/doubt.jpg"))
-
-    @commands.command(hidden=True)
-    async def mystery(self, ctx: BContext) -> None:
-        """???"""
-        await ctx.send(file=File("data/mystery.webm"))
-
-    @commands.command(hidden=True)
-    async def chassis(self, ctx: BContext) -> None:
-        """So cool! So sleek!"""
-        await ctx.send(file=File("data/Bee_MK1_public.png"))
-
 
 def setup(bot: BeattieBot) -> None:
     bot.add_cog(Default())
