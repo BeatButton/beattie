@@ -99,3 +99,4 @@ ENV/
 /stubs
 /mypy.ini
 /data/scratch
+/cogs/secret.py
