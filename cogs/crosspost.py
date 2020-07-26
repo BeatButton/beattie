@@ -162,10 +162,11 @@ class Crosspost(Cog):
         return get_(self.session, url, method, **kwargs)
 
     async def save(
-        self, img_url: str, headers: Optional[Dict[str, str]] = None
+        self, img_url: str, *, headers: Optional[Dict[str, str]] = None, use_default_headers: bool = True
     ) -> BytesIO:
         headers = headers or {}
-        headers = {**self.headers, **headers}
+        if use_default_headers:
+            headers = {**self.headers, **headers}
         img = BytesIO()
         async with self.get(img_url, headers=headers) as img_resp:
             async for chunk in img_resp.content.iter_any():
@@ -211,12 +212,12 @@ class Crosspost(Cog):
             await msg.delete()
         del self.sent_images[message.id]
 
-    async def send(self, ctx: CrosspostContext, link: str) -> None:
+    async def send(self, ctx: CrosspostContext, link: str, *, headers: Optional[Dict[str, str]] = None, use_default_headers: bool = True) -> None:
         mode = await self.get_mode(ctx)
         if mode == 1:
             await ctx.send(link)
         elif mode == 2:
-            img = await self.save(link)
+            img = await self.save(link, headers=headers, use_default_headers=use_default_headers)
             filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
             file = File(img, filename)
             await ctx.send(file=file)
@@ -302,7 +303,7 @@ class Crosspost(Cog):
                     return
             else:
                 headers["referer"] = link
-                img = await self.save(img_url, headers)
+                img = await self.save(img_url, headers=headers)
                 file = File(img, img_url.rpartition("/")[-1])
             await ctx.send(file=file)
         elif multi := res["meta_pages"]:
@@ -320,7 +321,7 @@ class Crosspost(Cog):
             for img_url, i in zip(urls, range(max_pages)):
                 fullsize_url = f"https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}"
                 headers["referer"] = fullsize_url
-                task = self.bot.loop.create_task(self.save(img_url, headers))
+                task = self.bot.loop.create_task(self.save(img_url, headers=headers))
                 filename = img_url.rpartition("/")[-1]
                 tasks.append((filename, task))
 
@@ -462,8 +463,18 @@ class Crosspost(Cog):
         if max_pages == 0:
             max_pages = num_pages
 
+        async def helper(link, n=1):
+            try:
+                await self.send(ctx, link, headers=self.imgur_headers, use_default_headers=False)
+            except ResponseError as e:
+                if e.code == 400 and n <= 10:
+                    await asyncio.sleep(n)
+                    await helper(link, n+1)
+                else:
+                    raise e
+
         for img_url, _ in zip(urls, range(max_pages)):
-            await self.send(ctx, img_url)
+            await helper(img_url)
 
         remaining = num_pages - max_pages
 
