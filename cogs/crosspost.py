@@ -60,6 +60,7 @@ class Crosspost(Cog):
     )
     hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
     hiccears_img_selector = ".//a[contains(@href, 'imgs')]"
+    hiccears_headers: Dict[str, str] = {}
 
     tumblr_url_expr = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
     tumblr_img_selector = ".//meta[@property='og:image']"
@@ -72,17 +73,15 @@ class Crosspost(Cog):
     inkbunny_api_fmt = "https://inkbunny.net/api_{}.php"
     inkbunny_sid = ""
 
+    imgur_url_expr = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)") 
+    imgur_headers: Dict[str, str] = {}
+
     sent_images: Dict[int, List[Message]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:60.0) "
-            "Gecko/20100101 Firefox/60.0"
-        }
         with open("config/headers.toml") as fp:
-            data = toml.load(fp)
-        self.headers.update(data)
+            self.headers = toml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = etree.HTMLParser()
         names = (
@@ -100,11 +99,20 @@ class Crosspost(Cog):
 
     async def __init(self) -> None:
         with open("config/logins.toml") as fp:
-            login = toml.load(fp)["inkbunny"]
+            data = toml.load(fp)
+
+        imgur_id = data["imgur"]["id"]
+        self.imgur_headers["Authorization"] = f"Client-ID {imgur_id}"
+    
+        self.hiccears_headers = data["hiccears"]
+
+        ib_login = data["inkbunny"]
+
         url = self.inkbunny_api_fmt.format("login")
-        async with self.get(url, "POST", params=login) as resp:
+        async with self.get(url, "POST", params=ib_login) as resp:
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
+
 
     async def pixiv_login_loop(self) -> None:
         url = "https://oauth.secure.pixiv.net/auth/token"
@@ -339,7 +347,7 @@ class Crosspost(Cog):
         return File(img, name)
 
     async def display_hiccears_images(self, link: str, ctx: CrosspostContext) -> None:
-        async with self.get(link) as resp:
+        async with self.get(link, headers=self.hiccears_headers) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
 
         if single_image := root.xpath(self.hiccears_img_selector):
@@ -439,6 +447,31 @@ class Crosspost(Cog):
         for file in sub["files"]:
             url = file["file_url_full"]
             await self.send(ctx, url)
+
+
+    async def display_imgur_images(self, album_id: str, ctx: CrosspostContext) -> None:
+        async with self.get(f"https://api.imgur.com/3/album/{album_id}", headers=self.imgur_headers) as resp:
+            data = await resp.json()
+        
+        images = data["data"]["images"]
+        urls = (image["link"] for image in data["data"]["images"])
+
+        max_pages = await self.get_max_pages(ctx)
+        num_pages = len(images)
+
+        if max_pages == 0:
+            max_pages = num_pages
+
+        for img_url, _ in zip(urls, range(max_pages)):
+            await self.send(ctx, img_url)
+
+        remaining = num_pages - max_pages
+
+        if remaining > 0:
+            s = "s" if remaining > 1 else ""
+            message = f"{remaining} more image{s} at <https://imgur.com/a/{album_id}>"
+            await ctx.send(message)
+
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
