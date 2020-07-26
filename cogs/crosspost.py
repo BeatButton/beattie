@@ -73,7 +73,7 @@ class Crosspost(Cog):
     inkbunny_api_fmt = "https://inkbunny.net/api_{}.php"
     inkbunny_sid = ""
 
-    imgur_url_expr = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)") 
+    imgur_url_expr = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
     imgur_headers: Dict[str, str] = {}
 
     sent_images: Dict[int, List[Message]]
@@ -103,7 +103,7 @@ class Crosspost(Cog):
 
         imgur_id = data["imgur"]["id"]
         self.imgur_headers["Authorization"] = f"Client-ID {imgur_id}"
-    
+
         self.hiccears_headers = data["hiccears"]
 
         ib_login = data["inkbunny"]
@@ -112,7 +112,6 @@ class Crosspost(Cog):
         async with self.get(url, "POST", params=ib_login) as resp:
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
-
 
     async def pixiv_login_loop(self) -> None:
         url = "https://oauth.secure.pixiv.net/auth/token"
@@ -162,7 +161,11 @@ class Crosspost(Cog):
         return get_(self.session, url, method, **kwargs)
 
     async def save(
-        self, img_url: str, *, headers: Optional[Dict[str, str]] = None, use_default_headers: bool = True
+        self,
+        img_url: str,
+        *,
+        headers: Optional[Dict[str, str]] = None,
+        use_default_headers: bool = True,
     ) -> BytesIO:
         headers = headers or {}
         if use_default_headers:
@@ -212,12 +215,21 @@ class Crosspost(Cog):
             await msg.delete()
         del self.sent_images[message.id]
 
-    async def send(self, ctx: CrosspostContext, link: str, *, headers: Optional[Dict[str, str]] = None, use_default_headers: bool = True) -> None:
+    async def send(
+        self,
+        ctx: CrosspostContext,
+        link: str,
+        *,
+        headers: Optional[Dict[str, str]] = None,
+        use_default_headers: bool = True,
+    ) -> None:
         mode = await self.get_mode(ctx)
         if mode == 1:
             await ctx.send(link)
         elif mode == 2:
-            img = await self.save(link, headers=headers, use_default_headers=use_default_headers)
+            img = await self.save(
+                link, headers=headers, use_default_headers=use_default_headers
+            )
             filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
             file = File(img, filename)
             await ctx.send(file=file)
@@ -449,11 +461,12 @@ class Crosspost(Cog):
             url = file["file_url_full"]
             await self.send(ctx, url)
 
-
     async def display_imgur_images(self, album_id: str, ctx: CrosspostContext) -> None:
-        async with self.get(f"https://api.imgur.com/3/album/{album_id}", headers=self.imgur_headers) as resp:
+        async with self.get(
+            f"https://api.imgur.com/3/album/{album_id}", headers=self.imgur_headers
+        ) as resp:
             data = await resp.json()
-        
+
         images = data["data"]["images"]
         urls = (image["link"] for image in data["data"]["images"])
 
@@ -465,11 +478,13 @@ class Crosspost(Cog):
 
         async def helper(link, n=1):
             try:
-                await self.send(ctx, link, headers=self.imgur_headers, use_default_headers=False)
+                await self.send(
+                    ctx, link, headers=self.imgur_headers, use_default_headers=False
+                )
             except ResponseError as e:
                 if e.code == 400 and n <= 10:
                     await asyncio.sleep(n)
-                    await helper(link, n+1)
+                    await helper(link, n + 1)
                 else:
                     raise e
 
@@ -482,7 +497,6 @@ class Crosspost(Cog):
             s = "s" if remaining > 1 else ""
             message = f"{remaining} more image{s} at <https://imgur.com/a/{album_id}>"
             await ctx.send(message)
-
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
