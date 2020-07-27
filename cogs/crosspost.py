@@ -113,6 +113,9 @@ class Crosspost(Cog):
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
 
+    def cog_check(self, ctx: BContext) -> bool:
+        return ctx.guild is not None
+
     async def pixiv_login_loop(self) -> None:
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
@@ -506,7 +509,6 @@ class Crosspost(Cog):
         )
 
     @commands.group()
-    @commands.guild_only()
     @is_owner_or(manage_guild=True)
     async def crosspost(self, ctx: BContext) -> None:
         """Change image crosspost settings"""
