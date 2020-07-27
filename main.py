@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 import toml
-from discord.ext.commands import when_mentioned_or
 
 from bot import BeattieBot
 
@@ -25,7 +24,7 @@ if debug:
 else:
     prefixes = config["prefixes"]
     token = config["token"]
-bot = BeattieBot(when_mentioned_or(*prefixes), debug=debug)
+bot = BeattieBot(tuple(prefixes), debug=debug)
 
 if debug:
     logger = logging.getLogger("discord")
