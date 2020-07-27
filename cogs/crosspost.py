@@ -25,6 +25,9 @@ from utils.contextmanagers import get as get_
 from utils.etc import remove_spoilers
 from utils.exceptions import ResponseError
 
+ChannelID = int
+MessageID = int
+
 
 class CrosspostContext(BContext):
     cog: Crosspost
@@ -39,7 +42,7 @@ class CrosspostContext(BContext):
                 args = ("Image too large to upload.",)
                 kwargs = {}
         msg = await super().send(*args, **kwargs)
-        self.cog.sent_images[self.message.id].append(msg)
+        self.cog.sent_images[self.message.id].append((msg.channel.id, msg.id))
         return msg
 
 
@@ -79,7 +82,7 @@ class Crosspost(Cog):
     imgur_url_expr = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
     imgur_headers: Dict[str, str] = {}
 
-    sent_images: Dict[int, List[Message]]
+    sent_images: Dict[int, List[Tuple[ChannelID, MessageID]]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -222,9 +225,9 @@ class Crosspost(Cog):
         message_id = payload.message_id
         messages = self.sent_images.pop(message_id, None)
         if messages is not None:
-            for message in messages:
+            for channel_id, message_id in messages:
                 try:
-                    await message.delete()
+                    await self.bot.http.delete_message(channel_id, message_id)
                 except discord.NotFound:
                     pass
                 except discord.Forbidden:
