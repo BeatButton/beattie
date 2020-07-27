@@ -8,7 +8,7 @@ import sys
 import tarfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
+from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, Union, overload
 
 import aiohttp
 import discord
@@ -16,7 +16,7 @@ import toml
 from asyncqlio.db import DatabaseInterface  # type: ignore
 from discord import Message
 from discord.ext import commands
-from discord.ext.commands import Bot, Context
+from discord.ext.commands import Bot, Context, when_mentioned_or
 
 from config import Config
 from context import BContext
@@ -33,24 +33,15 @@ class BeattieBot(Bot):
     general_ignore = (ConnectionResetError,)
 
     def __init__(
-        self, command_prefix: Any, *args: Any, debug: bool = False, **kwargs: Any
+        self, prefixes: Tuple[str, ...], *args: Any, debug: bool = False, **kwargs: Any,
     ):
         async def prefix_func(bot: Bot, message: Message) -> Iterable[str]:
-            prefix = command_prefix
-            if callable(prefix):
-                prefix = prefix(bot, message)
-            if inspect.isawaitable(prefix):
-                prefix = await prefix
-            if isinstance(prefix, str):
-                prefix = (prefix,)
-            elif isinstance(prefix, list):
-                prefix = tuple(prefix)
-            if message.guild:
-                guild_conf = await bot.config.get_guild(message.guild.id)  # type: ignore
-                guild_pre = guild_conf.get("prefix")
-                if guild_pre:
+            prefix = prefixes
+            if guild := message.guild:
+                guild_conf = await bot.config.get_guild(guild.id)  # type: ignore
+                if guild_pre := guild_conf.get("prefix"):
                     prefix = prefix + (guild_pre,)
-            return prefix
+            return when_mentioned_or(*prefix)(self, message)
 
         help_command: commands.HelpCommand = commands.DefaultHelpCommand(dm_help=None)
 
