@@ -223,7 +223,12 @@ class Crosspost(Cog):
         messages = self.sent_images.pop(message_id, None)
         if messages is not None:
             for message in messages:
-                await message.delete()
+                try:
+                    await message.delete()
+                except discord.NotFound:
+                    pass
+                except discord.Forbidden:
+                    return
 
     async def send(
         self,
