@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional, Union, Tuple, Iterable
 
 import aiohttp
 import toml
-from discord import File, HTTPException, Message
+import discord
+from discord import File, Guild, HTTPException, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog
 from lxml import etree
@@ -32,7 +33,9 @@ class CrosspostContext(BContext):
         file: File
         if file := kwargs.get("file"):  # type: ignore
             fp: BytesIO = file.fp  # type: ignore
-            if len(fp.getbuffer()) >= self.guild.filesize_limit:
+            guild = self.guild
+            assert isinstance(guild, Guild)
+            if len(fp.getbuffer()) >= guild.filesize_limit:
                 args = ("Image too large to upload.",)
                 kwargs = {}
         msg = await super().send(*args, **kwargs)
@@ -213,10 +216,14 @@ class Crosspost(Cog):
             await self.process_links(ctx)
 
     @Cog.listener()
-    async def on_message_delete(self, message: Message) -> None:
-        for msg in self.sent_images[message.id]:
-            await msg.delete()
-        del self.sent_images[message.id]
+    async def on_raw_message_delete(
+        self, payload: discord.RawMessageDeleteEvent
+    ) -> None:
+        message_id = payload.message_id
+        messages = self.sent_images.pop(message_id, None)
+        if messages is not None:
+            for message in messages:
+                await message.delete()
 
     async def send(
         self,
