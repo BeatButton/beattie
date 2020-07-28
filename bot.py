@@ -60,6 +60,7 @@ class BeattieBot(Bot):
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
+        self.game = discord.Game(name=f"{prefixes[0]}help")
         self.uptime = datetime.utcnow()
         if not self.debug:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
@@ -134,8 +135,7 @@ class BeattieBot(Bot):
         print(self.user.name)
         print(self.user.id)
         print("------")
-        game = discord.Game(name="b>help")
-        await self.change_presence(activity=game)
+        await self.change_presence(activity=self.game)
 
     @overload
     async def get_context(self, message: Message) -> BContext:
