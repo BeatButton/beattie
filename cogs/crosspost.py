@@ -8,11 +8,11 @@ from collections import defaultdict
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO, StringIO
-from typing import Any, Dict, List, Optional, Union, Tuple, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import aiohttp
-import toml
 import discord
+import toml
 from discord import File, Guild, HTTPException, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog
