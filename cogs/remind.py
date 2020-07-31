@@ -113,7 +113,7 @@ class Remind(Cog):
     ) -> None:
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
-        await self.schedule_reminder(ctx, time, str(topic))
+        await self.schedule_reminder(ctx, time, topic)  # type: ignore
         await ctx.send("Okay, I'll remind you.")
 
     @set_reminder.error
@@ -179,7 +179,9 @@ class Remind(Cog):
             destination = channel.mention
         await ctx.send(f"All reminders will be sent to {destination} from now on.")
 
-    async def schedule_reminder(self, ctx: BContext, time: Time, topic: str) -> None:
+    async def schedule_reminder(
+        self, ctx: BContext, time: Time, topic: Optional[str]
+    ) -> None:
         assert ctx.guild is not None
         async with self.db.get_session() as s:
             reminder = await s.add(
