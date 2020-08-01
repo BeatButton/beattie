@@ -6,6 +6,7 @@ import lzma
 import os
 import sys
 import tarfile
+from asyncio import Task
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, Union, overload
@@ -31,6 +32,8 @@ class BeattieBot(Bot):
 
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError,)
+
+    archive_task: Optional[Task[Any]]
 
     def __init__(
         self, prefixes: Tuple[str, ...], *args: Any, debug: bool = False, **kwargs: Any,
@@ -64,11 +67,13 @@ class BeattieBot(Bot):
         self.uptime = datetime.utcnow()
         if not self.debug:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
+        else:
+            self.archive_task = None
 
     async def close(self) -> None:
         await self.session.close()
         await self.db.close()
-        if not self.debug:
+        if self.archive_task is not None:
             self.archive_task.cancel()
         await super().close()
 
