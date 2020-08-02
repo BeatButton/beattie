@@ -18,12 +18,12 @@ RollArg = Tuple[int, int, int, int, int, int]
 ROLL_EXPR = re.compile(
     r"^(?P<num>\d*)d?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$"
 )
+TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
 
 
 class RPG(Cog):
     def __init__(self, bot: BeattieBot):
         self.loop = bot.loop
-        self.tarot_url = "https://www.trustedtarot.com/cards/{}/"
 
     @commands.command()
     async def choose(self, ctx: BContext, *options: commands.clean_content) -> None:
@@ -66,7 +66,7 @@ class RPG(Cog):
             match = re.match(r"(?:\w+/)+[IVX0_]*([\w_]+)\.jpg", card)
             assert match is not None
             name = match.groups()[0].replace("_", " ")
-            url = self.tarot_url.format(name.lower().replace(" ", "-"))
+            url = TAROT_URL.format(name.lower().replace(" ", "-"))
             embed = discord.Embed()
             embed.title = name
             embed.url = url
