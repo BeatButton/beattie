@@ -28,8 +28,14 @@ class RPG(Cog):
     @commands.command()
     async def choose(self, ctx: BContext, *options: commands.clean_content) -> None:
         """Choose between some options. Use quotes if they have spaces."""
-        choice = random.choice(options)
-        await ctx.send(f"I choose:\n{choice}")
+        len_ = len(options)
+        if len_ == 0:
+            await ctx.send("Choose nothing? Is this some sort of metaphor?")
+        elif len_ == 1:
+            await ctx.send("That's not much of a choice!")
+        else:
+            choice = random.choice(options)
+            await ctx.send(f"I choose {choice}")
 
     @commands.command()
     async def tarot(self, ctx: BContext, *suits: str) -> None:
