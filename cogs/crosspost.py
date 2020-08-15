@@ -152,8 +152,19 @@ class Crosspost(Cog):
                 "X-Client-Hash": md5((now + hash_secret).encode("utf-8")).hexdigest(),
             }
 
-            async with self.session.post(url, data=data, headers=headers) as resp:
-                res = (await resp.json())["response"]
+            while True:
+                try:
+                    async with self.session.post(
+                        url, data=data, headers=headers
+                    ) as resp:
+                        res = (await resp.json())["response"]
+                except Exception as e:
+                    message = "An error occurred in the pixiv login loop"
+                    self.bot.logger.exception(
+                        message, exc_info=(type(e), e, e.__traceback__)
+                    )
+                else:
+                    break
 
             self.headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
