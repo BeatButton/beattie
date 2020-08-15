@@ -16,6 +16,7 @@ import discord
 import toml
 from asyncqlio.db import DatabaseInterface  # type: ignore
 from discord import Message
+from discord.http import HTTPClient
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 
@@ -34,6 +35,7 @@ class BeattieBot(Bot):
     general_ignore = (ConnectionResetError,)
 
     archive_task: Optional[Task[Any]]
+    http: HTTPClient
 
     def __init__(
         self, prefixes: Tuple[str, ...], *args: Any, debug: bool = False, **kwargs: Any,
