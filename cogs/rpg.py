@@ -150,7 +150,8 @@ class RPG(Cog):
 
     @roll.error
     async def roll_error(self, ctx: BContext, e: Exception) -> None:
-        e = getattr(e, "original", e)
+        if isinstance(e, commands.CommandInvokeError):
+            e = e.original
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
             await ctx.send(
                 "Invalid input. Valid input examples:"
@@ -191,7 +192,8 @@ class RPG(Cog):
 
     @shadowroll.error
     async def shadowroll_error(self, ctx: BContext, e: Exception) -> None:
-        e = getattr(e, "original", e)
+        if isinstance(e, commands.CommandInvokeError):
+            e = e.original
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
             await ctx.send("Invalid input. Valid input examples:" "\n6" "\n13e")
         elif isinstance(e, futures.TimeoutError):
@@ -246,7 +248,8 @@ class RPG(Cog):
 
     @genesysroll.error
     async def genesysroll_error(self, ctx: BContext, e: Exception) -> None:
-        e = getattr(e, "original", e)
+        if isinstance(e, commands.CommandInvokeError):
+            e = e.original
         if isinstance(e, futures.TimeoutError):
             await ctx.reply("Your execution took too long. Roll fewer dice.")
         else:
