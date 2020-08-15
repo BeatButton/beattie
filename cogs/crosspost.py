@@ -159,7 +159,7 @@ class Crosspost(Cog):
             login["refresh_token"] = res["refresh_token"]
             with open("config/logins.toml", "w") as fp:
                 toml.dump(logins, fp)
-            await asyncio.sleep(res["expires_in"] / 2)
+            await asyncio.sleep(res["expires_in"])
 
     def cog_unload(self) -> None:
         self.bot.loop.create_task(self.session.close())
