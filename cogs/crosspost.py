@@ -82,7 +82,8 @@ class Crosspost(Cog):
     imgur_url_expr = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
     imgur_headers: Dict[str, str] = {}
 
-    sent_images: Dict[int, List[Tuple[ChannelID, MessageID]]]
+    sent_images: Dict[MessageID, List[Tuple[ChannelID, MessageID]]]
+    ongoing_tasks: Dict[MessageID, asyncio.Task]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -100,6 +101,7 @@ class Crosspost(Cog):
             for name in names
         }
         self.sent_images = defaultdict(list)
+        self.ongoing_tasks = {}
         self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
         self.init_task = bot.loop.create_task(self.__init())
 
@@ -227,15 +229,26 @@ class Crosspost(Cog):
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.command is None:
             ctx.command = self.post
-            await self.process_links(ctx)
+            task = asyncio.create_task(self.process_links(ctx))
+            self.ongoing_tasks[message.id] = task
+            try:
+                await asyncio.wait_for(task, None)
+            except asyncio.CancelledError:
+                pass
+            except:
+                raise
+            finally:
+                del self.ongoing_tasks[message.id]
 
     @Cog.listener()
     async def on_raw_message_delete(
         self, payload: discord.RawMessageDeleteEvent
     ) -> None:
         message_id = payload.message_id
-        messages = self.sent_images.pop(message_id, None)
-        if messages is not None:
+        if task := self.ongoing_tasks.get(message_id):
+            task.cancel()
+            await asyncio.sleep(0)
+        if messages := self.sent_images.pop(message_id, None):
             for channel_id, message_id in messages:
                 try:
                     await self.bot.http.delete_message(channel_id, message_id)
