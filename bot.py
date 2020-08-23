@@ -12,13 +12,12 @@ from pathlib import Path
 from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, Union, overload
 
 import aiohttp
-import discord
 import toml
 from asyncqlio.db import DatabaseInterface  # type: ignore
-from discord import Message
-from discord.http import HTTPClient
+from discord import Game, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
+from discord.http import HTTPClient
 
 from config import Config
 from context import BContext
@@ -65,7 +64,7 @@ class BeattieBot(Bot):
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
-        self.game = discord.Game(name=f"{prefixes[0]}help")
+        self.game = Game(name=f"{prefixes[0]}help")
         self.uptime = datetime.utcnow()
         if not self.debug:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
@@ -153,7 +152,7 @@ class BeattieBot(Bot):
         ...
 
     async def get_context(
-        self, message: discord.Message, *, cls: Optional[Type[Context]] = None
+        self, message: Message, *, cls: Optional[Type[Context]] = None
     ) -> Context:
         return await super().get_context(message, cls=cls or BContext)
 
