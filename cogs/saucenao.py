@@ -41,14 +41,17 @@ class SauceNao(Cog):
                 await ctx.send("No sauce found.")
             else:
                 result = results[0]
-                booru_link = result.find('.//div[@class="resultmiscinfo"]/a')
-                if booru_link:
-                    link = booru_link.get("href")
+                if (
+                    booru_link := result.find('.//div[@class="resultmiscinfo"]/a')
+                ) is not None:
+                    link = f"<{booru_link.get('href')}>"
+                elif (
+                    source_link := result.find('.//div[@class="resultcontentcolumn"]/a')
+                ) is not None:
+                    link = f"<{source_link.get('href')}>"
                 else:
-                    link = result.find('.//div[@class="resultcontentcolumn"]/a').get(
-                        "href"
-                    )
-                await ctx.send(f"Sauce found ({similarity}) <{link}>")
+                    link = "with no author information."
+                await ctx.send(f"Sauce found ({similarity}) {link}")
 
     @saucenao.error
     async def saucenao_error(self, ctx: BContext, e: Exception) -> None:
