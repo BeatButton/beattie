@@ -48,10 +48,15 @@ class BeattieBot(Bot):
             return when_mentioned_or(*prefix)(self, message)
 
         help_command: commands.HelpCommand = commands.DefaultHelpCommand(dm_help=None)
+        game = Game(name=f"{prefixes[0]}help")
 
         super().__init__(
-            prefix_func, case_insensitive=True, help_command=help_command,
+            prefix_func,
+            activity=game,
+            case_insensitive=True,
+            help_command=help_command,
         )
+
         with open("config/config.toml") as file:
             data = toml.load(file)
 
@@ -63,7 +68,6 @@ class BeattieBot(Bot):
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
-        self.game = Game(name=f"{prefixes[0]}help")
         self.uptime = datetime.utcnow()
         if not self.debug:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
@@ -140,7 +144,6 @@ class BeattieBot(Bot):
         print(self.user.name)
         print(self.user.id)
         print("------")
-        await self.change_presence(activity=self.game)
 
     @overload
     async def get_context(self, message: Message) -> BContext:
