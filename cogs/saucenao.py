@@ -37,7 +37,7 @@ class SauceNao(Cog):
                 similarity = root.find(".//div[@class='resultsimilarityinfo']").text
                 sim_percent = float(similarity[:-1])
 
-            if not results or sim_percent <= 60:
+            if sim_percent <= 60:
                 await ctx.send("No sauce found.")
             else:
                 result = results[0]
