@@ -33,7 +33,7 @@ class SauceNao(Cog):
 
             results = root.xpath('.//div[@class="result"]')
             sim_percent = 0.0
-            if results:
+            if len(results):
                 similarity = root.find(".//div[@class='resultsimilarityinfo']").text
                 sim_percent = float(similarity[:-1])
 
