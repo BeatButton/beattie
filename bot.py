@@ -37,7 +37,7 @@ class BeattieBot(Bot):
     http: HTTPClient
 
     def __init__(
-        self, prefixes: Tuple[str, ...], *args: Any, debug: bool = False, **kwargs: Any,
+        self, prefixes: Tuple[str, ...], debug: bool = False,
     ):
         async def prefix_func(bot: Bot, message: Message) -> Iterable[str]:
             prefix = prefixes
@@ -49,10 +49,9 @@ class BeattieBot(Bot):
 
         help_command: commands.HelpCommand = commands.DefaultHelpCommand(dm_help=None)
 
-        kwargs.setdefault("case_insensitive", True)
-        kwargs.setdefault("help_command", help_command)
-
-        super().__init__(prefix_func, *args, **kwargs)
+        super().__init__(
+            prefix_func, case_insensitive=True, help_command=help_command,
+        )
         with open("config/config.toml") as file:
             data = toml.load(file)
 
