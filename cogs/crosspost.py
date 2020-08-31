@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 import traceback
+from asyncio import subprocess
 from collections import defaultdict
 from datetime import datetime
 from hashlib import md5
@@ -56,6 +57,7 @@ class Crosspost(Cog):
     )
     tweet_selector = ".//div[contains(@class, 'permalink-tweet')]"
     twitter_img_selector = ".//img[@data-aria-label-part]"
+    twitter_is_gif = ".//div[contains(@class, 'PlayableMedia--gif')]"
 
     pixiv_url_expr = re.compile(
         r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*|(?:\w{2}/)?artworks/\d+(?:#\w*)?)"
@@ -313,9 +315,29 @@ class Crosspost(Cog):
             await ctx.send("Failed to get tweet. Maybe the account is locked?")
             return
 
-        for img in tweet.xpath(self.twitter_img_selector):
-            url = img.get("src")
-            await self.send(ctx, f"{url}:orig")
+        if imgs := tweet.xpath(self.twitter_img_selector):
+            for img in imgs:
+                url = img.get("src")
+                await self.send(ctx, f"{url}:orig")
+        elif tweet.xpath(self.twitter_is_gif):
+            proc = await subprocess.create_subprocess_shell(
+                f"youtube-dl {link} -o - | ffmpeg -i pipe:0 -vf 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1' -f gif pipe:1",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
+
+            gif = BytesIO()
+            tweet_id = link.rpartition("/")[2].partition("?")[0]
+            filename = f"{tweet_id}.gif"
+
+            stdout, _stderr = await proc.communicate()
+
+            gif.write(stdout)
+            gif.seek(0)
+
+            file = File(gif, filename)
+
+            await ctx.send(file=file)
 
     async def display_pixiv_images(self, link: str, ctx: CrosspostContext) -> None:
         if "mode" in link:
