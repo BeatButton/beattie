@@ -24,11 +24,6 @@ class BContext(commands.Context):
             content = f"{self.author.display_name}{sep}{content}"
         return await self.send(content, **kwargs)
 
-    async def mention(self, content: str, sep: str = ",\n", **kwargs: Any) -> Message:
-        if self.guild:
-            content = f"{self.author.mention}{sep}{content}"
-        return await self.send(content, **kwargs)
-
     async def send(  # type: ignore
         self,
         content: Optional[str] = None,
