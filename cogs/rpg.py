@@ -56,7 +56,7 @@ class RPG(Cog):
             if "minor" in suits:
                 suits = suits + ("cups", "swords", "wands", "pentacles")
             suit_set = set(suit.lower() for suit in suits)
-            for root, dirs, files in os.walk("data/tarot"):
+            for root, _dirs, files in os.walk("data/tarot"):
                 if any(suit in root for suit in suit_set):
                     cards += [f"{root}/{card}" for card in files]
             try:
