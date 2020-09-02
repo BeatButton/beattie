@@ -237,8 +237,8 @@ class Crosspost(Cog):
                 await asyncio.wait_for(task, None)
             except asyncio.CancelledError:
                 pass
-            except:
-                raise
+            except Exception as e:
+                raise e
             finally:
                 del self.ongoing_tasks[message.id]
 
