@@ -1,6 +1,5 @@
 from __future__ import annotations  # type: ignore
 
-import inspect
 import logging
 import lzma
 import os
@@ -9,7 +8,7 @@ import tarfile
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, Union, overload
+from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, overload
 
 import aiohttp
 import toml

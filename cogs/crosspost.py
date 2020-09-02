@@ -3,20 +3,19 @@ from __future__ import annotations  # type: ignore
 import asyncio
 import json
 import re
-import traceback
 from asyncio import subprocess
 from collections import defaultdict
 from datetime import datetime
 from hashlib import md5
-from io import BytesIO, StringIO
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import aiohttp
 import discord
 import toml
-from discord import File, Guild, HTTPException, Message
+from discord import File, Guild, Message
 from discord.ext import commands
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Cog
 from lxml import etree
 
 from bot import BeattieBot

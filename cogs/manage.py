@@ -1,6 +1,5 @@
 from typing import Any, Callable, Coroutine, Union
 
-import discord
 from discord import Member, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
