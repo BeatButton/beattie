@@ -29,7 +29,7 @@ ChannelID = int
 MessageID = int
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/\S+/status/\d+)"
+    r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+)"
 )
 TWEET_SELECTOR = ".//div[contains(@class, 'permalink-tweet')]"
 TWITTER_IMG_SELECTOR = ".//img[@data-aria-label-part]"
