@@ -22,7 +22,7 @@ class Config:
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
         for table in [Guild, Member, Channel]:
-            await table.create(if_not_exists=True)
+            await table.create(if_not_exists=True)  # type: ignore
 
     async def get_guild(self, guild_id: int) -> Dict[str, Any]:
         try:
