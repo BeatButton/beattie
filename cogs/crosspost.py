@@ -499,7 +499,7 @@ class Crosspost(Cog):
         try:
             async with self.session.get(api_url) as resp:
                 post = await resp.json()
-        except (ResponseError, aiohttp.ContentTypeError):
+        except (ResponseError, aiohttp.ClientError):
             return
 
         if not (images := post.get("media_attachments")):
