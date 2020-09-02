@@ -1,5 +1,4 @@
 import random
-import re
 from collections import defaultdict
 from typing import Any, Dict, FrozenSet, Iterable, Tuple, Union
 from urllib import parse

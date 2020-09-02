@@ -7,8 +7,6 @@ import discord
 from discord import Embed, Message
 from discord.ext import commands
 
-from utils import contextmanagers
-
 if TYPE_CHECKING:
     from bot import BeattieBot
 

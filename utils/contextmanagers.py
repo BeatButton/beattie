@@ -1,6 +1,5 @@
-import os
 from types import TracebackType
-from typing import Any, Dict
+from typing import Any
 
 from aiohttp import ClientResponse, ClientSession, ServerDisconnectedError
 

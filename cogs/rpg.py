@@ -3,7 +3,7 @@ import os
 import random
 import re
 from concurrent import futures
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Tuple
 
 import discord
 from discord.ext import commands

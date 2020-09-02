@@ -1,10 +1,8 @@
 import random
 import re
-from json import JSONDecodeError
 from typing import Any, Mapping, Optional, Tuple
 
 import discord
-from aiohttp import ClientResponseError
 from discord.ext import commands
 from discord.ext.commands import Cog
 

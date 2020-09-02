@@ -1,6 +1,5 @@
-import discord
 from discord.ext import menus
-from discord.ext.menus import ListPageSource, MenuPages, button
+from discord.ext.menus import MenuPages
 
 
 class Paginator(MenuPages):

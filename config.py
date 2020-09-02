@@ -1,6 +1,6 @@
 from __future__ import annotations  # type: ignore
 
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict
 
 from schema.config import Channel, Guild, Member, Table
 from utils.asyncqlio import to_dict
