@@ -597,7 +597,7 @@ class Crosspost(Cog):
     @crosspost.command()
     async def mode(self, ctx: BContext, mode: str) -> None:
         """Change image crossposting mode
-        
+
         link: send a link to images when available
         upload: always upload image files"""
         if mode == "link":
@@ -614,7 +614,7 @@ class Crosspost(Cog):
     @crosspost.command()
     async def pages(self, ctx: BContext, max_pages: int) -> None:
         """Set the maximum number of images to send.
-        
+
         Set to 0 for no limit."""
         guild_id = ctx.guild.id  # type: ignore
         await self.bot.config.set_guild(guild_id, crosspost_max_pages=max_pages)
@@ -629,7 +629,7 @@ class Crosspost(Cog):
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = "") -> None:
         """Ignore links in the following message.
-        
+
         You can also use ||spoiler tags|| to achieve the same thing."""
         pass
 
