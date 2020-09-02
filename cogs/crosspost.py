@@ -60,7 +60,8 @@ class Crosspost(Cog):
     twitter_is_gif = ".//div[contains(@class, 'PlayableMedia--gif')]"
 
     pixiv_url_expr = re.compile(
-        r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?[\w]+=[\w]+(?:&[\w]+=[\w]+)*|(?:\w{2}/)?artworks/\d+(?:#\w*)?)"
+        r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?"
+        r"[\w]+=[\w]+(?:&[\w]+=[\w]+)*|(?:\w{2}/)?artworks/\d+(?:#\w*)?)"
     )
 
     hiccears_url_expr = re.compile(
@@ -321,7 +322,10 @@ class Crosspost(Cog):
                 await self.send(ctx, f"{url}:orig")
         elif tweet.xpath(self.twitter_is_gif):
             proc = await subprocess.create_subprocess_shell(
-                f"youtube-dl {link} -o - | ffmpeg -i pipe:0 -vf 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1' -f gif pipe:1",
+                f"youtube-dl {link} -o - | "
+                "ffmpeg -i pipe:0 "
+                "-vf 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1' "
+                "-f gif pipe:1",
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
             )
@@ -365,7 +369,8 @@ class Crosspost(Cog):
             res = res["illust"]
         except KeyError:
             await ctx.send(
-                f"This feature works sometimes, but isn't working right now!\nDebug info:\n{res.get('error')}"
+                "This feature works sometimes, but isn't working right now!"
+                f"\nDebug info:\n{res.get('error')}"
             )
             return
 
@@ -395,7 +400,10 @@ class Crosspost(Cog):
             tasks = []
 
             for img_url, i in zip(urls, range(max_pages)):
-                fullsize_url = f"https://pixiv.net/member_illust.php?mode=manga_big&illust_id={illust_id}&page={i}"
+                fullsize_url = (
+                    "https://pixiv.net/member_illust.php?mode=manga_big"
+                    f"&illust_id={illust_id}&page={i}"
+                )
                 headers["referer"] = fullsize_url
                 task = self.bot.loop.create_task(self.save(img_url, headers=headers))
                 filename = img_url.rpartition("/")[-1]
@@ -410,7 +418,10 @@ class Crosspost(Cog):
 
             if remaining > 0:
                 s = "s" if remaining > 1 else ""
-                message = f"{remaining} more image{s} at <https://www.pixiv.net/en/artworks/{illust_id}>"
+                message = (
+                    f"{remaining} more image{s} at "
+                    f"<https://www.pixiv.net/en/artworks/{illust_id}>"
+                )
                 await ctx.send(message)
 
     async def get_ugoira(self, link: str, fmt: str = "gif") -> File:
@@ -566,7 +577,8 @@ class Crosspost(Cog):
     @is_owner_or(manage_guild=True)
     async def twitter(self, ctx: BContext, enabled: Union[bool, str] = True) -> None:
         await ctx.send(
-            f"This command is deprecated! Please use `{ctx.prefix}crosspost` to manage settings."
+            "This command is deprecated! "
+            f"Please use `{ctx.prefix}crosspost` to manage settings."
         )
 
     @commands.group()
