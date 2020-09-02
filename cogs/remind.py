@@ -86,7 +86,7 @@ class Remind(Cog):
             self.queue = [reminder async for reminder in await query.all()]
         await self.start_timer()
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, usage="")
     async def remind(
         self,
         ctx: BContext,
