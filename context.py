@@ -29,7 +29,7 @@ class BContext(commands.Context):
             content = f"{self.author.mention}{sep}{content}"
         return await self.send(content, **kwargs)
 
-    async def send(
+    async def send(  # type: ignore
         self,
         content: Optional[str] = None,
         *,
