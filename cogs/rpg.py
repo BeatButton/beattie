@@ -16,7 +16,8 @@ from utils.genesys import die_names, genesysroller
 RollArg = Tuple[int, int, int, int, int, int]
 
 ROLL_EXPR = re.compile(
-    r"^(?P<num>\d*)d?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$"
+    r"^(?P<num>\d*)d?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?"
+    r"(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$"
 )
 TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
 
