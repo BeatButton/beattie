@@ -14,8 +14,7 @@ if TYPE_CHECKING:
 
 
 class BContext(commands.Context):
-    """An extension of Context to add reply and mention methods,
-    as well as support use with self bots"""
+    """An extension of Context to add a reply method and send long content as a file"""
 
     bot: BeattieBot
 
