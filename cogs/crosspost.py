@@ -96,14 +96,10 @@ class Crosspost(Cog):
             self.headers = toml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = etree.HTMLParser()
-        names = (
-            name.partition("_")[0] for name in globals() if name.endswith("URL_EXPR")
-        )
         self.expr_dict = {
-            globals()[f"{name}_URL_EXPR"]: getattr(
-                self, f"display_{name.lower()}_images"
-            )
-            for name in names
+            expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
+            for name, expr in globals().items()
+            if name.endswith("URL_EXPR")
         }
         self.sent_images = defaultdict(list)
         self.ongoing_tasks = {}
