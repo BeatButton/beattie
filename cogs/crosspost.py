@@ -28,6 +28,36 @@ from utils.exceptions import ResponseError
 ChannelID = int
 MessageID = int
 
+TWITTER_URL_EXPR = re.compile(
+    r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/\S+/status/\d+)"
+)
+TWEET_SELECTOR = ".//div[contains(@class, 'permalink-tweet')]"
+TWITTER_IMG_SELECTOR = ".//img[@data-aria-label-part]"
+TWITTER_IS_GIF = ".//div[contains(@class, 'PlayableMedia--gif')]"
+
+PIXIV_URL_EXPR = re.compile(
+    r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?"
+    r"[\w]+=[\w]+(?:&[\w]+=[\w]+)*|(?:\w{2}/)?artworks/\d+(?:#\w*)?)"
+)
+
+HICCEARS_URL_EXPR = re.compile(
+    r"https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+"
+)
+HICCEARS_LINK_SELECTOR = ".//div[contains(@class, 'row')]//a"
+HICCEARS_IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
+
+TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
+TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
+
+MASTODON_URL_EXPR = re.compile(r"https?://\S+/\w+/?(?:>|$|\s)")
+MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/(\w+)")
+MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
+
+INKBUNNY_URL_EXPR = re.compile(r"https?://inkbunny\.net/s/(\d+)(?:-p\d+-)?(?:#.*)?")
+INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
+
+IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
+
 
 class CrosspostContext(BContext):
     cog: Crosspost
@@ -51,38 +81,9 @@ class Crosspost(Cog):
 
     bot: BeattieBot
 
-    twitter_url_expr = re.compile(
-        r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/\S+/status/\d+)"
-    )
-    tweet_selector = ".//div[contains(@class, 'permalink-tweet')]"
-    twitter_img_selector = ".//img[@data-aria-label-part]"
-    twitter_is_gif = ".//div[contains(@class, 'PlayableMedia--gif')]"
-
-    pixiv_url_expr = re.compile(
-        r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?"
-        r"[\w]+=[\w]+(?:&[\w]+=[\w]+)*|(?:\w{2}/)?artworks/\d+(?:#\w*)?)"
-    )
-
-    hiccears_url_expr = re.compile(
-        r"https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+"
-    )
-    hiccears_link_selector = ".//div[contains(@class, 'row')]//a"
-    hiccears_img_selector = ".//a[contains(@href, 'imgs')]"
     hiccears_headers: Dict[str, str] = {}
-
-    tumblr_url_expr = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
-    tumblr_img_selector = ".//meta[@property='og:image']"
-
-    mastodon_url_expr = re.compile(r"https?://\S+/\w+/?(?:>|$|\s)")
-    mastodon_url_groups = re.compile(r"https?://([^\s/]+)(?:/.+)+/(\w+)")
-    mastodon_api_fmt = "https://{}/api/v1/statuses/{}"
-
-    inkbunny_url_expr = re.compile(r"https?://inkbunny\.net/s/(\d+)(?:-p\d+-)?(?:#.*)?")
-    inkbunny_api_fmt = "https://inkbunny.net/api_{}.php"
-    inkbunny_sid = ""
-
-    imgur_url_expr = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
     imgur_headers: Dict[str, str] = {}
+    inkbunny_sid: str = ""
 
     sent_images: Dict[MessageID, List[Tuple[ChannelID, MessageID]]]
     ongoing_tasks: Dict[MessageID, asyncio.Task]
@@ -94,12 +95,12 @@ class Crosspost(Cog):
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = etree.HTMLParser()
         names = (
-            name.partition("_")[0]
-            for name in vars(type(self))
-            if name.endswith("url_expr")
+            name.partition("_")[0] for name in globals() if name.endswith("URL_EXPR")
         )
         self.expr_dict = {
-            getattr(self, f"{name}_url_expr"): getattr(self, f"display_{name}_images")
+            globals()[f"{name}_URL_EXPR"]: getattr(
+                self, f"display_{name.lower()}_images"
+            )
             for name in names
         }
         self.sent_images = defaultdict(list)
@@ -118,7 +119,7 @@ class Crosspost(Cog):
 
         ib_login = data["inkbunny"]
 
-        url = self.inkbunny_api_fmt.format("login")
+        url = INKBUNNY_API_FMT.format("login")
         async with self.get(url, "POST", params=ib_login) as resp:
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
@@ -310,16 +311,16 @@ class Crosspost(Cog):
             root = etree.fromstring(await resp.read(), self.parser)
 
         try:
-            tweet = root.xpath(self.tweet_selector)[0]
+            tweet = root.xpath(TWEET_SELECTOR)[0]
         except IndexError:
             await ctx.send("Failed to get tweet. Maybe the account is locked?")
             return
 
-        if imgs := tweet.xpath(self.twitter_img_selector):
+        if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
             for img in imgs:
                 url = img.get("src")
                 await self.send(ctx, f"{url}:orig")
-        elif tweet.xpath(self.twitter_is_gif):
+        elif tweet.xpath(TWITTER_IS_GIF):
             proc = await subprocess.create_subprocess_shell(
                 f"youtube-dl {link} -o - | "
                 "ffmpeg -i pipe:0 "
@@ -437,14 +438,14 @@ class Crosspost(Cog):
         async with self.get(link, headers=self.hiccears_headers) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
 
-        if single_image := root.xpath(self.hiccears_img_selector):
+        if single_image := root.xpath(HICCEARS_IMG_SELECTOR):
             a = single_image[0]
             href = a.get("href").lstrip(".")
             url = f"https://{resp.host}{href}"
             await self.send(ctx, url)
             return
 
-        images = root.xpath(self.hiccears_link_selector)
+        images = root.xpath(HICCEARS_LINK_SELECTOR)
         max_pages = await self.get_max_pages(ctx)
 
         num_images = len(images)
@@ -459,7 +460,7 @@ class Crosspost(Cog):
             async with self.get(url) as page_resp:
                 page = etree.fromstring(await page_resp.read(), self.parser)
             try:
-                a = page.xpath(self.hiccears_img_selector)[0]
+                a = page.xpath(HICCEARS_IMG_SELECTOR)[0]
             except IndexError:
                 # hit a premium gallery teaser thumbnail
                 return
@@ -481,7 +482,7 @@ class Crosspost(Cog):
             ) as resp:  # somehow this doesn't get redirected?
                 root = etree.fromstring(await resp.read(), self.parser)
             idx = 0
-        images = root.xpath(self.tumblr_img_selector)
+        images = root.xpath(TUMBLR_IMG_SELECTOR)
         mode = await self.get_mode(ctx)
         max_pages = await self.get_max_pages(ctx)
 
@@ -503,9 +504,9 @@ class Crosspost(Cog):
             await ctx.send(message)
 
     async def display_mastodon_images(self, link: str, ctx: CrosspostContext) -> None:
-        if (match := self.mastodon_url_groups.match(link)) is None:
+        if (match := MASTODON_URL_GROUPS.match(link)) is None:
             return
-        api_url = self.mastodon_api_fmt.format(*match.groups())
+        api_url = MASTODON_API_FMT.format(*match.groups())
         try:
             async with self.session.get(api_url) as resp:
                 post = await resp.json()
@@ -524,7 +525,7 @@ class Crosspost(Cog):
             await self.send(ctx, url)
 
     async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> None:
-        url = self.inkbunny_api_fmt.format("submissions")
+        url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
         async with self.get(url, "POST", params=params) as resp:
             response = await resp.json()
