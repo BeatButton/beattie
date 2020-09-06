@@ -347,8 +347,8 @@ class Crosspost(Cog):
         elif "illust_id" in link:
             link = f"{link}&mode=medium"
         link = link.replace("http://", "https://")
-        if match := re.search(r"illust_id=(\d+)|artworks/(\d+)", link):
-            illust_id = next(filter(None, match.groups()))
+        if match := re.search(r"(?:illust_id=|artworks/)(\d+)", link):
+            illust_id = match.group(1)
         else:
             await ctx.send("Failed to find illust ID in pixiv link. This is a bug.")
             return
