@@ -447,6 +447,13 @@ class Crosspost(Cog):
         max_pages = await self.get_max_pages(ctx)
 
         num_images = len(images)
+
+        if num_images == 0:
+            await ctx.send(
+                "Hiccears login expired. <@!140293604726800385> needs to fix this. >:("
+            )
+            return
+
         if max_pages == 0:
             max_pages = num_images
 
