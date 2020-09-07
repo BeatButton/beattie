@@ -19,6 +19,11 @@ ROLL_EXPR = re.compile(
     r"^(?P<num>\d*)d?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?"
     r"(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$"
 )
+SHADOWRUN_EXPR = re.compile(r"^\d+e?$")
+GENESYS_ROLL_EXPR = re.compile(r"^(?:\d+[a-z])+$")
+GENESYS_DIE_EXPR = re.compile(r"\d+[a-z]")
+
+TAROT_EXPR = re.compile(r"(?:\w+/)+[IVX0_]*([\w_]+)\.jpg")
 TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
 
 
@@ -64,7 +69,7 @@ class RPG(Cog):
             except IndexError:
                 await ctx.send("Please specify a valid suit, or no suit.")
                 return
-            match = re.match(r"(?:\w+/)+[IVX0_]*([\w_]+)\.jpg", card)
+            match = TAROT_EXPR.match(card)
             assert match is not None
             name = match.groups()[0].replace("_", " ")
             url = TAROT_URL.format(name.lower().replace(" ", "-"))
@@ -177,8 +182,7 @@ class RPG(Cog):
         Roll N six-sided dice and return the number of dice that rolled 5 or 6.
         If you put "e" after the number, 6s are counted and then rerolled."""
         inp = inp.strip()
-        expr = r"^\d+e?$"
-        if not re.match(expr, inp):
+        if not SHADOWRUN_EXPR.match(inp):
             raise commands.BadArgument
 
         edge = "e" in inp
@@ -220,12 +224,10 @@ class RPG(Cog):
         3a2p1b4d1c
         2f"""
         inp = inp.lower()
-        expr = r"^(?:\d+[a-z])+$"
-        match = re.match(expr, inp)
-        if not match:
+
+        if (match := GENESYS_ROLL_EXPR.match(inp)) is None:
             raise commands.BadArgument
-        expr = r"\d+[a-z]"
-        matches = re.finditer(expr, inp)
+        matches = GENESYS_DIE_EXPR.finditer(inp)
         dice = {}
         for match in matches:
             roll = match.group(0)
