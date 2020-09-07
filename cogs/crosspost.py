@@ -1,14 +1,16 @@
 from __future__ import annotations  # type: ignore
 
 import asyncio
-import json
 import re
 from asyncio import subprocess
 from collections import defaultdict
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Dict, List, Optional, Tuple, Union
+from zipfile import ZipFile
 
 import aiohttp
 import discord
@@ -85,6 +87,12 @@ class Crosspost(Cog):
 
     hiccears_headers: Dict[str, str] = {}
     imgur_headers: Dict[str, str] = {}
+    pixiv_headers: Dict[str, str] = {
+        "App-OS": "ios",
+        "App-OS-Version": "10.3.1",
+        "App-Version": "6.7.1",
+        "User-Agent": "PixivIOSApp/6.7.1 (ios 10.3.1; iPhone8,1)",
+    }
     inkbunny_sid: str = ""
 
     sent_images: Dict[MessageID, List[Tuple[ChannelID, MessageID]]]
@@ -169,7 +177,7 @@ class Crosspost(Cog):
                 else:
                     break
 
-            self.headers["Authorization"] = f'Bearer {res["access_token"]}'
+            self.pixiv_headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
             with open("config/logins.toml", "w") as fp:
                 toml.dump(logins, fp)
@@ -352,13 +360,7 @@ class Crosspost(Cog):
         else:
             await ctx.send("Failed to find illust ID in pixiv link. This is a bug.")
             return
-        headers = {
-            "App-OS": "ios",
-            "App-OS-Version": "10.3.1",
-            "App-Version": "6.7.1",
-            "User-Agent": "PixivIOSApp/6.7.1 (ios 10.3.1; iPhone8,1)",
-            "Authorization": self.headers["Authorization"],
-        }
+        headers = {**self.pixiv_headers}
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with self.session.get(url, params=params, headers=headers) as resp:
@@ -375,11 +377,7 @@ class Crosspost(Cog):
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
-                try:
-                    file = await self.get_ugoira(link)
-                except ResponseError:
-                    await ctx.send("Ugoira machine :b:roke")
-                    return
+                file = await self.get_ugoira(illust_id)
             else:
                 headers["referer"] = link
                 img = await self.save(img_url, headers=headers)
@@ -422,14 +420,68 @@ class Crosspost(Cog):
                 )
                 await ctx.send(message)
 
-    async def get_ugoira(self, link: str, fmt: str = "gif") -> File:
-        params = {"url": link, "format": fmt}
-        conv_url = "http://ugoira.dataprocessingclub.org/convert"
-        async with self.get(conv_url, params=params, timeout=None) as resp:
-            text = await resp.text()
-        url = json.loads(text)["url"]
-        img = await self.save(url)
-        name = url.rpartition("/")[2]
+    async def get_ugoira(self, illust_id: str) -> File:
+        url = "https://app-api.pixiv.net/v1/ugoira/metadata"
+        params = {"illust_id": illust_id}
+        headers = self.pixiv_headers
+        async with self.get(url, params=params, headers=headers) as resp:
+            res = (await resp.json())["ugoira_metadata"]
+
+        zip_url = res["zip_urls"]["medium"]
+        zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
+
+        headers = {
+            **self.pixiv_headers,
+            "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
+        }
+
+        zip_bytes = await self.save(zip_url, headers=headers, use_default_headers=False)
+        zfp = ZipFile(zip_bytes)
+
+        with TemporaryDirectory() as td:
+            tempdir = Path(td)
+            zfp.extractall(tempdir)
+            with open(tempdir / "durations.txt", "w") as fp:
+                for frame in res["frames"]:
+                    duration = int(frame["delay"]) / 1000
+                    fp.write(f"file '{frame['file']}'\nduration {duration}\n")
+
+            proc = await subprocess.create_subprocess_exec(
+                "ffmpeg",
+                "-i",
+                f"{tempdir}/%06d.jpg",
+                "-vf",
+                "palettegen",
+                f"{tempdir}/palette.png",
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            await proc.wait()
+
+            proc = await subprocess.create_subprocess_exec(
+                "ffmpeg",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                f"{tempdir}/durations.txt",
+                "-i",
+                f"{tempdir}/palette.png",
+                "-lavfi",
+                "paletteuse",
+                "-f",
+                "gif",
+                "pipe:1",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
+
+            stdout, _stderr = await proc.communicate()
+
+        img = BytesIO(stdout)
+        img.seek(0)
+        name = f"{illust_id}.gif"
         return File(img, name)
 
     async def display_hiccears_images(self, link: str, ctx: CrosspostContext) -> None:
