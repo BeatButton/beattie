@@ -21,7 +21,7 @@ def reverse_insort_by_key(
     *,
     key: Callable[[T], U],
     lo: int = 0,
-    hi: Optional[int] = None
+    hi: Optional[int] = None,
 ) -> None:
     if hi is None:
         hi = len(seq)
@@ -36,3 +36,19 @@ def reverse_insort_by_key(
 
 def remove_spoilers(content: str) -> str:
     return SPOILER_EXPR.sub("", content)
+
+
+KB = 2 ** 10
+MB = KB * KB
+GB = MB * KB
+
+
+def display_bytes(num_bytes: int) -> str:
+    if num_bytes < KB:
+        return f"{num_bytes} B"
+    elif num_bytes < MB:
+        return f"{num_bytes / KB:.2f} KiB"
+    elif num_bytes < GB:
+        return f"{num_bytes / MB:.2f} MiB"
+    else:
+        return f"{num_bytes / GB:.2f} GiB"

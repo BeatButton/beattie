@@ -24,7 +24,7 @@ from bot import BeattieBot
 from context import BContext
 from utils.checks import is_owner_or
 from utils.contextmanagers import get as get_
-from utils.etc import remove_spoilers
+from utils.etc import display_bytes, remove_spoilers
 from utils.exceptions import ResponseError
 
 ChannelID = int
@@ -72,8 +72,9 @@ class CrosspostContext(BContext):
             fp: BytesIO = file.fp  # type: ignore
             guild = self.guild
             assert isinstance(guild, Guild)
-            if len(fp.getbuffer()) >= guild.filesize_limit:
-                args = ("Image too large to upload.",)
+            size = len(fp.getbuffer())
+            if size >= guild.filesize_limit:
+                args = (f"Image too large to upload ({display_bytes(size)}).",)
                 kwargs = {}
         msg = await super().send(*args, **kwargs)
         self.cog.sent_images[self.message.id].append((msg.channel.id, msg.id))
