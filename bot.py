@@ -89,7 +89,7 @@ class BeattieBot(Bot):
         logger = logging.getLogger("discord")
         loglevel = getattr(logging, self.loglevel, logging.CRITICAL)
         logger.setLevel(loglevel)
-        now = datetime.utcnow()
+        now = datetime.now()
         filename = now.strftime("discord%Y%m%d%H%M.log")
         handler = logging.FileHandler(filename=filename, encoding="utf-8", mode="w")
         handler.setFormatter(
