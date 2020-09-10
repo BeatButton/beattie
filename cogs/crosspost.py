@@ -45,8 +45,8 @@ PIXIV_URL_EXPR = re.compile(
 HICCEARS_URL_EXPR = re.compile(
     r"https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+"
 )
-HICCEARS_LINK_SELECTOR = ".//div[contains(@class, 'row')]//a"
 HICCEARS_IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
+HICCEARS_THUMB_SELECTOR = ".//img[contains(@src, 'thumbnails')]"
 
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
@@ -496,10 +496,9 @@ class Crosspost(Cog):
             await self.send(ctx, url)
             return
 
-        images = root.xpath(HICCEARS_LINK_SELECTOR)
-        max_pages = await self.get_max_pages(ctx)
+        thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
 
-        num_images = len(images)
+        num_images = len(thumbs)
 
         if num_images == 0:
             await ctx.send(
@@ -507,22 +506,14 @@ class Crosspost(Cog):
             )
             return
 
+        max_pages = await self.get_max_pages(ctx)
+
         if max_pages == 0:
             max_pages = num_images
 
         pages_remaining = num_images - max_pages
-        images = images[:max_pages]
-        for image in images:
-            href = image.get("href")
-            url = f"https://{resp.host}{href[1:]}"
-            async with self.get(url) as page_resp:
-                page = etree.fromstring(await page_resp.read(), self.parser)
-            try:
-                a = page.xpath(HICCEARS_IMG_SELECTOR)[0]
-            except IndexError:
-                # hit a premium gallery teaser thumbnail
-                return
-            href = a.get("href")[1:]  # trim leading '.'
+        for thumb in thumbs[:max_pages]:
+            href = thumb.get("src").lstrip(".").replace("thumbnails", "imgs")
             url = f"https://{resp.host}{href}"
             await self.send(ctx, url)
         if pages_remaining > 0:
