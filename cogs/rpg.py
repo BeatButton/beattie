@@ -32,7 +32,7 @@ class RPG(Cog):
         self.loop = bot.loop
 
     @commands.command()
-    async def choose(self, ctx: BContext, *options: commands.clean_content) -> None:
+    async def choose(self, ctx: BContext, *options: str) -> None:
         """Choose between some options. Use quotes if they have spaces."""
         len_ = len(options)
         if len_ == 0:
@@ -41,7 +41,12 @@ class RPG(Cog):
             await ctx.send("That's not much of a choice!")
         else:
             choice = random.choice(options)
-            await ctx.send(f"I choose {choice}")
+            await ctx.send(
+                f"I choose {choice}",
+                allowed_mentions=discord.AllowedMentions(
+                    everyone=False, users=False, roles=False
+                ),
+            )
 
     @commands.command()
     async def tarot(self, ctx: BContext, *suits: str) -> None:
