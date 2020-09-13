@@ -2,7 +2,6 @@ import datetime
 
 import discord
 import psutil
-from discord import User
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -33,7 +32,10 @@ class Stats(Cog):
         if bot.owner_id is None:
             await bot.is_owner(ctx.author)
 
-        owner: User = bot.get_user(bot.owner_id)  # type: ignore
+        owner_id = bot.owner_id
+        assert owner_id is not None
+        owner = bot.get_user(owner_id)
+        assert owner is not None
 
         embed.set_author(name=str(owner), icon_url=str(owner.avatar_url))
 

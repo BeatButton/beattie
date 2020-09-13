@@ -12,7 +12,7 @@ from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, overload
 
 import aiohttp
 import toml
-from asyncqlio.db import DatabaseInterface  # type: ignore
+from asyncqlio.db import DatabaseInterface
 from discord import Game, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or

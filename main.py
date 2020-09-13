@@ -10,7 +10,7 @@ import toml
 from bot import BeattieBot
 
 if platform.system() != "Windows":
-    import uvloop  # type: ignore
+    import uvloop
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 

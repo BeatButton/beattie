@@ -1,4 +1,4 @@
-from __future__ import annotations  # type: ignore
+from __future__ import annotations
 
 import random
 from numbers import Real
@@ -207,12 +207,15 @@ dice: Dict[str, Tuple[Union[Result, Force], ...]] = {
 }
 
 
-def genesysroller(**kwargs: int) -> Result:
+def genesysroller(**kwargs: int) -> Union[Result, Force]:
+    result: Union[Result, Force]
     if "force" in kwargs:
         if len(kwargs) > 1:
             raise ValueError
-        result = sum(random.choice(dice["force"]) for _ in range(kwargs["force"]))
-        return result  # type: ignore
+        result = Force()
+        for _ in range(kwargs["force"]):
+            result += random.choice(dice["force"])
+        return result
     result = Result()
     for die, times in kwargs.items():
         result += sum(random.choice(dice[die]) for _ in range(times))

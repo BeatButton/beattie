@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import discord
-from discord import Embed, Message
+from discord import AllowedMentions, Embed, File, Message
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -21,12 +21,17 @@ class BContext(commands.Context):
             content = f"{self.author.display_name}{sep}{content}"
         return await self.send(content, **kwargs)
 
-    async def send(  # type: ignore
+    async def send(
         self,
-        content: Optional[str] = None,
+        content: Optional[object] = None,
         *,
+        tts: bool = False,
         embed: Optional[Embed] = None,
-        **kwargs: Any,
+        file: Optional[File] = None,
+        files: Optional[List[File]] = None,
+        delete_after: Optional[float] = None,
+        nonce: Optional[int] = None,
+        allowed_mentions: Optional[AllowedMentions] = None,
     ) -> Message:
         str_content = str(content)
         if len(str_content) >= 2000:
@@ -34,9 +39,21 @@ class BContext(commands.Context):
             fp.write(str_content.encode("utf8"))
             fp.seek(0)
             content = None
-            file = discord.File(fp, filename=f"{self.message.id}.txt")
-            if kwargs.get("files") is not None:
-                kwargs["files"].append(file)
+            new_file = discord.File(fp, filename=f"{self.message.id}.txt")
+            if files is not None:
+                files.append(new_file)
+            elif file is not None:
+                files = [file, new_file]
+                file = None
             else:
-                kwargs["file"] = file
-        return await super().send(content, embed=embed, **kwargs)
+                file = new_file
+        return await super().send(
+            content,
+            tts=tts,
+            embed=embed,
+            file=file,
+            files=files,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+        )

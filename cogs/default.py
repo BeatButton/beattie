@@ -1,6 +1,7 @@
 from io import BytesIO
 from typing import Optional
 
+import discord
 from discord import File, User
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -14,10 +15,13 @@ class Default(Cog):
 
     @commands.command()
     async def avatar(self, ctx: BContext, user: Optional[User] = None) -> None:
+        target: discord.abc.User
         if user is None:
-            user = ctx.author  # type: ignore
+            target = ctx.author
+        else:
+            target = user
         img = BytesIO()
-        avatar = user.avatar_url_as(format="png")  # type: ignore
+        avatar = target.avatar_url_as(format="png")
         await avatar.save(img)
         filename = str(avatar).rpartition("/")[2].partition("?")[0]
         await ctx.send(file=File(img, filename))
@@ -41,7 +45,9 @@ class Default(Cog):
         delta = msg.created_at - ctx.message.created_at
         await msg.edit(content=f":ping_pong: **{delta.total_seconds()*1000:.0f}ms**")
         msg = await ctx.channel.fetch_message(msg.id)
-        delta2 = msg.edited_at - ctx.message.created_at  # type: ignore
+        edited_at = msg.edited_at
+        assert edited_at is not None
+        delta2 = edited_at - ctx.message.created_at
         await msg.edit(
             content=f"{msg.content}\n**{delta2.total_seconds()*1000:.0f}ms**"
         )

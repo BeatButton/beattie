@@ -29,8 +29,10 @@ class NSFW(Cog):
     }
 
     def cog_check(self, ctx: BContext) -> bool:
-        channel: Union[DMChannel, TextChannel] = ctx.channel  # type: ignore
-        return isinstance(channel, discord.DMChannel) or channel.is_nsfw()
+        channel = ctx.channel
+        if isinstance(channel, TextChannel):
+            return channel.is_nsfw()
+        return True
 
     def __init__(self, bot: BeattieBot):
         self.cache: Dict[Channel, Dict[str, Dict[FrozenSet[str], Any]]] = defaultdict(
