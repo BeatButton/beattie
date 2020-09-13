@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Iterable, List, Optional
 
 from asyncqlio.db import DatabaseInterface
-from discord import Embed, TextChannel
+from discord import AllowedMentions, Embed, TextChannel
 from discord.ext import commands, menus
 from discord.ext.commands import Cog
 from discord.ext.menus import MenuKeysetPages, PageDirection, PageSpecifier
@@ -104,15 +104,11 @@ class Remind(Cog):
 
     @remind.command(name="set")
     async def set_reminder(
-        self,
-        ctx: BContext,
-        time: Time,
-        *,
-        topic: Optional[commands.clean_content] = None,
+        self, ctx: BContext, time: Time, *, topic: Optional[str] = None,
     ) -> None:
         """Have the bot remind you about something.
            First put time (in quotes if there are spaces), then topic"""
-        await self.schedule_reminder(ctx, time, topic)  # type: ignore
+        await self.schedule_reminder(ctx, time, topic)
         await ctx.send("Okay, I'll remind you.")
 
     @set_reminder.error
@@ -215,7 +211,12 @@ class Remind(Cog):
             assert isinstance(channel, TextChannel)
             topic = reminder.topic or "something"
             message = f"{member.mention}\nYou asked to be reminded about {topic}."
-            await channel.send(message)
+            await channel.send(
+                message,
+                allowed_mentions=AllowedMentions(
+                    everyone=False, users=False, roles=False
+                ),
+            )
         async with self.db.get_session() as s:
             await s.remove(reminder)
 
