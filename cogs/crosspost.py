@@ -15,7 +15,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import File, Guild, Message
+from discord import File, Message
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
@@ -66,12 +66,14 @@ IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)"
 class CrosspostContext(BContext):
     cog: Crosspost
 
-    async def send(self, *args: Any, **kwargs: Any) -> Message:
-        file: File
-        if file := kwargs.get("file"):  # type: ignore
-            fp: BytesIO = file.fp  # type: ignore
+    async def send(
+        self, *args: Any, file: Optional[File] = None, **kwargs: Any
+    ) -> Message:
+        if file := kwargs.get("file"):
+            fp = file.fp
+            assert isinstance(fp, BytesIO)
             guild = self.guild
-            assert isinstance(guild, Guild)
+            assert guild is not None
             size = len(fp.getbuffer())
             if size >= guild.filesize_limit:
                 args = (f"Image too large to upload ({display_bytes(size)}).",)
@@ -229,7 +231,9 @@ class Crosspost(Cog):
     async def on_message(self, message: Message) -> None:
         if (guild := message.guild) is None or message.author.bot:
             return
-        if not guild.me.permissions_in(message.channel).send_messages:  # type: ignore
+        channel = message.channel
+        assert isinstance(channel, discord.TextChannel)
+        if not guild.me.permissions_in(channel).send_messages:
             return
         if not (await self.bot.config.get_guild(guild.id)).get("crosspost_enabled"):
             return
@@ -289,15 +293,15 @@ class Crosspost(Cog):
             raise RuntimeError("Invalid crosspost mode!")
 
     async def get_mode(self, ctx: BContext) -> int:
-        if ctx.guild is None:
-            return 1
-        return (await ctx.bot.config.get_guild(ctx.guild.id)).get("crosspost_mode") or 1
+        guild = ctx.guild
+        assert guild is not None
+        return (await ctx.bot.config.get_guild(guild.id)).get("crosspost_mode") or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
-        if ctx.guild is None:
-            return 4
+        guild = ctx.guild
+        assert guild is not None
 
-        max_pages = (await ctx.bot.config.get_guild(ctx.guild.id)).get(
+        max_pages = (await ctx.bot.config.get_guild(guild.id)).get(
             "crosspost_max_pages"
         )
         if max_pages is None:
@@ -639,8 +643,9 @@ class Crosspost(Cog):
     @crosspost.command()
     async def auto(self, ctx: BContext, enabled: bool) -> None:
         """Enable or disable automatic crossposting"""
-        guild_id = ctx.guild.id  # type: ignore
-        await self.bot.config.set_guild(guild_id, crosspost_enabled=enabled)
+        guild = ctx.guild
+        assert guild is not None
+        await self.bot.config.set_guild(guild.id, crosspost_enabled=enabled)
         fmt = "en" if enabled else "dis"
         await ctx.send(f"Crossposting images {fmt}abled.")
 
@@ -657,8 +662,9 @@ class Crosspost(Cog):
         else:
             raise commands.BadArgument(mode)
 
-        guild_id = ctx.guild.id  # type: ignore
-        await self.bot.config.set_guild(guild_id, crosspost_mode=crosspost_mode)
+        guild = ctx.guild
+        assert guild is not None
+        await self.bot.config.set_guild(guild.id, crosspost_mode=crosspost_mode)
         await ctx.send("Crosspost mode updated.")
 
     @crosspost.command()
@@ -666,8 +672,9 @@ class Crosspost(Cog):
         """Set the maximum number of images to send.
 
         Set to 0 for no limit."""
-        guild_id = ctx.guild.id  # type: ignore
-        await self.bot.config.set_guild(guild_id, crosspost_max_pages=max_pages)
+        guild = ctx.guild
+        assert guild is not None
+        await self.bot.config.set_guild(guild.id, crosspost_max_pages=max_pages)
         await ctx.send(f"Max crosspost pages set to {max_pages}")
 
     @commands.command()

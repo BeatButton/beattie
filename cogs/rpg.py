@@ -3,7 +3,7 @@ import os
 import random
 import re
 from concurrent import futures
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import discord
 from discord.ext import commands
@@ -14,6 +14,8 @@ from context import BContext
 from utils.genesys import die_names, genesysroller
 
 RollArg = Tuple[int, int, int, int, int, int]
+L2 = List[int]
+L1 = List[L2]
 
 ROLL_EXPR = re.compile(
     r"^(?:(?P<num>\d*)d)?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?"
@@ -153,11 +155,9 @@ class RPG(Cog):
             for roll_ in result:
                 roll_.sort()
             result.sort()
-        if total or len(result[0]) == 1:
-            result = [roll_[0] for roll_ in result]  # type: ignore
-        if "x" not in roll:
-            result = result[0]  # type: ignore
-        await ctx.reply(f"{roll}: {result}")
+
+        out = denest(result)
+        await ctx.reply(f"{roll}: {out}")
 
     @roll.error
     async def roll_error(self, ctx: BContext, e: Exception) -> None:
@@ -311,6 +311,14 @@ def shadowroller(num: int, edge: bool = False) -> str:
         result = f"Glitch with {hits} hit{s}."
 
     return result
+
+
+def denest(rolls: L1) -> str:
+    # this isn't my fault
+    first: Union[L1, L2] = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
+    second: Union[L1, L2, int] = first[0] if len(first) == 1 else first
+
+    return str(second)
 
 
 def setup(bot: BeattieBot) -> None:
