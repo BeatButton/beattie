@@ -15,7 +15,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import File, Message
+from discord import File, Message, AllowedMentions, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
@@ -67,18 +67,36 @@ class CrosspostContext(BContext):
     cog: Crosspost
 
     async def send(
-        self, *args: Any, file: Optional[File] = None, **kwargs: Any
+        self,
+        content: Optional[object] = None,
+        *,
+        tts: bool = False,
+        embed: Optional[Embed] = None,
+        file: Optional[File] = None,
+        files: Optional[List[File]] = None,
+        delete_after: Optional[float] = None,
+        nonce: Optional[int] = None,
+        allowed_mentions: Optional[AllowedMentions] = None,
     ) -> Message:
-        if file := kwargs.get("file"):
+        if file:
             fp = file.fp
             assert isinstance(fp, BytesIO)
             guild = self.guild
             assert guild is not None
             size = len(fp.getbuffer())
             if size >= guild.filesize_limit:
-                args = (f"Image too large to upload ({display_bytes(size)}).",)
-                kwargs = {}
-        msg = await super().send(*args, **kwargs)
+                content = f"Image too large to upload ({display_bytes(size)})."
+                file = None
+        msg = await super().send(
+            content,
+            tts=tts,
+            embed=embed,
+            file=file,
+            files=files,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+        )
         self.cog.sent_images[self.message.id].append((msg.channel.id, msg.id))
         return msg
 
