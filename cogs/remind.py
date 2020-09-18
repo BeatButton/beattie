@@ -214,7 +214,7 @@ class Remind(Cog):
             await channel.send(
                 message,
                 allowed_mentions=AllowedMentions(
-                    everyone=False, users=False, roles=False
+                    everyone=False, users=[member], roles=False
                 ),
             )
         async with self.db.get_session() as s:
