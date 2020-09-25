@@ -234,7 +234,7 @@ class Crosspost(Cog):
         headers = headers or {}
         img = BytesIO()
         async with self.get(
-            img_url, use_default_heathers=use_default_headers, headers=headers
+            img_url, use_default_headers=use_default_headers, headers=headers
         ) as img_resp:
             async for chunk in img_resp.content.iter_any():
                 if not chunk:
