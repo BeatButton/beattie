@@ -397,7 +397,9 @@ class Crosspost(Cog):
             return
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
-        async with self.session.get(url, params=params, headers=headers) as resp:
+        async with self.get(
+            url, params=params, use_default_headers=False, headers=self.pixiv_headers
+        ) as resp:
             res = await resp.json()
         try:
             res = res["illust"]
@@ -604,7 +606,7 @@ class Crosspost(Cog):
             return
         api_url = MASTODON_API_FMT.format(*match.groups())
         try:
-            async with self.session.get(api_url) as resp:
+            async with self.get(api_url, use_default_headers=False) as resp:
                 post = await resp.json()
         except (ResponseError, aiohttp.ClientError):
             return
