@@ -383,7 +383,6 @@ class Crosspost(Cog):
         else:
             await ctx.send("Failed to find illust ID in pixiv link. This is a bug.")
             return
-        headers = {**self.pixiv_headers}
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with self.session.get(url, params=params, headers=headers) as resp:
@@ -397,15 +396,19 @@ class Crosspost(Cog):
             )
             return
 
+        headers = {**self.pixiv_headers, "referer": link}
+        guild = ctx.guild
+        assert guild is not None
+        filesize_limit = guild.filesize_limit
+        content: Optional[str]
+
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
                 file = await self.get_ugoira(illust_id)
             else:
-                headers["referer"] = link
-                img = await self.save(img_url, headers=headers)
-                file = File(img, img_url.rpartition("/")[-1])
-            await ctx.send(file=file)
+                content, file = await self.save_pixiv(img_url, headers, filesize_limit)
+                await ctx.send(content, file=file)
         elif multi := res["meta_pages"]:
             # multi_image_post
             urls = (page["image_urls"]["original"] for page in multi)
@@ -416,22 +419,16 @@ class Crosspost(Cog):
             if max_pages == 0:
                 max_pages = num_pages
 
-            tasks = []
-
-            for img_url, i in zip(urls, range(max_pages)):
-                fullsize_url = (
-                    "https://pixiv.net/member_illust.php?mode=manga_big"
-                    f"&illust_id={illust_id}&page={i}"
+            tasks = [
+                self.bot.loop.create_task(
+                    self.save_pixiv(img_url, headers, filesize_limit)
                 )
-                headers["referer"] = fullsize_url
-                task = self.bot.loop.create_task(self.save(img_url, headers=headers))
-                filename = img_url.rpartition("/")[-1]
-                tasks.append((filename, task))
+                for img_url, _ in zip(urls, range(max_pages))
+            ]
 
-            for filename, task in tasks:
-                img = await task
-                file = File(img, filename)
-                await ctx.send(file=file)
+            for task in tasks:
+                content, file = await task
+                await ctx.send(content, file=file)
 
             remaining = num_pages - max_pages
 
@@ -442,6 +439,20 @@ class Crosspost(Cog):
                     f"<https://www.pixiv.net/en/artworks/{illust_id}>"
                 )
                 await ctx.send(message)
+
+    async def save_pixiv(
+        self, img_url: str, headers: Dict[str, str], filesize_limit: int
+    ) -> Tuple[Optional[str], File]:
+        content = None
+        img = await self.save(img_url, headers=headers)
+        if len(img.getbuffer()) > filesize_limit:
+            img_url = img_url.replace("img-original", "img-master")
+            head, _, ext = img_url.rpartition(".")
+            img_url = f"{head}_master1200.{ext}"
+            img = await self.save(img_url, headers=headers)
+            content = "Full size too large, standard resolution used."
+        file = File(img, img_url.rpartition("/")[-1])
+        return content, file
 
     async def get_ugoira(self, illust_id: str) -> File:
         url = "https://app-api.pixiv.net/v1/ugoira/metadata"
