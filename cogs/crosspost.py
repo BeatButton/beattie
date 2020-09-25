@@ -15,7 +15,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import File, Message, AllowedMentions, Embed
+from discord import AllowedMentions, Embed, File, Message
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
