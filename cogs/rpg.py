@@ -83,9 +83,9 @@ class RPG(Cog):
             embed = discord.Embed()
             embed.title = name
             embed.url = url
-            filename = card.replace("_", "").rpartition("/")[-1]
+            filename = card.rpartition("/")[2]
             embed.set_image(url=f"attachment://{filename}")
-            await ctx.send(file=discord.File(f"{card}", filename), embed=embed)
+            await ctx.send(file=discord.File(f"{card}"), embed=embed)
 
     @commands.command(aliases=["r"])
     async def roll(self, ctx: BContext, *, roll: str = "1d20") -> None:
