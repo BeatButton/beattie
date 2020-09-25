@@ -186,8 +186,12 @@ class Crosspost(Cog):
 
             while True:
                 try:
-                    async with self.session.post(
-                        url, data=data, headers=headers
+                    async with self.get(
+                        url,
+                        "POST",
+                        data=data,
+                        use_default_headers=False,
+                        headers=headers,
                     ) as resp:
                         res = (await resp.json())["response"]
                 except Exception as e:
@@ -208,22 +212,30 @@ class Crosspost(Cog):
         self.bot.loop.create_task(self.session.close())
         self.login_task.cancel()
 
-    def get(self, url: str, method: str = "GET", **kwargs: Any) -> get_:
-        kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
+    def get(
+        self,
+        url: str,
+        method: str = "GET",
+        *,
+        use_default_headers: bool = True,
+        **kwargs: Any,
+    ) -> get_:
+        if use_default_headers:
+            kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
         return get_(self.session, url, method, **kwargs)
 
     async def save(
         self,
         img_url: str,
         *,
-        headers: Optional[Dict[str, str]] = None,
         use_default_headers: bool = True,
+        headers: Optional[Dict[str, str]] = None,
     ) -> BytesIO:
         headers = headers or {}
-        if use_default_headers:
-            headers = {**self.headers, **headers}
         img = BytesIO()
-        async with self.get(img_url, headers=headers) as img_resp:
+        async with self.get(
+            img_url, use_default_heathers=use_default_headers, headers=headers
+        ) as img_resp:
             async for chunk in img_resp.content.iter_any():
                 if not chunk:
                     break
@@ -458,7 +470,9 @@ class Crosspost(Cog):
         url = "https://app-api.pixiv.net/v1/ugoira/metadata"
         params = {"illust_id": illust_id}
         headers = self.pixiv_headers
-        async with self.get(url, params=params, headers=headers) as resp:
+        async with self.get(
+            url, params=params, use_default_headers=False, headers=headers
+        ) as resp:
             res = (await resp.json())["ugoira_metadata"]
 
         zip_url = res["zip_urls"]["medium"]
@@ -609,7 +623,9 @@ class Crosspost(Cog):
     async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> None:
         url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
-        async with self.get(url, "POST", params=params) as resp:
+        async with self.get(
+            url, "POST", use_default_headers=False, params=params
+        ) as resp:
             response = await resp.json()
 
         sub = response["submissions"][0]
@@ -620,7 +636,9 @@ class Crosspost(Cog):
 
     async def display_imgur_images(self, album_id: str, ctx: CrosspostContext) -> None:
         async with self.get(
-            f"https://api.imgur.com/3/album/{album_id}", headers=self.imgur_headers
+            f"https://api.imgur.com/3/album/{album_id}",
+            use_default_headers=False,
+            headers=self.imgur_headers,
         ) as resp:
             data = await resp.json()
 
