@@ -8,7 +8,7 @@ from datetime import datetime
 from hashlib import md5
 from io import BytesIO
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import IO, Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
 from zipfile import ZipFile
 
@@ -648,7 +648,32 @@ class Crosspost(Cog):
 
         for image in images[idx:]:
             url = image["remote_url"] or image["url"]
-            await self.send(ctx, url)
+            if image.get("type") == "gifv":
+                with NamedTemporaryFile() as fp:
+                    await self.save(
+                        url, fp=fp, seek_begin=False, use_default_headers=False
+                    )
+                    proc = await asyncio.create_subprocess_exec(
+                        "ffmpeg",
+                        "-i",
+                        fp.name,
+                        "-vf",
+                        "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1",
+                        "-f",
+                        "gif",
+                        "pipe:1",
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                    )
+
+                    stdout, _stderr = await proc.communicate()
+                img = BytesIO(stdout)
+
+                filename = f"{url.rpartition('/')[2]}.gif"
+                file = File(img, filename)
+                await ctx.send(file=file)
+            else:
+                await self.send(ctx, url)
 
     async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> None:
         url = INKBUNNY_API_FMT.format("submissions")
