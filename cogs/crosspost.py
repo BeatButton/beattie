@@ -447,10 +447,11 @@ class Crosspost(Cog):
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
+                content = None
                 file = await self.get_ugoira(illust_id)
             else:
                 content, file = await self.save_pixiv(img_url, headers, filesize_limit)
-                await ctx.send(content, file=file)
+            await ctx.send(content, file=file)
         elif multi := res["meta_pages"]:
             # multi_image_post
             urls = (page["image_urls"]["original"] for page in multi)
