@@ -315,10 +315,10 @@ def shadowroller(num: int, edge: bool = False) -> str:
 
 def denest(rolls: L1) -> str:
     # this isn't my fault
-    first: Union[L1, L2] = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
-    second: Union[L1, L2, int] = first[0] if len(first) == 1 else first
+    rolls: Union[L1, L2] = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
+    rolls: Union[L1, L2, int] = rolls[0] if len(rolls) == 1 else rolls
 
-    return str(second)
+    return str(rolls)
 
 
 def setup(bot: BeattieBot) -> None:
