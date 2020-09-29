@@ -13,7 +13,7 @@ from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, overload
 import aiohttp
 import toml
 from asyncqlio.db import DatabaseInterface
-from discord import Game, Message
+from discord import Game, Message, Intents
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
@@ -54,6 +54,7 @@ class BeattieBot(Bot):
             activity=game,
             case_insensitive=True,
             help_command=help_command,
+            intents=Intents.all(),
         )
 
         with open("config/config.toml") as file:
