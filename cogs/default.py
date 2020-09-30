@@ -2,7 +2,7 @@ from io import BytesIO
 from typing import Optional
 
 import discord
-from discord import File, User
+from discord import File, Member
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -14,14 +14,16 @@ class Default(Cog):
     """Default useful commands."""
 
     @commands.command()
-    async def avatar(self, ctx: BContext, user: Optional[User] = None) -> None:
+    async def avatar(self, ctx: BContext, *, user: Optional[Member] = None) -> None:
         target: discord.abc.User
         if user is None:
             target = ctx.author
         else:
             target = user
         img = BytesIO()
-        avatar = target.avatar_url_as(format="png")
+        avatar = target.avatar_url_as(
+            format="gif" if target.is_avatar_animated() else "png"
+        )
         await avatar.save(img)
         filename = str(avatar).rpartition("/")[2].partition("?")[0]
         await ctx.send(file=File(img, filename))
