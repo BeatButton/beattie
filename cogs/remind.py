@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, Optional
 
 from asyncqlio.db import DatabaseInterface
 from discord import AllowedMentions, Embed, TextChannel
@@ -25,7 +25,7 @@ class ReminderSource(menus.KeysetPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def get_page(self, specifier: PageSpecifier) -> List[Reminder]:
+    async def get_page(self, specifier: PageSpecifier) -> list[Reminder]:
         async with self.db.get_session() as s:
             query = (
                 s.select(Reminder)
@@ -64,7 +64,7 @@ class ReminderSource(menus.KeysetPageSource):
 
 class Remind(Cog):
     def __init__(self, bot: BeattieBot):
-        self.queue: List[Reminder] = []
+        self.queue: list[Reminder] = []
         self.loop = bot.loop
         self.db = bot.db
         self.bot = bot

@@ -3,7 +3,7 @@ import os
 import random
 import re
 from concurrent import futures
-from typing import Dict, List, Tuple, Union
+from typing import Union
 
 import discord
 from discord.ext import commands
@@ -13,9 +13,9 @@ from bot import BeattieBot
 from context import BContext
 from utils.genesys import die_names, genesysroller
 
-RollArg = Tuple[int, int, int, int, int, int]
-L2 = List[int]
-L1 = List[L2]
+RollArg = tuple[int, int, int, int, int, int]
+L2 = list[int]
+L1 = list[L2]
 
 ROLL_EXPR = re.compile(
     r"^(?:(?P<num>\d*)d)?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?"
@@ -110,7 +110,7 @@ class RPG(Cog):
         if (match := ROLL_EXPR.match(roll)) is None:
             raise commands.BadArgument
 
-        args: Dict[str, int] = {
+        args: dict[str, int] = {
             k: int(v) if v else 0 for k, v in match.groupdict().items()
         }
 
@@ -271,7 +271,7 @@ def roller(
     hi_drop: int = 0,
     mod: int = 0,
     times: int = 1,
-) -> List[List[int]]:
+) -> list[list[int]]:
     rolls = []
     for _ in range(times):
         pool = [random.randint(1, sides) for _ in range(num)]

@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import Any, Dict, FrozenSet, Iterable, Tuple, Union
+from typing import Any, Iterable, Union
 from urllib import parse
 
 import discord
@@ -35,10 +35,10 @@ class NSFW(Cog):
         return True
 
     def __init__(self, bot: BeattieBot):
-        self.cache: Dict[Channel, Dict[str, Dict[FrozenSet[str], Any]]] = defaultdict(
+        self.cache: dict[Channel, dict[str, dict[frozenset[str], Any]]] = defaultdict(
             lambda: defaultdict(dict)
         )
-        self.titles: Dict[str, str] = {}
+        self.titles: dict[str, str] = {}
         self.get = bot.get
         self.log = bot.logger.debug
 
@@ -91,7 +91,7 @@ class NSFW(Cog):
             if not posts:
                 self.cache[channel][site].pop(tags, None)
 
-    def make_embed(self, post_element: etree.Element, site: str) -> Tuple[Embed, File]:
+    def make_embed(self, post_element: etree.Element, site: str) -> tuple[Embed, File]:
         post = dict(post_element.items())
         if not post:
             post = {child.tag: child.text for child in post_element.getchildren()}

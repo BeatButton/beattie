@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from numbers import Real
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Union
 
 
 class Result:
@@ -139,7 +139,7 @@ die_names = {
     "f": "force",
 }
 
-dice: Dict[str, Tuple[Union[Result, Force], ...]] = {
+dice: dict[str, tuple[Union[Result, Force], ...]] = {
     "boost": (wash, wash, success, success + advantage, 2 * advantage, advantage),
     "setback": (wash, wash, failure, failure, disadvantage, disadvantage),
     "ability": (

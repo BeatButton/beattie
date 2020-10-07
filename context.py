@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 from discord import AllowedMentions, Embed, File, Message
@@ -28,7 +28,7 @@ class BContext(commands.Context):
         tts: bool = False,
         embed: Optional[Embed] = None,
         file: Optional[File] = None,
-        files: Optional[List[File]] = None,
+        files: Optional[list[File]] = None,
         delete_after: Optional[float] = None,
         nonce: Optional[int] = None,
         allowed_mentions: Optional[AllowedMentions] = None,

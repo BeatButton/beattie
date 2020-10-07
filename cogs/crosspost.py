@@ -9,7 +9,7 @@ from hashlib import md5
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import IO, Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
+from typing import IO, Any, Optional, TypeVar, Union, overload
 from zipfile import ZipFile
 
 import aiohttp
@@ -74,7 +74,7 @@ class CrosspostContext(BContext):
         tts: bool = False,
         embed: Optional[Embed] = None,
         file: Optional[File] = None,
-        files: Optional[List[File]] = None,
+        files: Optional[list[File]] = None,
         delete_after: Optional[float] = None,
         nonce: Optional[int] = None,
         allowed_mentions: Optional[AllowedMentions] = None,
@@ -107,9 +107,9 @@ class Crosspost(Cog):
 
     bot: BeattieBot
 
-    hiccears_headers: Dict[str, str] = {}
-    imgur_headers: Dict[str, str] = {}
-    pixiv_headers: Dict[str, str] = {
+    hiccears_headers: dict[str, str] = {}
+    imgur_headers: dict[str, str] = {}
+    pixiv_headers: dict[str, str] = {
         "App-OS": "ios",
         "App-OS-Version": "10.3.1",
         "App-Version": "6.7.1",
@@ -117,8 +117,8 @@ class Crosspost(Cog):
     }
     inkbunny_sid: str = ""
 
-    sent_images: Dict[MessageID, List[Tuple[ChannelID, MessageID]]]
-    ongoing_tasks: Dict[MessageID, asyncio.Task]
+    sent_images: dict[MessageID, list[tuple[ChannelID, MessageID]]]
+    ongoing_tasks: dict[MessageID, asyncio.Task]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -233,7 +233,7 @@ class Crosspost(Cog):
         fp: None = ...,
         seek_begin: bool = ...,
         use_default_headers: bool = ...,
-        headers: Optional[Dict[str, str]] = ...,
+        headers: Optional[dict[str, str]] = ...,
     ) -> BytesIO:
         ...
 
@@ -245,7 +245,7 @@ class Crosspost(Cog):
         fp: _IO,
         seek_begin: bool = ...,
         use_default_headers: bool = ...,
-        headers: Optional[Dict[str, str]] = ...,
+        headers: Optional[dict[str, str]] = ...,
     ) -> _IO:
         ...
 
@@ -256,7 +256,7 @@ class Crosspost(Cog):
         fp=None,
         seek_begin: bool = True,
         use_default_headers: bool = True,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
     ):
         headers = headers or {}
         img = fp or BytesIO()
@@ -334,7 +334,7 @@ class Crosspost(Cog):
         ctx: CrosspostContext,
         link: str,
         *,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         use_default_headers: bool = True,
     ) -> None:
         mode = await self.get_mode(ctx)
@@ -484,8 +484,8 @@ class Crosspost(Cog):
                 await ctx.send(message)
 
     async def save_pixiv(
-        self, img_url: str, headers: Dict[str, str], filesize_limit: int
-    ) -> Tuple[Optional[str], File]:
+        self, img_url: str, headers: dict[str, str], filesize_limit: int
+    ) -> tuple[Optional[str], File]:
         content = None
         img = await self.save(img_url, headers=headers)
         if len(img.getbuffer()) > filesize_limit:
