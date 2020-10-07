@@ -1,6 +1,6 @@
-git+https://github.com/BeatButton/asyncqlio.git#egg=asyncqlio
-git+https://github.com/Rapptz/discord-ext-menus.git#egg=discord.ext.menus
-git+https://github.com/Rapptz/discord.py.git#egg=discord
+git+https://github.com/BeatButton/asyncqlio.git
+git+https://github.com/Rapptz/discord-ext-menus.git
+git+https://github.com/Rapptz/discord.py.git
 asyncjisho
 asyncpg
 jishaku
