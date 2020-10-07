@@ -13,7 +13,7 @@ from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, overload
 import aiohttp
 import toml
 from asyncqlio.db import DatabaseInterface
-from discord import Game, Message, Intents
+from discord import Game, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
@@ -36,7 +36,9 @@ class BeattieBot(Bot):
     http: HTTPClient
 
     def __init__(
-        self, prefixes: Tuple[str, ...], debug: bool = False,
+        self,
+        prefixes: Tuple[str, ...],
+        debug: bool = False,
     ):
         async def prefix_func(bot: Bot, message: Message) -> Iterable[str]:
             prefix = prefixes

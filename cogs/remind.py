@@ -104,10 +104,14 @@ class Remind(Cog):
 
     @remind.command(name="set")
     async def set_reminder(
-        self, ctx: BContext, time: Time, *, topic: Optional[str] = None,
+        self,
+        ctx: BContext,
+        time: Time,
+        *,
+        topic: Optional[str] = None,
     ) -> None:
         """Have the bot remind you about something.
-           First put time (in quotes if there are spaces), then topic"""
+        First put time (in quotes if there are spaces), then topic"""
         await self.schedule_reminder(ctx, time, topic)
         await ctx.send("Okay, I'll remind you.")
 
