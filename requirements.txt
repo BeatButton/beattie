@@ -1,5 +1,5 @@
 git+https://github.com/BeatButton/asyncqlio.git
-git+https://github.com/Rapptz/discord-ext-menus.git
+git+https://github.com/iomintz/discord-ext-menus.git@keyset-page-source
 git+https://github.com/Rapptz/discord.py.git
 asyncjisho
 asyncpg
