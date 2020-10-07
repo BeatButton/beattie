@@ -1,6 +1,6 @@
 import random
 import re
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Mapping, Optional
 
 import discord
 from discord.ext import commands
@@ -14,7 +14,7 @@ from utils.exceptions import ResponseError
 class XKCD(Cog):
     def __init__(self) -> None:
         with open("data/why.txt", encoding="utf8") as file:
-            self.questions: Tuple[str, ...] = tuple(file.readlines())
+            self.questions: tuple[str, ...] = tuple(file.readlines())
 
     @commands.command()
     async def why(self, ctx: BContext) -> None:

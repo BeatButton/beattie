@@ -8,7 +8,7 @@ import tarfile
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Optional, Tuple, Type, TypeVar, overload
+from typing import Any, Iterable, Optional, Type, TypeVar, overload
 
 import aiohttp
 import toml
@@ -37,7 +37,7 @@ class BeattieBot(Bot):
 
     def __init__(
         self,
-        prefixes: Tuple[str, ...],
+        prefixes: tuple[str, ...],
         debug: bool = False,
     ):
         async def prefix_func(bot: Bot, message: Message) -> Iterable[str]:

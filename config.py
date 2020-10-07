@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from schema.config import Channel, Guild, Member, Table
 from utils.asyncqlio import to_dict
@@ -15,16 +15,16 @@ class Config:
         self.bot = bot
         self.db.bind_tables(Table)
         bot.loop.create_task(self.__init())
-        self._guild_cache: Dict[int, Dict[str, Any]] = {}
-        self._member_cache: Dict[int, Dict[int, Dict[str, Any]]] = {}
-        self._channel_cache: Dict[int, Dict[int, Dict[str, Any]]] = {}
+        self._guild_cache: dict[int, dict[str, Any]] = {}
+        self._member_cache: dict[int, dict[int, dict[str, Any]]] = {}
+        self._channel_cache: dict[int, dict[int, dict[str, Any]]] = {}
 
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
         for table in [Guild, Member, Channel]:
             await table.create(if_not_exists=True)  # type: ignore
 
-    async def get_guild(self, guild_id: int) -> Dict[str, Any]:
+    async def get_guild(self, guild_id: int) -> dict[str, Any]:
         try:
             return self._guild_cache[guild_id]
         except KeyError:
@@ -61,7 +61,7 @@ class Config:
         self._member_cache.pop(gid, None)
         self._channel_cache.pop(gid, None)
 
-    async def get_member(self, guild_id: int, user_id: int) -> Dict[str, Any]:
+    async def get_member(self, guild_id: int, user_id: int) -> dict[str, Any]:
         try:
             return self._member_cache.setdefault(guild_id, {})[user_id]
         except KeyError:
@@ -88,7 +88,7 @@ class Config:
             )
             await query.run()
 
-    async def get_channel(self, guild_id: int, channel_id: int) -> Dict[str, Any]:
+    async def get_channel(self, guild_id: int, channel_id: int) -> dict[str, Any]:
         try:
             return self._channel_cache.setdefault(guild_id, {})[channel_id]
         except KeyError:
