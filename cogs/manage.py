@@ -1,6 +1,6 @@
 from typing import Any, Callable, Coroutine, Union
 
-from discord import Member, TextChannel
+from discord import Member, TextChannel, Message
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -111,19 +111,22 @@ class Manage(Cog):
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge(self, ctx: BContext, num: int) -> None:
-        """Delete the last num messages from the channel."""
+    async def purge(self, ctx: BContext, until: Message) -> None:
+        """Delete messages since the specified message id."""
         channel = ctx.channel
         assert isinstance(channel, TextChannel)
-        await channel.purge(limit=num)
+        await channel.purge(before=ctx.message, after=until)
+        await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def clean(self, ctx: BContext, num: int) -> None:
-        """Delete the last num messages from the bot in the channel."""
+    async def clean(self, ctx: BContext, until: Message) -> None:
+        """Delete messages from the bot since the specified message id."""
         channel = ctx.channel
         assert isinstance(channel, TextChannel)
-        await channel.purge(limit=num, check=lambda msg: msg.author == ctx.me)
+        check = lambda msg: msg.author == ctx.me
+        await channel.purge(before=ctx.message, after=until, check=check)
+        await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
     @commands.command()
     @commands.bot_has_permissions(kick_members=True)
