@@ -1,6 +1,6 @@
 from typing import Any, Callable, Coroutine, Union
 
-from discord import Member, TextChannel, Message
+from discord import Member, Message, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -124,7 +124,7 @@ class Manage(Cog):
         """Delete messages from the bot since the specified message id."""
         channel = ctx.channel
         assert isinstance(channel, TextChannel)
-        check = lambda msg: msg.author == ctx.me
+        def check(msg): return msg.author == ctx.me
         await channel.purge(before=ctx.message, after=until, check=check)
         await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
