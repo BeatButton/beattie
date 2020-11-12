@@ -102,7 +102,7 @@ class Remind(Cog):
         if ctx.invoked_subcommand is None:
             await self.set_reminder_error(ctx, e)
 
-    @remind.command(name="set")
+    @remind.command(name="set", aliases=["me"])
     async def set_reminder(
         self,
         ctx: BContext,
