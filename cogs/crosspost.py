@@ -234,6 +234,7 @@ class Crosspost(Cog):
         seek_begin: bool = ...,
         use_default_headers: bool = ...,
         headers: Optional[dict[str, str]] = ...,
+        filesize_limit: Optional[int] = ...,
     ) -> BytesIO:
         ...
 
@@ -246,6 +247,7 @@ class Crosspost(Cog):
         seek_begin: bool = ...,
         use_default_headers: bool = ...,
         headers: Optional[dict[str, str]] = ...,
+        filesize_limit: Optional[int] = ...,
     ) -> _IO:
         ...
 
@@ -257,12 +259,15 @@ class Crosspost(Cog):
         seek_begin: bool = True,
         use_default_headers: bool = True,
         headers: Optional[dict[str, str]] = None,
+        filesize_limit: Optional[int] = None,
     ):
         headers = headers or {}
         img = fp or BytesIO()
         async with self.get(
             img_url, use_default_headers=use_default_headers, headers=headers
         ) as img_resp:
+            if filesize_limit and img_resp.content_length > filesize_limit:
+                raise ResponseError(413)  # yes I know that's not how this works
             async for chunk in img_resp.content.iter_any():
                 if not chunk:
                     break
@@ -487,13 +492,19 @@ class Crosspost(Cog):
         self, img_url: str, headers: dict[str, str], filesize_limit: int
     ) -> tuple[Optional[str], File]:
         content = None
-        img = await self.save(img_url, headers=headers)
-        if len(img.getbuffer()) > filesize_limit:
-            img_url = img_url.replace("img-original", "img-master")
-            head, _, _ext = img_url.rpartition(".")
-            img_url = f"{head}_master1200.jpg"
-            img = await self.save(img_url, headers=headers)
-            content = "Full size too large, standard resolution used."
+        try:
+            img = await self.save(
+                img_url, headers=headers, filesize_limit=filesize_limit
+            )
+        except ResponseError as e:
+            if e.code == 413:
+                img_url = img_url.replace("img-original", "img-master")
+                head, _, _ext = img_url.rpartition(".")
+                img_url = f"{head}_master1200.jpg"
+                img = await self.save(img_url, headers=headers)
+                content = "Full size too large, standard resolution used."
+            else:
+                raise e from None
         file = File(img, img_url.rpartition("/")[-1])
         return content, file
 
