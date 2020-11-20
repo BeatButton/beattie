@@ -490,8 +490,8 @@ class Crosspost(Cog):
         img = await self.save(img_url, headers=headers)
         if len(img.getbuffer()) > filesize_limit:
             img_url = img_url.replace("img-original", "img-master")
-            head, _, ext = img_url.rpartition(".")
-            img_url = f"{head}_master1200.{ext}"
+            head, _, _ext = img_url.rpartition(".")
+            img_url = f"{head}_master1200.jpg"
             img = await self.save(img_url, headers=headers)
             content = "Full size too large, standard resolution used."
         file = File(img, img_url.rpartition("/")[-1])
