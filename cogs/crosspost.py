@@ -266,7 +266,11 @@ class Crosspost(Cog):
         async with self.get(
             img_url, use_default_headers=use_default_headers, headers=headers
         ) as img_resp:
-            if filesize_limit and img_resp.content_length > filesize_limit:
+            if (
+                filesize_limit is not None
+                and img_resp.content_length is not None
+                and img_resp.content_length > filesize_limit
+            ):
                 raise ResponseError(413)  # yes I know that's not how this works
             async for chunk in img_resp.content.iter_any():
                 if not chunk:
