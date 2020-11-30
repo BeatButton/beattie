@@ -4,6 +4,7 @@ import asyncio
 import re
 from asyncio import subprocess
 from collections import defaultdict
+from collections.abc import Callable, Awaitable
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO
@@ -119,6 +120,7 @@ class Crosspost(Cog):
 
     sent_images: dict[MessageID, list[tuple[ChannelID, MessageID]]]
     ongoing_tasks: dict[MessageID, asyncio.Task]
+    expr_dict: dict[re.Pattern, Callable[[str, CrosspostContext], Awaitable[bool]]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -381,9 +383,9 @@ class Crosspost(Cog):
                 max_pages = 0
         return max_pages
 
-    async def display_twitter_images(self, link: str, ctx: CrosspostContext) -> None:
+    async def display_twitter_images(self, link: str, ctx: CrosspostContext) -> bool:
         if await self.get_mode(ctx) == 1:
-            return
+            return False
 
         link = f"https://{link}"
 
@@ -394,7 +396,7 @@ class Crosspost(Cog):
             tweet = root.xpath(TWEET_SELECTOR)[0]
         except IndexError:
             await ctx.send("Failed to get tweet. Maybe the account is locked?")
-            return
+            return False
 
         if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
             for img in imgs:
@@ -422,8 +424,11 @@ class Crosspost(Cog):
             file = File(gif, filename)
 
             await ctx.send(file=file)
+        else:
+            return False
+        return True
 
-    async def display_pixiv_images(self, link: str, ctx: CrosspostContext) -> None:
+    async def display_pixiv_images(self, link: str, ctx: CrosspostContext) -> bool:
         if "mode" in link:
             link = re.sub(r"(?<=mode=)\w+", "medium", link)
         elif "illust_id" in link:
@@ -433,7 +438,7 @@ class Crosspost(Cog):
             illust_id = match.group(1)
         else:
             await ctx.send("Failed to find illust ID in pixiv link. This is a bug.")
-            return
+            return False
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with self.get(
@@ -447,7 +452,7 @@ class Crosspost(Cog):
                 "This feature works sometimes, but isn't working right now!"
                 f"\nDebug info:\n{res.get('error')}"
             )
-            return
+            return False
 
         headers = {**self.pixiv_headers, "referer": link}
         guild = ctx.guild
@@ -493,6 +498,9 @@ class Crosspost(Cog):
                     f"<https://www.pixiv.net/en/artworks/{illust_id}>"
                 )
                 await ctx.send(message)
+        else:
+            return False
+        return True
 
     async def save_pixiv(
         self, img_url: str, headers: dict[str, str], filesize_limit: int
@@ -580,7 +588,7 @@ class Crosspost(Cog):
         name = f"{illust_id}.gif"
         return File(img, name)
 
-    async def display_hiccears_images(self, link: str, ctx: CrosspostContext) -> None:
+    async def display_hiccears_images(self, link: str, ctx: CrosspostContext) -> bool:
         async with self.get(link, headers=self.hiccears_headers) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
 
@@ -589,7 +597,7 @@ class Crosspost(Cog):
             href = a.get("href").lstrip(".")
             url = f"https://{resp.host}{href}"
             await self.send(ctx, url)
-            return
+            return True
 
         thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
 
@@ -599,7 +607,7 @@ class Crosspost(Cog):
             await ctx.send(
                 "Hiccears login expired. <@!140293604726800385> needs to fix this. >:("
             )
-            return
+            return False
 
         max_pages = await self.get_max_pages(ctx)
 
@@ -615,8 +623,9 @@ class Crosspost(Cog):
             s = "s" if pages_remaining > 1 else ""
             message = f"{pages_remaining} more image{s} at <{link}>"
             await ctx.send(message)
+        return True
 
-    async def display_tumblr_images(self, link: str, ctx: CrosspostContext) -> None:
+    async def display_tumblr_images(self, link: str, ctx: CrosspostContext) -> bool:
         idx = 1
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
@@ -646,19 +655,20 @@ class Crosspost(Cog):
             s = "s" if pages_remaining > 1 else ""
             message = f"{pages_remaining} more image{s} at <{link}>"
             await ctx.send(message)
+        return True
 
-    async def display_mastodon_images(self, link: str, ctx: CrosspostContext) -> None:
+    async def display_mastodon_images(self, link: str, ctx: CrosspostContext) -> bool:
         if (match := MASTODON_URL_GROUPS.match(link)) is None:
-            return
+            return False
         api_url = MASTODON_API_FMT.format(*match.groups())
         try:
             async with self.get(api_url, use_default_headers=False) as resp:
                 post = await resp.json()
         except (ResponseError, aiohttp.ClientError):
-            return
+            return False
 
         if not (images := post.get("media_attachments")):
-            return
+            return False
 
         mode = await self.get_mode(ctx)
 
@@ -692,8 +702,9 @@ class Crosspost(Cog):
                 await ctx.send(file=file)
             else:
                 await self.send(ctx, url)
+        return True
 
-    async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> None:
+    async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> bool:
         url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
         async with self.get(
@@ -706,8 +717,9 @@ class Crosspost(Cog):
         for file in sub["files"]:
             url = file["file_url_full"]
             await self.send(ctx, url)
+        return True
 
-    async def display_imgur_images(self, album_id: str, ctx: CrosspostContext) -> None:
+    async def display_imgur_images(self, album_id: str, ctx: CrosspostContext) -> bool:
         async with self.get(
             f"https://api.imgur.com/3/album/{album_id}",
             use_default_headers=False,
@@ -745,6 +757,7 @@ class Crosspost(Cog):
             s = "s" if remaining > 1 else ""
             message = f"{remaining} more image{s} at <https://imgur.com/a/{album_id}>"
             await ctx.send(message)
+        return True
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
