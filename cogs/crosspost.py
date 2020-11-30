@@ -299,8 +299,10 @@ class Crosspost(Cog):
         if (guild := message.guild) is None or message.author.bot:
             return
         channel = message.channel
+        me = guild.me
         assert isinstance(channel, discord.TextChannel)
-        if not guild.me.permissions_in(channel).send_messages:
+        assert isinstance(me, discord.Member)
+        if not me.permissions_in(channel).send_messages:
             return
         if not (await self.bot.config.get_guild(guild.id)).get("crosspost_enabled"):
             return
