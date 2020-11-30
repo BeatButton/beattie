@@ -4,7 +4,7 @@ import asyncio
 import re
 from asyncio import subprocess
 from collections import defaultdict
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO
