@@ -120,7 +120,7 @@ class Crosspost(Cog):
 
     sent_images: dict[MessageID, list[tuple[ChannelID, MessageID]]]
     ongoing_tasks: dict[MessageID, asyncio.Task]
-    expr_dict: dict[re.Pattern, Callable[[str, CrosspostContext], Awaitable[bool]]]
+    expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -295,7 +295,7 @@ class Crosspost(Cog):
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
                 try:
-                    if await func(link, ctx) and do_suppress:
+                    if await func(ctx, link) and do_suppress:
                         await ctx.message.edit(suppress=True)
                         do_suppress = False
                 except ResponseError as e:
@@ -393,7 +393,7 @@ class Crosspost(Cog):
                 max_pages = 0
         return max_pages
 
-    async def display_twitter_images(self, link: str, ctx: CrosspostContext) -> bool:
+    async def display_twitter_images(self, ctx: CrosspostContext, link: str) -> bool:
         if await self.get_mode(ctx) == 1:
             return False
 
@@ -438,7 +438,7 @@ class Crosspost(Cog):
             return False
         return True
 
-    async def display_pixiv_images(self, link: str, ctx: CrosspostContext) -> bool:
+    async def display_pixiv_images(self, ctx: CrosspostContext, link: str) -> bool:
         if "mode" in link:
             link = re.sub(r"(?<=mode=)\w+", "medium", link)
         elif "illust_id" in link:
@@ -598,7 +598,7 @@ class Crosspost(Cog):
         name = f"{illust_id}.gif"
         return File(img, name)
 
-    async def display_hiccears_images(self, link: str, ctx: CrosspostContext) -> bool:
+    async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
         async with self.get(link, headers=self.hiccears_headers) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
 
@@ -635,7 +635,7 @@ class Crosspost(Cog):
             await ctx.send(message)
         return True
 
-    async def display_tumblr_images(self, link: str, ctx: CrosspostContext) -> bool:
+    async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
         idx = 1
         async with self.get(link) as resp:
             root = etree.fromstring(await resp.read(), self.parser)
@@ -667,7 +667,7 @@ class Crosspost(Cog):
             await ctx.send(message)
         return True
 
-    async def display_mastodon_images(self, link: str, ctx: CrosspostContext) -> bool:
+    async def display_mastodon_images(self, ctx: CrosspostContext, link: str) -> bool:
         if (match := MASTODON_URL_GROUPS.match(link)) is None:
             return False
         api_url = MASTODON_API_FMT.format(*match.groups())
@@ -714,7 +714,7 @@ class Crosspost(Cog):
                 await self.send(ctx, url)
         return True
 
-    async def display_inkbunny_images(self, sub_id: str, ctx: CrosspostContext) -> bool:
+    async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
         url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
         async with self.get(
@@ -729,7 +729,7 @@ class Crosspost(Cog):
             await self.send(ctx, url)
         return True
 
-    async def display_imgur_images(self, album_id: str, ctx: CrosspostContext) -> bool:
+    async def display_imgur_images(self, ctx: CrosspostContext, album_id: str) -> bool:
         async with self.get(
             f"https://api.imgur.com/3/album/{album_id}",
             use_default_headers=False,
