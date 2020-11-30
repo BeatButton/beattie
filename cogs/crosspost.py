@@ -284,10 +284,20 @@ class Crosspost(Cog):
 
     async def process_links(self, ctx: CrosspostContext) -> None:
         content = remove_spoilers(ctx.message.content)
+        me = ctx.me
+        channel = ctx.channel
+        assert isinstance(me, discord.Member)
+        assert isinstance(channel, discord.TextChannel)
+        do_suppress = (
+            channel.permissions_for(me).manage_messages
+            and await self.get_mode(ctx) == 2
+        )
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
                 try:
-                    await func(link, ctx)
+                    if await func(link, ctx) and do_suppress:
+                        await ctx.message.edit(suppress=True)
+                        do_suppress = False
                 except ResponseError as e:
                     if e.code == 404:
                         await ctx.send("Post not found.")
