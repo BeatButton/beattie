@@ -124,8 +124,9 @@ class Manage(Cog):
         """Delete messages from the bot since the specified message id."""
         channel = ctx.channel
         assert isinstance(channel, TextChannel)
-        def check(msg): return msg.author == ctx.me
-        await channel.purge(before=ctx.message, after=until, check=check)
+        await channel.purge(
+            before=ctx.message, after=until, check=lambda msg: msg.author == ctx.me
+        )
         await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
     @commands.command()
