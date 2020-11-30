@@ -412,6 +412,7 @@ class Crosspost(Cog):
             for img in imgs:
                 url = img.get("src")
                 await self.send(ctx, f"{url}:orig")
+            return True
         elif tweet.xpath(TWITTER_IS_GIF):
             proc = await subprocess.create_subprocess_shell(
                 f"youtube-dl {link} -o - | "
@@ -433,10 +434,10 @@ class Crosspost(Cog):
 
             file = File(gif, filename)
 
-            await ctx.send(file=file)
+            msg = await ctx.send(file=file)
+            return not msg.content.startswith("Image too large to upload")
         else:
             return False
-        return True
 
     async def display_pixiv_images(self, ctx: CrosspostContext, link: str) -> bool:
         if "mode" in link:
@@ -684,6 +685,8 @@ class Crosspost(Cog):
 
         idx = 0 if mode != 1 or post["sensitive"] else 1
 
+        all_embedded = True
+
         for image in images[idx:]:
             url = image["remote_url"] or image["url"]
             if image.get("type") == "gifv":
@@ -709,10 +712,12 @@ class Crosspost(Cog):
 
                 filename = f"{url.rpartition('/')[2]}.gif"
                 file = File(img, filename)
-                await ctx.send(file=file)
+                msg = await ctx.send(file=file)
+                if all_embedded and msg.content.startswith("Image too large to upload"):
+                    all_embedded = False
             else:
                 await self.send(ctx, url)
-        return True
+        return all_embedded
 
     async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
         url = INKBUNNY_API_FMT.format("submissions")
