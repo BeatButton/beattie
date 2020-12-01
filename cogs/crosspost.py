@@ -9,6 +9,7 @@ from datetime import datetime
 from hashlib import md5
 from io import BytesIO
 from pathlib import Path
+import signal
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import IO, Any, Optional, TypeVar, Union, overload
 from zipfile import ZipFile
@@ -63,6 +64,26 @@ INKBUNNY_URL_EXPR = re.compile(
 INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
 IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
+
+
+async def try_wait_for(
+    proc: asyncio.subprocess.Process, *, timeout: int = 180, kill_timeout: int = 15
+) -> bytes:
+    try:
+        out, _err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        await gently_kill(proc, timeout=kill_timeout)
+        raise
+    else:
+        return out
+
+
+async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: int):
+    proc.terminate()
+    try:
+        await asyncio.wait_for(proc.wait(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
 
 
 class CrosspostContext(BContext):
@@ -427,7 +448,11 @@ class Crosspost(Cog):
             tweet_id = link.rpartition("/")[2].partition("?")[0]
             filename = f"{tweet_id}.gif"
 
-            stdout, _stderr = await proc.communicate()
+            try:
+                stdout = await try_wait_for(proc)
+            except asyncio.TimeoutError:
+                await ctx.send("Gif took too long to process.")
+                return False
 
             gif.write(stdout)
             gif.seek(0)
@@ -475,7 +500,11 @@ class Crosspost(Cog):
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
                 content = None
-                file = await self.get_ugoira(illust_id)
+                try:
+                    file = await self.get_ugoira(illust_id)
+                except asyncio.TimeoutError:
+                    await ctx.send("Ugoira took too long to process.")
+                    return False
             else:
                 content, file = await self.save_pixiv(img_url, headers, filesize_limit)
             await ctx.send(content, file=file)
@@ -591,8 +620,7 @@ class Crosspost(Cog):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
             )
-
-            stdout, _stderr = await proc.communicate()
+            stdout = await try_wait_for(proc)
 
         img = BytesIO(stdout)
         img.seek(0)
@@ -707,7 +735,13 @@ class Crosspost(Cog):
                         stderr=subprocess.DEVNULL,
                     )
 
-                    stdout, _stderr = await proc.communicate()
+                    try:
+                        stdout = await try_wait_for(proc)
+                    except asyncio.TimeoutError:
+                        await ctx.send("Gif took too long to process.")
+                        all_embedded = False
+                        continue
+
                 img = BytesIO(stdout)
 
                 filename = f"{url.rpartition('/')[2]}.gif"
