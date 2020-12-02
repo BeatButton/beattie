@@ -30,6 +30,11 @@ class get:
             self.resp = await self.session.request(self.method, self.url, **self.kwargs)
         except ServerDisconnectedError:
             return await self.__aenter__()
+        except OSError as e:
+            if e.errno == 104:
+                return await self.__aenter__()
+            else:
+                raise e from None
         if self.resp.status != 200:
             self.resp.close()
             raise ResponseError(code=self.resp.status, url=self.resp.url)
