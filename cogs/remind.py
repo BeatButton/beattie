@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Iterable, Optional
 
 from asyncqlio.db import DatabaseInterface
+import discord
 from discord import AllowedMentions, Embed, TextChannel
 from discord.ext import commands, menus
 from discord.ext.commands import Cog
@@ -215,12 +216,17 @@ class Remind(Cog):
             assert isinstance(channel, TextChannel)
             topic = reminder.topic or "something"
             message = f"{member.mention}\nYou asked to be reminded about {topic}."
-            await channel.send(
-                message,
-                allowed_mentions=AllowedMentions(
-                    everyone=False, users=[member], roles=False
-                ),
-            )
+            try:
+                await channel.send(
+                    message,
+                    allowed_mentions=AllowedMentions(
+                        everyone=False, users=[member], roles=False
+                    ),
+                )
+            except (discord.NotFound, discord.Forbidden):
+                pass
+            except Exception as e:
+                await self.bot.handle_error(e)
         async with self.db.get_session() as s:
             await s.remove(reminder)
 
