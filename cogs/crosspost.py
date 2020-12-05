@@ -154,10 +154,16 @@ class Crosspost(Cog):
             for name, expr in globals().items()
             if name.endswith("URL_EXPR")
         }
-        self.sent_images = defaultdict(list)
-        self.ongoing_tasks = {}
         self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
         self.init_task = bot.loop.create_task(self.__init())
+        if hasattr(bot, "crosspost_ongoing_tasks"):
+            self.ongoing_tasks = bot.crosspost_ongoing_tasks
+            self.sent_images = bot.crosspost_sent_images
+        else:
+            self.sent_images = defaultdict(list)
+            self.ongoing_tasks = {}
+            bot.crosspost_ongoing_tasks = self.ongoing_tasks
+            bot.crosspost_sent_images = self.sent_images
 
     async def __init(self) -> None:
         with open("config/logins.toml") as fp:
