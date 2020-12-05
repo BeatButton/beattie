@@ -655,8 +655,8 @@ class Crosspost(Cog):
 
         pages_remaining = num_images - max_pages
         for thumb in thumbs[:max_pages]:
-            href = thumb.get("src").lstrip(".").replace("thumbnails", "imgs")
-            url = f"https://{resp.host}{href}"
+            href = thumb.get("src").lstrip(".").replace("thumbnails", "imgs")[:-4]
+            url = f"https://{resp.host}{href}.jpg"
             await self.send(ctx, url)
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
