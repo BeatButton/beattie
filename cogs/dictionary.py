@@ -26,7 +26,7 @@ class Dictionary(Cog):
         results = []
         size = len(data)
         for i, res in enumerate(data, 1):
-            res = {k: "\n".join(v) or "None" for k, v in res.items()}
+            res = {k: "\n".join(set(v)) or "None" for k, v in res.items()}
             res["english"] = ", ".join(res["english"].split("\n"))
             embed = discord.Embed()
             embed.url = self.jisho_url.format("%20".join(keywords.split()))
