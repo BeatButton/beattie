@@ -9,7 +9,6 @@ from datetime import datetime
 from hashlib import md5
 from io import BytesIO
 from pathlib import Path
-import signal
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import IO, Any, Optional, TypeVar, Union, overload
 from zipfile import ZipFile
