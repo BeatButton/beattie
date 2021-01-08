@@ -2,8 +2,8 @@ import asyncio
 from datetime import datetime
 from typing import Any, Iterable, Optional
 
-from asyncqlio.db import DatabaseInterface
 import discord
+from asyncqlio.db import DatabaseInterface
 from discord import AllowedMentions, Embed, TextChannel
 from discord.ext import commands, menus
 from discord.ext.commands import Cog
