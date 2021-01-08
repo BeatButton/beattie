@@ -37,7 +37,7 @@ class get:
                 raise e from None
         if self.resp.status != 200:
             self.resp.close()
-            raise ResponseError(code=self.resp.status, url=self.resp.url)
+            raise ResponseError(code=self.resp.status, url=str(self.resp.url))
         return self.resp
 
     async def __aexit__(
