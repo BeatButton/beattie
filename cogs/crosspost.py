@@ -150,7 +150,8 @@ class Config:
 
     async def set(self, guild_id: int, channel_id: int, settings: Settings) -> None:
         conf = await self._get(guild_id, channel_id)
-        self._cache[(guild_id, channel_id)] = conf.apply(settings)
+        settings = conf.apply(settings)
+        self._cache[(guild_id, channel_id)] = settings
         kwargs = {k: v for k, v in dataclass_asdict(settings).items() if v is not None}
         async with self.db.get_session() as s:
             row = CrosspostSettings(
