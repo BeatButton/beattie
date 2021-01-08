@@ -1,6 +1,6 @@
 git+https://github.com/BeatButton/asyncqlio.git
 git+https://github.com/iomintz/discord-ext-menus.git@keyset-page-source
-git+https://github.com/Rapptz/discord.py.git
+discord.py
 asyncjisho
 asyncpg
 jishaku
