@@ -923,7 +923,7 @@ class Crosspost(Cog):
         self,
         ctx: BContext,
         enabled: bool,
-        target: Optional[Union[CategoryChannel, TextChannel]],
+        *, target: Optional[Union[CategoryChannel, TextChannel]],
     ) -> None:
         """Enable or disable automatic crossposting"""
         guild = ctx.guild
@@ -941,7 +941,7 @@ class Crosspost(Cog):
         self,
         ctx: BContext,
         mode: str,
-        target: Optional[Union[CategoryChannel, TextChannel]],
+        *, target: Optional[Union[CategoryChannel, TextChannel]],
     ) -> None:
         """Change image crossposting mode
 
@@ -970,7 +970,7 @@ class Crosspost(Cog):
         self,
         ctx: BContext,
         max_pages: int,
-        target: Optional[Union[CategoryChannel, TextChannel]],
+        *, target: Optional[Union[CategoryChannel, TextChannel]],
     ) -> None:
         """Set the maximum number of images to send.
 
