@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import re
 from asyncio import subprocess
-from collections import defaultdict
 from collections.abc import Awaitable, Callable
+from dataclasses import asdict as dataclass_asdict
+from dataclasses import dataclass
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO
@@ -16,13 +18,15 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import AllowedMentions, Embed, File, Message
+from discord import AllowedMentions, CategoryChannel, Embed, File, Message, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
 
 from bot import BeattieBot
 from context import BContext
+from schema.crosspost import Crosspost as CrosspostSettings
+from schema.crosspost import Table
 from utils.checks import is_owner_or
 from utils.contextmanagers import get as get_
 from utils.etc import display_bytes, remove_spoilers
@@ -85,6 +89,82 @@ async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: int):
         proc.kill()
 
 
+@dataclass
+class Settings:
+    auto: Optional[bool] = None
+    mode: Optional[int] = None
+    max_pages: Optional[int] = None
+
+    def apply(self, other: Settings) -> Settings:
+        """Returns a Settings with own values overwritten by non-None values of other"""
+        out = copy.copy(self)
+        auto, mode, max_pages = other.auto, other.mode, other.max_pages
+        if auto is not None:
+            out.auto = auto
+        if mode is not None:
+            out.mode = mode
+        if max_pages is not None:
+            out.max_pages = max_pages
+
+        return out
+
+
+class Config:
+    def __init__(self, bot: BeattieBot):
+        self.db = bot.db
+        self.bot = bot
+        self.db.bind_tables(Table)
+        bot.loop.create_task(self.__init())
+        self._cache: dict[tuple[int, int], Settings] = {}
+
+    async def __init(self) -> None:
+        await self.bot.wait_until_ready()
+        await CrosspostSettings.create(if_not_exists=True)  # type: ignore
+
+    async def get(self, message: Message) -> Settings:
+        guild_id = message.guild.id
+        out = await self._get(guild_id, 0)
+
+        if category := message.channel.category:
+            out = out.apply(await self._get(guild_id, category.id))
+        out = out.apply(await self._get(guild_id, message.channel.id))
+
+        return out
+
+    async def _get(self, guild_id: int, channel_id: int) -> Settings:
+        try:
+            return self._cache[(guild_id, channel_id)]
+        except KeyError:
+            async with self.db.get_session() as s:
+                query = s.select(CrosspostSettings).where(
+                    (CrosspostSettings.guild_id == guild_id)
+                    & (CrosspostSettings.channel_id == channel_id)
+                )
+                config = await query.first()
+            if config is None:
+                res = Settings()
+            else:
+                res = Settings(config.auto, config.mode, config.max_pages)
+            self._cache[(guild_id, channel_id)] = res
+            return res
+
+    async def set(self, guild_id: int, channel_id: int, settings: Settings) -> None:
+        conf = await self._get(guild_id, channel_id)
+        self._cache[(guild_id, channel_id)] = conf.apply(settings)
+        kwargs = {k: v for k, v in dataclass_asdict(settings).items() if v is not None}
+        async with self.db.get_session() as s:
+            row = CrosspostSettings(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                **kwargs,
+            )
+            query = s.insert.rows(row)
+            query = query.on_conflict(
+                CrosspostSettings.guild_id, CrosspostSettings.channel_id
+            ).update(getattr(CrosspostSettings, key) for key in kwargs)
+            await query.run()
+
+
 class CrosspostContext(BContext):
     cog: Crosspost
 
@@ -119,7 +199,15 @@ class CrosspostContext(BContext):
             nonce=nonce,
             allowed_mentions=allowed_mentions,
         )
-        self.cog.sent_images[self.message.id].append((msg.channel.id, msg.id))
+        sent_images = self.cog.sent_images
+        invoking_id = self.message.id
+        if entry := sent_images.get(invoking_id):
+            _, messages = entry
+        else:
+            messages = []
+            sent_images[invoking_id] = (msg.channel.id, messages)
+        messages.append(msg.id)
+
         return msg
 
 
@@ -138,12 +226,13 @@ class Crosspost(Cog):
     }
     inkbunny_sid: str = ""
 
-    sent_images: dict[MessageID, list[tuple[ChannelID, MessageID]]]
+    sent_images: dict[MessageID, tuple[ChannelID, list[MessageID]]]
     ongoing_tasks: dict[MessageID, asyncio.Task]
     expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
+        self.config = Config(bot)
         with open("config/headers.toml") as fp:
             self.headers = toml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop)
@@ -159,7 +248,7 @@ class Crosspost(Cog):
             self.ongoing_tasks = bot.crosspost_ongoing_tasks
             self.sent_images = bot.crosspost_sent_images
         else:
-            self.sent_images = defaultdict(list)
+            self.sent_images = {}
             self.ongoing_tasks = {}
             bot.crosspost_ongoing_tasks = self.ongoing_tasks
             bot.crosspost_sent_images = self.sent_images
@@ -342,7 +431,7 @@ class Crosspost(Cog):
         assert isinstance(me, discord.Member)
         if not me.permissions_in(channel).send_messages:
             return
-        if not (await self.bot.config.get_guild(guild.id)).get("crosspost_enabled"):
+        if not (await self.config.get(message)).auto:
             return
         if "http" not in message.content:
             return
@@ -369,8 +458,9 @@ class Crosspost(Cog):
         if task := self.ongoing_tasks.get(message_id):
             task.cancel()
             await asyncio.sleep(0)
-        if messages := self.sent_images.pop(message_id, None):
-            for channel_id, message_id in messages:
+        if record := self.sent_images.pop(message_id, None):
+            channel_id, messages = record
+            for message_id in messages:
                 try:
                     await self.bot.http.delete_message(channel_id, message_id)
                 except discord.NotFound:
@@ -402,7 +492,7 @@ class Crosspost(Cog):
     async def get_mode(self, ctx: BContext) -> int:
         guild = ctx.guild
         assert guild is not None
-        return (await ctx.bot.config.get_guild(guild.id)).get("crosspost_mode") or 1
+        return (await self.config.get(ctx.message)).mode or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
         guild = ctx.guild
@@ -828,16 +918,30 @@ class Crosspost(Cog):
         pass
 
     @crosspost.command()
-    async def auto(self, ctx: BContext, enabled: bool) -> None:
+    async def auto(
+        self,
+        ctx: BContext,
+        enabled: bool,
+        target: Optional[Union[CategoryChannel, TextChannel]],
+    ) -> None:
         """Enable or disable automatic crossposting"""
         guild = ctx.guild
         assert guild is not None
-        await self.bot.config.set_guild(guild.id, crosspost_enabled=enabled)
+        settings = Settings(auto=enabled)
+        await self.config.set(guild.id, target.id if target else 0, settings)
         fmt = "en" if enabled else "dis"
-        await ctx.send(f"Crossposting images {fmt}abled.")
+        message = f"Crossposting images {fmt}abled"
+        if target is not None:
+            message = f"{message} in {target.mention}"
+        await ctx.send(f"{message}.")
 
     @crosspost.command()
-    async def mode(self, ctx: BContext, mode: str) -> None:
+    async def mode(
+        self,
+        ctx: BContext,
+        mode: str,
+        target: Optional[Union[CategoryChannel, TextChannel]],
+    ) -> None:
         """Change image crossposting mode
 
         link: send a link to images when available
@@ -851,22 +955,37 @@ class Crosspost(Cog):
 
         guild = ctx.guild
         assert guild is not None
-        await self.bot.config.set_guild(guild.id, crosspost_mode=crosspost_mode)
-        await ctx.send("Crosspost mode updated.")
+
+        settings = Settings(mode=crosspost_mode)
+
+        await self.config.set(guild.id, target.id if target else 0, settings)
+        message = "Crosspost mode updated"
+        if target is not None:
+            message = f"{message} in {target.mention}"
+        await ctx.send(f"{message}.")
 
     @crosspost.command()
-    async def pages(self, ctx: BContext, max_pages: int) -> None:
+    async def pages(
+        self,
+        ctx: BContext,
+        max_pages: int,
+        target: Optional[Union[CategoryChannel, TextChannel]],
+    ) -> None:
         """Set the maximum number of images to send.
 
         Set to 0 for no limit."""
         guild = ctx.guild
         assert guild is not None
-        await self.bot.config.set_guild(guild.id, crosspost_max_pages=max_pages)
-        await ctx.send(f"Max crosspost pages set to {max_pages}")
+        settings = Settings(max_pages=max_pages)
+        await self.config.set(guild.id, target.id if target else 0, settings)
+        message = f"Max crosspost pages set to {max_pages}"
+        if target is not None:
+            message = f"{message} in {target.mention}"
+        await ctx.send(f"{message}.")
 
     @commands.command()
     async def post(self, ctx: BContext, *, _: str) -> None:
-        """Embed images in the given links regardles of the global embed setting."""
+        """Embed images in the given links r.rdles of the global embed setting."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self.process_links(new_ctx)
 
