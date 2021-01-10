@@ -406,8 +406,6 @@ class Crosspost(Cog):
             ):
                 raise ResponseError(413)  # yes I know that's not how this works
             async for chunk in img_resp.content.iter_any():
-                if not chunk:
-                    break
                 img.write(chunk)
         if seek_begin:
             img.seek(0)
