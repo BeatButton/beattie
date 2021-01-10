@@ -68,6 +68,9 @@ INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
 IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
 
+_TMP = object()  # type: ignore
+_NOT_PASSED: TextChannel = _TMP
+
 
 async def try_wait_for(
     proc: asyncio.subprocess.Process, *, timeout: int = 180, kill_timeout: int = 15
@@ -923,7 +926,8 @@ class Crosspost(Cog):
         self,
         ctx: BContext,
         enabled: bool,
-        *, target: Optional[Union[CategoryChannel, TextChannel]],
+        *,
+        target: Union[CategoryChannel, TextChannel] = None,
     ) -> None:
         """Enable or disable automatic crossposting"""
         guild = ctx.guild
@@ -941,7 +945,8 @@ class Crosspost(Cog):
         self,
         ctx: BContext,
         mode: str,
-        *, target: Optional[Union[CategoryChannel, TextChannel]],
+        *,
+        target: Union[CategoryChannel, TextChannel] = None,
     ) -> None:
         """Change image crossposting mode
 
@@ -970,7 +975,8 @@ class Crosspost(Cog):
         self,
         ctx: BContext,
         max_pages: int,
-        *, target: Optional[Union[CategoryChannel, TextChannel]],
+        *,
+        target: Union[CategoryChannel, TextChannel] = None,
     ) -> None:
         """Set the maximum number of images to send.
 
