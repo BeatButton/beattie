@@ -5,8 +5,6 @@ import copy
 import re
 from asyncio import subprocess
 from collections.abc import Awaitable, Callable
-from dataclasses import asdict as dataclass_asdict
-from dataclasses import dataclass
 from datetime import datetime
 from hashlib import md5
 from io import BytesIO
@@ -92,11 +90,22 @@ async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: int):
         proc.kill()
 
 
-@dataclass
 class Settings:
-    auto: Optional[bool] = None
-    mode: Optional[int] = None
-    max_pages: Optional[int] = None
+    __slots__ = ("auto", "mode", "max_pages")
+
+    auto: Optional[bool]
+    mode: Optional[int]
+    max_pages: Optional[int]
+
+    def __init__(
+        self,
+        auto: Optional[bool] = None,
+        mode: Optional[int] = None,
+        max_pages: Optional[int] = None,
+    ) -> None:
+        self.auto = auto
+        self.mode = mode
+        self.max_pages = max_pages
 
     def apply(self, other: Settings) -> Settings:
         """Returns a Settings with own values overwritten by non-None values of other"""
@@ -110,6 +119,9 @@ class Settings:
             out.max_pages = max_pages
 
         return out
+
+    def asdict(self) -> dict[str, Any]:
+        return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
 
 
 class Config:
@@ -155,7 +167,7 @@ class Config:
         conf = await self._get(guild_id, channel_id)
         settings = conf.apply(settings)
         self._cache[(guild_id, channel_id)] = settings
-        kwargs = {k: v for k, v in dataclass_asdict(settings).items() if v is not None}
+        kwargs = settings.asdict()
         async with self.db.get_session() as s:
             row = CrosspostSettings(
                 guild_id=guild_id,
