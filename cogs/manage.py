@@ -1,5 +1,3 @@
-from typing import Any, Callable, Coroutine, Union
-
 from discord import Member, Message, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -31,17 +29,7 @@ class Manage(Cog):
         channel = ctx.channel
         assert isinstance(me, Member)
         assert isinstance(channel, TextChannel)
-        if not channel.permissions_for(me).send_messages:
-            return False
-        if await ctx.bot.is_owner(ctx.author) or ctx.guild is None:
-            return True
-        member_conf = await self.config.get_member(guild.id, ctx.author.id)
-        member_plonked = member_conf.get("plonked", False)
-        if member_plonked:
-            return False
-        channel_conf = await self.config.get_channel(guild.id, ctx.channel.id)
-        channel_plonked = channel_conf.get("plonked", False)
-        return not channel_plonked
+        return channel.permissions_for(me).send_messages
 
     async def cog_check(self, ctx: BContext) -> bool:
         if ctx.guild is None:
@@ -98,18 +86,6 @@ class Manage(Cog):
         await ctx.send("Guild prefix set.")
 
     @commands.command()
-    async def plonk(self, ctx: BContext, target: Union[Member, TextChannel]) -> None:
-        """Disallow a member from using commands on this server, or disallow
-        commands from being used in a channel."""
-        await self._plonker(ctx, target, True)
-
-    @commands.command()
-    async def unplonk(self, ctx: BContext, target: Union[Member, TextChannel]) -> None:
-        """Allow a member to use commands on this server, or allow commands
-        to be used in a channel."""
-        await self._plonker(ctx, target, False)
-
-    @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
     async def purge(self, ctx: BContext, until: Message) -> None:
         """Delete messages since the specified message id."""
@@ -138,22 +114,6 @@ class Manage(Cog):
     @commands.bot_has_permissions(ban_members=True)
     async def ban(self, ctx: BContext, member: Member, *, reason: str) -> None:
         await member.ban(reason=reason)
-
-    async def _plonker(
-        self, ctx: BContext, target: Union[Member, TextChannel], plonked: bool
-    ) -> None:
-        update: Callable[..., Coroutine[Any, Any, None]]
-        if isinstance(target, Member):
-            type_ = "Member"
-            update = self.config.set_member
-        else:
-            type_ = "Channel"
-            update = self.config.set_channel
-        un = "un" if not plonked else ""
-        guild = ctx.guild
-        assert guild is not None
-        await update(guild.id, target.id, plonked=plonked)
-        await ctx.send(f"{type_} {un}plonked.")
 
 
 def setup(bot: BeattieBot) -> None:
