@@ -226,7 +226,10 @@ class Remind(Cog):
             except (discord.NotFound, discord.Forbidden):
                 pass
             except Exception as e:
-                await self.bot.handle_error(e)
+                message = f"An error occured in sending a reminder to {channel.guild.name}#{channel.name}"
+                self.bot.logger.exception(
+                    message, exc_info=(type(e), e, e.__traceback__)
+                )
         async with self.db.get_session() as s:
             await s.remove(reminder)
 
