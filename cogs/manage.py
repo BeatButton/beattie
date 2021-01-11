@@ -105,16 +105,5 @@ class Manage(Cog):
         )
         await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
-    @commands.command()
-    @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx: BContext, member: Member, *, reason: str) -> None:
-        await member.kick(reason=reason)
-
-    @commands.command()
-    @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx: BContext, member: Member, *, reason: str) -> None:
-        await member.ban(reason=reason)
-
-
 def setup(bot: BeattieBot) -> None:
     bot.add_cog(Manage(bot))
