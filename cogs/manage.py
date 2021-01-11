@@ -105,5 +105,6 @@ class Manage(Cog):
         )
         await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
+
 def setup(bot: BeattieBot) -> None:
     bot.add_cog(Manage(bot))
