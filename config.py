@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from schema.config import Channel, Guild, Member, Table
+from schema.config import Guild, Table
 from utils.asyncqlio import to_dict
 
 if TYPE_CHECKING:
@@ -19,8 +19,7 @@ class Config:
 
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
-        for table in [Guild, Member, Channel]:
-            await table.create(if_not_exists=True)  # type: ignore
+        await Guild.create(if_not_exists=True)  # type: ignore
 
     async def get_guild(self, guild_id: int) -> dict[str, Any]:
         try:
