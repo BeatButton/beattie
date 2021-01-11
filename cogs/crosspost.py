@@ -15,10 +15,11 @@ from zipfile import ZipFile
 
 import aiohttp
 import discord
+from discord.ext.commands.errors import ChannelNotFound
 import toml
 from discord import AllowedMentions, CategoryChannel, Embed, File, Message, TextChannel
 from discord.ext import commands
-from discord.ext.commands import Cog
+from discord.ext.commands import BadUnionArgument, Cog
 from lxml import etree
 
 from bot import BeattieBot
@@ -999,6 +1000,19 @@ class Crosspost(Cog):
         if target is not None:
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
+
+    async def crosspost_error(self, ctx: BContext, e: Exception) -> None:
+        if isinstance(e, BadUnionArgument):
+            inner: ChannelNotFound = e.errors[0]
+            await ctx.send(
+                f"Could not resolve `{inner.argument}` as a category or channel"
+            )
+        else:
+            await ctx.bot.handle_error(ctx, e)
+
+    auto_error = auto.error(crosspost_error)
+    mode_error = mode.error(crosspost_error)
+    pages_error = pages.error(crosspost_error)
 
     @commands.command()
     async def post(self, ctx: BContext, *, _: str) -> None:
