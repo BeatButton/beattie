@@ -15,11 +15,10 @@ from zipfile import ZipFile
 
 import aiohttp
 import discord
-from discord.ext.commands.errors import ChannelNotFound
 import toml
 from discord import AllowedMentions, CategoryChannel, Embed, File, Message, TextChannel
 from discord.ext import commands
-from discord.ext.commands import BadUnionArgument, Cog
+from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from lxml import etree
 
 from bot import BeattieBot
