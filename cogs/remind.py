@@ -226,7 +226,10 @@ class Remind(Cog):
             except (discord.NotFound, discord.Forbidden):
                 pass
             except Exception as e:
-                message = f"An error occured in sending a reminder to {channel.guild.name}#{channel.name}"
+                message = (
+                    "An error occured in sending a reminder to "
+                    f"{channel.guild.name}#{channel.name}"
+                )
                 self.bot.logger.exception(
                     message, exc_info=(type(e), e, e.__traceback__)
                 )
