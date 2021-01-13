@@ -26,6 +26,14 @@ from utils.aioutils import do_every
 C = TypeVar("C", bound=Context)
 
 
+class BHelp(commands.MinimalHelpCommand):
+    def get_opening_note(self) -> str:
+        return (
+            f"{super().get_opening_note()}\nJoin the support server for more help: "
+            "discord.gg/a3kHCRs9Q8"
+        )
+
+
 class BeattieBot(Bot):
     """A very cute robot boy"""
 
@@ -48,7 +56,7 @@ class BeattieBot(Bot):
                     prefix = prefix + (guild_pre,)
             return when_mentioned_or(*prefix)(self, message)
 
-        help_command: commands.HelpCommand = commands.MinimalHelpCommand()
+        help_command: commands.HelpCommand = BHelp()
         game = Game(name=f"{prefixes[0]}help")
 
         super().__init__(
