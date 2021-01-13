@@ -15,7 +15,7 @@ import toml
 from asyncqlio.db import DatabaseInterface
 from discord import Game, Intents, Message
 from discord.ext import commands
-from discord.ext.commands import Bot, Context, when_mentioned_or
+from discord.ext.commands import Bot, Cog, Command, Context, when_mentioned_or
 from discord.http import HTTPClient
 
 from config import Config
@@ -27,10 +27,10 @@ C = TypeVar("C", bound=Context)
 
 
 class BHelp(commands.MinimalHelpCommand):
-    def get_opening_note(self) -> str:
-        return (
-            f"{super().get_opening_note()}\nJoin the support server for more help: "
-            "discord.gg/a3kHCRs9Q8"
+    async def send_bot_help(self, mapping: dict[Cog, list[Command]]):
+        await super().send_bot_help(mapping)
+        await self.context.send(
+            "Join the support server for more help: discord.gg/a3kHCRs9Q8"
         )
 
 
