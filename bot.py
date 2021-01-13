@@ -48,7 +48,7 @@ class BeattieBot(Bot):
                     prefix = prefix + (guild_pre,)
             return when_mentioned_or(*prefix)(self, message)
 
-        help_command: commands.HelpCommand = commands.DefaultHelpCommand(dm_help=None)
+        help_command: commands.HelpCommand = commands.MinimalHelpCommand()
         game = Game(name=f"{prefixes[0]}help")
 
         super().__init__(
