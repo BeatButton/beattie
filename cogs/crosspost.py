@@ -131,7 +131,7 @@ class Config:
 
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
-        await CrosspostSettings.create(if_not_exists=True)  # type: ignore
+        await CrosspostSettings.create(if_not_exists=True)
 
     async def get(self, message: Message) -> Settings:
         guild_id = message.guild.id
