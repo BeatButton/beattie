@@ -51,7 +51,7 @@ class BeattieBot(Bot):
         async def prefix_func(bot: Bot, message: Message) -> Iterable[str]:
             prefix = prefixes
             if guild := message.guild:
-                guild_conf = await bot.config.get_guild(guild.id)  # type: ignore
+                guild_conf = await bot.config.get_guild(guild.id)
                 if guild_pre := guild_conf.get("prefix"):
                     prefix = prefix + (guild_pre,)
             return when_mentioned_or(*prefix)(self, message)
