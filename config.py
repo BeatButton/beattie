@@ -19,7 +19,7 @@ class Config:
 
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
-        await Guild.create(if_not_exists=True)  # type: ignore
+        await Guild.create(if_not_exists=True)
 
     async def get_guild(self, guild_id: int) -> dict[str, Any]:
         try:
