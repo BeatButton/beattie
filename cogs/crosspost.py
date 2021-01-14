@@ -66,9 +66,6 @@ INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
 IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
 
-_TMP = object()  # type: ignore
-_NOT_PASSED: TextChannel = _TMP
-
 
 async def try_wait_for(
     proc: asyncio.subprocess.Process, *, timeout: int = 180, kill_timeout: int = 15
