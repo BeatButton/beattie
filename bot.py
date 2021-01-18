@@ -33,6 +33,15 @@ class BHelp(commands.MinimalHelpCommand):
             "Join the support server for more help: discord.gg/a3kHCRs9Q8"
         )
 
+    def add_subcommand_formatting(self, command: Command) -> None:
+        fmt = "{0} \N{EN DASH} {1}" if command.short_doc else "{0}"
+        self.paginator.add_line(
+            fmt.format(
+                self.get_command_signature(command),
+                command.short_doc,
+            )
+        )
+
 
 class BeattieBot(Bot):
     """A very cute robot boy"""
