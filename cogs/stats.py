@@ -47,7 +47,7 @@ class Stats(Cog):
         for channel in bot.get_all_channels():
             if isinstance(channel, discord.TextChannel):
                 text += 1
-            else:
+            elif isinstance(channel, discord.VoiceChannel):
                 voice += 1
 
         members = f"{total_members} total\n{unique_members} unique"
