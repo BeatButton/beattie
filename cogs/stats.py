@@ -37,7 +37,7 @@ class Stats(Cog):
         owner = bot.get_user(owner_id)
         assert owner is not None
 
-        embed.set_author(name=str(owner), icon_url=str(owner.avatar_url))
+        embed.set_author(name=f"Created by {owner}", icon_url=str(owner.avatar_url))
 
         total_members = sum(len(s.members) for s in bot.guilds)
         unique_members = len(bot.users)
