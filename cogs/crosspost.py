@@ -925,7 +925,11 @@ class Crosspost(Cog):
     @commands.group()
     @is_owner_or(manage_guild=True)
     async def crosspost(self, ctx: BContext) -> None:
-        """Change image crosspost settings"""
+        """Change image crosspost settings.
+
+        Each subcommand takes, in addition to the configuration value, an optional \
+target, which specifies a channel or category to apply the setting to, instead of \
+applying it to the guild as a whole."""
         pass
 
     @crosspost.command()
