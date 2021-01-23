@@ -14,7 +14,7 @@ class Default(Cog):
     """Default useful commands."""
 
     @commands.command()
-    async def avatar(self, ctx: BContext, *, user: Optional[Member] = None) -> None:
+    async def avatar(self, ctx: BContext, *, user: Member = None) -> None:
         target: discord.abc.User
         if user is None:
             target = ctx.author
