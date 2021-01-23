@@ -1020,7 +1020,7 @@ remove embeds from messages it processes successfully."""
 
     @commands.command()
     async def post(self, ctx: BContext, *, _: str) -> None:
-        """Embed images in the given links r.rdles of the global embed setting."""
+        """Embed images in the given links regardless of the auto setting."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self.process_links(new_ctx)
 
