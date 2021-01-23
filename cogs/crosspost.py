@@ -959,10 +959,14 @@ applying it to the guild as a whole."""
         *,
         target: Union[CategoryChannel, TextChannel] = None,
     ) -> None:
-        """Change image crossposting mode
+        """Change image crossposting mode.
 
         link: send a link to images when available
-        upload: always upload image files"""
+        upload: always upload image files
+
+        Fetching images from Twitter is disabled in link mode.
+        When in upload mode and the bot has the Manage Messages permission, it'll \
+remove embeds from messages it processes successfully."""
         if mode == "link":
             crosspost_mode = 1
         elif mode == "upload":
