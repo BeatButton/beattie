@@ -15,32 +15,16 @@ import toml
 from asyncqlio.db import DatabaseInterface
 from discord import Game, Intents, Message
 from discord.ext import commands
-from discord.ext.commands import Bot, Cog, Command, Context, when_mentioned_or
+from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
 
 from config import Config
 from context import BContext
+from help import BHelp
 from utils import contextmanagers, exceptions
 from utils.aioutils import do_every
 
 C = TypeVar("C", bound=Context)
-
-
-class BHelp(commands.MinimalHelpCommand):
-    async def send_bot_help(self, mapping: dict[Cog, list[Command]]):
-        await super().send_bot_help(mapping)
-        await self.context.send(
-            "Join the support server for more help: discord.gg/a3kHCRs9Q8"
-        )
-
-    def add_subcommand_formatting(self, command: Command) -> None:
-        fmt = "{0} \N{EN DASH} {1}" if command.short_doc else "{0}"
-        self.paginator.add_line(
-            fmt.format(
-                self.get_command_signature(command),
-                command.short_doc,
-            )
-        )
 
 
 class BeattieBot(Bot):
