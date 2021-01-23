@@ -28,19 +28,17 @@ class XKCD(Cog):
             url = "https://xkcd.com/info.0.json"
             async with ctx.bot.get(url) as resp:
                 self.xkcd_data = await resp.json()
-            if inp == "random":
-                await ctx.invoke(self.random)
+            if not inp or inp == "random":
+                await self.random(ctx)
             elif inp in ("latest", "current"):
-                await ctx.invoke(self.latest)
-            elif inp:
-                await ctx.invoke(self.comic, inp=inp)
+                await self.latest(ctx)
             else:
-                await ctx.invoke(self.random)
+                await self.comic(ctx, inp=inp)
 
     @xkcd.command()
     async def random(self, ctx: BContext) -> None:
         """Gets a random xkcd comic."""
-        await ctx.invoke(self.comic, inp=random.randint(1, self.xkcd_data["num"]))
+        await self.comic(ctx, inp=random.randint(1, self.xkcd_data["num"]))
 
     @xkcd.command()
     async def latest(self, ctx: BContext) -> None:
