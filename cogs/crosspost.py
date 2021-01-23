@@ -940,7 +940,7 @@ applying it to the guild as a whole."""
         *,
         target: Union[CategoryChannel, TextChannel] = None,
     ) -> None:
-        """Enable or disable automatic crossposting"""
+        """Enable or disable automatic crossposting."""
         guild = ctx.guild
         assert guild is not None
         settings = Settings(auto=enabled)
