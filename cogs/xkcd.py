@@ -1,6 +1,6 @@
 import random
 import re
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 import discord
 from discord.ext import commands
@@ -22,7 +22,7 @@ class XKCD(Cog):
         await ctx.send(random.choice(self.questions))
 
     @commands.group()
-    async def xkcd(self, ctx: BContext, *, inp: Optional[str] = None) -> None:
+    async def xkcd(self, ctx: BContext, *, inp: str = None) -> None:
         """Commands for getting xkcd comics"""
         async with ctx.typing():
             url = "https://xkcd.com/info.0.json"
