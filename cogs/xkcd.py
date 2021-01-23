@@ -32,11 +32,10 @@ class XKCD(Cog):
                 await ctx.invoke(self.random)
             elif inp in ("latest", "current"):
                 await ctx.invoke(self.latest)
+            elif inp:
+                await ctx.invoke(self.comic, inp=inp)
             else:
-                if inp:
-                    await ctx.invoke(self.comic, inp=inp)
-                else:
-                    await ctx.invoke(self.random)
+                await ctx.invoke(self.random)
 
     @xkcd.command()
     async def random(self, ctx: BContext) -> None:
