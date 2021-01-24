@@ -36,6 +36,8 @@ class BeattieBot(Bot):
     archive_task: Optional[Task[Any]]
     http: HTTPClient
 
+    extra: dict[str, Any]
+
     def __init__(
         self,
         prefixes: tuple[str, ...],
@@ -72,6 +74,7 @@ class BeattieBot(Bot):
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
         self.uptime = datetime.now()
+        self.extra = {}
         if not self.debug:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
         else:
