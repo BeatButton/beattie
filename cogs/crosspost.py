@@ -134,10 +134,15 @@ class Config:
         await CrosspostSettings.create(if_not_exists=True)
 
     async def get(self, message: Message) -> Settings:
-        guild_id = message.guild.id
+        guild = message.guild
+        assert guild is not None
+        channel = message.channel
+        assert isinstance(channel, TextChannel)
+
+        guild_id = guild.id
         out = await self._get(guild_id, 0)
 
-        if category := message.channel.category:
+        if category := channel.category:
             out = out.apply(await self._get(guild_id, category.id))
         out = out.apply(await self._get(guild_id, message.channel.id))
 
@@ -192,6 +197,8 @@ class CrosspostContext(BContext):
         delete_after: Optional[float] = None,
         nonce: Optional[int] = None,
         allowed_mentions: Optional[AllowedMentions] = None,
+        reference: Optional[Union[Message, discord.MessageReference]] = None,
+        mention_author: Optional[bool] = None,
     ) -> Message:
         if file:
             fp = file.fp
@@ -211,6 +218,8 @@ class CrosspostContext(BContext):
             delete_after=delete_after,
             nonce=nonce,
             allowed_mentions=allowed_mentions,
+            reference=reference,
+            mention_author=mention_author,
         )
         sent_images = self.cog.sent_images
         invoking_id = self.message.id
@@ -257,14 +266,14 @@ class Crosspost(Cog):
         }
         self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
         self.init_task = bot.loop.create_task(self.__init())
-        if hasattr(bot, "crosspost_ongoing_tasks"):
-            self.ongoing_tasks = bot.crosspost_ongoing_tasks
-            self.sent_images = bot.crosspost_sent_images
+        if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
+            self.ongoing_tasks = ongoing_tasks
+            self.sent_images = bot.extra["crosspost_sent_images"]
         else:
             self.sent_images = {}
             self.ongoing_tasks = {}
-            bot.crosspost_ongoing_tasks = self.ongoing_tasks
-            bot.crosspost_sent_images = self.sent_images
+            bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
+            bot.extra["crosspost_sent_images"] = self.sent_images
 
     async def __init(self) -> None:
         with open("config/logins.toml") as fp:
@@ -1007,7 +1016,8 @@ remove embeds from messages it processes successfully."""
 
     async def crosspost_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, BadUnionArgument):
-            inner: ChannelNotFound = e.errors[0]
+            inner = e.errors[0]
+            assert isinstance(inner, ChannelNotFound)
             await ctx.send(
                 f"Could not resolve `{inner.argument}` as a category or channel"
             )
