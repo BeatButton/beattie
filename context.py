@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import discord
 from discord import AllowedMentions, Embed, File, Message
@@ -16,10 +16,33 @@ class BContext(commands.Context):
 
     bot: BeattieBot
 
-    async def reply(self, content: str, sep: str = ",\n", **kwargs: Any) -> Message:
-        if self.guild:
-            content = f"{self.author.display_name}{sep}{content}"
-        return await self.send(content, **kwargs)
+    async def reply(
+        self,
+        content: Optional[object] = None,
+        *,
+        tts: bool = False,
+        embed: Optional[discord.Embed] = None,
+        file: Optional[discord.File] = None,
+        files: Optional[list[discord.File]] = None,
+        delete_after: Optional[float] = None,
+        nonce: Optional[int] = None,
+        allowed_mentions: Optional[discord.AllowedMentions] = None,
+        reference: Optional[Union[discord.Message, discord.MessageReference]] = None,
+        mention_author: Optional[bool] = None,
+    ) -> discord.Message:
+        if mention_author is None:
+            mention_author = False
+        return await super().reply(
+            content,
+            tts=tts,
+            embed=embed,
+            file=file,
+            files=files,
+            delete_after=delete_after,
+            nonce=nonce,
+            allowed_mentions=allowed_mentions,
+            mention_author=mention_author,
+        )
 
     async def send(
         self,
@@ -32,6 +55,8 @@ class BContext(commands.Context):
         delete_after: Optional[float] = None,
         nonce: Optional[int] = None,
         allowed_mentions: Optional[AllowedMentions] = None,
+        reference: Optional[Union[Message, discord.MessageReference]] = None,
+        mention_author: Optional[bool] = None,
     ) -> Message:
         str_content = str(content)
         if len(str_content) >= 2000:
@@ -56,4 +81,6 @@ class BContext(commands.Context):
             delete_after=delete_after,
             nonce=nonce,
             allowed_mentions=allowed_mentions,
+            reference=reference,
+            mention_author=mention_author,
         )
