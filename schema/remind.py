@@ -9,6 +9,7 @@ class Reminder(Table):  # type: ignore
     id = Column(Serial, primary_key=True)
     guild_id = Column(BigInt)
     channel_id = Column(BigInt)
+    message_id = Column(BigInt, nullable=True)
     user_id = Column(BigInt)
     time = Column(Timestamp)
     topic = Column(Text)
