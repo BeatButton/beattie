@@ -227,6 +227,9 @@ class Remind(Cog):
             try:
                 await channel.send(
                     message,
+                    allowed_mentions=AllowedMentions(
+                        everyone=False, users=[member], roles=False
+                    ),
                     reference=reference,
                 )
             except (discord.NotFound, discord.Forbidden):
