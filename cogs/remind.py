@@ -188,6 +188,7 @@ class Remind(Cog):
                 Reminder(
                     guild_id=ctx.guild.id,
                     channel_id=ctx.channel.id,
+                    message_id=ctx.message.id,
                     user_id=ctx.author.id,
                     time=time,
                     topic=topic,
@@ -215,13 +216,18 @@ class Remind(Cog):
         ):
             assert isinstance(channel, TextChannel)
             topic = reminder.topic or "something"
-            message = f"{member.mention}\nYou asked to be reminded about {topic}."
+            message = f"You asked to be reminded about {topic}."
+            reference = None
+            if message_id := reminder.message_id:
+                reference = discord.MessageReference(
+                    message_id=message_id,
+                    channel_id=reminder.channel_id,
+                    guild_id=reminder.guild_id,
+                )
             try:
                 await channel.send(
                     message,
-                    allowed_mentions=AllowedMentions(
-                        everyone=False, users=[member], roles=False
-                    ),
+                    reference=reference,
                 )
             except (discord.NotFound, discord.Forbidden):
                 pass
@@ -240,12 +246,17 @@ class Remind(Cog):
         self.timer = self.loop.create_task(self.sleep())
 
     async def sleep(self) -> None:
-        while self.queue:
-            delta = (self.queue[-1].time - datetime.now()).total_seconds()
-            if delta <= 0:
-                await self.send_reminder(self.queue.pop())
-            else:
-                await asyncio.sleep(min(delta, 3_000_000))
+        try:
+            while self.queue:
+                delta = (self.queue[-1].time - datetime.now()).total_seconds()
+                if delta <= 0:
+                    await self.send_reminder(self.queue.pop())
+                else:
+                    await asyncio.sleep(min(delta, 3_000_000))
+        except Exception as e:
+            import traceback
+
+            traceback.print_exception(type(e), e, e.__traceback__)
 
 
 def setup(bot: BeattieBot) -> None:
