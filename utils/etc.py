@@ -1,5 +1,5 @@
 import re
-from typing import Callable, MutableSequence, Optional, TypeVar
+from typing import Callable, MutableSequence, TypeVar
 
 from .type_hints import Comparable
 
@@ -10,7 +10,7 @@ SPOILER_EXPR = re.compile(r"\|\|.*?\|\|")
 
 
 def reverse_insort(
-    seq: MutableSequence[U], val: U, lo: int = 0, hi: Optional[int] = None
+    seq: MutableSequence[U], val: U, lo: int = 0, hi: int = None
 ) -> None:
     reverse_insort_by_key(seq, val, key=lambda x: x, lo=lo, hi=hi)
 
@@ -21,7 +21,7 @@ def reverse_insort_by_key(
     *,
     key: Callable[[T], U],
     lo: int = 0,
-    hi: Optional[int] = None,
+    hi: int = None,
 ) -> None:
     if hi is None:
         hi = len(seq)

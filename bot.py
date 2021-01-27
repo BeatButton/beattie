@@ -160,7 +160,7 @@ class BeattieBot(Bot):
         ...
 
     async def get_context(
-        self, message: Message, *, cls: Optional[Type[Context]] = None
+        self, message: Message, *, cls: Type[Context] = None
     ) -> Context:
         return await super().get_context(message, cls=cls or BContext)
 

@@ -93,7 +93,7 @@ class Remind(Cog):
         ctx: BContext,
         time: Time,
         *,
-        topic: Optional[commands.clean_content] = None,
+        topic: str = None,
     ) -> None:
         """Commands for setting and managing reminders."""
         await self.set_reminder(ctx, time, topic=topic)
@@ -109,7 +109,7 @@ class Remind(Cog):
         ctx: BContext,
         time: Time,
         *,
-        topic: Optional[str] = None,
+        topic: str = None,
     ) -> None:
         """Have the bot remind you about something.
         First put time (in quotes if there are spaces), then topic"""
@@ -165,9 +165,7 @@ class Remind(Cog):
 
     @remind.command(name="channel")
     @is_owner_or(manage_guild=True)
-    async def set_channel(
-        self, ctx: BContext, channel: Optional[TextChannel] = None
-    ) -> None:
+    async def set_channel(self, ctx: BContext, channel: TextChannel = None) -> None:
         """Set the channel reminders will appear in. Invoke with no input to reset."""
         assert ctx.guild is not None
         await ctx.bot.config.set_guild(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 import discord
 from discord import AllowedMentions, Embed, File, Message
@@ -18,17 +18,17 @@ class BContext(commands.Context):
 
     async def reply(
         self,
-        content: Optional[object] = None,
+        content: object = None,
         *,
         tts: bool = False,
-        embed: Optional[discord.Embed] = None,
-        file: Optional[discord.File] = None,
-        files: Optional[list[discord.File]] = None,
-        delete_after: Optional[float] = None,
-        nonce: Optional[int] = None,
-        allowed_mentions: Optional[discord.AllowedMentions] = None,
-        reference: Optional[Union[discord.Message, discord.MessageReference]] = None,
-        mention_author: Optional[bool] = None,
+        embed: discord.Embed = None,
+        file: discord.File = None,
+        files: list[discord.File] = None,
+        delete_after: float = None,
+        nonce: int = None,
+        allowed_mentions: discord.AllowedMentions = None,
+        reference: Union[discord.Message, discord.MessageReference] = None,
+        mention_author: bool = None,
     ) -> discord.Message:
         if mention_author is None:
             mention_author = False
@@ -46,17 +46,17 @@ class BContext(commands.Context):
 
     async def send(
         self,
-        content: Optional[object] = None,
+        content: object = None,
         *,
         tts: bool = False,
-        embed: Optional[Embed] = None,
-        file: Optional[File] = None,
-        files: Optional[list[File]] = None,
-        delete_after: Optional[float] = None,
-        nonce: Optional[int] = None,
-        allowed_mentions: Optional[AllowedMentions] = None,
-        reference: Optional[Union[Message, discord.MessageReference]] = None,
-        mention_author: Optional[bool] = None,
+        embed: Embed = None,
+        file: File = None,
+        files: list[File] = None,
+        delete_after: float = None,
+        nonce: int = None,
+        allowed_mentions: AllowedMentions = None,
+        reference: Union[Message, discord.MessageReference] = None,
+        mention_author: bool = None,
     ) -> Message:
         str_content = str(content)
         if len(str_content) >= 2000:
