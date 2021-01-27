@@ -207,7 +207,11 @@ class Remind(Cog):
             and (member := guild.get_member(reminder.user_id))
             and (
                 channel := guild.get_channel(
-                    (await self.bot.config.get_guild(guild.id)).get("reminder_channel")
+                    (
+                        reminder_channel_id := (
+                            await self.bot.config.get_guild(guild.id)
+                        ).get("reminder_channel")
+                    )
                     or reminder.channel_id
                 )
             )
@@ -216,12 +220,17 @@ class Remind(Cog):
             topic = reminder.topic or "something"
             message = f"You asked to be reminded about {topic}."
             reference = None
-            if message_id := reminder.message_id:
+            if (
+                reminder_channel_id is None
+                or reminder_channel_id == reminder.channel_id
+            ) and (message_id := reminder.message_id):
                 reference = discord.MessageReference(
                     message_id=message_id,
                     channel_id=reminder.channel_id,
                     guild_id=reminder.guild_id,
                 )
+            if reference is None:
+                message = f"{member.mention}\n{message}"
             try:
                 await channel.send(
                     message,
