@@ -96,9 +96,9 @@ class Settings:
 
     def __init__(
         self,
-        auto: Optional[bool] = None,
-        mode: Optional[int] = None,
-        max_pages: Optional[int] = None,
+        auto: bool = None,
+        mode: int = None,
+        max_pages: int = None,
     ) -> None:
         self.auto = auto
         self.mode = mode
@@ -188,17 +188,17 @@ class CrosspostContext(BContext):
 
     async def send(
         self,
-        content: Optional[object] = None,
+        content: object = None,
         *,
         tts: bool = False,
-        embed: Optional[Embed] = None,
-        file: Optional[File] = None,
-        files: Optional[list[File]] = None,
-        delete_after: Optional[float] = None,
-        nonce: Optional[int] = None,
-        allowed_mentions: Optional[AllowedMentions] = None,
-        reference: Optional[Union[Message, discord.MessageReference]] = None,
-        mention_author: Optional[bool] = None,
+        embed: Embed = None,
+        file: File = None,
+        files: list[File] = None,
+        delete_after: float = None,
+        nonce: int = None,
+        allowed_mentions: AllowedMentions = None,
+        reference: Union[Message, discord.MessageReference] = None,
+        mention_author: bool = None,
     ) -> Message:
         if file:
             fp = file.fp
@@ -397,8 +397,8 @@ class Crosspost(Cog):
         fp=None,
         seek_begin: bool = True,
         use_default_headers: bool = True,
-        headers: Optional[dict[str, str]] = None,
-        filesize_limit: Optional[int] = None,
+        headers: dict[str, str] = None,
+        filesize_limit: int = None,
     ):
         headers = headers or {}
         img = fp or BytesIO()
@@ -493,7 +493,7 @@ class Crosspost(Cog):
         ctx: CrosspostContext,
         link: str,
         *,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] = None,
         use_default_headers: bool = True,
     ) -> None:
         mode = await self.get_mode(ctx)
@@ -609,12 +609,11 @@ class Crosspost(Cog):
         guild = ctx.guild
         assert guild is not None
         filesize_limit = guild.filesize_limit
-        content: Optional[str]
+        content = None
 
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
-                content = None
                 try:
                     file = await self.get_ugoira(illust_id)
                 except asyncio.TimeoutError:
