@@ -223,9 +223,9 @@ class Remind(Cog):
             if (
                 reminder_channel_id is None
                 or reminder_channel_id == reminder.channel_id
-            ) and (message_id := reminder.message_id):
+            ):
                 reference = discord.MessageReference(
-                    message_id=message_id,
+                    message_id=reminder.message_id,
                     channel_id=reminder.channel_id,
                     guild_id=reminder.guild_id,
                 )
