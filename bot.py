@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import lzma
 import os
@@ -90,7 +91,7 @@ class BeattieBot(Bot):
     async def swap_logs(self, new: bool = True) -> None:
         if new:
             self.new_logger()
-        await self.loop.run_in_executor(None, self.archive_logs)
+        await asyncio.to_thread(self.archive_logs)
 
     def new_logger(self) -> None:
         logger = logging.getLogger("discord")

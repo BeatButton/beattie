@@ -137,7 +137,7 @@ class RPG(Cog):
 
         args = (num, sides, lo_drop, hi_drop, mod, times)
 
-        future = self.loop.run_in_executor(None, roller, *args)
+        future = asyncio.to_thread(roller, *args)
         async with ctx.typing():
             result = await asyncio.wait_for(future, 10, loop=self.loop)
 
@@ -194,7 +194,7 @@ class RPG(Cog):
         num = int(inp.rstrip("e"))
 
         args = (num, edge)
-        future = self.loop.run_in_executor(None, shadowroller, *args)
+        future = asyncio.to_thread(shadowroller, *args)
         async with ctx.typing():
             result = await asyncio.wait_for(future, 10, loop=self.loop)
 
@@ -245,7 +245,7 @@ class RPG(Cog):
                 return
             dice[die] = num
 
-        future = self.loop.run_in_executor(None, lambda: genesysroller(**dice))
+        future = asyncio.to_thread(genesysroller, **dice)
         async with ctx.typing():
             try:
                 result = await asyncio.wait_for(future, 10, loop=self.loop)
