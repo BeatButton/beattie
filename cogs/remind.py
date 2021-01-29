@@ -256,17 +256,12 @@ class Remind(Cog):
         self.timer = self.loop.create_task(self.sleep())
 
     async def sleep(self) -> None:
-        try:
-            while self.queue:
-                delta = (self.queue[-1].time - datetime.now()).total_seconds()
-                if delta <= 0:
-                    await self.send_reminder(self.queue.pop())
-                else:
-                    await asyncio.sleep(min(delta, 3_000_000))
-        except Exception as e:
-            import traceback
-
-            traceback.print_exception(type(e), e, e.__traceback__)
+        while self.queue:
+            delta = (self.queue[-1].time - datetime.now()).total_seconds()
+            if delta <= 0:
+                await self.send_reminder(self.queue.pop())
+            else:
+                await asyncio.sleep(min(delta, 3_000_000))
 
 
 def setup(bot: BeattieBot) -> None:
