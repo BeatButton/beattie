@@ -504,11 +504,7 @@ class Crosspost(Cog):
     async def on_raw_message_delete(
         self, payload: discord.RawMessageDeleteEvent
     ) -> None:
-        message_id = payload.message_id
-        if task := self.ongoing_tasks.get(message_id):
-            task.cancel()
-            await asyncio.wait([task])
-        if messages := self.sent_images.pop(message_id, None):
+        async def delete_messages(messages: list[int]):
             channel_id = payload.channel_id
             for message_id in messages:
                 try:
@@ -517,6 +513,17 @@ class Crosspost(Cog):
                     pass
                 except discord.Forbidden:
                     return
+
+        message_id = payload.message_id
+        if task := self.ongoing_tasks.get(message_id):
+            task.cancel()
+        if messages := self.sent_images.get(message_id):
+            await delete_messages(messages)
+        if task:
+            await asyncio.wait([task])
+            if messages:
+                await delete_messages(messages)
+        self.sent_images.pop(message_id, None)
 
     async def send(
         self,
