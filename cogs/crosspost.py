@@ -424,7 +424,10 @@ class Crosspost(Cog):
             for link in expr.findall(content):
                 try:
                     if await func(ctx, link) and do_suppress:
-                        await ctx.message.edit(suppress=True)
+                        try:
+                            await ctx.message.edit(suppress=True)
+                        except (discord.NotFound, discord.Forbidden):
+                            pass
                         do_suppress = False
                 except ResponseError as e:
                     if e.code == 404:
