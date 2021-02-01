@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any
 
 import discord
-from discord import AllowedMentions, Embed, File, Message
+from discord import File, Message
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -20,43 +20,20 @@ class BContext(commands.Context):
         self,
         content: object = None,
         *,
-        tts: bool = False,
-        embed: discord.Embed = None,
-        file: discord.File = None,
-        files: list[discord.File] = None,
-        delete_after: float = None,
-        nonce: int = None,
-        allowed_mentions: discord.AllowedMentions = None,
-        reference: Union[discord.Message, discord.MessageReference] = None,
         mention_author: bool = None,
+        **kwargs: Any,
     ) -> discord.Message:
         if mention_author is None:
             mention_author = False
-        return await super().reply(
-            content,
-            tts=tts,
-            embed=embed,
-            file=file,
-            files=files,
-            delete_after=delete_after,
-            nonce=nonce,
-            allowed_mentions=allowed_mentions,
-            mention_author=mention_author,
-        )
+        return await super().reply(content, mention_author=mention_author, **kwargs)
 
     async def send(
         self,
         content: object = None,
         *,
-        tts: bool = False,
-        embed: Embed = None,
         file: File = None,
         files: list[File] = None,
-        delete_after: float = None,
-        nonce: int = None,
-        allowed_mentions: AllowedMentions = None,
-        reference: Union[Message, discord.MessageReference] = None,
-        mention_author: bool = None,
+        **kwargs: Any,
     ) -> Message:
         str_content = str(content)
         if len(str_content) >= 2000:
@@ -74,13 +51,7 @@ class BContext(commands.Context):
                 file = new_file
         return await super().send(
             content,
-            tts=tts,
-            embed=embed,
             file=file,
             files=files,
-            delete_after=delete_after,
-            nonce=nonce,
-            allowed_mentions=allowed_mentions,
-            reference=reference,
-            mention_author=mention_author,
+            **kwargs,
         )

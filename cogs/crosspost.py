@@ -16,7 +16,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import AllowedMentions, CategoryChannel, Embed, File, Message, TextChannel
+from discord import CategoryChannel, File, Message, TextChannel
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from lxml import etree
@@ -182,32 +182,11 @@ class Config:
 class CrosspostContext(BContext):
     cog: Crosspost
 
-    async def send(
-        self,
-        content: object = None,
-        *,
-        tts: bool = False,
-        embed: Embed = None,
-        file: File = None,
-        files: list[File] = None,
-        delete_after: float = None,
-        nonce: int = None,
-        allowed_mentions: AllowedMentions = None,
-        reference: Union[Message, discord.MessageReference] = None,
-        mention_author: bool = None,
-    ) -> Message:
+    async def send(self, content: object = None, **kwargs: Any) -> Message:
         task = asyncio.create_task(
             self._send(
                 content,
-                tts=tts,
-                embed=embed,
-                file=file,
-                files=files,
-                delete_after=delete_after,
-                nonce=nonce,
-                allowed_mentions=allowed_mentions,
-                reference=reference,
-                mention_author=mention_author,
+                **kwargs,
             )
         )
         try:
@@ -220,15 +199,8 @@ class CrosspostContext(BContext):
         self,
         content: object = None,
         *,
-        tts: bool = False,
-        embed: Embed = None,
         file: File = None,
-        files: list[File] = None,
-        delete_after: float = None,
-        nonce: int = None,
-        allowed_mentions: AllowedMentions = None,
-        reference: Union[Message, discord.MessageReference] = None,
-        mention_author: bool = None,
+        **kwargs: Any,
     ) -> Message:
         if file:
             fp = file.fp
@@ -242,15 +214,8 @@ class CrosspostContext(BContext):
 
         msg = await super().send(
             content,
-            tts=tts,
-            embed=embed,
             file=file,
-            files=files,
-            delete_after=delete_after,
-            nonce=nonce,
-            allowed_mentions=allowed_mentions,
-            reference=reference,
-            mention_author=mention_author,
+            **kwargs,
         )
 
         self.cog.sent_images.setdefault(self.message.id, []).append(msg.id)
