@@ -198,6 +198,40 @@ class CrosspostContext(BContext):
         reference: Union[Message, discord.MessageReference] = None,
         mention_author: bool = None,
     ) -> Message:
+        task = asyncio.create_task(
+            self._send(
+                content,
+                tts=tts,
+                embed=embed,
+                file=file,
+                files=files,
+                delete_after=delete_after,
+                nonce=nonce,
+                allowed_mentions=allowed_mentions,
+                reference=reference,
+                mention_author=mention_author,
+            )
+        )
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError as e:
+            await asyncio.wait_for(task, timeout=None)
+            raise e from None
+
+    async def _send(
+        self,
+        content: object = None,
+        *,
+        tts: bool = False,
+        embed: Embed = None,
+        file: File = None,
+        files: list[File] = None,
+        delete_after: float = None,
+        nonce: int = None,
+        allowed_mentions: AllowedMentions = None,
+        reference: Union[Message, discord.MessageReference] = None,
+        mention_author: bool = None,
+    ) -> Message:
         if file:
             fp = file.fp
             assert isinstance(fp, BytesIO)
