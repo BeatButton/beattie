@@ -30,8 +30,6 @@ from utils.contextmanagers import get as get_
 from utils.etc import display_bytes, remove_spoilers
 from utils.exceptions import ResponseError
 
-ChannelID = int
-MessageID = int
 _IO = TypeVar("_IO", bound=IO[bytes])
 
 TWITTER_URL_EXPR = re.compile(
@@ -209,6 +207,7 @@ class CrosspostContext(BContext):
             if size >= guild.filesize_limit:
                 content = f"Image too large to upload ({display_bytes(size)})."
                 file = None
+
         msg = await super().send(
             content,
             tts=tts,
@@ -221,14 +220,8 @@ class CrosspostContext(BContext):
             reference=reference,
             mention_author=mention_author,
         )
-        sent_images = self.cog.sent_images
-        invoking_id = self.message.id
-        if entry := sent_images.get(invoking_id):
-            _, messages = entry
-        else:
-            messages = []
-            sent_images[invoking_id] = (msg.channel.id, messages)
-        messages.append(msg.id)
+
+        self.cog.sent_images.setdefault(self.message.id, []).append(msg.id)
 
         return msg
 
@@ -248,8 +241,8 @@ class Crosspost(Cog):
     }
     inkbunny_sid: str = ""
 
-    sent_images: dict[MessageID, tuple[ChannelID, list[MessageID]]]
-    ongoing_tasks: dict[MessageID, asyncio.Task]
+    sent_images: dict[int, list[int]]
+    ongoing_tasks: dict[int, asyncio.Task]
     expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
 
     def __init__(self, bot: BeattieBot):
@@ -477,9 +470,9 @@ class Crosspost(Cog):
         message_id = payload.message_id
         if task := self.ongoing_tasks.get(message_id):
             task.cancel()
-            await asyncio.sleep(0)
-        if record := self.sent_images.pop(message_id, None):
-            channel_id, messages = record
+            await asyncio.wait([task])
+        if messages := self.sent_images.pop(message_id, None):
+            channel_id = payload.channel_id
             for message_id in messages:
                 try:
                     await self.bot.http.delete_message(channel_id, message_id)
