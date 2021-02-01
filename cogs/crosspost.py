@@ -164,8 +164,6 @@ class Config:
             return res
 
     async def set(self, guild_id: int, channel_id: int, settings: Settings) -> None:
-        conf = await self._get(guild_id, channel_id)
-        settings = conf.apply(settings)
         self._cache[(guild_id, channel_id)] = settings
         kwargs = settings.asdict()
         async with self.db.get_session() as s:
@@ -177,7 +175,7 @@ class Config:
             query = s.insert.rows(row)
             query = query.on_conflict(
                 CrosspostSettings.guild_id, CrosspostSettings.channel_id
-            ).update(getattr(CrosspostSettings, key) for key in kwargs)
+            ).update(*(getattr(CrosspostSettings, key) for key in kwargs))
             await query.run()
 
 
