@@ -801,6 +801,9 @@ class Crosspost(Cog):
 
         images = images[idx:max_pages]
 
+        if not images:
+            return False
+
         for image in images:
             url = image.get("content")
             await self.send(ctx, url)
