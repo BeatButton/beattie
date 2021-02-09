@@ -4,10 +4,12 @@ import asyncio
 import copy
 import re
 from asyncio import subprocess
+from collections import deque
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from hashlib import md5
 from io import BytesIO
+from itertools import groupby
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import IO, Any, Optional, TypeVar, Union, overload
@@ -19,12 +21,13 @@ import toml
 from discord import CategoryChannel, File, Message, TextChannel
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
+from discord.utils import snowflake_time, time_snowflake
 from lxml import etree
 
 from bot import BeattieBot
 from context import BContext
 from schema.crosspost import Crosspost as CrosspostSettings
-from schema.crosspost import Table
+from schema.crosspost import CrosspostMessage, Table
 from utils.checks import is_owner_or
 from utils.contextmanagers import get as get_
 from utils.etc import display_bytes, remove_spoilers
@@ -63,6 +66,8 @@ INKBUNNY_URL_EXPR = re.compile(
 INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
 IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
+
+MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 
 async def try_wait_for(
@@ -119,36 +124,77 @@ class Settings:
         return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
 
 
-class Config:
+class Database:
     def __init__(self, bot: BeattieBot):
         self.db = bot.db
         self.bot = bot
         self.db.bind_tables(Table)
+        self._settings_cache: dict[tuple[int, int], Settings] = {}
+        self._expiry_deque: deque[int] = deque()
+        self._message_cache: dict[int, list[int]] = {}
         bot.loop.create_task(self.__init())
-        self._cache: dict[tuple[int, int], Settings] = {}
 
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
-        await CrosspostSettings.create(if_not_exists=True)
+        for table in (CrosspostSettings, CrosspostMessage):
+            await table.create(if_not_exists=True)  # type: ignore
 
-    async def get(self, message: Message) -> Settings:
+        async with self.db.get_session() as s:
+            query = (
+                s.select(CrosspostMessage)
+                .where(
+                    CrosspostMessage.invoking_message
+                    > time_snowflake(
+                        datetime.utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL * 1000)
+                    )
+                )
+                .order_by(CrosspostMessage.invoking_message)
+            )
+
+            for invoking_message, elems in groupby(
+                await (await query.all()).flatten(),
+                key=lambda elem: elem.invoking_message,
+            ):
+                self._expiry_deque.append(invoking_message)
+                self._message_cache[invoking_message] = [
+                    elem.sent_message for elem in elems
+                ]
+            self._expiry_task = asyncio.create_task(self._expire())
+
+    async def _expire(self):
+        try:
+            while self._expiry_deque:
+                entry = self._expiry_deque.popleft()
+                until = snowflake_time(entry) + timedelta(seconds=MESSAGE_CACHE_TTL)
+                now = datetime.utcnow()
+                sleep_time = (until - now).total_seconds()
+                await asyncio.sleep(sleep_time)
+                self._message_cache.pop(entry, None)
+        except Exception as e:
+            import sys
+            import traceback
+
+            print("Exception in message cache expiry task", file=sys.stderr)
+            traceback.print_exception(type(e), e, e.__traceback__)
+
+    async def get_settings(self, message: Message) -> Settings:
         guild = message.guild
         assert guild is not None
         channel = message.channel
         assert isinstance(channel, TextChannel)
 
         guild_id = guild.id
-        out = await self._get(guild_id, 0)
+        out = await self._get_settings(guild_id, 0)
 
         if category := channel.category:
-            out = out.apply(await self._get(guild_id, category.id))
-        out = out.apply(await self._get(guild_id, message.channel.id))
+            out = out.apply(await self._get_settings(guild_id, category.id))
+        out = out.apply(await self._get_settings(guild_id, message.channel.id))
 
         return out
 
-    async def _get(self, guild_id: int, channel_id: int) -> Settings:
+    async def _get_settings(self, guild_id: int, channel_id: int) -> Settings:
         try:
-            return self._cache[(guild_id, channel_id)]
+            return self._settings_cache[(guild_id, channel_id)]
         except KeyError:
             async with self.db.get_session() as s:
                 query = s.select(CrosspostSettings).where(
@@ -160,11 +206,13 @@ class Config:
                 res = Settings()
             else:
                 res = Settings(config.auto, config.mode, config.max_pages)
-            self._cache[(guild_id, channel_id)] = res
+            self._settings_cache[(guild_id, channel_id)] = res
             return res
 
-    async def set(self, guild_id: int, channel_id: int, settings: Settings) -> None:
-        self._cache[(guild_id, channel_id)] = settings
+    async def set_settings(
+        self, guild_id: int, channel_id: int, settings: Settings
+    ) -> None:
+        self._settings_cache[(guild_id, channel_id)] = settings
         kwargs = settings.asdict()
         async with self.db.get_session() as s:
             row = CrosspostSettings(
@@ -177,6 +225,45 @@ class Config:
                 CrosspostSettings.guild_id, CrosspostSettings.channel_id
             ).update(*(getattr(CrosspostSettings, key) for key in kwargs))
             await query.run()
+
+    async def get_sent_messages(self, invoking_message: int) -> list[int]:
+        if sent_messages := self._message_cache.get(invoking_message):
+            return sent_messages
+
+        elif (
+            datetime.utcnow() - snowflake_time(invoking_message)
+        ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
+            async with self.db.get_session() as s:
+                query = s.select(CrosspostMessage).where(
+                    CrosspostMessage.invoking_message == invoking_message
+                )
+                return [
+                    elem.sent_message for elem in await (await query.all()).flatten()
+                ]
+        else:
+            return []
+
+    async def add_sent_message(self, invoking_message: int, sent_message: int):
+        if (messages := self._message_cache.get(invoking_message)) is None:
+            messages = []
+            self._message_cache[invoking_message] = messages
+            self._expiry_deque.append(invoking_message)
+        messages.append(sent_message)
+        async with self.db.get_session() as s:
+            await s.add(
+                CrosspostMessage(
+                    sent_message=sent_message, invoking_message=invoking_message
+                )
+            )
+        if self._expiry_task.done():
+            self._expiry_task = asyncio.create_task(self._expire())
+
+    async def del_sent_messages(self, invoking_message: int):
+        self._message_cache.pop(invoking_message, None)
+        async with self.db.get_session() as s:
+            await s.delete(CrosspostMessage).where(
+                CrosspostMessage.invoking_message == invoking_message
+            ).run()
 
 
 class CrosspostContext(BContext):
@@ -218,7 +305,7 @@ class CrosspostContext(BContext):
             **kwargs,
         )
 
-        self.cog.sent_images.setdefault(self.message.id, []).append(msg.id)
+        await self.cog.db.add_sent_message(self.message.id, msg.id)
 
         return msg
 
@@ -238,13 +325,12 @@ class Crosspost(Cog):
     }
     inkbunny_sid: str = ""
 
-    sent_images: dict[int, list[int]]
     ongoing_tasks: dict[int, asyncio.Task]
     expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
-        self.config = Config(bot)
+        self.db = Database(bot)
         with open("config/headers.toml") as fp:
             self.headers = toml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop)
@@ -258,12 +344,9 @@ class Crosspost(Cog):
         self.init_task = bot.loop.create_task(self.__init())
         if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
             self.ongoing_tasks = ongoing_tasks
-            self.sent_images = bot.extra["crosspost_sent_images"]
         else:
-            self.sent_images = {}
             self.ongoing_tasks = {}
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
-            bot.extra["crosspost_sent_images"] = self.sent_images
 
     async def __init(self) -> None:
         with open("config/logins.toml") as fp:
@@ -444,7 +527,7 @@ class Crosspost(Cog):
         assert isinstance(me, discord.Member)
         if not me.permissions_in(channel).send_messages:
             return
-        if not (await self.config.get(message)).auto:
+        if not (await self.db.get_settings(message)).auto:
             return
         if "http" not in message.content:
             return
@@ -478,15 +561,19 @@ class Crosspost(Cog):
                     return
 
         message_id = payload.message_id
+        messages_deleted = False
         if task := self.ongoing_tasks.get(message_id):
             task.cancel()
-        if messages := self.sent_images.get(message_id):
+        if messages := await self.db.get_sent_messages(message_id):
             await delete_messages(messages)
+            messages_deleted = True
         if task:
             await asyncio.wait([task])
             if messages:
                 await delete_messages(messages)
-        self.sent_images.pop(message_id, None)
+                messages_deleted = True
+        if messages_deleted:
+            await self.db.del_sent_messages(message_id)
 
     async def send(
         self,
@@ -512,7 +599,7 @@ class Crosspost(Cog):
     async def get_mode(self, ctx: BContext) -> int:
         guild = ctx.guild
         assert guild is not None
-        return (await self.config.get(ctx.message)).mode or 1
+        return (await self.db.get_settings(ctx.message)).mode or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
         guild = ctx.guild
@@ -955,7 +1042,7 @@ applying it to the guild as a whole."""
         guild = ctx.guild
         assert guild is not None
         settings = Settings(auto=enabled)
-        await self.config.set(guild.id, target.id if target else 0, settings)
+        await self.db.set_settings(guild.id, target.id if target else 0, settings)
         fmt = "en" if enabled else "dis"
         message = f"Crossposting images {fmt}abled"
         if target is not None:
@@ -990,7 +1077,7 @@ remove embeds from messages it processes successfully."""
 
         settings = Settings(mode=crosspost_mode)
 
-        await self.config.set(guild.id, target.id if target else 0, settings)
+        await self.db.set_settings(guild.id, target.id if target else 0, settings)
         message = "Crosspost mode updated"
         if target is not None:
             message = f"{message} in {target.mention}"
@@ -1010,7 +1097,7 @@ remove embeds from messages it processes successfully."""
         guild = ctx.guild
         assert guild is not None
         settings = Settings(max_pages=max_pages)
-        await self.config.set(guild.id, target.id if target else 0, settings)
+        await self.db.set_settings(guild.id, target.id if target else 0, settings)
         message = f"Max crosspost pages set to {max_pages}"
         if target is not None:
             message = f"{message} in {target.mention}"
