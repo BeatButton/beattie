@@ -11,3 +11,8 @@ class Crosspost(Table):  # type: ignore
     auto = Column(Boolean, nullable=True)
     mode = Column(Integer, nullable=True)
     max_pages = Column(Integer, nullable=True)
+
+
+class CrosspostMessage(Table):  # type: ignore
+    sent_message = Column(BigInt, primary_key=True)
+    invoking_message = Column(BigInt)
