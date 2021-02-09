@@ -12,4 +12,4 @@ class Reminder(Table):  # type: ignore
     message_id = Column(BigInt)
     user_id = Column(BigInt)
     time = Column(Timestamp)
-    topic = Column(Text)
+    topic = Column(Text, nullable=True)
