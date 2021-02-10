@@ -15,7 +15,7 @@ class Dictionary(Cog):
     def __init__(self, bot: BeattieBot):
         self.jisho = Jisho(session=bot.session)
 
-    @commands.command(name="jisho")
+    @commands.command(name="jisho", aliases=["じしょ", "辞書"])
     async def jisho_(self, ctx: BContext, *, keywords: str) -> None:
         """Get results from Jisho.org, Japanese dictionary"""
         async with ctx.typing():
