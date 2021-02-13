@@ -1,8 +1,5 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-config/
-.vscode/
-.idea/
 *.py[cod]
 *$py.class
 
@@ -92,9 +89,13 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Other stuff
+
+config/
+/.vscode/
+/.idea/
 /logs.tar
 /discord*.log
 /discord*.log.xz
 **/.mypy_cache
-/data/scratch
 /cogs/secret.py
