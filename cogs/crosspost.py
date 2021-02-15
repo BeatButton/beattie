@@ -56,8 +56,8 @@ HICCEARS_THUMB_SELECTOR = ".//img[contains(@src, 'thumbnails')]"
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
-MASTODON_URL_EXPR = re.compile(r"https?://\S+/\w+/?(?:>|$|\s)")
-MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/(\w+)")
+MASTODON_URL_EXPR = re.compile(r"https?://\S+/[\w-]+/?(?:>|$|\s)")
+MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
 
 INKBUNNY_URL_EXPR = re.compile(
