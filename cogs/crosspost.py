@@ -597,24 +597,10 @@ class Crosspost(Cog):
             raise RuntimeError("Invalid crosspost mode!")
 
     async def get_mode(self, ctx: BContext) -> int:
-        guild = ctx.guild
-        assert guild is not None
         return (await self.db.get_settings(ctx.message)).mode or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
-        guild = ctx.guild
-        assert guild is not None
-
-        max_pages = (await ctx.bot.config.get_guild(guild.id)).get(
-            "crosspost_max_pages"
-        )
-        if max_pages is None:
-            mode = await self.get_mode(ctx)
-            if mode == 1:
-                max_pages = 4
-            else:
-                max_pages = 0
-        return max_pages
+        return (await self.db.get_settings(ctx.message)).max_pages or 4
 
     async def display_twitter_images(self, ctx: CrosspostContext, link: str) -> bool:
         if await self.get_mode(ctx) == 1:
