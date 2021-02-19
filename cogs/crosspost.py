@@ -145,7 +145,7 @@ class Database:
                 .where(
                     CrosspostMessage.invoking_message
                     > time_snowflake(
-                        datetime.utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL * 1000)
+                        datetime.utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL)
                     )
                 )
                 .order_by(CrosspostMessage.invoking_message)
