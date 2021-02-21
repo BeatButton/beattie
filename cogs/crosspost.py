@@ -600,7 +600,11 @@ class Crosspost(Cog):
         return (await self.db.get_settings(ctx.message)).mode or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
-        return (await self.db.get_settings(ctx.message)).max_pages or 4
+        settings = await self.db.get_settings(ctx.message)
+        max_pages = settings.max_pages
+        if max_pages is None:
+            max_pages = 4
+        return max_pages
 
     async def display_twitter_images(self, ctx: CrosspostContext, link: str) -> bool:
         if await self.get_mode(ctx) == 1:
