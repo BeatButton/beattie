@@ -475,19 +475,23 @@ class Crosspost(Cog):
     ):
         headers = headers or {}
         img = fp or BytesIO()
+        length_checked = filesize_limit is None
         async with self.get(
             img_url, use_default_headers=use_default_headers, headers=headers
         ) as img_resp:
-            if (
-                filesize_limit is not None
-                and img_resp.content_length is not None
-                and img_resp.content_length > filesize_limit
-            ):
-                raise ResponseError(413)  # yes I know that's not how this works
+            if not length_checked and img_resp.content_length is not None:
+                assert filesize_limit is not None
+                if img_resp.content_length > filesize_limit:
+                    raise ResponseError(413)  # yes I know that's not how this works
+                length_checked = True
             async for chunk in img_resp.content.iter_any():
                 img.write(chunk)
         if seek_begin:
             img.seek(0)
+        if not length_checked:
+            assert filesize_limit is not None
+            if len(img.getbuffer()) > filesize_limit:
+                raise ResponseError(413)
         return img
 
     async def process_links(self, ctx: CrosspostContext) -> None:
