@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import copy
 import re
+import sys
+import traceback
 from asyncio import subprocess
 from collections import deque
 from collections.abc import Awaitable, Callable
@@ -171,9 +173,6 @@ class Database:
                 await asyncio.sleep(sleep_time)
                 self._message_cache.pop(entry, None)
         except Exception as e:
-            import sys
-            import traceback
-
             print("Exception in message cache expiry task", file=sys.stderr)
             traceback.print_exception(type(e), e, e.__traceback__)
 
