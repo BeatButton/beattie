@@ -538,16 +538,7 @@ class Crosspost(Cog):
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.prefix is None:
             ctx.command = self.post
-            task = asyncio.create_task(self.process_links(ctx))
-            self.ongoing_tasks[message.id] = task
-            try:
-                await asyncio.wait_for(task, None)
-            except asyncio.CancelledError:
-                pass
-            except Exception as e:
-                raise e
-            finally:
-                del self.ongoing_tasks[message.id]
+            await self._post(ctx)
 
     @Cog.listener()
     async def on_raw_message_delete(
@@ -1110,11 +1101,24 @@ remove embeds from messages it processes successfully."""
     mode_error = mode.error(crosspost_error)
     pages_error = pages.error(crosspost_error)
 
+    async def _post(self, ctx: CrosspostContext) -> None:
+        message = ctx.message
+        task = asyncio.create_task(self.process_links(ctx))
+        self.ongoing_tasks[message.id] = task
+        try:
+            await asyncio.wait_for(task, None)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            raise e
+        finally:
+            del self.ongoing_tasks[message.id]
+
     @commands.command()
     async def post(self, ctx: BContext, *, _: str) -> None:
         """Embed images in the given links regardless of the auto setting."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        await self.process_links(new_ctx)
+        await self._post(new_ctx)
 
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = "") -> None:
