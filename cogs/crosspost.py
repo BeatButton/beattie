@@ -536,7 +536,7 @@ class Crosspost(Cog):
             return
 
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
-        if ctx.command is None:
+        if ctx.prefix is None:
             ctx.command = self.post
             task = asyncio.create_task(self.process_links(ctx))
             self.ongoing_tasks[message.id] = task
