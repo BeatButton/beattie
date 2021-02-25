@@ -108,10 +108,7 @@ class BeattieBot(Bot):
 
     def archive_logs(self) -> None:
         logname = "logs.tar"
-        if os.path.exists(logname):
-            mode = "a"
-        else:
-            mode = "w"
+        mode = "a" if os.path.exists(logname) else "w"
         # get all logfiles but newest
         old_logs = sorted(Path(".").glob("*.log"), key=os.path.getmtime)[:-1]
         with tarfile.open(logname, mode) as tar:

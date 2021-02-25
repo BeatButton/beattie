@@ -736,14 +736,13 @@ class Crosspost(Cog):
                 img_url, headers=headers, filesize_limit=filesize_limit
             )
         except ResponseError as e:
-            if e.code == 413:
-                img_url = img_url.replace("img-original", "img-master")
-                head, _, _ext = img_url.rpartition(".")
-                img_url = f"{head}_master1200.jpg"
-                img = await self.save(img_url, headers=headers)
-                content = "Full size too large, standard resolution used."
-            else:
+            if e.code != 413:
                 raise e from None
+            img_url = img_url.replace("img-original", "img-master")
+            head, _, _ext = img_url.rpartition(".")
+            img_url = f"{head}_master1200.jpg"
+            img = await self.save(img_url, headers=headers)
+            content = "Full size too large, standard resolution used."
         file = File(img, img_url.rpartition("/")[-1])
         return content, file
 
@@ -979,11 +978,11 @@ class Crosspost(Cog):
                     ctx, link, headers=self.imgur_headers, use_default_headers=False
                 )
             except ResponseError as e:
-                if e.code == 400 and n <= 10:
-                    await asyncio.sleep(n)
-                    await helper(link, n + 1)
-                else:
+                if e.code != 400 or n > 10:
                     raise e
+
+                await asyncio.sleep(n)
+                await helper(link, n + 1)
 
         for img_url, _ in zip(urls, range(max_pages)):
             await helper(img_url)

@@ -15,10 +15,7 @@ class Default(Cog):
     @commands.command()
     async def avatar(self, ctx: BContext, *, user: Member = None) -> None:
         target: discord.abc.User
-        if user is None:
-            target = ctx.author
-        else:
-            target = user
+        target = ctx.author if user is None else user
         img = BytesIO()
         avatar = target.avatar_url_as(
             format="gif" if target.is_avatar_animated() else "png"

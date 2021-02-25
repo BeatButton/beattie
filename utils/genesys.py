@@ -44,11 +44,7 @@ class Result:
             s = "s" if despairs > 1 else ""
             out.append(f"{despairs} despair{s}")
 
-        if out:
-            ret = f'{", ".join(out)}.'
-        else:
-            ret = "Wash."
-        return ret
+        return f'{", ".join(out)}.' if out else "Wash."
 
     def __add__(self, other: Any) -> Result:
         if isinstance(other, Result):
@@ -94,11 +90,7 @@ class Force:
             out.append(f"{self.light} light side")
         if self.dark:
             out.append(f"{self.dark} dark side")
-        if not out:
-            ret = "Wash."
-        else:
-            ret = ", ".join(out) + "."
-        return ret
+        return "Wash." if not out else ", ".join(out) + "."
 
     def __add__(self, other: Any) -> Force:
         if isinstance(other, Force):

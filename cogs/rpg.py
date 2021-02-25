@@ -67,7 +67,7 @@ class RPG(Cog):
                 suits = ("cups", "swords", "wands", "pentacles", "major")
             if "minor" in suits:
                 suits = suits + ("cups", "swords", "wands", "pentacles")
-            suit_set = set(suit.lower() for suit in suits)
+            suit_set = {suit.lower() for suit in suits}
             for root, _dirs, files in os.walk("data/tarot"):
                 if any(suit in root for suit in suit_set):
                     cards += [f"{root}/{card}" for card in files]
@@ -304,13 +304,11 @@ def shadowroller(num: int, edge: bool = False) -> str:
         num = count6
     s = "s" if hits != 1 else ""
     if count1 < rolls / 2:
-        result = f"{hits} hit{s}."
+        return f"{hits} hit{s}."
     elif hits == 0:
-        result = "Critical glitch."
+        return "Critical glitch."
     else:
-        result = f"Glitch with {hits} hit{s}."
-
-    return result
+        return f"Glitch with {hits} hit{s}."
 
 
 def denest(rolls: L1) -> str:
