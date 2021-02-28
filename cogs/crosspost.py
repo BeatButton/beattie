@@ -211,6 +211,8 @@ class Database:
     async def set_settings(
         self, guild_id: int, channel_id: int, settings: Settings
     ) -> None:
+        if cached := self._settings_cache.get((guild_id, channel_id)):
+            settings = cached.apply(settings)
         self._settings_cache[(guild_id, channel_id)] = settings
         kwargs = settings.asdict()
         async with self.db.get_session() as s:

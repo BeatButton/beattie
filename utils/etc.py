@@ -6,7 +6,7 @@ from .type_hints import Comparable
 T = TypeVar("T")
 U = TypeVar("U", bound=Comparable)
 
-SPOILER_EXPR = re.compile(r"\|\|.*?\|\|")
+SPOILER_EXPR = re.compile(r"\|\|.*?\|\|", flags=re.DOTALL)
 
 
 def reverse_insort(
