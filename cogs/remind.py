@@ -231,12 +231,16 @@ class Remind(Cog):
                 )
             if reference is None:
                 message = f"{member.mention}\n{message}"
+            if member.permissions_in(channel).mention_everyone:
+                allowed_mentions = AllowedMentions.all()
+            else:
+                allowed_mentions = AllowedMentions(
+                    everyone=False, users=[member], roles=False
+                )
             try:
                 await channel.send(
                     message,
-                    allowed_mentions=AllowedMentions(
-                        everyone=False, users=[member], roles=False
-                    ),
+                    allowed_mentions=allowed_mentions,
                     reference=reference,
                 )
             except (discord.NotFound, discord.Forbidden):
