@@ -1,19 +1,19 @@
 from datetime import datetime
-from time import mktime
-from typing import Any
+from typing import Optional, Union
 
 from discord.ext.commands import BadArgument, Context, Converter
-from parsedatetime import Calendar
+from recurrent.event_parser import RecurringEvent
 
 
 class Time(Converter):
-    def __init__(self) -> None:
-        self.cal: Calendar = Calendar()
-
-    async def convert(self, ctx: Context, argument: str) -> datetime:
-        time: Any
-        code: int
-        time, code = self.cal.parse(argument)
-        if code == 0:
+    async def convert(
+        self, ctx: Context, argument: str
+    ) -> Union[RecurringEvent, datetime]:
+        event = RecurringEvent()
+        time: Optional[Union[str, datetime]] = event.parse(argument)
+        if time is None:
             raise BadArgument
-        return datetime.fromtimestamp(mktime(time))
+        elif isinstance(time, str):
+            return event
+        else:
+            return time

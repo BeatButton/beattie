@@ -1,20 +1,24 @@
 import asyncio
-from datetime import datetime
-from typing import Any, Iterable, Optional
+from datetime import datetime, timedelta
+from typing import Any, Iterable, Optional, Union
 
 import discord
 from asyncqlio.db import DatabaseInterface
+from dateutil import rrule
 from discord import AllowedMentions, Embed, TextChannel
 from discord.ext import commands, menus
 from discord.ext.commands import Cog
 from discord.ext.menus import MenuKeysetPages, PageDirection, PageSpecifier
+from recurrent.event_parser import RecurringEvent
 
 from bot import BeattieBot
 from context import BContext
-from schema.remind import Reminder, Table
+from schema.remind import Recurring, Reminder, Table
 from utils.checks import is_owner_or
 from utils.converters import Time
-from utils.etc import reverse_insort_by_key
+from utils.etc import display_timedelta, reverse_insort_by_key
+
+MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 
 
 class ReminderSource(menus.KeysetPageSource):
@@ -81,7 +85,8 @@ class Remind(Cog):
 
     async def __init(self) -> None:
         await self.bot.wait_until_ready()
-        await Reminder.create(if_not_exists=True)
+        for table in [Reminder, Recurring]:
+            await table.create(if_not_exists=True)  # type: ignore
         async with self.db.get_session() as s:
             query = s.select(Reminder).order_by(Reminder.time, sort_order="desc")
             self.queue = [reminder async for reminder in await query.all()]
@@ -113,8 +118,12 @@ class Remind(Cog):
     ) -> None:
         """Have the bot remind you about something.
         First put time (in quotes if there are spaces), then topic"""
-        await self.schedule_reminder(ctx, time, topic)
-        await ctx.send("Okay, I'll remind you.")
+        time: Union[RecurringEvent, datetime] = time
+        if topic is None and isinstance(time, RecurringEvent):
+            await ctx.send("You must supply a message for a recurring reminder.")
+            return
+        if await self.process_reminder(ctx, time, topic):
+            await ctx.send("Okay, I'll remind you.")
 
     @set_reminder.error
     async def set_reminder_error(self, ctx: BContext, e: Exception) -> None:
@@ -122,7 +131,7 @@ class Remind(Cog):
             await ctx.send(
                 "Bad input. Valid input examples:\n"
                 "remind 10m pizza\n"
-                'remind "two days" check progress'
+                'remind "every week" call your mom'
             )
         else:
             await ctx.bot.handle_error(ctx, e)
@@ -153,6 +162,7 @@ class Remind(Cog):
                 await ctx.send("That reminder belongs to someone else.")
                 return
             await s.remove(reminder)
+            await s.delete(Recurring).where(Recurring.id == reminder_id)
 
         if self.queue[-1] == reminder:
             self.timer.cancel()
@@ -177,10 +187,27 @@ class Remind(Cog):
             destination = channel.mention
         await ctx.send(f"All reminders will be sent to {destination} from now on.")
 
-    async def schedule_reminder(
-        self, ctx: BContext, time: Time, topic: Optional[str]
-    ) -> None:
+    async def process_reminder(
+        self,
+        ctx: BContext,
+        argument: Union[RecurringEvent, datetime],
+        topic: Optional[str],
+    ) -> bool:
         assert ctx.guild is not None
+
+        if isinstance(argument, RecurringEvent):
+            rr = rrule.rrulestr(argument.get_RFC_rrule())
+            time = rr.after(datetime.now())
+            next_ = rr.after(time)
+            if next_ - time < MINIMUM_RECURRING_DELTA:
+                await ctx.send(
+                    "Recurring period too short. Minimum period is:\n"
+                    f"{display_timedelta(MINIMUM_RECURRING_DELTA)}"
+                )
+                return False
+        else:
+            time = argument
+
         async with self.db.get_session() as s:
             reminder = await s.add(
                 Reminder(
@@ -192,6 +219,12 @@ class Remind(Cog):
                     topic=topic,
                 )
             )
+            if isinstance(argument, RecurringEvent):
+                await s.add(Recurring(id=reminder.id, rrule=argument.get_RFC_rrule()))
+        await self.schedule_reminder(reminder)
+        return True
+
+    async def schedule_reminder(self, reminder: Reminder) -> None:
         if not self.queue or reminder.time < self.queue[-1].time:
             self.queue.append(reminder)
             self.timer.cancel()
@@ -202,6 +235,8 @@ class Remind(Cog):
             )
 
     async def send_reminder(self, reminder: Reminder) -> None:
+        found = False
+        is_recurring = False
         if (
             (guild := self.bot.get_guild(reminder.guild_id))
             and (member := guild.get_member(reminder.user_id))
@@ -216,27 +251,38 @@ class Remind(Cog):
                 )
             )
         ):
+            found = True
             assert isinstance(channel, TextChannel)
-            topic = reminder.topic or "something"
-            message = f"You asked to be reminded about {topic}."
+            async with self.db.get_session() as s:
+                query = s.select(Recurring).where(Recurring.id == reminder.id)
+                recurring = await query.first()
+                is_recurring = recurring is not None
+
             reference = None
-            if (
-                reminder_channel_id is None
-                or reminder_channel_id == reminder.channel_id
-            ):
-                reference = discord.MessageReference(
-                    message_id=reminder.message_id,
-                    channel_id=reminder.channel_id,
-                    guild_id=reminder.guild_id,
-                )
-            if reference is None:
-                message = f"{member.mention}\n{message}"
+            if is_recurring:
+                message = reminder.topic
+            else:
+                topic = reminder.topic or "something"
+                message = f"You asked to be reminded about {topic}."
+                if (
+                    reminder_channel_id is None
+                    or reminder_channel_id == reminder.channel_id
+                ):
+                    reference = discord.MessageReference(
+                        message_id=reminder.message_id,
+                        channel_id=reminder.channel_id,
+                        guild_id=reminder.guild_id,
+                    )
+                if reference is None:
+                    message = f"{member.mention}\n{message}"
+
             if member.permissions_in(channel).mention_everyone:
                 allowed_mentions = AllowedMentions.all()
             else:
                 allowed_mentions = AllowedMentions(
                     everyone=False, users=[member], roles=False
                 )
+
             try:
                 await channel.send(
                     message,
@@ -253,8 +299,20 @@ class Remind(Cog):
                 self.bot.logger.exception(
                     message, exc_info=(type(e), e, e.__traceback__)
                 )
-        async with self.db.get_session() as s:
-            await s.remove(reminder)
+            if is_recurring:
+                rr = rrule.rrulestr(recurring.rrule)
+                time = rr.after(reminder.time)
+                async with self.db.get_session() as s:
+                    await s.update(Reminder).set(Reminder.time, time).where(
+                        Reminder.id == reminder.id
+                    )
+                reminder.time = time
+                await self.schedule_reminder(reminder)
+        if not is_recurring:
+            async with self.db.get_session() as s:
+                await s.remove(reminder)
+                if not found:
+                    await s.delete(Recurring).where(Recurring.id == reminder.id)
 
     async def start_timer(self) -> None:
         self.timer = self.loop.create_task(self.sleep())

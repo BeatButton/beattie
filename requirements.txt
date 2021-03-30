@@ -6,7 +6,8 @@ asyncpg
 jishaku
 lxml
 objgraph
-parsedatetime
 psutil
+python-dateutil
+recurrent
 toml
 uvloop

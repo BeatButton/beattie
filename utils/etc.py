@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 from typing import Callable, MutableSequence, TypeVar
 
 from .type_hints import Comparable
@@ -52,3 +53,31 @@ def display_bytes(num_bytes: int) -> str:
         return f"{num_bytes / MB:.2f} MiB"
     else:
         return f"{num_bytes / GB:.2f} GiB"
+
+
+SECOND = 1
+MINUTE = SECOND * 60
+HOUR = MINUTE * 60
+DAY = HOUR * 24
+
+
+def display_timedelta(delta: timedelta) -> str:
+    remainder = int(delta.total_seconds())
+    days, remainder = divmod(remainder, DAY)
+    hours, remainder = divmod(remainder, HOUR)
+    minutes, seconds = divmod(remainder, MINUTE)
+    out = []
+    if days:
+        s = "s" if days != 1 else ""
+        out.append(f"{days} day{s}")
+    if hours:
+        s = "s" if hours != 1 else ""
+        out.append(f"{hours} hour{s}")
+    if minutes:
+        s = "s" if minutes != 1 else ""
+        out.append(f"{minutes} minute{s}")
+    if seconds or not out:
+        s = "s" if seconds != 1 else ""
+        out.append(f"{seconds} second{s}")
+
+    return ", ".join(out)
