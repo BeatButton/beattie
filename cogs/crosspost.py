@@ -38,7 +38,7 @@ from utils.exceptions import ResponseError
 _IO = TypeVar("_IO", bound=IO[bytes])
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+)"
+    r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+|t\.co/\w+)"
 )
 TWEET_SELECTOR = ".//div[contains(@class, 'permalink-tweet')]"
 TWITTER_IMG_SELECTOR = ".//img[@data-aria-label-part]"
