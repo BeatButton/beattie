@@ -268,11 +268,16 @@ class Remind(Cog):
                     reminder_channel_id is None
                     or reminder_channel_id == reminder.channel_id
                 ):
-                    reference = discord.MessageReference(
-                        message_id=reminder.message_id,
-                        channel_id=reminder.channel_id,
-                        guild_id=reminder.guild_id,
-                    )
+                    try:
+                        await channel.fetch_message(reminder.message_id)
+                    except (discord.NotFound, discord.Forbidden):
+                        pass
+                    else:
+                        reference = discord.MessageReference(
+                            message_id=reminder.message_id,
+                            channel_id=reminder.channel_id,
+                            guild_id=reminder.guild_id,
+                        )
                 if reference is None:
                     message = f"{member.mention}\n{message}"
 
@@ -289,7 +294,7 @@ class Remind(Cog):
                     allowed_mentions=allowed_mentions,
                     reference=reference,
                 )
-            except (discord.NotFound, discord.Forbidden):
+            except discord.Forbidden:
                 pass
             except Exception as e:
                 message = (
