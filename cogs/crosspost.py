@@ -93,32 +93,31 @@ async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: int):
 
 
 class Settings:
-    __slots__ = ("auto", "mode", "max_pages")
+    __slots__ = ("auto", "mode", "max_pages", "cleanup")
 
     auto: Optional[bool]
     mode: Optional[int]
     max_pages: Optional[int]
+    cleanup: Optional[bool]
 
     def __init__(
         self,
         auto: bool = None,
         mode: int = None,
         max_pages: int = None,
+        cleanup: bool = None,
     ) -> None:
         self.auto = auto
         self.mode = mode
         self.max_pages = max_pages
+        self.cleanup = cleanup
 
     def apply(self, other: Settings) -> Settings:
         """Returns a Settings with own values overwritten by non-None values of other"""
         out = copy.copy(self)
-        auto, mode, max_pages = other.auto, other.mode, other.max_pages
-        if auto is not None:
-            out.auto = auto
-        if mode is not None:
-            out.mode = mode
-        if max_pages is not None:
-            out.max_pages = max_pages
+        for attr in self.__slots__:
+            if (value := getattr(other, attr)) is not None:
+                setattr(out, attr, value)
 
         return out
 
@@ -501,10 +500,7 @@ class Crosspost(Cog):
         channel = ctx.channel
         assert isinstance(me, discord.Member)
         assert isinstance(channel, discord.TextChannel)
-        do_suppress = (
-            channel.permissions_for(me).manage_messages
-            and await self.get_mode(ctx) == 2
-        )
+        do_suppress = await self.should_cleanup(ctx)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
                 try:
@@ -601,6 +597,20 @@ class Crosspost(Cog):
         if max_pages is None:
             max_pages = 4
         return max_pages
+
+    async def should_cleanup(self, ctx: BContext) -> int:
+        settings = await self.db.get_settings(ctx.message)
+        cleanup = settings.cleanup
+        if cleanup is not None:
+            return cleanup
+        me = ctx.me
+        channel = ctx.channel
+        assert isinstance(me, discord.Member)
+        assert isinstance(channel, TextChannel)
+        return (
+            channel.permissions_for(me).manage_messages
+            and await self.get_mode(ctx) == 2
+        )
 
     async def display_twitter_images(self, ctx: CrosspostContext, link: str) -> bool:
         if await self.get_mode(ctx) == 1:
@@ -1085,6 +1095,25 @@ remove embeds from messages it processes successfully."""
         settings = Settings(max_pages=max_pages)
         await self.db.set_settings(guild.id, target.id if target else 0, settings)
         message = f"Max crosspost pages set to {max_pages}"
+        if target is not None:
+            message = f"{message} in {target.mention}"
+        await ctx.send(f"{message}.")
+
+    @crosspost.command(aliases=["suppress"])
+    async def cleanup(
+        self,
+        ctx: BContext,
+        enabled: bool,
+        *,
+        target: Union[CategoryChannel, TextChannel] = None,
+    ) -> None:
+        """Toggle automatic embed removal."""
+        guild = ctx.guild
+        assert guild is not None
+        settings = Settings(cleanup=enabled)
+        await self.db.set_settings(guild.id, target.id if target else 0, settings)
+        fmt = "en" if enabled else "dis"
+        message = f"Cleaning up embeds {fmt}abled"
         if target is not None:
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
