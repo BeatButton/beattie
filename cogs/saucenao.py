@@ -32,12 +32,16 @@ class SauceNao(Cog):
                 root = etree.fromstring(await resp.text(), self.parser)
 
             results = root.xpath('.//div[@class="result"]')
+            result = None
             sim_percent = 0.0
             if len(results):
                 similarity = root.find(".//div[@class='resultsimilarityinfo']").text
                 sim_percent = float(similarity[:-1])
+                if sim_percent > 60:
+                    result = results[0]
+                    source_link = result.find('.//div[@class="resultcontentcolumn"]/a')
 
-            if sim_percent <= 60:
+            if source_link is None:
                 await ctx.send("No sauce found.")
             else:
                 result = results[0]
@@ -45,12 +49,9 @@ class SauceNao(Cog):
                     booru_link := result.find('.//div[@class="resultmiscinfo"]/a')
                 ) is not None:
                     link = f"<{booru_link.get('href')}>"
-                elif (
-                    source_link := result.find('.//div[@class="resultcontentcolumn"]/a')
-                ) is not None:
-                    link = f"<{source_link.get('href')}>"
                 else:
-                    link = "with no author information."
+                    link = f"<{source_link.get('href')}>"
+
                 await ctx.send(f"Sauce found ({similarity}) {link}")
 
     @saucenao.error
