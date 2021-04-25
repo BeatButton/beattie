@@ -977,7 +977,7 @@ class Crosspost(Cog):
             data = await resp.json()
 
         images = data["data"]["images"]
-        urls = (image["link"] for image in data["data"]["images"])
+        urls = (image["link"] for image in images)
 
         max_pages = await self.get_max_pages(ctx)
         num_pages = len(images)
