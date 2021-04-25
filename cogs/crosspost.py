@@ -5,6 +5,7 @@ import copy
 import re
 import sys
 import traceback
+import urllib.parse as urlparse
 from asyncio import subprocess
 from collections import deque
 from collections.abc import Awaitable, Callable
@@ -68,6 +69,10 @@ INKBUNNY_URL_EXPR = re.compile(
 INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
 IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
+
+GELBOORU_URL_EXPR = re.compile(r"https://gelbooru\.com/index\.php\?(?:\w+=[^&]+&?){2,}")
+GELBOORU_API_URL = "https://gelbooru.com/index.php"
+GELBOORU_API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
@@ -351,6 +356,8 @@ class Crosspost(Cog):
     async def __init(self) -> None:
         with open("config/logins.toml") as fp:
             data = toml.load(fp)
+
+        self.gelbooru_params = data["gelbooru"]
 
         imgur_id = data["imgur"]["id"]
         self.imgur_headers["Authorization"] = f"Client-ID {imgur_id}"
@@ -1006,6 +1013,25 @@ class Crosspost(Cog):
             s = "s" if remaining > 1 else ""
             message = f"{remaining} more image{s} at <https://imgur.com/a/{album_id}>"
             await ctx.send(message)
+        return True
+
+    async def display_gelbooru_images(self, ctx: CrosspostContext, link: str) -> bool:
+        parsed = urlparse.urlparse(link)
+        query = urlparse.parse_qs(parsed.query)
+        page = query.get("page")
+        if page != ["post"]:
+            return False
+        id_ = query.get("id")
+        if not id_:
+            return False
+        id_ = id_[0]
+        params = {**GELBOORU_API_PARAMS, **self.gelbooru_params, "id": id_}
+        async with self.get(GELBOORU_API_URL, params=params) as resp:
+            data = await resp.json()
+        if not data:
+            return False
+        post = data[0]
+        await self.send(ctx, post["file_url"])
         return True
 
     @commands.command(hidden=True)
