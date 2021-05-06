@@ -858,14 +858,27 @@ class Crosspost(Cog):
             max_pages = num_images
 
         pages_remaining = num_images - max_pages
+
+        host = resp.host
+
         for thumb in thumbs[:max_pages]:
-            href, _, ext = (
+            href, _, _ext = (
                 thumb.get("src")
                 .lstrip(".")
                 .replace("thumbnails", "imgs")
                 .rpartition(".")
             )
-            url = f"https://{resp.host}{href}.{ext}"
+            for ext in ("png", "jpg"):
+                url = f"https://{host}{href}.{ext}"
+                async with self.session.request(
+                    "HEAD", url, headers=self.hiccears_headers
+                ) as resp:
+                    if resp.status == 200:
+                        break
+            else:
+                await ctx.send("Couldn't find an appropriate extension.")
+                return False
+
             await self.send(ctx, url)
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
