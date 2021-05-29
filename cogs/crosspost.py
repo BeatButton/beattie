@@ -640,26 +640,41 @@ class Crosspost(Cog):
                 await self.send(ctx, f"{url}:orig")
             return True
         elif tweet.xpath(TWITTER_IS_GIF):
-            proc = await subprocess.create_subprocess_shell(
-                f"youtube-dl {link} -o - | "
-                "ffmpeg -i pipe:0 "
-                "-vf 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1' "
-                "-f gif pipe:1",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-            )
+            with NamedTemporaryFile() as fp:
+                proc = await subprocess.create_subprocess_exec(
+                    "youtube-dl",
+                    link,
+                    "-o",
+                    "-",
+                    stdout=fp,
+                    stderr=subprocess.DEVNULL,
+                )
 
-            gif = BytesIO()
-            tweet_id = link.rpartition("/")[2].partition("?")[0]
-            filename = f"{tweet_id}.gif"
+                await proc.wait()
 
-            try:
-                stdout = await try_wait_for(proc)
-            except asyncio.TimeoutError:
-                await ctx.send("Gif took too long to process.")
-                return False
+                proc = await asyncio.create_subprocess_exec(
+                    "ffmpeg",
+                    "-i",
+                    fp.name,
+                    "-vf",
+                    "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1",
+                    "-f",
+                    "gif",
+                    "pipe:1",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
 
-            gif.write(stdout)
+                tweet_id = link.rpartition("/")[2].partition("?")[0]
+                filename = f"{tweet_id}.gif"
+
+                try:
+                    stdout = await try_wait_for(proc)
+                except asyncio.TimeoutError:
+                    await ctx.send("Gif took too long to process.")
+                    return False
+
+            gif = BytesIO(stdout)
             gif.seek(0)
 
             file = File(gif, filename)
