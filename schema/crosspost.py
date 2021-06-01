@@ -12,6 +12,7 @@ class Crosspost(Table):  # type: ignore
     mode = Column(Integer, nullable=True)
     max_pages = Column(Integer, nullable=True)
     cleanup = Column(Boolean, nullable=True)
+    text = Column(Boolean, nullable=True)
 
 
 class CrosspostMessage(Table):  # type: ignore

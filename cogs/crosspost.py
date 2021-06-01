@@ -102,12 +102,13 @@ def too_large(message: Message) -> bool:
 
 
 class Settings:
-    __slots__ = ("auto", "mode", "max_pages", "cleanup")
+    __slots__ = ("auto", "mode", "max_pages", "cleanup", "text")
 
     auto: Optional[bool]
     mode: Optional[int]
     max_pages: Optional[int]
     cleanup: Optional[bool]
+    text: Optional[bool]
 
     def __init__(
         self,
@@ -115,11 +116,13 @@ class Settings:
         mode: int = None,
         max_pages: int = None,
         cleanup: bool = None,
+        text: bool = None,
     ) -> None:
         self.auto = auto
         self.mode = mode
         self.max_pages = max_pages
         self.cleanup = cleanup
+        self.text = text
 
     def apply(self, other: Settings) -> Settings:
         """Returns a Settings with own values overwritten by non-None values of other"""
@@ -626,6 +629,10 @@ class Crosspost(Cog):
             channel.permissions_for(me).manage_messages
             and await self.get_mode(ctx) == 2
         )
+
+    async def should_post_text(self, ctx: BContext) -> bool:
+        settings = await self.db.get_settings(ctx.message)
+        return bool(settings.text)
 
     async def display_twitter_images(self, ctx: CrosspostContext, link: str) -> bool:
         if await self.get_mode(ctx) == 1:
@@ -1181,6 +1188,25 @@ remove embeds from messages it processes successfully."""
         await self.db.set_settings(guild.id, target.id if target else 0, settings)
         fmt = "en" if enabled else "dis"
         message = f"Cleaning up embeds {fmt}abled"
+        if target is not None:
+            message = f"{message} in {target.mention}"
+        await ctx.send(f"{message}.")
+
+    @crosspost.command(aliases=["context"])
+    async def text(
+        self,
+        ctx: BContext,
+        enabled: bool,
+        *,
+        target: Union[CategoryChannel, TextChannel] = None,
+    ) -> None:
+        """Toggle crossposting of text context."""
+        guild = ctx.guild
+        assert guild is not None
+        settings = Settings(text=enabled)
+        await self.db.set_settings(guild.id, target.id if target else 0, settings)
+        fmt = "en" if enabled else "dis"
+        message = f"Crossposting text context {fmt}abled"
         if target is not None:
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
