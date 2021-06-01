@@ -14,7 +14,7 @@ from typing import Any, Iterable, Optional, Type, TypeVar, overload
 import aiohttp
 import toml
 from asyncqlio.db import DatabaseInterface
-from discord import Game, Intents, Message
+from discord import AllowedMentions, Game, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
@@ -61,6 +61,7 @@ class BeattieBot(Bot):
             case_insensitive=True,
             help_command=help_command,
             intents=Intents.all(),
+            allowed_mentions=AllowedMentions.none(),
         )
 
         with open("config/config.toml") as file:

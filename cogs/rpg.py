@@ -43,10 +43,7 @@ class RPG(Cog):
             await ctx.send("That's not much of a choice!")
         else:
             choice = random.choice(options)
-            await ctx.send(
-                f"I choose {choice}",
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
+            await ctx.send(f"I choose {choice}")
 
     @commands.command()
     async def tarot(self, ctx: BContext, *suits: str) -> None:
