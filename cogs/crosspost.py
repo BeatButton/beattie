@@ -589,17 +589,17 @@ class Crosspost(Cog):
         *,
         headers: dict[str, str] = None,
         use_default_headers: bool = True,
-    ) -> None:
+    ) -> Message:
         mode = await self.get_mode(ctx)
         if mode == 1:
-            await ctx.send(link)
+            return await ctx.send(link)
         elif mode == 2:
             img = await self.save(
                 link, headers=headers, use_default_headers=use_default_headers
             )
             filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
             file = File(img, filename)
-            await ctx.send(file=file)
+            return await ctx.send(file=file)
         else:
             raise RuntimeError("Invalid crosspost mode!")
 
