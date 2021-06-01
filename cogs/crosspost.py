@@ -129,6 +129,10 @@ class Settings:
     def asdict(self) -> dict[str, Any]:
         return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
 
+    @classmethod
+    def from_record(cls, row: CrosspostSettings) -> Settings:
+        return cls(*(getattr(row, attr) for attr in cls.__slots__))
+
 
 class Database:
     def __init__(self, bot: BeattieBot):
@@ -208,7 +212,7 @@ class Database:
             if config is None:
                 res = Settings()
             else:
-                res = Settings(config.auto, config.mode, config.max_pages)
+                res = Settings.from_record(config)
             self._settings_cache[(guild_id, channel_id)] = res
             return res
 
