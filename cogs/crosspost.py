@@ -613,7 +613,7 @@ class Crosspost(Cog):
             max_pages = 4
         return max_pages
 
-    async def should_cleanup(self, ctx: BContext) -> int:
+    async def should_cleanup(self, ctx: BContext) -> bool:
         settings = await self.db.get_settings(ctx.message)
         cleanup = settings.cleanup
         if cleanup is not None:
