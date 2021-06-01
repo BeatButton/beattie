@@ -45,9 +45,7 @@ class RPG(Cog):
             choice = random.choice(options)
             await ctx.send(
                 f"I choose {choice}",
-                allowed_mentions=discord.AllowedMentions(
-                    everyone=False, users=False, roles=False
-                ),
+                allowed_mentions=discord.AllowedMentions.none(),
             )
 
     @commands.command()
