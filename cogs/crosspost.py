@@ -97,6 +97,10 @@ async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: int):
         proc.kill()
 
 
+def too_large(message: Message) -> bool:
+    return message.content.startswith("Image too large to upload")
+
+
 class Settings:
     __slots__ = ("auto", "mode", "max_pages", "cleanup")
 
@@ -991,7 +995,7 @@ class Crosspost(Cog):
                 filename = f"{url.rpartition('/')[2]}.gif"
                 file = File(img, filename)
                 msg = await ctx.send(file=file)
-                if all_embedded and msg.content.startswith("Image too large to upload"):
+                if all_embedded and too_large(msg):
                     all_embedded = False
             else:
                 await self.send(ctx, url)
