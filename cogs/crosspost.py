@@ -41,8 +41,10 @@ _IO = TypeVar("_IO", bound=IO[bytes])
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+|t\.co/\w+)"
 )
+TWITTER_TEXT_TRAIL_EXPR = re.compile(r" ?https://t.co/\w+$")
 TWEET_SELECTOR = ".//div[contains(@class, 'permalink-tweet')]"
 TWITTER_IMG_SELECTOR = ".//img[@data-aria-label-part]"
+TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
 TWITTER_IS_GIF = ".//div[contains(@class, 'PlayableMedia--gif')]"
 
 PIXIV_URL_EXPR = re.compile(
@@ -649,11 +651,23 @@ class Crosspost(Cog):
             await ctx.send("Failed to get tweet. Maybe the account is locked?")
             return False
 
+        text = None
+        if await self.should_post_text(ctx) and (
+            text := root.xpath(TWITTER_TEXT_SELECTOR)[0].get("content")
+        ):
+            text = text[1:-1]
+            text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
+            text = f"> {text}"
+
         if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
+            embedded = False
             for img in imgs:
                 url = img.get("src")
-                await self.send(ctx, f"{url}:orig")
-            return True
+                msg = await self.send(ctx, f"{url}:orig")
+                embedded = embedded or not too_large(msg)
+            if embedded and text:
+                await ctx.send(text)
+            return embedded
         elif tweet.xpath(TWITTER_IS_GIF):
             with NamedTemporaryFile() as fp:
                 proc = await subprocess.create_subprocess_exec(
@@ -695,7 +709,10 @@ class Crosspost(Cog):
             file = File(gif, filename)
 
             msg = await ctx.send(file=file)
-            return not msg.content.startswith("Image too large to upload")
+            embedded = not too_large(msg)
+            if embedded and text:
+                await ctx.send(text)
+            return embedded
         else:
             return False
 
