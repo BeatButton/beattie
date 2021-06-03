@@ -1067,6 +1067,9 @@ class Crosspost(Cog):
     async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
         url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
+        post_text = await self.should_post_text(ctx)
+        if post_text:
+            params["show_description"] = "yes"
         async with self.get(
             url, "POST", use_default_headers=False, params=params
         ) as resp:
@@ -1077,6 +1080,15 @@ class Crosspost(Cog):
         for file in sub["files"]:
             url = file["file_url_full"]
             await self.send(ctx, url)
+
+        if post_text:
+            title = sub["title"]
+            description = sub["description"].strip().replace("\n", "\n> ")
+            text = f"**{title}**"
+            if description:
+                text = f"{text}\n> {description}"
+            await ctx.send(text)
+
         return True
 
     async def display_imgur_images(self, ctx: CrosspostContext, album_id: str) -> bool:
