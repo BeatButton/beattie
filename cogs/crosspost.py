@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
-import html
+from html import unescape
 import re
 import sys
 import traceback
@@ -26,7 +26,7 @@ from discord import CategoryChannel, File, Message, TextChannel
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import snowflake_time, time_snowflake
-from lxml import etree
+from lxml import html
 
 from bot import BeattieBot
 from context import BContext
@@ -353,7 +353,7 @@ class Crosspost(Cog):
         with open("config/headers.toml") as fp:
             self.headers = toml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop)
-        self.parser = etree.HTMLParser()
+        self.parser = html.HTMLParser()
         self.expr_dict = {
             expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
             for name, expr in globals().items()
@@ -644,7 +644,7 @@ class Crosspost(Cog):
         link = f"https://{link}"
 
         async with self.get(link) as resp:
-            root = etree.fromstring(await resp.read(), self.parser)
+            root = html.document_fromstring(await resp.read(), self.parser)
 
         try:
             tweet = root.xpath(TWEET_SELECTOR)[0]
@@ -753,7 +753,7 @@ class Crosspost(Cog):
         if await self.should_post_text(ctx):
             text = f"**{res['title']}**"
             if caption := res["caption"]:
-                caption = html.unescape(caption)
+                caption = unescape(caption)
                 text = f"{text}\n> {caption}"
 
         if single := res["meta_single_page"]:
@@ -893,7 +893,7 @@ class Crosspost(Cog):
 
     async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
         async with self.get(link, headers=self.hiccears_headers) as resp:
-            root = etree.fromstring(await resp.read(), self.parser)
+            root = html.document_fromstring(await resp.read(), self.parser)
 
         if single_image := root.xpath(HICCEARS_IMG_SELECTOR):
             a = single_image[0]
@@ -949,12 +949,12 @@ class Crosspost(Cog):
     async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
         idx = 1
         async with self.get(link) as resp:
-            root = etree.fromstring(await resp.read(), self.parser)
+            root = html.document_fromstring(await resp.read(), self.parser)
         if not str(resp.url).startswith(link):  # explicit blog redirect
             async with self.bot.session.get(
                 link
             ) as resp:  # somehow this doesn't get redirected?
-                root = etree.fromstring(await resp.read(), self.parser)
+                root = html.document_fromstring(await resp.read(), self.parser)
             idx = 0
         images = root.xpath(TUMBLR_IMG_SELECTOR)
         mode = await self.get_mode(ctx)
