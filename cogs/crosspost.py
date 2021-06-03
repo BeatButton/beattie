@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import html
 import re
 import sys
 import traceback
@@ -748,6 +749,13 @@ class Crosspost(Cog):
         filesize_limit = guild.filesize_limit
         content = None
 
+        text = None
+        if await self.should_post_text(ctx):
+            text = f"**{res['title']}**"
+            if caption := res["caption"]:
+                caption = html.unescape(caption)
+                text = f"{text}\n> {caption}"
+
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
             if "ugoira" in img_url:
@@ -759,6 +767,8 @@ class Crosspost(Cog):
             else:
                 content, file = await self.save_pixiv(img_url, headers, filesize_limit)
             await ctx.send(content, file=file)
+            if text:
+                await ctx.send(text)
         elif multi := res["meta_pages"]:
             # multi_image_post
             urls = (page["image_urls"]["original"] for page in multi)
@@ -779,6 +789,9 @@ class Crosspost(Cog):
             for task in tasks:
                 content, file = await task
                 await ctx.send(content, file=file)
+
+            if text:
+                await ctx.send(text)
 
             remaining = num_pages - max_pages
 
