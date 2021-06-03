@@ -966,7 +966,8 @@ class Crosspost(Cog):
         return True
 
     async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
-        idx = 1
+        mode = await self.get_mode(ctx)
+        idx = 0 if mode != 1 else 1
         async with self.get(link) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
         if not str(resp.url).startswith(link):  # explicit blog redirect
@@ -976,7 +977,6 @@ class Crosspost(Cog):
                 root = html.document_fromstring(await resp.read(), self.parser)
             idx = 0
         images = root.xpath(TUMBLR_IMG_SELECTOR)
-        mode = await self.get_mode(ctx)
         max_pages = await self.get_max_pages(ctx)
 
         num_images = len(images)
