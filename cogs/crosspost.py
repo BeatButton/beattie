@@ -58,6 +58,8 @@ HICCEARS_URL_EXPR = re.compile(
 )
 HICCEARS_IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
 HICCEARS_THUMB_SELECTOR = ".//img[contains(@src, 'thumbnails')]"
+HICCEARS_TEXT_SELECTOR = ".//div[contains(@class, 'panel-body')]"
+HICCEARS_TITLE_SELECTOR = ".//div[contains(@class, 'panel-heading')]/div/a"
 
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
@@ -895,11 +897,24 @@ class Crosspost(Cog):
         async with self.get(link, headers=self.hiccears_headers) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
+        text = None
+        if await self.should_post_text(ctx):
+            title = root.xpath(HICCEARS_TITLE_SELECTOR)[0].text
+            description = root.xpath(HICCEARS_TEXT_SELECTOR)[-1].text_content().strip()
+            description = re.sub(r"\r?\n\t+", "", description)
+            description = description.removeprefix("Description: ")
+            description = description.replace("\n", "\n> ")
+            text = f"**{title}**"
+            if description:
+                text = f"{text}\n> {description}"
+
         if single_image := root.xpath(HICCEARS_IMG_SELECTOR):
             a = single_image[0]
             href = a.get("href").lstrip(".")
             url = f"https://{resp.host}{href}"
             await self.send(ctx, url)
+            if text:
+                await ctx.send(text)
             return True
 
         thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
@@ -940,6 +955,10 @@ class Crosspost(Cog):
                 return False
 
             await self.send(ctx, url)
+
+        if text:
+            await ctx.send(text)
+
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
             message = f"{pages_remaining} more image{s} at <{link}>"
