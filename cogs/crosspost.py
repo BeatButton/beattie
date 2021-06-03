@@ -1055,6 +1055,13 @@ class Crosspost(Cog):
                     all_embedded = False
             else:
                 await self.send(ctx, url)
+
+        if all_embedded and await self.should_post_text(ctx):
+            content = post["content"]
+            fragments = html.fragments_fromstring(content, parser=self.parser)
+            text = "> " + "\n> ".join(f.text_content() for f in fragments)
+            await ctx.send(text)
+
         return all_embedded
 
     async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
