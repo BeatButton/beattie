@@ -355,7 +355,7 @@ class Crosspost(Cog):
         with open("config/headers.toml") as fp:
             self.headers = toml.load(fp)
         self.session = aiohttp.ClientSession(loop=bot.loop)
-        self.parser = html.HTMLParser()
+        self.parser = html.HTMLParser(encoding="utf-8")
         self.expr_dict = {
             expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
             for name, expr in globals().items()
