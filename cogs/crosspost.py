@@ -85,6 +85,8 @@ GELBOORU_API_URL = "https://gelbooru.com/index.php"
 R34_URL_EXPR = re.compile(r"https?://rule34\.xxx/index\.php\?(?:\w+=[^&]+&?){2,}")
 R34_API_URL = "https://rule34.xxx/index.php"
 
+FANBOX_URL_EXPR = re.compile(r"https?://(?:www\.)?fanbox\.cc/@\w+/posts/\d+")
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 
@@ -345,10 +347,14 @@ class Crosspost(Cog):
     hiccears_headers: dict[str, str] = {}
     imgur_headers: dict[str, str] = {}
     pixiv_headers: dict[str, str] = {
-        "App-OS": "ios",
-        "App-OS-Version": "10.3.1",
-        "App-Version": "6.7.1",
-        "User-Agent": "PixivIOSApp/6.7.1 (ios 10.3.1; iPhone8,1)",
+        "App-OS": "android",
+        "App-OS-Version": "4.4.2",
+        "App-Version": "5.0.145",
+        "User-Agent": "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)",
+    }
+    fanbox_headers: dict[str, str] = {
+        "Accept": "application/json, text/plain, */*",
+        "Origin": "https://www.fanbox.cc",
     }
     inkbunny_sid: str = ""
 
@@ -1173,6 +1179,53 @@ class Crosspost(Cog):
             return None
         post = data[0]
         return post["file_url"]
+
+    async def display_fanbox_images(self, ctx: CrosspostContext, link: str) -> bool:
+        *_, post_id = link.rpartition("/")
+        url = f"https://api.fanbox.cc/post.info?postId={post_id}"
+        headers = {**self.fanbox_headers, "Referer": link}
+        async with self.get(url, headers=headers) as resp:
+            data = await resp.json()
+
+        try:
+            images = data["body"]["body"]["imageMap"]
+        except (KeyError, TypeError):
+            return False
+
+        guild = ctx.guild
+        assert guild is not None
+        filesize_limit = guild.filesize_limit
+
+        for image in images.values():
+            original_url = image["originalUrl"]
+            thumbnail_url = image["thumbnailUrl"]
+            content, file = await self.save_fanbox(
+                original_url, thumbnail_url, headers, filesize_limit
+            )
+            await ctx.send(content, file=file)
+
+        return True
+
+    async def save_fanbox(
+        self,
+        original_url: str,
+        thumbnail_url: str,
+        headers: dict[str, str],
+        filesize_limit: int,
+    ) -> tuple[Optional[str], File]:
+        content = None
+        try:
+            img = await self.save(
+                original_url, headers=headers, filesize_limit=filesize_limit
+            )
+        except ResponseError as e:
+            if e.code == 413:
+                img = await self.save(thumbnail_url, headers=headers)
+                content = "Full size too large, standard resolution used."
+            else:
+                raise e from None
+        file = File(img, original_url.rpartition("/")[-1])
+        return content, file
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
