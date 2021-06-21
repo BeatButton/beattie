@@ -75,9 +75,15 @@ INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
 IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
 
-GELBOORU_URL_EXPR = re.compile(r"https://gelbooru\.com/index\.php\?(?:\w+=[^&]+&?){2,}")
+BOORU_API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
+
+GELBOORU_URL_EXPR = re.compile(
+    r"https?://gelbooru\.com/index\.php\?(?:\w+=[^&]+&?){2,}"
+)
 GELBOORU_API_URL = "https://gelbooru.com/index.php"
-GELBOORU_API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
+
+R34_URL_EXPR = re.compile(r"https?://rule34\.xxx/index\.php\?(?:\w+=[^&]+&?){2,}")
+R34_API_URL = "https://rule34.xxx/index.php"
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
@@ -1133,23 +1139,40 @@ class Crosspost(Cog):
         return True
 
     async def display_gelbooru_images(self, ctx: CrosspostContext, link: str) -> bool:
+        params = {**BOORU_API_PARAMS, **self.gelbooru_params}
+        file_url = await self.booru_helper(link, GELBOORU_API_URL, params)
+        if file_url is None:
+            return False
+        await self.send(ctx, file_url)
+        return True
+
+    async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
+        params = {**BOORU_API_PARAMS}
+        file_url = await self.booru_helper(link, R34_API_URL, params)
+        if file_url is None:
+            return False
+        await self.send(ctx, file_url)
+        return True
+
+    async def booru_helper(
+        self, link: str, api_url: str, params: dict[str, str]
+    ) -> Optional[str]:
         parsed = urlparse.urlparse(link)
         query = urlparse.parse_qs(parsed.query)
         page = query.get("page")
         if page != ["post"]:
-            return False
+            return None
         id_ = query.get("id")
         if not id_:
-            return False
+            return None
         id_ = id_[0]
-        params = {**GELBOORU_API_PARAMS, **self.gelbooru_params, "id": id_}
-        async with self.get(GELBOORU_API_URL, params=params) as resp:
+        params["id"] = id_
+        async with self.get(api_url, params=params) as resp:
             data = await resp.json()
         if not data:
-            return False
+            return None
         post = data[0]
-        await self.send(ctx, post["file_url"])
-        return True
+        return post["file_url"]
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
