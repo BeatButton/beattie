@@ -768,7 +768,12 @@ class Crosspost(Cog):
         if await self.should_post_text(ctx):
             text = f"**{res['title']}**"
             if caption := res["caption"]:
-                caption = html.fragment_fromstring(f"<p>{caption}</p>").text_content()
+                fragments = html.fragments_fromstring(caption, parser=self.parser)
+                caption = "\n> ".join(
+                    frag_text
+                    for f in fragments
+                    if (frag_text := f if isinstance(f, str) else f.text_content())
+                )
                 text = f"{text}\n> {caption}"
 
         if single := res["meta_single_page"]:
@@ -1072,7 +1077,11 @@ class Crosspost(Cog):
         if all_embedded and await self.should_post_text(ctx):
             content = post["content"]
             fragments = html.fragments_fromstring(content, parser=self.parser)
-            text = "> " + "\n> ".join(f.text_content() for f in fragments)
+            text = "> " + "\n> ".join(
+                frag_text
+                for f in fragments
+                if (frag_text := f if isinstance(f, str) else f.text_content())
+            )
             await ctx.send(text)
 
         return all_embedded
