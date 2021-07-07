@@ -768,7 +768,11 @@ class Crosspost(Cog):
         if await self.should_post_text(ctx):
             text = f"**{res['title']}**"
             if caption := res["caption"]:
-                caption = html.fragment_fromstring(f"<p>{caption}</p>").text_content()
+                fragment = html.fragment_fromstring(f"<p>{caption}</p>")
+                for br in fragment.xpath(".//br"):
+                    tail = br.tail or ""
+                    br.tail = f"\n> {tail}"
+                caption = fragment.text_content()
                 text = f"{text}\n> {caption}"
 
         if single := res["meta_single_page"]:
