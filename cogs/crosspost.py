@@ -673,7 +673,6 @@ class Crosspost(Cog):
             text = text[1:-1]
             text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
             text = text.replace("\n", "\n> ")
-            text = f"> {text}"
 
         if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
             embedded = False
@@ -727,7 +726,7 @@ class Crosspost(Cog):
             msg = await ctx.send(file=file)
             embedded = not too_large(msg)
             if embedded and text:
-                await ctx.send(text)
+                await ctx.send(f"> {text}")
             return embedded
         else:
             return False
