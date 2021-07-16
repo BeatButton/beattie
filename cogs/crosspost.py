@@ -78,7 +78,7 @@ IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)"
 BOORU_API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
 
 GELBOORU_URL_EXPR = re.compile(
-    r"https?://gelbooru\.com/index\.php\?(?:\w+=[^&]+&?){2,}"
+    r"https?://gelbooru\.com/index\.php\?(?:\w+=[^>&]+&?){2,}"
 )
 GELBOORU_API_URL = "https://gelbooru.com/index.php"
 
