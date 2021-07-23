@@ -959,7 +959,7 @@ class Crosspost(Cog):
                 .replace("thumbnails", "imgs")
                 .rpartition(".")
             )
-            for ext in ("png", "jpg", "jpeg"):
+            for ext in ("png", "jpg", "jpeg", "gif"):
                 url = f"https://{host}{href}.{ext}"
                 async with self.session.request(
                     "HEAD", url, headers=self.hiccears_headers
