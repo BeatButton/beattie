@@ -1190,36 +1190,60 @@ class Crosspost(Cog):
         async with self.get(url, headers=headers) as resp:
             data = await resp.json()
 
-        try:
-            data = data["body"]["body"]
-        except (KeyError, TypeError):
+        post = data["body"]
+        body = post["body"]
+        if body is None:
             return False
-
-        if image_data := data.get("images"):
-            images = (
-                (image["originalUrl"], image["thumbnailUrl"]) for image in image_data
-            )
-        else:
-            blocks = data["blocks"]
-            image_map = data["imageMap"]
-            images = (
-                (
-                    (image := image_map[block["imageId"]])["originalUrl"],
-                    image["thumbnailUrl"],
-                )
-                for block in blocks
-                if block["type"] == "image"
-            )
 
         guild = ctx.guild
         assert guild is not None
         filesize_limit = guild.filesize_limit
 
-        for (original_url, thumbnail_url) in images:
-            content, file = await self.save_fanbox(
-                original_url, thumbnail_url, headers, filesize_limit
-            )
-            await ctx.send(content, file=file)
+        post_type = post["type"]
+
+        if post["type"] == "article":
+            blocks = body["blocks"]
+            image_map = body["imageMap"]
+            file_map = body["fileMap"]
+            do_text = await self.should_post_text(ctx)
+            for block in blocks:
+                block_type = block["type"]
+                if block_type == "image":
+                    image = image_map[block["imageId"]]
+                    content, file = await self.save_fanbox(
+                        image["originalUrl"],
+                        image["thumbnailUrl"],
+                        headers,
+                        filesize_limit,
+                    )
+                elif block_type == "file":
+                    file_info = file_map[block["fileId"]]
+                    url = file_info["url"]
+                    if file_info["size"] > filesize_limit:
+                        content = url
+                        file = None
+                    else:
+                        filename = file_info["name"] + "." + file_info["extension"]
+                        img = await self.save(url, headers=headers)
+                        content = None
+                        file = File(img, filename)
+                elif block_type == "p" and do_text:
+                    content = block["text"].strip()
+                    if not content:
+                        continue
+                    file = None
+                else:
+                    continue
+                await ctx.send(content, file=file)
+        elif post_type == "image":
+            for image in body["images"]:
+                content, file = await self.save_fanbox(
+                    image["originalUrl"], image["thumbnailUrl"], headers, filesize_limit
+                )
+                await ctx.send(content, file=file)
+        else:
+            await ctx.send("Unrecognized post type! This is a bug.")
+            return False
 
         return True
 
