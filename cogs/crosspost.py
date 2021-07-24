@@ -1191,17 +1191,31 @@ class Crosspost(Cog):
             data = await resp.json()
 
         try:
-            images = data["body"]["body"]["imageMap"]
+            data = data["body"]["body"]
         except (KeyError, TypeError):
             return False
+
+        if image_data := data.get("images"):
+            images = (
+                (image["originalUrl"], image["thumbnailUrl"]) for image in image_data
+            )
+        else:
+            blocks = data["blocks"]
+            image_map = data["imageMap"]
+            images = (
+                (
+                    (image := image_map[block["imageId"]])["originalUrl"],
+                    image["thumbnailUrl"],
+                )
+                for block in blocks
+                if block["type"] == "image"
+            )
 
         guild = ctx.guild
         assert guild is not None
         filesize_limit = guild.filesize_limit
 
-        for image in images.values():
-            original_url = image["originalUrl"]
-            thumbnail_url = image["thumbnailUrl"]
+        for (original_url, thumbnail_url) in images:
             content, file = await self.save_fanbox(
                 original_url, thumbnail_url, headers, filesize_limit
             )
