@@ -85,7 +85,7 @@ GELBOORU_API_URL = "https://gelbooru.com/index.php"
 R34_URL_EXPR = re.compile(r"https?://rule34\.xxx/index\.php\?(?:\w+=[^&]+&?){2,}")
 R34_API_URL = "https://rule34.xxx/index.php"
 
-FANBOX_URL_EXPR = re.compile(r"https?://(?:\w+.)?fanbox\.cc(?:/@\w+)?/posts/\d+")
+FANBOX_URL_EXPR = re.compile(r"https?://(?:\w+.)?fanbox\.cc(?:/.+)*?/posts/\d+")
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
