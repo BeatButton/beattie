@@ -34,7 +34,7 @@ from schema.crosspost import Crosspost as CrosspostSettings
 from schema.crosspost import CrosspostMessage, Table
 from utils.checks import is_owner_or
 from utils.contextmanagers import get as get_
-from utils.etc import display_bytes, remove_spoilers
+from utils.etc import display_bytes, remove_spoilers, suppress_links
 from utils.exceptions import ResponseError
 
 _IO = TypeVar("_IO", bound=IO[bytes])
@@ -673,6 +673,7 @@ class Crosspost(Cog):
             text = text[1:-1]
             text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
             text = text.replace("\n", "\n> ")
+            text = suppress_links(text)
 
         if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
             embedded = False
@@ -773,6 +774,7 @@ class Crosspost(Cog):
                     br.tail = f"\n> {tail}"
                 caption = fragment.text_content()
                 text = f"{text}\n> {caption}"
+                text = suppress_links(text)
 
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
@@ -923,6 +925,7 @@ class Crosspost(Cog):
             text = f"**{title}**"
             if description:
                 text = f"{text}\n> {description}"
+            text = suppress_links(text)
 
         if single_image := root.xpath(HICCEARS_IMG_SELECTOR):
             a = single_image[0]
@@ -1076,6 +1079,7 @@ class Crosspost(Cog):
             content = post["content"]
             fragments = html.fragments_fromstring(content, parser=self.parser)
             text = "> " + "\n> ".join(f.text_content() for f in fragments)
+            text = suppress_links(text)
             await ctx.send(text)
 
         return all_embedded
@@ -1103,6 +1107,7 @@ class Crosspost(Cog):
             text = f"**{title}**"
             if description:
                 text = f"{text}\n> {description}"
+            text = suppress_links(text)
             await ctx.send(text)
 
         return True

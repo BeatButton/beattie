@@ -8,6 +8,9 @@ T = TypeVar("T")
 U = TypeVar("U", bound=Comparable)
 
 SPOILER_EXPR = re.compile(r"\|\|.*?\|\|", flags=re.DOTALL)
+LINK_EXPR = re.compile(
+    r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)"
+)
 
 
 def reverse_insort(
@@ -81,3 +84,7 @@ def display_timedelta(delta: timedelta) -> str:
         out.append(f"{seconds} second{s}")
 
     return ", ".join(out)
+
+
+def suppress_links(text: str) -> str:
+    return LINK_EXPR.sub(r"<\1>", text)
