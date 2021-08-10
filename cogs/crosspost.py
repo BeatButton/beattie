@@ -1067,7 +1067,7 @@ class Crosspost(Cog):
 
                 img = BytesIO(stdout)
 
-                filename = f"{url.rpartition('/')[2]}.gif"
+                filename = f"{url.rpartition('/')[2].removesuffix('.mp4')}.gif"
                 file = File(img, filename)
                 msg = await ctx.send(file=file)
                 if all_embedded and too_large(msg):
