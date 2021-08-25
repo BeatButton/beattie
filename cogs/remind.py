@@ -284,8 +284,8 @@ class Remind(Cog):
             if member.permissions_in(channel).mention_everyone:
                 allowed_mentions = AllowedMentions.all()
             else:
-                allowed_mentions = AllowedMentions(
-                    everyone=False, users=[member], roles=False
+                allowed_mentions = AllowedMentions.none().merge(
+                    AllowedMentions(replied_user=True)
                 )
 
             try:
