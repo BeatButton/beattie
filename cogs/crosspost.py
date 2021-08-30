@@ -1040,6 +1040,11 @@ class Crosspost(Cog):
 
         for image in images[idx:]:
             url = image["remote_url"] or image["url"]
+
+            if not urlparse.urlparse(url).netloc:
+                netloc = urlparse.urlparse(str(resp.url)).netloc
+                url = f"https://{netloc}/{url.lstrip('/')}"
+
             if image.get("type") == "gifv":
                 with NamedTemporaryFile() as fp:
                     await self.save(
@@ -1078,7 +1083,9 @@ class Crosspost(Cog):
         if all_embedded and await self.should_post_text(ctx):
             content = post["content"]
             fragments = html.fragments_fromstring(content, parser=self.parser)
-            text = "> " + "\n> ".join(f.text_content() for f in fragments)
+            text = "> " + "\n> ".join(
+                f if isinstance(f, str) else f.text_content() for f in fragments
+            )
             text = suppress_links(text)
             await ctx.send(text)
 
