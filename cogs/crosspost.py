@@ -89,6 +89,8 @@ FANBOX_URL_EXPR = re.compile(r"https?://(?:\w+.)?fanbox\.cc(?:/.+)*?/posts/\d+")
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
+CONFIG_TARGET = Union[CategoryChannel, TextChannel, Thread]
+
 
 async def try_wait_for(
     proc: asyncio.subprocess.Process, *, timeout: int = 180, kill_timeout: int = 15
@@ -211,7 +213,9 @@ class Database:
 
         if category := channel.category:
             out = out.apply(await self._get_settings(guild_id, category.id))
-        out = out.apply(await self._get_settings(guild_id, message.channel.id))
+        if isinstance(channel, Thread):
+            out = out.apply(await self._get_settings(guild_id, channel.parent_id))
+        out = out.apply(await self._get_settings(guild_id, channel.id))
 
         return out
 
@@ -1300,7 +1304,7 @@ applying it to the guild as a whole."""
         ctx: BContext,
         enabled: bool,
         *,
-        target: Union[CategoryChannel, TextChannel] = None,
+        target: CONFIG_TARGET = None,
     ) -> None:
         """Enable or disable automatic crossposting."""
         guild = ctx.guild
@@ -1319,7 +1323,7 @@ applying it to the guild as a whole."""
         ctx: BContext,
         mode: str,
         *,
-        target: Union[CategoryChannel, TextChannel] = None,
+        target: CONFIG_TARGET = None,
     ) -> None:
         """Change image crossposting mode.
 
@@ -1353,7 +1357,7 @@ remove embeds from messages it processes successfully."""
         ctx: BContext,
         max_pages: int,
         *,
-        target: Union[CategoryChannel, TextChannel] = None,
+        target: CONFIG_TARGET = None,
     ) -> None:
         """Set the maximum number of images to send.
 
@@ -1373,7 +1377,7 @@ remove embeds from messages it processes successfully."""
         ctx: BContext,
         enabled: bool,
         *,
-        target: Union[CategoryChannel, TextChannel] = None,
+        target: CONFIG_TARGET = None,
     ) -> None:
         """Toggle automatic embed removal."""
         guild = ctx.guild
@@ -1392,7 +1396,7 @@ remove embeds from messages it processes successfully."""
         ctx: BContext,
         enabled: bool,
         *,
-        target: Union[CategoryChannel, TextChannel] = None,
+        target: CONFIG_TARGET = None,
     ) -> None:
         """Toggle crossposting of text context."""
         guild = ctx.guild
@@ -1410,7 +1414,8 @@ remove embeds from messages it processes successfully."""
             inner = e.errors[0]
             assert isinstance(inner, ChannelNotFound)
             await ctx.send(
-                f"Could not resolve `{inner.argument}` as a category or channel"
+                f"Could not resolve `{inner.argument}`"
+                " as a category, channel, or thread"
             )
         else:
             await ctx.bot.handle_error(ctx, e)
