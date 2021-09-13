@@ -75,7 +75,7 @@ class BeattieBot(Bot):
         self.db = DatabaseInterface(dsn)
         self.loop.create_task(self.db.connect())
         self.config = Config(self)
-        self.uptime = datetime.now()
+        self.uptime = datetime.now().astimezone()
         self.extra = {}
         if not self.debug:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
@@ -98,7 +98,7 @@ class BeattieBot(Bot):
         logger = logging.getLogger("discord")
         loglevel = getattr(logging, self.loglevel, logging.CRITICAL)
         logger.setLevel(loglevel)
-        now = datetime.now()
+        now = datetime.now().astimezone()
         filename = now.strftime("discord%Y%m%d%H%M.log")
         handler = logging.FileHandler(filename=filename, encoding="utf-8", mode="w")
         handler.setFormatter(

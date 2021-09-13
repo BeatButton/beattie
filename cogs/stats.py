@@ -71,7 +71,7 @@ class Stats(Cog):
         await ctx.send(embed=embed)
 
     def get_bot_uptime(self, bot: BeattieBot, brief: bool = False) -> str:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now().astimezone()
         try:
             delta = now - bot.uptime
         except AttributeError:

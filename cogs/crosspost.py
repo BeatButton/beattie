@@ -22,10 +22,10 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import CategoryChannel, File, Message, TextChannel
+from discord import CategoryChannel, File, Message, TextChannel, Thread
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
-from discord.utils import snowflake_time, time_snowflake
+from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import html
 
 from bot import BeattieBot
@@ -174,9 +174,7 @@ class Database:
                 s.select(CrosspostMessage)
                 .where(
                     CrosspostMessage.invoking_message
-                    > time_snowflake(
-                        datetime.utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL)
-                    )
+                    > time_snowflake(utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL))
                 )
                 .order_by(CrosspostMessage.invoking_message)
             )
@@ -196,9 +194,7 @@ class Database:
             while self._expiry_deque:
                 entry = self._expiry_deque.popleft()
                 until = snowflake_time(entry) + timedelta(seconds=MESSAGE_CACHE_TTL)
-                now = datetime.utcnow()
-                sleep_time = (until - now).total_seconds()
-                await asyncio.sleep(sleep_time)
+                await sleep_until(until)
                 self._message_cache.pop(entry, None)
         except Exception as e:
             print("Exception in message cache expiry task", file=sys.stderr)
@@ -208,7 +204,7 @@ class Database:
         guild = message.guild
         assert guild is not None
         channel = message.channel
-        assert isinstance(channel, TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
 
         guild_id = guild.id
         out = await self._get_settings(guild_id, 0)
@@ -260,7 +256,7 @@ class Database:
             return sent_messages
 
         elif (
-            datetime.utcnow() - snowflake_time(invoking_message)
+            utcnow() - snowflake_time(invoking_message)
         ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
             async with self.db.get_session() as s:
                 query = s.select(CrosspostMessage).where(
@@ -534,7 +530,7 @@ class Crosspost(Cog):
         me = ctx.me
         channel = ctx.channel
         assert isinstance(me, discord.Member)
-        assert isinstance(channel, discord.TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         do_suppress = await self.should_cleanup(ctx)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
@@ -559,9 +555,9 @@ class Crosspost(Cog):
             return
         channel = message.channel
         me = guild.me
-        assert isinstance(channel, discord.TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         assert isinstance(me, discord.Member)
-        if not me.permissions_in(channel).send_messages:
+        if not channel.permissions_for(me).send_messages:
             return
         if not (await self.db.get_settings(message)).auto:
             return
@@ -641,7 +637,7 @@ class Crosspost(Cog):
         me = ctx.me
         channel = ctx.channel
         assert isinstance(me, discord.Member)
-        assert isinstance(channel, TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         return (
             channel.permissions_for(me).manage_messages
             and await self.get_mode(ctx) == 2

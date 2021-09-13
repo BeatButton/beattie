@@ -5,10 +5,9 @@ from typing import Any, Iterable, Optional, Union
 import discord
 from asyncqlio.db import DatabaseInterface
 from dateutil import rrule
-from discord import AllowedMentions, Embed, TextChannel
-from discord.ext import commands, menus
+from discord import AllowedMentions, Embed, Thread, TextChannel
+from discord.ext import commands
 from discord.ext.commands import Cog
-from discord.ext.menus import MenuKeysetPages, PageDirection, PageSpecifier
 from recurrent.event_parser import RecurringEvent
 
 from bot import BeattieBot
@@ -19,52 +18,6 @@ from utils.converters import Time
 from utils.etc import display_timedelta, reverse_insort_by_key
 
 MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
-
-
-class ReminderSource(menus.KeysetPageSource):
-    def __init__(self, db: DatabaseInterface, user_id: int, guild_id: int):
-        self.db = db
-        self.user_id = user_id
-        self.guild_id = guild_id
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def get_page(self, specifier: PageSpecifier) -> list[Reminder]:
-        async with self.db.get_session() as s:
-            query = (
-                s.select(Reminder)
-                .where(
-                    (Reminder.user_id == self.user_id)
-                    & (Reminder.guild_id == self.guild_id)
-                )
-                .limit(10)
-            )
-
-            if specifier.reference is not None:
-                if specifier.direction is PageDirection.after:
-                    query = query.where(Reminder.id > specifier.reference[-1]["id"])
-                else:
-                    query = query.where(Reminder.id < specifier.reference[0]["id"])
-
-            sort_order = "asc" if specifier.direction is PageDirection.after else "desc"
-            query = query.order_by(Reminder.id, sort_order=sort_order)
-
-            results = [reminder async for reminder in await query.all()]
-
-        if not results:
-            raise ValueError
-        if specifier.direction is PageDirection.before:
-            results.reverse()
-
-        return results
-
-    async def format_page(self, _: Any, page: Iterable[Reminder]) -> Embed:
-        return Embed(
-            description="\n".join(
-                f'ID {row.id}: "{row.topic}" at {row.time}' for row in page
-            )
-        )
 
 
 class Remind(Cog):
@@ -140,14 +93,25 @@ class Remind(Cog):
     async def list_reminders(self, ctx: BContext) -> None:
         """List all reminders active for you in this server."""
         assert ctx.guild is not None
-        pages = MenuKeysetPages(
-            source=ReminderSource(ctx.bot.db, ctx.author.id, ctx.guild.id),
-            clear_reactions_after=True,
-        )
-        try:
-            await pages.start(ctx)
-        except ValueError:
-            await ctx.send("No reminders to show.")
+        async with self.db.get_session() as s:
+            query = (
+                s.select(Reminder)
+                .where(
+                    (Reminder.user_id == ctx.author.id)
+                    & (Reminder.guild_id == ctx.guild.id)
+                )
+                .order_by(Reminder.id, sort_order="desc")
+            )
+            results = [reminder async for reminder in await query.all()]
+        if results:
+            embed = Embed(
+                description="\n".join(
+                    f'ID {row.id}: "{row.topic}" at {row.time}' for row in results
+                )
+            )
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("No reminders found.")
 
     @remind.command(name="delete", aliases=["remove", "del", "cancel"])
     async def delete_reminder(self, ctx: BContext, reminder_id: int) -> None:
@@ -241,7 +205,7 @@ class Remind(Cog):
             (guild := self.bot.get_guild(reminder.guild_id))
             and (member := guild.get_member(reminder.user_id))
             and (
-                channel := guild.get_channel(
+                channel := guild.get_channel_or_thread(
                     (
                         reminder_channel_id := (
                             await self.bot.config.get_guild(guild.id)
@@ -252,7 +216,7 @@ class Remind(Cog):
             )
         ):
             found = True
-            assert isinstance(channel, TextChannel)
+            assert isinstance(channel, (TextChannel, Thread))
             async with self.db.get_session() as s:
                 query = s.select(Recurring).where(Recurring.id == reminder.id)
                 recurring = await query.first()
@@ -281,7 +245,7 @@ class Remind(Cog):
                 if reference is None:
                     message = f"{member.mention}\n{message}"
 
-            if member.permissions_in(channel).mention_everyone:
+            if channel.permissions_for(member).mention_everyone:
                 allowed_mentions = AllowedMentions.all()
             else:
                 allowed_mentions = AllowedMentions.none().merge(

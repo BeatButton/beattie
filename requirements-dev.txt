@@ -1,5 +1,4 @@
 black
-discord-py-stubs
 flake8
 isort
 mypy

@@ -1,4 +1,4 @@
-from discord import Member, Message, TextChannel
+from discord import Member, Message, TextChannel, Thread
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -28,7 +28,7 @@ class Manage(Cog):
         me = ctx.me
         channel = ctx.channel
         assert isinstance(me, Member)
-        assert isinstance(channel, TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         return channel.permissions_for(me).send_messages
 
     async def cog_check(self, ctx: BContext) -> bool:
@@ -37,7 +37,7 @@ class Manage(Cog):
         author = ctx.author
         channel = ctx.channel
         assert isinstance(author, Member)
-        assert isinstance(channel, TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         return (
             await ctx.bot.is_owner(author)
             or channel.permissions_for(author).manage_guild
@@ -90,7 +90,7 @@ class Manage(Cog):
     async def purge(self, ctx: BContext, until: Message) -> None:
         """Delete messages since the specified message id."""
         channel = ctx.channel
-        assert isinstance(channel, TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         await channel.purge(before=ctx.message, after=until)
         await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
 
@@ -99,7 +99,7 @@ class Manage(Cog):
     async def clean(self, ctx: BContext, until: Message) -> None:
         """Delete messages from the bot since the specified message id."""
         channel = ctx.channel
-        assert isinstance(channel, TextChannel)
+        assert isinstance(channel, (TextChannel, Thread))
         await channel.purge(
             before=ctx.message, after=until, check=lambda msg: msg.author == ctx.me
         )
