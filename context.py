@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 from discord import File, Message
@@ -18,7 +18,7 @@ class BContext(commands.Context):
 
     async def reply(
         self,
-        content: object = None,
+        content: str = None,
         *,
         mention_author: bool = None,
         **kwargs: Any,
@@ -29,16 +29,15 @@ class BContext(commands.Context):
 
     async def send(
         self,
-        content: object = None,
+        content: Optional[str] = None,
         *,
-        file: File = None,
+        file: Optional[File] = None,
         files: list[File] = None,
         **kwargs: Any,
     ) -> Message:
-        str_content = str(content)
-        if len(str_content) >= 2000:
+        if content and len(content) >= 2000:
             fp = io.BytesIO()
-            fp.write(str_content.encode("utf8"))
+            fp.write(content.encode("utf8"))
             fp.seek(0)
             content = None
             new_file = discord.File(fp, filename=f"{self.message.id}.txt")
@@ -49,9 +48,10 @@ class BContext(commands.Context):
                 file = None
             else:
                 file = new_file
+        kwargs["file"] = file
+        kwargs["files"] = files
+
         return await super().send(
             content,
-            file=file,
-            files=files,
             **kwargs,
         )

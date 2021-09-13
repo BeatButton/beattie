@@ -1,7 +1,7 @@
 from io import BytesIO
+from typing import Union
 
-import discord
-from discord import File, Member
+from discord import File, Member, User
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -14,20 +14,20 @@ class Default(Cog):
 
     @commands.command()
     async def avatar(self, ctx: BContext, *, user: Member = None) -> None:
-        target: discord.abc.User
+        target: Union[Member, User]
         if user is None:
             target = ctx.author
         else:
             target = user
         img = BytesIO()
-        avatar = target.avatar_url_as(
-            format="gif" if target.is_avatar_animated() else "png"
+        avatar = target.display_avatar.with_format(
+            "gif" if target.display_avatar.is_animated() else "png"
         )
         await avatar.save(img)
         filename = str(avatar).rpartition("/")[2].partition("?")[0]
         await ctx.send(file=File(img, filename))
 
-    @avatar.error
+    @avatar.error  # type: ignore
     async def avatar_error(self, ctx: BContext, exc: Exception) -> None:
         if isinstance(exc, commands.BadArgument):
             await ctx.send("User not found.")

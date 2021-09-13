@@ -35,6 +35,7 @@ class SauceNao(Cog):
             result = None
             sim_percent = 0.0
             source_link = None
+            similarity = ""
             if len(results):
                 similarity = root.find(".//div[@class='resultsimilarityinfo']").text
                 sim_percent = float(similarity[:-1])
@@ -55,7 +56,7 @@ class SauceNao(Cog):
 
                 await ctx.send(f"Sauce found ({similarity}) {link}")
 
-    @saucenao.error
+    @saucenao.error  # type: ignore
     async def saucenao_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.BadArgument):
             await ctx.send("Please include a link or attach a single image.")

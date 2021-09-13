@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import copy
-from html import unescape
 import re
 import sys
 import traceback
@@ -160,7 +159,7 @@ class Database:
     def __init__(self, bot: BeattieBot):
         self.db = bot.db
         self.bot = bot
-        self.db.bind_tables(Table)
+        self.db.bind_tables(Table)  # type: ignore
         self._settings_cache: dict[tuple[int, int], Settings] = {}
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
@@ -226,13 +225,13 @@ class Database:
             async with self.db.get_session() as s:
                 query = s.select(CrosspostSettings).where(
                     (CrosspostSettings.guild_id == guild_id)
-                    & (CrosspostSettings.channel_id == channel_id)
+                    & (CrosspostSettings.channel_id == channel_id)  # type: ignore
                 )
                 config = await query.first()
             if config is None:
                 res = Settings()
             else:
-                res = Settings.from_record(config)
+                res = Settings.from_record(config)  # type: ignore
             self._settings_cache[(guild_id, channel_id)] = res
             return res
 
@@ -264,7 +263,8 @@ class Database:
         ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
             async with self.db.get_session() as s:
                 query = s.select(CrosspostMessage).where(
-                    CrosspostMessage.invoking_message == invoking_message
+                    CrosspostMessage.invoking_message
+                    == invoking_message  # type: ignore
                 )
                 return [
                     elem.sent_message for elem in await (await query.all()).flatten()
@@ -291,14 +291,14 @@ class Database:
         self._message_cache.pop(invoking_message, None)
         async with self.db.get_session() as s:
             await s.delete(CrosspostMessage).where(
-                CrosspostMessage.invoking_message == invoking_message
+                CrosspostMessage.invoking_message == invoking_message  # type: ignore
             ).run()
 
 
 class CrosspostContext(BContext):
     cog: Crosspost
 
-    async def send(self, content: object = None, **kwargs: Any) -> Message:
+    async def send(self, content: str = None, **kwargs: Any) -> Message:
         task = asyncio.create_task(
             self._send(
                 content,
@@ -313,9 +313,9 @@ class CrosspostContext(BContext):
 
     async def _send(
         self,
-        content: object = None,
+        content: str = None,
         *,
-        file: File = None,
+        file: Optional[File] = None,
         **kwargs: Any,
     ) -> Message:
         if file:
@@ -1219,6 +1219,7 @@ class Crosspost(Cog):
             file_map = body["fileMap"]
             do_text = await self.should_post_text(ctx)
             for block in blocks:
+                file: Optional[File]
                 block_type = block["type"]
                 if block_type == "image":
                     image = image_map[block["imageId"]]
@@ -1420,9 +1421,9 @@ remove embeds from messages it processes successfully."""
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    auto_error = auto.error(crosspost_error)
-    mode_error = mode.error(crosspost_error)
-    pages_error = pages.error(crosspost_error)
+    auto_error = auto.error(crosspost_error)  # type: ignore
+    mode_error = mode.error(crosspost_error)  # type: ignore
+    pages_error = pages.error(crosspost_error)  # type: ignore
 
     async def _post(self, ctx: CrosspostContext) -> None:
         message = ctx.message

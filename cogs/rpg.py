@@ -130,9 +130,9 @@ class RPG(Cog):
 
         times = args["times"] or 1
 
-        args = (num, sides, lo_drop, hi_drop, mod, times)
+        roller_args = (num, sides, lo_drop, hi_drop, mod, times)
 
-        future = asyncio.to_thread(roller, *args)
+        future = asyncio.to_thread(roller, *roller_args)
         async with ctx.typing():
             result = await asyncio.wait_for(future, 10, loop=self.loop)
 
@@ -154,7 +154,7 @@ class RPG(Cog):
         out = denest(result)
         await ctx.reply(f"{roll}: {out}")
 
-    @roll.error
+    @roll.error  # type: ignore
     async def roll_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
@@ -195,7 +195,7 @@ class RPG(Cog):
 
         await ctx.reply(result)
 
-    @shadowroll.error
+    @shadowroll.error  # type: ignore
     async def shadowroll_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
@@ -249,7 +249,7 @@ class RPG(Cog):
             else:
                 await ctx.reply(str(result))
 
-    @genesysroll.error
+    @genesysroll.error  # type: ignore
     async def genesysroll_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
@@ -310,10 +310,10 @@ def shadowroller(num: int, edge: bool = False) -> str:
 
 def denest(rolls: L1) -> str:
     # this isn't my fault
-    rolls: Union[L1, L2] = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
-    rolls: Union[L1, L2, int] = rolls[0] if len(rolls) == 1 else rolls
+    rolls2: Union[L1, L2] = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
+    rolls3: Union[L1, L2, int] = rolls2[0] if len(rolls2) == 1 else rolls2
 
-    return str(rolls)
+    return str(rolls3)
 
 
 def setup(bot: BeattieBot) -> None:

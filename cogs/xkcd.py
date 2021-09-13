@@ -38,7 +38,7 @@ class XKCD(Cog):
     @xkcd.command()
     async def random(self, ctx: BContext) -> None:
         """Gets a random xkcd comic."""
-        await self.comic(ctx, inp=random.randint(1, self.xkcd_data["num"]))
+        await self.comic(ctx, inp=str(random.randint(1, self.xkcd_data["num"])))
 
     @xkcd.command()
     async def latest(self, ctx: BContext) -> None:

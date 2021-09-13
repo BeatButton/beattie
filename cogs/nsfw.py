@@ -4,7 +4,8 @@ from typing import Any, Iterable, Union
 from urllib import parse
 
 import discord
-from discord import DMChannel, Embed, File, GroupChannel, TextChannel
+from discord import DMChannel, Embed, File, GroupChannel, TextChannel, Thread
+from discord.abc import MessageableChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
@@ -12,7 +13,7 @@ from lxml import etree
 from bot import BeattieBot
 from context import BContext
 
-Channel = Union[TextChannel, DMChannel, GroupChannel]
+Channel = MessageableChannel
 
 
 class NSFW(Cog):
@@ -41,6 +42,7 @@ class NSFW(Cog):
         self.titles: dict[str, str] = {}
         self.get = bot.get
         self.log = bot.logger.debug
+        self.parser = etree.HTMLParser()
 
     @commands.command(aliases=["gel"])
     async def gelbooru(self, ctx: BContext, *tags: str) -> None:
@@ -58,6 +60,7 @@ class NSFW(Cog):
         await self.booru(ctx, tags, limit=320)
 
     async def booru(self, ctx: BContext, tags: Iterable[str], limit: int = 100) -> None:
+        assert ctx.command is not None
         async with ctx.typing():
             tags = frozenset(tags)
             sort = "order:" in ctx.message.content
@@ -76,7 +79,7 @@ class NSFW(Cog):
                     "tags": " ".join(tags),
                 }
                 async with ctx.bot.get(self.urls[site], params=params) as resp:
-                    root = etree.fromstring(await resp.read())
+                    root = etree.fromstring(await resp.read(), self.parser)
                 posts = root.findall(".//post")
                 if sort:
                     posts = posts[::-1]
@@ -91,7 +94,9 @@ class NSFW(Cog):
             if not posts:
                 self.cache[channel][site].pop(tags, None)
 
-    def make_embed(self, post_element: etree.Element, site: str) -> tuple[Embed, File]:
+    def make_embed(
+        self, post_element: etree.Element, site: str  # type: ignore
+    ) -> tuple[Embed, File]:
         post = dict(post_element.items())
         if not post:
             post = {child.tag: child.text for child in post_element.getchildren()}
@@ -119,7 +124,7 @@ class NSFW(Cog):
         url = self.urls[site]
         netloc = parse.urlsplit(url).netloc
         async with self.get(f"https://{netloc}") as resp:
-            root = etree.fromstring(await resp.read(), etree.HTMLParser())
+            root = etree.fromstring(await resp.read(), self.parser)
         self.titles[site] = root.find(".//title").text
 
 

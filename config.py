@@ -13,7 +13,7 @@ class Config:
     def __init__(self, bot: BeattieBot):
         self.db = bot.db
         self.bot = bot
-        self.db.bind_tables(Table)
+        self.db.bind_tables(Table)  # type: ignore
         bot.loop.create_task(self.__init())
         self._cache: dict[int, dict[str, Any]] = {}
 
@@ -26,7 +26,7 @@ class Config:
             return self._cache[guild_id]
         except KeyError:
             async with self.db.get_session() as s:
-                query = s.select(Guild).where(Guild.id == guild_id)
+                query = s.select(Guild).where(Guild.id == guild_id)  # type: ignore
                 guild = await query.first()
             if guild is None:
                 res = {"id": guild_id}
@@ -42,6 +42,6 @@ class Config:
             row = Guild(**{**guild, **kwargs})
             query = s.insert.rows(row)
             query = query.on_conflict(Guild.id).update(
-                getattr(Guild, name) for name in kwargs
+                getattr(Guild, name) for name in kwargs  # type: ignore
             )
             await query.run()

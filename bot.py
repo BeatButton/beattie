@@ -148,6 +148,7 @@ class BeattieBot(Bot):
             raise e from None
 
     async def on_ready(self) -> None:
+        assert self.user is not None
         print("Logged in as")
         print(self.user.name)
         print(self.user.id)

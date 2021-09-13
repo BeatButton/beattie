@@ -16,6 +16,7 @@ class Manage(Cog):
         guild = ctx.guild
         if guild is None:
             return True
+        assert ctx.command is not None
         cog = ctx.command.cog_name
         guild_conf = await self.config.get_guild(guild.id)
         blacklist = guild_conf.get("cog_blacklist") or ""

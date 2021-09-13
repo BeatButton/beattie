@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Callable, TypeVar
 
 from discord import Member, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Context
 
-if TYPE_CHECKING:
-    from discord.ext.commands.core import _CheckDecorator
+T = TypeVar("T")
 
 
-def is_owner_or(**perms: bool) -> _CheckDecorator:
+def is_owner_or(**perms: bool) -> Callable[[T], T]:
     async def predicate(ctx: Context) -> bool:
         author = ctx.author
         channel = ctx.channel

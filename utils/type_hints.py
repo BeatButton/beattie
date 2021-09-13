@@ -6,3 +6,7 @@ class Comparable(metaclass=ABCMeta):
     @abstractmethod
     def __lt__(self, other: Any) -> bool:
         ...
+
+    @abstractmethod
+    def __gt__(self, other: Any) -> bool:
+        ...
