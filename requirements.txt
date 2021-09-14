@@ -1,5 +1,5 @@
 git+https://github.com/BeatButton/asyncqlio.git
-git+https://github.com/BeatButton/discord.py.git@master
+git+https://github.com/BeatButton/discord.py.git
 asyncjisho
 asyncpg
 jishaku
