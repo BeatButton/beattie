@@ -1,11 +1,10 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Any, Iterable, Optional, Union
+from typing import Optional, Union
 
 import discord
-from asyncqlio.db import DatabaseInterface
 from dateutil import rrule
-from discord import AllowedMentions, Embed, Thread, TextChannel
+from discord import AllowedMentions, Embed, TextChannel, Thread
 from discord.ext import commands
 from discord.ext.commands import Cog
 from recurrent.event_parser import RecurringEvent

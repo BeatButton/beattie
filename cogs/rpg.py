@@ -120,7 +120,7 @@ class RPG(Cog):
         if (mod := args["mod"]) and "-" in roll:
             mod = -mod
 
-        if (drop := args["drop"]) :
+        if drop := args["drop"]:
             if drop >= num:
                 raise commands.BadArgument
             if "^" in roll:
