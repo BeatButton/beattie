@@ -1,11 +1,10 @@
 import random
 from collections import defaultdict
-from typing import Any, Iterable
+from typing import Any, Iterable, TYPE_CHECKING
 from urllib import parse
 
 import discord
 from discord import Embed, File, TextChannel
-from discord.abc import MessageableChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
@@ -13,7 +12,8 @@ from lxml import etree
 from bot import BeattieBot
 from context import BContext
 
-Channel = MessageableChannel
+if TYPE_CHECKING:
+    from discord.abc import MessageableChannel as Channel
 
 
 class NSFW(Cog):
