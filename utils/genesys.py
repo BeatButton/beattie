@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from numbers import Real
-from typing import Any, Union
+from typing import Any
 
 
 class Result:
@@ -139,7 +139,7 @@ die_names = {
     "f": "force",
 }
 
-dice: dict[str, tuple[Union[Result, Force], ...]] = {
+dice: dict[str, tuple[Result | Force, ...]] = {
     "boost": (wash, wash, success, success + advantage, 2 * advantage, advantage),
     "setback": (wash, wash, failure, failure, disadvantage, disadvantage),
     "ability": (
@@ -207,8 +207,7 @@ dice: dict[str, tuple[Union[Result, Force], ...]] = {
 }
 
 
-def genesysroller(**kwargs: int) -> Union[Result, Force]:
-    result: Union[Result, Force]
+def genesysroller(**kwargs: int) -> Result | Force:
     if "force" in kwargs:
         if len(kwargs) > 1:
             raise ValueError

@@ -3,7 +3,6 @@ import os
 import random
 import re
 from concurrent import futures
-from typing import Union
 
 import discord
 from discord.ext import commands
@@ -307,8 +306,8 @@ def shadowroller(num: int, edge: bool = False) -> str:
 
 def denest(rolls: L1) -> str:
     # this isn't my fault
-    rolls2: Union[L1, L2] = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
-    rolls3: Union[L1, L2, int] = rolls2[0] if len(rolls2) == 1 else rolls2
+    rolls2: L1 | L2 = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
+    rolls3: L1 | L2 | int = rolls2[0] if len(rolls2) == 1 else rolls2
 
     return str(rolls3)
 

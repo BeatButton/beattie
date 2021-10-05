@@ -15,7 +15,7 @@ from io import BytesIO
 from itertools import groupby
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import IO, Any, Optional, TypeVar, Union, overload
+from typing import IO, Any, Optional, TypeVar, overload
 from zipfile import ZipFile
 
 import aiohttp
@@ -88,7 +88,7 @@ FANBOX_URL_EXPR = re.compile(r"https?://(?:\w+.)?fanbox\.cc(?:/.+)*?/posts/\d+")
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
-CONFIG_TARGET = Union[CategoryChannel, TextChannel, Thread]
+CONFIG_TARGET = CategoryChannel | TextChannel | Thread
 
 
 async def try_wait_for(
@@ -1283,7 +1283,7 @@ class Crosspost(Cog):
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
-    async def twitter(self, ctx: BContext, enabled: Union[bool, str] = True) -> None:
+    async def twitter(self, ctx: BContext, enabled: bool | str = True) -> None:
         await ctx.send(
             "This command is deprecated! "
             f"Please use `{ctx.prefix}crosspost` to manage settings."

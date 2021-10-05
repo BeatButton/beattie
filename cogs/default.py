@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Union
 
 from discord import File, Member, User
 from discord.ext import commands
@@ -14,7 +13,7 @@ class Default(Cog):
 
     @commands.command()
     async def avatar(self, ctx: BContext, *, user: Member = None) -> None:
-        target: Union[Member, User]
+        target: Member | User
         if user is None:
             target = ctx.author
         else:

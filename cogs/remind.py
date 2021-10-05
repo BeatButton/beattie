@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Optional
 
 import discord
 from dateutil import rrule
@@ -70,7 +70,7 @@ class Remind(Cog):
     ) -> None:
         """Have the bot remind you about something.
         First put time (in quotes if there are spaces), then topic"""
-        real_time: Union[RecurringEvent, datetime] = time  # type: ignore
+        real_time: RecurringEvent | datetime = time  # type: ignore
         if topic is None and isinstance(real_time, RecurringEvent):
             await ctx.send("You must supply a message for a recurring reminder.")
             return
@@ -153,7 +153,7 @@ class Remind(Cog):
     async def process_reminder(
         self,
         ctx: BContext,
-        argument: Union[RecurringEvent, datetime],
+        argument: RecurringEvent | datetime,
         topic: Optional[str],
     ) -> bool:
         assert ctx.guild is not None
