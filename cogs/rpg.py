@@ -30,9 +30,6 @@ TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
 
 
 class RPG(Cog):
-    def __init__(self, bot: BeattieBot):
-        self.loop = bot.loop
-
     @commands.command()
     async def choose(self, ctx: BContext, *options: str) -> None:
         """Choose between some options. Use quotes if they have spaces."""
@@ -134,7 +131,7 @@ class RPG(Cog):
 
         future = asyncio.to_thread(roller, *roller_args)
         async with ctx.typing():
-            result = await asyncio.wait_for(future, 10, loop=self.loop)
+            result = await asyncio.wait_for(future, 10)
 
         if "d" not in roll:
             roll = f"1d{roll}"
@@ -191,7 +188,7 @@ class RPG(Cog):
         args = (num, edge)
         future = asyncio.to_thread(shadowroller, *args)
         async with ctx.typing():
-            result = await asyncio.wait_for(future, 10, loop=self.loop)
+            result = await asyncio.wait_for(future, 10)
 
         await ctx.reply(result)
 
@@ -243,7 +240,7 @@ class RPG(Cog):
         future = asyncio.to_thread(genesysroller, **dice)
         async with ctx.typing():
             try:
-                result = await asyncio.wait_for(future, 10, loop=self.loop)
+                result = await asyncio.wait_for(future, 10)
             except ValueError:
                 await ctx.send("Force dice cannot be used with other dice.")
             else:
@@ -317,4 +314,4 @@ def denest(rolls: L1) -> str:
 
 
 def setup(bot: BeattieBot) -> None:
-    bot.add_cog(RPG(bot))
+    bot.add_cog(RPG())
