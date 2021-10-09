@@ -63,7 +63,13 @@ HICCEARS_TITLE_SELECTOR = ".//div[contains(@class, 'panel-heading')]/div/a"
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
-MASTODON_URL_EXPR = re.compile(r"https?://\S+/[\w-]+/?(?:>|$|\s)")
+MASTODON_SITE_EXCLUDE = ["tenor.com", "giphy.com"]
+MASTODON_EXCLUDE_SUBEXPR = "|".join(
+    f"{re.escape(site)}/" for site in MASTODON_SITE_EXCLUDE
+)
+MASTODON_URL_EXPR = re.compile(
+    rf"https?://(?!{MASTODON_EXCLUDE_SUBEXPR})\S+/[\w-]+/?(?:>|$|\s)"
+)
 MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
 
