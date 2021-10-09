@@ -63,7 +63,7 @@ HICCEARS_TITLE_SELECTOR = ".//div[contains(@class, 'panel-heading')]/div/a"
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
-MASTODON_SITE_EXCLUDE = ["tenor.com", "giphy.com"]
+MASTODON_SITE_EXCLUDE = ["tenor.com", "giphy.com", "pixiv.net"]
 MASTODON_EXCLUDE_SUBEXPR = "|".join(
     f"{re.escape(site)}/" for site in MASTODON_SITE_EXCLUDE
 )
