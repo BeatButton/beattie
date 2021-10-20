@@ -1,6 +1,6 @@
 git+https://github.com/BeatButton/asyncqlio.git
 git+https://github.com/BeatButton/discord.py.git
-git+https://github.com/Rapptz/discord-ext-menus.git
+discord-ext-menus
 asyncjisho
 asyncpg
 jishaku
@@ -9,5 +9,6 @@ objgraph
 psutil
 python-dateutil
 recurrent
+tldextract
 toml
 uvloop

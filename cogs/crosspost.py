@@ -20,6 +20,7 @@ from zipfile import ZipFile
 
 import aiohttp
 import discord
+from tldextract import TLDExtract
 import toml
 from discord import CategoryChannel, File, Message, TextChannel, Thread
 from discord.ext import commands
@@ -63,7 +64,7 @@ HICCEARS_TITLE_SELECTOR = ".//div[contains(@class, 'panel-heading')]/div/a"
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
-MASTODON_SITE_EXCLUDE = [
+MASTODON_SITE_EXCLUDE = {
     "tenor.com",
     "giphy.com",
     "pixiv.net",
@@ -75,13 +76,11 @@ MASTODON_SITE_EXCLUDE = [
     "hiccears.com",
     "gelbooru.com",
     "fanbox.cc",
-]
-MASTODON_EXCLUDE_SUBEXPR = "|".join(
-    f"{re.escape(site)}/" for site in MASTODON_SITE_EXCLUDE
-)
-MASTODON_URL_EXPR = re.compile(
-    rf"https?://(?!{MASTODON_EXCLUDE_SUBEXPR})\S+/[\w-]+/?(?:>|$|\s)"
-)
+    "discord.gg",
+    "youtu.be",
+    "itch.io",
+}
+MASTODON_URL_EXPR = re.compile(rf"https?://\S+/[\w-]+/?(?:>|$|\s)")
 MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
 
@@ -398,6 +397,7 @@ class Crosspost(Cog):
         else:
             self.ongoing_tasks = {}
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
+        self.tldextract = TLDExtract(suffix_list_urls=())
 
     async def __init(self) -> None:
         with open("config/logins.toml") as fp:
@@ -1040,6 +1040,10 @@ class Crosspost(Cog):
     async def display_mastodon_images(self, ctx: CrosspostContext, link: str) -> bool:
         if (match := MASTODON_URL_GROUPS.match(link)) is None:
             return False
+
+        if ".".join(self.tldextract(link)[-2:]) in MASTODON_SITE_EXCLUDE:
+            return False
+
         api_url = MASTODON_API_FMT.format(*match.groups())
         try:
             async with self.get(api_url, use_default_headers=False) as resp:
