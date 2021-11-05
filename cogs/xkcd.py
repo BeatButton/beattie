@@ -92,7 +92,7 @@ def format_comic(data: Mapping[str, Any]) -> discord.Embed:
     embed.title = data["title"]
     embed.set_image(url=data["img"])
     embed.set_footer(text=data["alt"])
-    embed.url = f"https://www.xkcd.com/{data['num']}/"
+    embed.url = f"https://xkcd.com/{data['num']}/"
     return embed
 
 
