@@ -74,8 +74,12 @@ class Remind(Cog):
         if topic is None and isinstance(real_time, RecurringEvent):
             await ctx.send("You must supply a message for a recurring reminder.")
             return
-        if await self.process_reminder(ctx, real_time, topic):
-            await ctx.send("Okay, I'll remind you.")
+        if scheduled := await self.process_reminder(ctx, real_time, topic):
+            msg = "Okay, I'll remind you"
+            now = datetime.now()
+            if scheduled.date() != now.date():
+                msg = f"{msg} on {scheduled:%Y-%m-%d}"
+            await ctx.send(f"{msg}.")
 
     @set_reminder.error  # type: ignore
     async def set_reminder_error(self, ctx: BContext, e: Exception) -> None:
@@ -155,7 +159,7 @@ class Remind(Cog):
         ctx: BContext,
         argument: RecurringEvent | datetime,
         topic: Optional[str],
-    ) -> bool:
+    ) -> Optional[datetime]:
         assert ctx.guild is not None
 
         if isinstance(argument, RecurringEvent):
@@ -167,7 +171,7 @@ class Remind(Cog):
                     "Recurring period too short. Minimum period is:\n"
                     f"{display_timedelta(MINIMUM_RECURRING_DELTA)}"
                 )
-                return False
+                return None
         else:
             time = argument
 
@@ -185,7 +189,7 @@ class Remind(Cog):
             if isinstance(argument, RecurringEvent):
                 await s.add(Recurring(id=reminder.id, rrule=argument.get_RFC_rrule()))
         await self.schedule_reminder(reminder)  # type: ignore
-        return True
+        return time
 
     async def schedule_reminder(self, reminder: Reminder) -> None:
         if not self.queue or reminder.time < self.queue[-1].time:
