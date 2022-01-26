@@ -1214,7 +1214,7 @@ class Crosspost(Cog):
             data = await resp.json()
         if not data:
             return None
-        post = data[0]
+        post = data["post"][0]
         return post["file_url"]
 
     async def display_fanbox_images(self, ctx: CrosspostContext, link: str) -> bool:
