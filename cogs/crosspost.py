@@ -691,6 +691,7 @@ class Crosspost(Cog):
             text = text[1:-1]
             text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
             text = text.replace("\n", "\n> ")
+            text = f"> {text}"
             text = suppress_links(text)
 
         if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
