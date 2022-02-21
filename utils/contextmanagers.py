@@ -10,7 +10,7 @@ class get:
     """Returns a response to a URL."""
 
     def __init__(
-        self, session: ClientSession, url: str, method: str = "GET", **kwargs: Any
+        self, session: ClientSession, url: str, *, method: str = "GET", **kwargs: Any
     ):
         self.session = session
         self.url = url

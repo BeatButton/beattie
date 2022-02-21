@@ -414,7 +414,7 @@ class Crosspost(Cog):
         ib_login = data["inkbunny"]
 
         url = INKBUNNY_API_FMT.format("login")
-        async with self.get(url, "POST", params=ib_login) as resp:
+        async with self.get(url, method="POST", params=ib_login) as resp:
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
 
@@ -455,7 +455,7 @@ class Crosspost(Cog):
                 try:
                     async with self.get(
                         url,
-                        "POST",
+                        method="POST",
                         data=data,
                         use_default_headers=False,
                         headers=headers,
@@ -482,14 +482,14 @@ class Crosspost(Cog):
     def get(
         self,
         url: str,
-        method: str = "GET",
         *,
+        method: str = "GET",
         use_default_headers: bool = True,
         **kwargs: Any,
     ) -> get_:
         if use_default_headers:
             kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
-        return get_(self.session, url, method, **kwargs)
+        return get_(self.session, url, method=method, **kwargs)
 
     @overload
     async def save(
@@ -1122,7 +1122,7 @@ class Crosspost(Cog):
         if post_text:
             params["show_description"] = "yes"
         async with self.get(
-            url, "POST", use_default_headers=False, params=params
+            url, method="POST", use_default_headers=False, params=params
         ) as resp:
             response = await resp.json()
 
