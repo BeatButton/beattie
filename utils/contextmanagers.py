@@ -7,13 +7,14 @@ from .exceptions import ResponseError
 
 
 class get:
-    """Returns a response to a URL."""
+    """Returns a response to the first URL that returns a 200 status code."""
 
     def __init__(
-        self, session: ClientSession, url: str, *, method: str = "GET", **kwargs: Any
+        self, session: ClientSession, *urls: str, method: str = "GET", **kwargs: Any
     ):
         self.session = session
-        self.url = url
+        self.urls = urls
+        self.index = 0
         headers = kwargs.get("headers", {})
         if "Accept-Encoding" not in headers:
             headers["Accept-Encoding"] = "gzip, deflate, sdch"
@@ -26,8 +27,21 @@ class get:
         self.method = method
 
     async def __aenter__(self) -> ClientResponse:
+        while True:
+            try:
+                resp = await self._aenter_inner()
+            except ResponseError as e:
+                self.index += 1
+                if self.index >= len(self.urls):
+                    raise e from None
+            else:
+                return resp
+
+    async def _aenter_inner(self) -> ClientResponse:
         try:
-            self.resp = await self.session.request(self.method, self.url, **self.kwargs)
+            self.resp = await self.session.request(
+                self.method, self.urls[self.index], **self.kwargs
+            )
         except ServerDisconnectedError:
             return await self.__aenter__()
         except OSError as e:

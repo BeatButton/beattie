@@ -481,15 +481,14 @@ class Crosspost(Cog):
 
     def get(
         self,
-        url: str,
-        *,
+        *urls: str,
         method: str = "GET",
         use_default_headers: bool = True,
         **kwargs: Any,
     ) -> get_:
         if use_default_headers:
             kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
-        return get_(self.session, url, method=method, **kwargs)
+        return get_(self.session, *urls, method=method, **kwargs)
 
     @overload
     async def save(
