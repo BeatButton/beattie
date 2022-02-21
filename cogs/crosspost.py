@@ -1062,17 +1062,19 @@ class Crosspost(Cog):
         all_embedded = True
 
         for image in images[idx:]:
-            url = image["remote_url"] or image["url"]
+            urls = [url for url in [image["remote_url"], image["url"]] if url]
 
-            if not urlparse.urlparse(url).netloc:
-                netloc = urlparse.urlparse(str(resp.url)).netloc
-                url = f"https://{netloc}/{url.lstrip('/')}"
+            for idx, url in enumerate(urls):
+                if not urlparse.urlparse(url).netloc:
+                    netloc = urlparse.urlparse(str(resp.url)).netloc
+                    urls[idx] = f"https://{netloc}/{url.lstrip('/')}"
 
             if image.get("type") == "gifv":
                 with NamedTemporaryFile() as fp:
-                    await self.save(
-                        url, fp=fp, seek_begin=False, use_default_headers=False
-                    )
+                    async with self.get(*urls) as img_resp:
+                        async for chunk in img_resp.content.iter_any():
+                            fp.write(chunk)
+
                     proc = await asyncio.create_subprocess_exec(
                         "ffmpeg",
                         "-i",
@@ -1095,13 +1097,16 @@ class Crosspost(Cog):
 
                 img = BytesIO(stdout)
 
-                filename = f"{url.rpartition('/')[2].removesuffix('.mp4')}.gif"
+                filename = (
+                    f"{str(resp.url).rpartition('/')[2].removesuffix('.mp4')}.gif"
+                )
                 file = File(img, filename)
                 msg = await ctx.send(file=file)
                 if all_embedded and too_large(msg):
                     all_embedded = False
             else:
-                await self.send(ctx, url)
+                async with self.get(*urls, method="HEAD") as resp:
+                    await self.send(ctx, str(resp.url))
 
         if all_embedded and await self.should_post_text(ctx):
             content = post["content"]
