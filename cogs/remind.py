@@ -125,7 +125,7 @@ class Remind(Cog):
             if reminder is None:
                 await ctx.send("No such reminder.")
                 return
-            if reminder.user_id != ctx.author.id:
+            if reminder.user_id != ctx.author.id:  # type: ignore
                 await ctx.send("That reminder belongs to someone else.")
                 return
             await s.remove(reminder)
@@ -187,7 +187,11 @@ class Remind(Cog):
                 )
             )
             if isinstance(argument, RecurringEvent):
-                await s.add(Recurring(id=reminder.id, rrule=argument.get_RFC_rrule()))
+                await s.add(
+                    Recurring(
+                        id=reminder.id, rrule=argument.get_RFC_rrule()  # type: ignore
+                    )
+                )
         await self.schedule_reminder(reminder)  # type: ignore
         return time
 
@@ -275,7 +279,7 @@ class Remind(Cog):
                     message, exc_info=(type(e), e, e.__traceback__)
                 )
             if is_recurring:
-                rr = rrule.rrulestr(recurring.rrule)
+                rr = rrule.rrulestr(recurring.rrule)  # type: ignore
                 time = rr.after(reminder.time)
                 async with self.db.get_session() as s:
                     await s.update(Reminder).set(Reminder.time, time).where(

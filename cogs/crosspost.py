@@ -199,11 +199,11 @@ class Database:
 
             for invoking_message, elems in groupby(
                 await (await query.all()).flatten(),
-                key=lambda elem: elem.invoking_message,
+                key=lambda elem: elem.invoking_message,  # type: ignore
             ):
                 self._expiry_deque.append(invoking_message)
                 self._message_cache[invoking_message] = [
-                    elem.sent_message for elem in elems
+                    elem.sent_message for elem in elems  # type: ignore
                 ]
             self._expiry_task = asyncio.create_task(self._expire())
 
@@ -284,7 +284,8 @@ class Database:
                     == invoking_message  # type: ignore
                 )
                 return [
-                    elem.sent_message for elem in await (await query.all()).flatten()
+                    elem.sent_message  # type: ignore
+                    for elem in await (await query.all()).flatten()
                 ]
         else:
             return []
