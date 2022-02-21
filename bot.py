@@ -68,7 +68,7 @@ class BeattieBot(Bot):
             data = toml.load(file)
 
         password = data.get("config_password", "")
-        self.loglevel = data.get("loglevel", "WARNING")
+        self.loglevel = data.get("loglevel", logging.WARNING)
         self.debug = debug
         self.session = aiohttp.ClientSession(loop=self.loop)
         dsn = f"postgresql://beattie:{password}@localhost/beattie"
@@ -77,10 +77,12 @@ class BeattieBot(Bot):
         self.config = Config(self)
         self.uptime = datetime.now().astimezone()
         self.extra = {}
-        if not self.debug:
-            self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
-        else:
+        self.new_logger()
+        if debug:
+            self.loglevel = logging.DEBUG
             self.archive_task = None
+        else:
+            self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
 
     async def close(self) -> None:
         await self.session.close()
@@ -96,8 +98,7 @@ class BeattieBot(Bot):
 
     def new_logger(self) -> None:
         logger = logging.getLogger("discord")
-        loglevel = getattr(logging, self.loglevel, logging.CRITICAL)
-        logger.setLevel(loglevel)
+        logger.setLevel(self.loglevel)
         now = datetime.now().astimezone()
         filename = now.strftime("discord%Y%m%d%H%M.log")
         handler = logging.FileHandler(filename=filename, encoding="utf-8", mode="w")
