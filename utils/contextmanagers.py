@@ -49,7 +49,7 @@ class get:
                 return await self.__aenter__()
             else:
                 raise e from None
-        if self.resp.status != 200:
+        if self.resp.status not in range(200, 300):
             self.resp.close()
             raise ResponseError(code=self.resp.status, url=str(self.resp.url))
         return self.resp

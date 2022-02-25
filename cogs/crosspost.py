@@ -1031,6 +1031,11 @@ class Crosspost(Cog):
 
         for image in images:
             url = image.get("content")
+            if url.endswith(".gifv"):
+                async with self.get(url, headers={"Range": "bytes=0-2"}) as resp:
+                    start = await resp.read()
+                if start.startswith(b"GIF"):
+                    url = url[:-1]
             await self.send(ctx, url)
         if mode == 1 and pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
