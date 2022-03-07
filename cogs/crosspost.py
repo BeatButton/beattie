@@ -54,12 +54,12 @@ PIXIV_URL_EXPR = re.compile(
 )
 
 HICCEARS_URL_EXPR = re.compile(
-    r"https?://(?:www\.)?hiccears\.com/(?:(?:gallery)|(?:picture))\.php\?[gp]id=\d+"
+    r"https?://(?:www\.)?hiccears\.com/(?:contents/[\w-]+|file/[\w-]+/[\w-]+/preview)"
 )
 HICCEARS_IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
-HICCEARS_THUMB_SELECTOR = ".//img[contains(@src, 'thumbnails')]"
-HICCEARS_TEXT_SELECTOR = ".//div[contains(@class, 'panel-body')]"
-HICCEARS_TITLE_SELECTOR = ".//div[contains(@class, 'panel-heading')]/div/a"
+HICCEARS_THUMB_SELECTOR = ".//a[contains(@class, 'photo-preview')]"
+HICCEARS_TEXT_SELECTOR = ".//div[contains(@class, 'widget-box-content')]"
+HICCEARS_TITLE_SELECTOR = ".//h2[contains(@class, 'section-title')]"
 
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
@@ -931,39 +931,28 @@ class Crosspost(Cog):
         return File(img, name)
 
     async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
+        if link.endswith("preview"):
+            await self.send_single_hiccears(ctx, link)
+            return True
+
         async with self.get(link, headers=self.hiccears_headers) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
         text = None
         if await self.should_post_text(ctx):
             title = root.xpath(HICCEARS_TITLE_SELECTOR)[0].text
-            description = root.xpath(HICCEARS_TEXT_SELECTOR)[-1].text_content().strip()
+            description = root.xpath(HICCEARS_TEXT_SELECTOR)[0].text_content().strip()
+            description = description.removeprefix("Description")
             description = re.sub(r"\r?\n\t+", "", description)
-            description = description.removeprefix("Description: ")
             description = description.replace("\n", "\n> ")
             text = f"**{title}**"
             if description:
                 text = f"{text}\n> {description}"
             text = suppress_links(text)
 
-        if single_image := root.xpath(HICCEARS_IMG_SELECTOR):
-            a = single_image[0]
-            href = a.get("href").lstrip(".")
-            url = f"https://{resp.host}{href}"
-            await self.send(ctx, url)
-            if text:
-                await ctx.send(text)
-            return True
-
         thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
 
         num_images = len(thumbs)
-
-        if num_images == 0:
-            await ctx.send(
-                "Hiccears login expired. <@!140293604726800385> needs to fix this. >:("
-            )
-            return False
 
         max_pages = await self.get_max_pages(ctx)
 
@@ -972,27 +961,9 @@ class Crosspost(Cog):
 
         pages_remaining = num_images - max_pages
 
-        host = resp.host
-
         for thumb in thumbs[:max_pages]:
-            href, _, _ext = (
-                thumb.get("src")
-                .lstrip(".")
-                .replace("thumbnails", "imgs")
-                .rpartition(".")
-            )
-            for ext in ("png", "jpg", "jpeg", "gif"):
-                url = f"https://{host}{href}.{ext}"
-                async with self.session.request(
-                    "HEAD", url, headers=self.hiccears_headers
-                ) as resp:
-                    if resp.status == 200:
-                        break
-            else:
-                await ctx.send("Couldn't find an appropriate extension.")
-                return False
-
-            await self.send(ctx, url)
+            link = f"https://{resp.host}{thumb.get('href')}"
+            await self.send_single_hiccears(ctx, link)
 
         if text:
             await ctx.send(text)
@@ -1001,7 +972,20 @@ class Crosspost(Cog):
             s = "s" if pages_remaining > 1 else ""
             message = f"{pages_remaining} more image{s} at <{link}>"
             await ctx.send(message)
+
         return True
+
+    async def send_single_hiccears(self, ctx: CrosspostContext, link: str):
+        img_link = f"{link.removesuffix('preview')}download"
+        async with self.get(
+            img_link, headers=self.hiccears_headers, use_default_headers=False
+        ) as resp:
+            disposition = resp.content_disposition
+            assert disposition is not None
+            filename = disposition.filename
+            img = BytesIO(await resp.read())
+        img.seek(0)
+        await ctx.send(file=File(img, filename))
 
     async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
         mode = await self.get_mode(ctx)
