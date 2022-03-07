@@ -675,7 +675,7 @@ class Crosspost(Cog):
 
         link = f"https://{link}"
 
-        async with self.get(link) as resp:
+        async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
         try:
