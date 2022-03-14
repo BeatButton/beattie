@@ -932,8 +932,7 @@ class Crosspost(Cog):
 
     async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
         if link.endswith("preview"):
-            await self.send_single_hiccears(ctx, link)
-            return True
+            return await self.send_single_hiccears(ctx, link)
 
         async with self.get(link, headers=self.hiccears_headers) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
@@ -963,7 +962,8 @@ class Crosspost(Cog):
 
         for thumb in thumbs[:max_pages]:
             link = f"https://{resp.host}{thumb.get('href')}"
-            await self.send_single_hiccears(ctx, link)
+            if not await self.send_single_hiccears(ctx, link):
+                return False
 
         if text:
             await ctx.send(text)
@@ -975,17 +975,20 @@ class Crosspost(Cog):
 
         return True
 
-    async def send_single_hiccears(self, ctx: CrosspostContext, link: str):
+    async def send_single_hiccears(self, ctx: CrosspostContext, link: str) -> bool:
         img_link = f"{link.removesuffix('preview')}download"
         async with self.get(
             img_link, headers=self.hiccears_headers, use_default_headers=False
         ) as resp:
             disposition = resp.content_disposition
-            assert disposition is not None
+            if disposition is None:
+                await ctx.send("Failed to get Hiccears image.")
+                return False
             filename = disposition.filename
             img = BytesIO(await resp.read())
         img.seek(0)
         await ctx.send(file=File(img, filename))
+        return True
 
     async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
         mode = await self.get_mode(ctx)
