@@ -65,7 +65,7 @@ class Stats(Cog):
         embed.add_field(name="Guilds", value=str(len(bot.guilds)))
 
         cpu_usage = self.process.cpu_percent()
-        memory_usage = self.process.memory_full_info().uss / 2 ** 20
+        memory_usage = self.process.memory_full_info().uss / 2**20
         embed.add_field(name="CPU Usage", value=f"{cpu_usage:.2f}%")
         embed.add_field(name="Memory Usage", value=f"{memory_usage:.2f} MiB")
         await ctx.send(embed=embed)
@@ -93,5 +93,5 @@ class Stats(Cog):
         return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(Stats())
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(Stats())

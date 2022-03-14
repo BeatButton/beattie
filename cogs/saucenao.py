@@ -64,5 +64,5 @@ class SauceNao(Cog):
             await ctx.bot.handle_error(ctx, e)
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(SauceNao(bot))
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(SauceNao(bot))

@@ -49,5 +49,5 @@ class Wolfram(Cog):
         await ctx.send(result)
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(Wolfram())
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(Wolfram())

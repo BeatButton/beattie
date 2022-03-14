@@ -312,5 +312,5 @@ def denest(rolls: L1) -> str:
     return str(rolls3)
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(RPG())
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(RPG())

@@ -128,5 +128,5 @@ class NSFW(Cog):
         self.titles[site] = root.find(".//title").text
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(NSFW(bot))
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(NSFW(bot))

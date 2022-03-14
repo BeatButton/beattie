@@ -36,6 +36,7 @@ class BeattieBot(Bot):
 
     archive_task: Optional[Task[Any]]
     http: HTTPClient
+    session: aiohttp.ClientSession
 
     extra: dict[str, Any]
 
@@ -70,10 +71,8 @@ class BeattieBot(Bot):
         password = data.get("config_password", "")
         self.loglevel = data.get("loglevel", logging.WARNING)
         self.debug = debug
-        self.session = aiohttp.ClientSession(loop=self.loop)
         dsn = f"postgresql://beattie:{password}@localhost/beattie"
         self.db = DatabaseInterface(dsn)
-        self.loop.create_task(self.db.connect())
         self.config = Config(self)
         self.uptime = datetime.now().astimezone()
         self.extra = {}

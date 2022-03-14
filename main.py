@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
-import logging
+import aiohttp
 import platform
 import sys
 from pathlib import Path
@@ -24,15 +24,24 @@ if debug:
 else:
     prefixes = config["prefixes"]
     token = config["token"]
-bot = BeattieBot(tuple(prefixes), debug=debug)
 
 extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
 extensions.append("jishaku")
 
-for extension in extensions:
-    try:
-        bot.load_extension(extension)
-    except Exception as e:
-        print(f"Failed to load extension {extension}\n{type(e).__name__}: {e}")
 
-bot.run(token)
+async def main() -> None:
+    bot = BeattieBot(tuple(prefixes), debug=debug)
+    async with bot:
+        bot.session = aiohttp.ClientSession()
+        await bot.db.connect()
+        await bot.config.async_init()
+        for extension in extensions:
+            try:
+                await bot.load_extension(extension)
+            except Exception as e:
+                print(f"Failed to load extension {extension}\n{type(e).__name__}: {e}")
+
+        await bot.start(token)
+
+
+asyncio.run(main())

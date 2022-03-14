@@ -22,20 +22,15 @@ MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 class Remind(Cog):
     def __init__(self, bot: BeattieBot):
         self.queue: list[Reminder] = []
-        self.loop = bot.loop
         self.db = bot.db
         self.bot = bot
         self.db.bind_tables(Table)  # type: ignore
-        self.timer: asyncio.Task = self.loop.create_task(asyncio.sleep(0))
-        self.loop.create_task(self.__init())
+        self.timer: asyncio.Task = None  # type: ignore
 
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
 
-    def cog_unload(self) -> None:
-        self.timer.cancel()
-
-    async def __init(self) -> None:
+    async def cog_load(self) -> None:
         await self.bot.wait_until_ready()
         for table in [Reminder, Recurring]:
             await table.create(if_not_exists=True)  # type: ignore
@@ -43,6 +38,10 @@ class Remind(Cog):
             query = s.select(Reminder).order_by(Reminder.time, sort_order="desc")
             self.queue = [reminder async for reminder in await query.all()]
         await self.start_timer()
+
+    def cog_unload(self) -> None:
+        if self.timer is not None:
+            self.timer.cancel()
 
     @commands.group(invoke_without_command=True, usage="")
     async def remind(
@@ -296,7 +295,7 @@ class Remind(Cog):
                     )
 
     async def start_timer(self) -> None:
-        self.timer = self.loop.create_task(self.sleep())
+        self.timer = asyncio.create_task(self.sleep())
 
     async def sleep(self) -> None:
         while self.queue:
@@ -309,5 +308,5 @@ class Remind(Cog):
                 await asyncio.sleep(min(delta, 3_000_000))
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(Remind(bot))
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(Remind(bot))

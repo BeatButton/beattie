@@ -96,5 +96,5 @@ def format_comic(data: Mapping[str, Any]) -> discord.Embed:
     return embed
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(XKCD())
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(XKCD())

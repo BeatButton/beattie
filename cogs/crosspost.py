@@ -180,9 +180,8 @@ class Database:
         self._settings_cache: dict[tuple[int, int], Settings] = {}
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
-        bot.loop.create_task(self.__init())
 
-    async def __init(self) -> None:
+    async def async_init(self) -> None:
         await self.bot.wait_until_ready()
         for table in (CrosspostSettings, CrosspostMessage):
             await table.create(if_not_exists=True)  # type: ignore
@@ -384,15 +383,12 @@ class Crosspost(Cog):
         self.db = Database(bot)
         with open("config/headers.toml") as fp:
             self.headers = toml.load(fp)
-        self.session = aiohttp.ClientSession(loop=bot.loop)
         self.parser = html.HTMLParser(encoding="utf-8")
         self.expr_dict = {
             expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
             for name, expr in globals().items()
             if name.endswith("URL_EXPR")
         }
-        self.login_task = self.bot.loop.create_task(self.pixiv_login_loop())
-        self.init_task = bot.loop.create_task(self.__init())
         if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
             self.ongoing_tasks = ongoing_tasks
         else:
@@ -400,7 +396,9 @@ class Crosspost(Cog):
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
         self.tldextract = TLDExtract(suffix_list_urls=())
 
-    async def __init(self) -> None:
+    async def cog_load(self) -> None:
+        self.session = aiohttp.ClientSession()
+        self.login_task = asyncio.create_task(self.pixiv_login_loop())
         with open("config/logins.toml") as fp:
             data = toml.load(fp)
 
@@ -417,6 +415,8 @@ class Crosspost(Cog):
         async with self.get(url, method="POST", params=ib_login) as resp:
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
+
+        await self.db.async_init()
 
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
@@ -475,8 +475,8 @@ class Crosspost(Cog):
                 toml.dump(logins, fp)
             await asyncio.sleep(res["expires_in"])
 
-    def cog_unload(self) -> None:
-        self.bot.loop.create_task(self.session.close())
+    async def cog_unload(self) -> None:
+        await self.session.close()
         self.login_task.cancel()
 
     def get(
@@ -819,9 +819,7 @@ class Crosspost(Cog):
                 max_pages = num_pages
 
             tasks = [
-                self.bot.loop.create_task(
-                    self.save_pixiv(img_url, headers, filesize_limit)
-                )
+                asyncio.create_task(self.save_pixiv(img_url, headers, filesize_limit))
                 for img_url, _ in zip(urls, range(max_pages))
             ]
 
@@ -1474,5 +1472,5 @@ remove embeds from messages it processes successfully."""
         pass
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(Crosspost(bot))
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(Crosspost(bot))

@@ -68,5 +68,5 @@ class Dictionary(Cog):
             await paginator.start(ctx)
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(Dictionary(bot))
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(Dictionary(bot))

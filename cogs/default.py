@@ -64,5 +64,5 @@ class Default(Cog):
         await ctx.send(url.format(ctx.me.id))
 
 
-def setup(bot: BeattieBot) -> None:
-    bot.add_cog(Default())
+async def setup(bot: BeattieBot) -> None:
+    await bot.add_cog(Default())

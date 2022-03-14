@@ -14,10 +14,9 @@ class Config:
         self.db = bot.db
         self.bot = bot
         self.db.bind_tables(Table)  # type: ignore
-        bot.loop.create_task(self.__init())
         self._cache: dict[int, dict[str, Any]] = {}
 
-    async def __init(self) -> None:
+    async def async_init(self) -> None:
         await self.bot.wait_until_ready()
         await Guild.create(if_not_exists=True)
 
