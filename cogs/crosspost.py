@@ -933,6 +933,7 @@ class Crosspost(Cog):
             return await self.send_single_hiccears(ctx, link)
 
         async with self.get(link, headers=self.hiccears_headers) as resp:
+            self.update_hiccears_cookies(resp)
             root = html.document_fromstring(await resp.read(), self.parser)
 
         text = None
@@ -978,6 +979,7 @@ class Crosspost(Cog):
         async with self.get(
             img_link, headers=self.hiccears_headers, use_default_headers=False
         ) as resp:
+            self.update_hiccears_cookies(resp)
             disposition = resp.content_disposition
             if disposition is None:
                 await ctx.send("Failed to get Hiccears image.")
@@ -987,6 +989,23 @@ class Crosspost(Cog):
         img.seek(0)
         await ctx.send(file=File(img, filename))
         return True
+
+    def update_hiccears_cookies(self, resp: aiohttp.ClientResponse):
+        if "hiccears" in resp.cookies:
+            self.bot.logger.info("Refreshing hiccears cookies from response")
+
+            sess = resp.cookies["hiccears"]
+            remember = resp.cookies["REMEMBERME"]
+            cookie = f"hiccears={sess};REMEMBERME={remember}"
+
+            with open("config/logins.toml") as fp:
+                logins = toml.load(fp)
+            logins["hiccears"]["Cookie"] = cookie
+
+            self.hiccears_headers["Cookie"] = cookie
+
+            with open("config/logins.toml", "w") as fp:
+                toml.dump(logins, fp)
 
     async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
         mode = await self.get_mode(ctx)
