@@ -548,9 +548,6 @@ class Crosspost(Cog):
 
     async def process_links(self, ctx: CrosspostContext) -> None:
         content = remove_spoilers(ctx.message.content)
-        me = ctx.me
-        channel = ctx.channel
-        assert isinstance(me, discord.Member)
         do_suppress = await self.should_cleanup(ctx)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
