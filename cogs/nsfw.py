@@ -1,19 +1,17 @@
 import random
 from collections import defaultdict
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import Any, Iterable
 from urllib import parse
 
 import discord
 from discord import Embed, File, TextChannel
+from discord.abc import MessageableChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
 
 from bot import BeattieBot
 from context import BContext
-
-if TYPE_CHECKING:
-    from discord.abc import MessageableChannel as Channel
 
 
 class NSFW(Cog):
@@ -36,9 +34,9 @@ class NSFW(Cog):
         return True
 
     def __init__(self, bot: BeattieBot):
-        self.cache: dict[Channel, dict[str, dict[frozenset[str], Any]]] = defaultdict(
-            lambda: defaultdict(dict)
-        )
+        self.cache: dict[
+            MessageableChannel, dict[str, dict[frozenset[str], Any]]
+        ] = defaultdict(lambda: defaultdict(dict))
         self.titles: dict[str, str] = {}
         self.get = bot.get
         self.log = bot.logger.debug

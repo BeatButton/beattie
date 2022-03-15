@@ -22,7 +22,7 @@ import aiohttp
 import discord
 from tldextract import TLDExtract
 import toml
-from discord import CategoryChannel, File, Message, TextChannel, Thread
+from discord import File, Message, PartialMessageable, Thread
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
@@ -105,7 +105,7 @@ FANBOX_URL_EXPR = re.compile(r"https?://(?:[\w-]+.)?fanbox\.cc(?:/.+)*?/posts/\d
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
-CONFIG_TARGET = CategoryChannel | TextChannel | Thread
+CONFIG_TARGET = discord.CategoryChannel | discord.TextChannel | Thread
 
 
 async def try_wait_for(
@@ -221,12 +221,11 @@ class Database:
         guild = message.guild
         assert guild is not None
         channel = message.channel
-        assert isinstance(channel, (TextChannel, Thread))
 
         guild_id = guild.id
         out = await self._get_settings(guild_id, 0)
 
-        if category := channel.category:
+        if category := getattr(channel, "category", None):
             out = out.apply(await self._get_settings(guild_id, category.id))
         if isinstance(channel, Thread):
             out = out.apply(await self._get_settings(guild_id, channel.parent_id))
@@ -552,7 +551,6 @@ class Crosspost(Cog):
         me = ctx.me
         channel = ctx.channel
         assert isinstance(me, discord.Member)
-        assert isinstance(channel, (TextChannel, Thread))
         do_suppress = await self.should_cleanup(ctx)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
@@ -577,8 +575,11 @@ class Crosspost(Cog):
             return
         channel = message.channel
         me = guild.me
-        assert isinstance(channel, (TextChannel, Thread))
-        assert isinstance(me, discord.Member)
+
+        if isinstance(channel, PartialMessageable):
+            channel = await self.bot.fetch_channel(channel.id)
+            assert not isinstance(channel, discord.abc.PrivateChannel)
+
         if not channel.permissions_for(me).send_messages:
             return
         if not (await self.db.get_settings(message)).auto:
@@ -659,7 +660,7 @@ class Crosspost(Cog):
         me = ctx.me
         channel = ctx.channel
         assert isinstance(me, discord.Member)
-        assert isinstance(channel, (TextChannel, Thread))
+        assert not isinstance(channel, PartialMessageable)
         return (
             channel.permissions_for(me).manage_messages
             and await self.get_mode(ctx) == 2
