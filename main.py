@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import asyncio
-import aiohttp
 import platform
 import sys
 from pathlib import Path
 
+import aiohttp
 import toml
 
 from bot import BeattieBot

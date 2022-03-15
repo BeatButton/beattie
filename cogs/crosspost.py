@@ -20,13 +20,13 @@ from zipfile import ZipFile
 
 import aiohttp
 import discord
-from tldextract import TLDExtract
 import toml
 from discord import File, Message, PartialMessageable, Thread
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import html
+from tldextract import TLDExtract
 
 from bot import BeattieBot
 from context import BContext
