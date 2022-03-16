@@ -76,12 +76,12 @@ class BeattieBot(Bot):
         self.config = Config(self)
         self.uptime = datetime.now().astimezone()
         self.extra = {}
-        self.new_logger()
         if debug:
             self.loglevel = logging.DEBUG
             self.archive_task = None
         else:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
+        self.new_logger()
 
     async def close(self) -> None:
         await self.session.close()
@@ -96,10 +96,14 @@ class BeattieBot(Bot):
         await asyncio.to_thread(self.archive_logs)
 
     def new_logger(self) -> None:
-        logger = logging.getLogger("discord")
+        logger = logging.getLogger()
         logger.setLevel(self.loglevel)
         now = datetime.now().astimezone()
-        filename = now.strftime("discord%Y%m%d%H%M.log")
+        if self.debug:
+            pre = "debug"
+        else:
+            pre = "discord"
+        filename = now.strftime(f"{pre}%Y%m%d%H%M.log")
         handler = logging.FileHandler(filename=filename, encoding="utf-8", mode="w")
         handler.setFormatter(
             logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
@@ -114,7 +118,7 @@ class BeattieBot(Bot):
         else:
             mode = "w"
         # get all logfiles but newest
-        old_logs = sorted(Path(".").glob("*.log"), key=os.path.getmtime)[:-1]
+        old_logs = sorted(Path(".").glob("discord*.log"), key=os.path.getmtime)[:-1]
         with tarfile.open(logname, mode) as tar:
             for log in old_logs:
                 name = f"{log.name}.xz"
