@@ -211,8 +211,14 @@ class Remind(Cog):
         found = False
         is_recurring = False
         if (
-            (guild := self.bot.get_guild(reminder.guild_id))  # type: ignore
-            and (member := guild.get_member(reminder.user_id))  # type: ignore
+            (
+                guild := self.bot.get_guild(reminder.guild_id)  # type: ignore
+                or await self.bot.fetch_guild(reminder.guild_id)  # type: ignore
+            )
+            and (
+                member := guild.get_member(reminder.user_id)  # type: ignore
+                or await guild.fetch_member(reminder.user_id)  # type: ignore
+            )
             and (
                 channel := guild.get_channel_or_thread(
                     (
@@ -222,6 +228,7 @@ class Remind(Cog):
                     )
                     or reminder.channel_id
                 )
+                or await guild.fetch_channel(reminder_channel_id or reminder.channel_id)  # type: ignore
             )
         ):
             found = True
