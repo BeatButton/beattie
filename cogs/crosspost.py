@@ -33,7 +33,7 @@ from context import BContext
 from schema.crosspost import Crosspost as CrosspostSettings
 from schema.crosspost import CrosspostMessage, Table
 from utils.checks import is_owner_or
-from utils.contextmanagers import get as get_
+from utils.contextmanagers import get
 from utils.etc import display_bytes, remove_spoilers, suppress_links
 from utils.exceptions import ResponseError
 
@@ -484,10 +484,10 @@ class Crosspost(Cog):
         method: str = "GET",
         use_default_headers: bool = True,
         **kwargs: Any,
-    ) -> get_:
+    ) -> get:
         if use_default_headers:
             kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
-        return get_(self.session, *urls, method=method, **kwargs)
+        return get(self.session, *urls, method=method, **kwargs)
 
     @overload
     async def save(
