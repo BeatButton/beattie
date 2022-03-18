@@ -26,7 +26,7 @@ from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import html
-from tldextract import TLDExtract
+from tldextract.tldextract import TLDExtract
 
 from bot import BeattieBot
 from context import BContext
