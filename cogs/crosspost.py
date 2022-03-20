@@ -988,17 +988,19 @@ class Crosspost(Cog):
         return True
 
     def update_hiccears_cookies(self, resp: aiohttp.ClientResponse):
-        if "hiccears" in resp.cookies:
+        if sess := resp.cookies.get("hiccears"):
             self.bot.logger.info("Refreshing hiccears cookies from response")
 
-            sess = resp.cookies["hiccears"]
-            remember = resp.cookies["REMEMBERME"]
-            cookie = f"hiccears={sess};REMEMBERME={remember}"
+            cookie = re.sub(
+                r"hiccears=\w+;REMEMBERME=(.*)",
+                rf"hiccears={sess};REMEMBERME=\g<1>",
+                self.hiccears_headers["Cookie"],
+            )
 
             with open("config/logins.toml") as fp:
                 logins = toml.load(fp)
-            logins["hiccears"]["Cookie"] = cookie
 
+            logins["hiccears"]["Cookie"] = cookie
             self.hiccears_headers["Cookie"] = cookie
 
             with open("config/logins.toml", "w") as fp:
