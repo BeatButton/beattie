@@ -25,22 +25,10 @@ else:
     prefixes = config["prefixes"]
     token = config["token"]
 
-extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
-extensions.append("jishaku")
-
 
 async def main() -> None:
     bot = BeattieBot(tuple(prefixes), debug=debug)
     async with bot:
-        bot.session = aiohttp.ClientSession()
-        await bot.db.connect()
-        await bot.config.async_init()
-        for extension in extensions:
-            try:
-                await bot.load_extension(extension)
-            except Exception as e:
-                print(f"Failed to load extension {extension}\n{type(e).__name__}: {e}")
-
         await bot.start(token)
 
 

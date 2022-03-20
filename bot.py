@@ -83,6 +83,18 @@ class BeattieBot(Bot):
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
         self.new_logger()
 
+    async def setup_hook(self) -> None:
+        self.session = aiohttp.ClientSession()
+        await self.db.connect()
+        await self.config.async_init()
+        extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
+        extensions.append("jishaku")
+        for extension in extensions:
+            try:
+                await self.load_extension(extension)
+            except Exception as e:
+                print(f"Failed to load extension {extension}\n{type(e).__name__}: {e}")
+
     async def close(self) -> None:
         await self.session.close()
         await self.db.close()

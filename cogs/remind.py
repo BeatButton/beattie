@@ -31,7 +31,6 @@ class Remind(Cog):
         return ctx.guild is not None
 
     async def cog_load(self) -> None:
-        await self.bot.wait_until_ready()
         for table in [Reminder, Recurring]:
             await table.create(if_not_exists=True)  # type: ignore
         async with self.db.get_session() as s:

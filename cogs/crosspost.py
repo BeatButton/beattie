@@ -182,7 +182,6 @@ class Database:
         self._message_cache: dict[int, list[int]] = {}
 
     async def async_init(self) -> None:
-        await self.bot.wait_until_ready()
         for table in (CrosspostSettings, CrosspostMessage):
             await table.create(if_not_exists=True)  # type: ignore
 
