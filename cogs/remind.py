@@ -284,7 +284,7 @@ class Remind(Cog):
                     message, exc_info=(type(e), e, e.__traceback__)
                 )
             if is_recurring:
-                rr = rrule.rrulestr(recurring.rrule)  # type: ignore
+                rr = rrule.rrulestr(recurring.rrule, dtstart=reminder.time)  # type: ignore
                 time = rr.after(reminder.time)
                 async with self.db.get_session() as s:
                     await s.update(Reminder).set(Reminder.time, time).where(
