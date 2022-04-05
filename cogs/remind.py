@@ -25,7 +25,6 @@ class Remind(Cog):
         self.db = bot.db
         self.bot = bot
         self.db.bind_tables(Table)  # type: ignore
-        self.timer: asyncio.Task = None  # type: ignore
 
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
@@ -39,8 +38,7 @@ class Remind(Cog):
         await self.start_timer()
 
     def cog_unload(self) -> None:
-        if self.timer is not None:
-            self.timer.cancel()
+        self.timer.cancel()
 
     @commands.group(invoke_without_command=True, usage="")
     async def remind(
