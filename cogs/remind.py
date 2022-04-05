@@ -308,7 +308,7 @@ class Remind(Cog):
             if delta <= 0:
                 await self.send_reminder(self.queue.pop())
             else:
-                await asyncio.sleep(min(delta, 3_000_000))
+                await asyncio.sleep(delta)
 
 
 async def setup(bot: BeattieBot) -> None:
