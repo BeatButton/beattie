@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+import logging
 from typing import Optional
 
 import discord
@@ -26,6 +27,7 @@ class Remind(Cog):
         self.db = bot.db
         self.bot = bot
         self.db.bind_tables(Table)  # type: ignore
+        self.logger = logging.getLogger(__name__)
 
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
@@ -207,6 +209,7 @@ class Remind(Cog):
             )
 
     async def send_reminder(self, reminder: Reminder) -> None:
+        self.logger.debug(f"handling reminder {reminder}")
         found = False
         is_recurring = False
         if (
@@ -238,6 +241,8 @@ class Remind(Cog):
                 )
                 recurring = await query.first()
                 is_recurring = recurring is not None
+
+            self.logger.debug(f"reminder {reminder.id} found, recurring={is_recurring}")
 
             reference = None
             message: str
@@ -277,9 +282,8 @@ class Remind(Cog):
                     "An error occured in sending a reminder to "
                     f"{channel.guild.name}#{channel.name}"
                 )
-                self.bot.logger.exception(
-                    message, exc_info=(type(e), e, e.__traceback__)
-                )
+                self.logger.exception(message, exc_info=(type(e), e, e.__traceback__))
+            self.logger.debug(f"reminder {reminder.id} was sent")
             if is_recurring:
                 rr = rrule.rrulestr(recurring.rrule, dtstart=reminder.time)  # type: ignore
                 time = rr.after(reminder.time)
@@ -289,6 +293,8 @@ class Remind(Cog):
                     )
                 reminder.time = time
                 await self.schedule_reminder(reminder)
+        else:
+            self.logger.debug(f"reminder {reminder.id} could not be resolved")
         if not is_recurring:
             async with self.db.get_session() as s:
                 await s.remove(reminder)
@@ -308,6 +314,7 @@ class Remind(Cog):
             if delta <= 0:
                 await self.send_reminder(self.queue.pop())
             else:
+                self.logger.debug(f"sleeping for {delta} seconds")
                 await asyncio.sleep(delta)
 
 
