@@ -224,10 +224,10 @@ class Remind(Cog):
                         reminder_channel_id := (
                             await self.bot.config.get_guild(guild.id)  # type: ignore
                         ).get("reminder_channel")
+                        or reminder.channel_id
                     )
-                    or reminder.channel_id
                 )
-                or await guild.fetch_channel(reminder_channel_id or reminder.channel_id)  # type: ignore
+                or await guild.fetch_channel(reminder_channel_id)  # type: ignore
             )
         ):
             found = True
@@ -246,10 +246,7 @@ class Remind(Cog):
             else:
                 topic = reminder.topic or "something"
                 message = f"You asked to be reminded about {topic}."
-                if (
-                    reminder_channel_id is None
-                    or reminder_channel_id == reminder.channel_id
-                ):
+                if reminder_channel_id == reminder.channel_id:
                     try:
                         await channel.fetch_message(reminder.message_id)  # type: ignore
                     except (discord.NotFound, discord.Forbidden):
