@@ -80,7 +80,7 @@ class XKCD(Cog):
         await ctx.send(embed=format_comic(data))
 
     @commands.command(hidden=True)
-    async def sudo(self, ctx: BContext, *_: Any) -> None:
+    async def sudo(self, ctx: BContext, *, _: str) -> None:
         if await ctx.bot.is_owner(ctx.author):
             await ctx.send("Operation successful.")
         else:

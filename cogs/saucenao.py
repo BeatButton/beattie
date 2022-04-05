@@ -14,10 +14,10 @@ class SauceNao(Cog):
         self.parser = etree.HTMLParser()
 
     @commands.command(aliases=["sauce"])
-    async def saucenao(self, ctx: BContext, *, link: str = "") -> None:
+    async def saucenao(self, ctx: BContext, *, link: str = None) -> None:
         """Find the source of a linked or attached image using saucenao."""
         async with ctx.typing():
-            if not link:
+            if link is None:
                 if len(ctx.message.attachments) == 1:
                     link = ctx.message.attachments[0].url
                 else:
