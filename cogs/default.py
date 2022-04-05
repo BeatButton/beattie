@@ -12,15 +12,12 @@ class Default(Cog):
     """Default useful commands."""
 
     @commands.command()
-    async def avatar(self, ctx: BContext, *, user: Member = None) -> None:
-        target: Member | User
-        if user is None:
-            target = ctx.author
-        else:
-            target = user
+    async def avatar(
+        self, ctx: BContext, *, user: User = commands.param(default=commands.Author)
+    ) -> None:
         img = BytesIO()
-        avatar = target.display_avatar.with_format(
-            "gif" if target.display_avatar.is_animated() else "png"
+        avatar = user.display_avatar.with_format(
+            "gif" if user.display_avatar.is_animated() else "png"
         )
         await avatar.save(img)
         filename = str(avatar).rpartition("/")[2].partition("?")[0]

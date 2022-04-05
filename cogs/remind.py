@@ -13,7 +13,7 @@ from bot import BeattieBot
 from context import BContext
 from schema.remind import Recurring, Reminder, Table
 from utils.checks import is_owner_or
-from utils.converters import Time
+from utils.converters import TimeConverter
 from utils.etc import display_timedelta, reverse_insort_by_key
 from utils.type_hints import GuildMessageable
 
@@ -45,7 +45,7 @@ class Remind(Cog):
     async def remind(
         self,
         ctx: BContext,
-        time: Time,
+        time: RecurringEvent | datetime = commands.param(converter=TimeConverter),
         *,
         topic: str = None,
     ) -> None:
@@ -61,17 +61,16 @@ class Remind(Cog):
     async def set_reminder(
         self,
         ctx: BContext,
-        time: Time,
+        time: RecurringEvent | datetime = commands.param(converter=TimeConverter),
         *,
         topic: str = None,
     ) -> None:
         """Have the bot remind you about something.
         First put time (in quotes if there are spaces), then topic"""
-        real_time: RecurringEvent | datetime = time  # type: ignore
-        if topic is None and isinstance(real_time, RecurringEvent):
+        if topic is None and isinstance(time, RecurringEvent):
             await ctx.send("You must supply a message for a recurring reminder.")
             return
-        if scheduled := await self.process_reminder(ctx, real_time, topic):
+        if scheduled := await self.process_reminder(ctx, time, topic):
             msg = "Okay, I'll remind you"
             now = datetime.now()
             if scheduled.date() != now.date():
