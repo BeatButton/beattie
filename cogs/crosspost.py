@@ -36,6 +36,7 @@ from utils.checks import is_owner_or
 from utils.contextmanagers import get
 from utils.etc import display_bytes, remove_spoilers, suppress_links
 from utils.exceptions import ResponseError
+from utils.type_hints import GuildMessageable
 
 _IO = TypeVar("_IO", bound=IO[bytes])
 
@@ -105,7 +106,7 @@ FANBOX_URL_EXPR = re.compile(r"https?://(?:[\w-]+.)?fanbox\.cc(?:/.+)*?/posts/\d
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
-CONFIG_TARGET = discord.CategoryChannel | discord.TextChannel | Thread
+ConfigTarget = GuildMessageable | discord.CategoryChannel
 
 
 async def try_wait_for(
@@ -1343,7 +1344,7 @@ applying it to the guild as a whole."""
         ctx: BContext,
         enabled: bool,
         *,
-        target: CONFIG_TARGET = None,
+        target: ConfigTarget = None,
     ) -> None:
         """Enable or disable automatic crossposting."""
         guild = ctx.guild
@@ -1362,7 +1363,7 @@ applying it to the guild as a whole."""
         ctx: BContext,
         mode: str,
         *,
-        target: CONFIG_TARGET = None,
+        target: ConfigTarget = None,
     ) -> None:
         """Change image crossposting mode.
 
@@ -1396,7 +1397,7 @@ remove embeds from messages it processes successfully."""
         ctx: BContext,
         max_pages: int,
         *,
-        target: CONFIG_TARGET = None,
+        target: ConfigTarget = None,
     ) -> None:
         """Set the maximum number of images to send.
 
@@ -1416,7 +1417,7 @@ remove embeds from messages it processes successfully."""
         ctx: BContext,
         enabled: bool,
         *,
-        target: CONFIG_TARGET = None,
+        target: ConfigTarget = None,
     ) -> None:
         """Toggle automatic embed removal."""
         guild = ctx.guild
@@ -1435,7 +1436,7 @@ remove embeds from messages it processes successfully."""
         ctx: BContext,
         enabled: bool,
         *,
-        target: CONFIG_TARGET = None,
+        target: ConfigTarget = None,
     ) -> None:
         """Toggle crossposting of text context."""
         guild = ctx.guild

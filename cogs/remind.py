@@ -4,7 +4,7 @@ from typing import Optional
 
 import discord
 from dateutil import rrule
-from discord import AllowedMentions, Embed, TextChannel, Thread
+from discord import AllowedMentions, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
 from recurrent.event_parser import RecurringEvent
@@ -15,6 +15,7 @@ from schema.remind import Recurring, Reminder, Table
 from utils.checks import is_owner_or
 from utils.converters import Time
 from utils.etc import display_timedelta, reverse_insort_by_key
+from utils.type_hints import GuildMessageable
 
 MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 
@@ -138,7 +139,9 @@ class Remind(Cog):
 
     @remind.command(name="channel")
     @is_owner_or(manage_guild=True)
-    async def set_channel(self, ctx: BContext, channel: TextChannel = None) -> None:
+    async def set_channel(
+        self, ctx: BContext, channel: GuildMessageable = None
+    ) -> None:
         """Set the channel reminders will appear in. Invoke with no input to reset."""
         assert ctx.guild is not None
         await ctx.bot.config.set_guild(
@@ -229,7 +232,7 @@ class Remind(Cog):
             )
         ):
             found = True
-            assert isinstance(channel, (TextChannel, Thread))
+            assert isinstance(channel, GuildMessageable)
             async with self.db.get_session() as s:
                 query = s.select(Recurring).where(
                     Recurring.id == reminder.id  # type: ignore
