@@ -689,7 +689,6 @@ class Crosspost(Cog):
             text = text[1:-1]
             text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
             text = text.replace("\n", "\n> ")
-            text = f"> {text}"
             text = suppress_links(text)
 
         if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
@@ -699,7 +698,7 @@ class Crosspost(Cog):
                 msg = await self.send(ctx, f"{url}:orig")
                 embedded = embedded or not too_large(msg)
             if embedded and text:
-                await ctx.send(text)
+                await ctx.send(f"> {text}")
             return embedded
         elif tweet.xpath(TWITTER_IS_GIF):
             with NamedTemporaryFile() as fp:
