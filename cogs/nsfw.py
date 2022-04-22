@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterable
 from urllib import parse
 
 import discord

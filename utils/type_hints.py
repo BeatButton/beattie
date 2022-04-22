@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any
 
-from discord import TextChannel, VoiceChannel, Thread
+from discord import TextChannel, Thread, VoiceChannel
 
 GuildMessageable = TextChannel | VoiceChannel | Thread
 
