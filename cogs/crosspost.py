@@ -380,8 +380,11 @@ class Crosspost(Cog):
     def __init__(self, bot: BeattieBot):
         self.bot = bot
         self.db = Database(bot)
-        with open("config/headers.toml") as fp:
-            self.headers = toml.load(fp)
+        try:
+            with open("config/headers.toml") as fp:
+                self.headers = toml.load(fp)
+        except FileNotFoundError:
+            self.headers = {}
         self.parser = html.HTMLParser(encoding="utf-8")
         self.expr_dict = {
             expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
