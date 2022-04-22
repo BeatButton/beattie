@@ -1,0 +1,18 @@
+[pixiv]
+username = ""
+password = ""
+
+[inkbunny]
+username = ""
+password = ""
+
+[imgur]
+id = ""
+secret = ""
+
+[hiccears]
+Cookie = ""
+
+[gelbooru]
+api_key = ""
+user_id = ""

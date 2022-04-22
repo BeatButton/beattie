@@ -1,0 +1,7 @@
+token = ""
+prefixes = [ "?", "!"]
+test_token = ""
+test_prefixes = [ "??", "!!"]
+loglevel = "INFO"
+wolfram_key = ""
+config_password = ""
