@@ -2,9 +2,7 @@
 import asyncio
 import platform
 import sys
-from pathlib import Path
 
-import aiohttp
 import toml
 
 from bot import BeattieBot

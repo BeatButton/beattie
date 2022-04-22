@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from discord import File, Member, User
+from discord import File, User
 from discord.ext import commands
 from discord.ext.commands import Cog
 
