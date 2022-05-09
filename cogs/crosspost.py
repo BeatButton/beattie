@@ -272,7 +272,6 @@ class Database:
     async def get_sent_messages(self, invoking_message: int) -> list[int]:
         if sent_messages := self._message_cache.get(invoking_message):
             return sent_messages
-
         elif (
             utcnow() - snowflake_time(invoking_message)
         ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
@@ -996,7 +995,7 @@ class Crosspost(Cog):
 
             cookie = re.sub(
                 r"hiccears=\w+;REMEMBERME=(.*)",
-                rf"hiccears={sess};REMEMBERME=\g<1>",
+                rf"hiccears={sess.value};REMEMBERME=\g<1>",
                 self.hiccears_headers["Cookie"],
             )
 
