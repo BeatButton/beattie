@@ -1071,6 +1071,10 @@ class Crosspost(Cog):
 
         all_embedded = True
 
+        real_url = post["url"]
+        if real_url != link:
+            await ctx.send(f"Real URL: <{real_url}>")
+
         for image in images[idx:]:
             urls = [url for url in [image["remote_url"], image["url"]] if url]
 
