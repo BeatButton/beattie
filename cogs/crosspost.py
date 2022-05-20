@@ -554,7 +554,7 @@ class Crosspost(Cog):
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
                 try:
-                    if await func(ctx, link) and do_suppress:
+                    if await func(ctx, link.strip()) and do_suppress:
                         try:
                             await ctx.message.edit(suppress=True)
                         except (discord.NotFound, discord.Forbidden):
