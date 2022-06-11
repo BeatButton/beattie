@@ -110,7 +110,7 @@ ConfigTarget = GuildMessageable | discord.CategoryChannel
 
 
 async def try_wait_for(
-    proc: asyncio.subprocess.Process, *, timeout: int = 180, kill_timeout: int = 15
+    proc: asyncio.subprocess.Process, *, timeout: int = 15, kill_timeout: int = 5
 ) -> bytes:
     try:
         out, _err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
