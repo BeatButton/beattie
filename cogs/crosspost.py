@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import logging
 import re
 import sys
 import traceback
@@ -397,6 +398,7 @@ class Crosspost(Cog):
             self.ongoing_tasks = {}
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
         self.tldextract = TLDExtract(suffix_list_urls=())
+        self.logger = logging.getLogger("beattie.crosspost")
 
     async def cog_load(self) -> None:
         self.session = aiohttp.ClientSession()
@@ -676,6 +678,11 @@ class Crosspost(Cog):
 
         link = f"https://{link}"
 
+        assert ctx.guild is not None
+        self.logger.info(
+            f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
@@ -763,6 +770,11 @@ class Crosspost(Cog):
         else:
             await ctx.send("Failed to find illust ID in pixiv link. This is a bug.")
             return False
+
+        guild = ctx.guild
+        assert guild is not None
+        self.logger.info(f"pixiv: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}")
+
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with self.get(
@@ -779,8 +791,6 @@ class Crosspost(Cog):
             return False
 
         headers = {**self.pixiv_headers, "referer": link}
-        guild = ctx.guild
-        assert guild is not None
         filesize_limit = guild.filesize_limit
         content = None
 
@@ -930,6 +940,11 @@ class Crosspost(Cog):
         return File(img, name)
 
     async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"hiccears: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         if link.endswith("preview"):
             return await self.send_single_hiccears(ctx, link)
 
@@ -1011,6 +1026,11 @@ class Crosspost(Cog):
                 toml.dump(logins, fp)
 
     async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         mode = await self.get_mode(ctx)
         idx = 0 if mode != 1 else 1
         async with self.get(link) as resp:
@@ -1063,6 +1083,11 @@ class Crosspost(Cog):
                 post = await resp.json()
         except (ResponseError, aiohttp.ClientError):
             return False
+
+        assert ctx.guild is not None
+        self.logger.info(
+            f"mastodon: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
 
         if not (images := post.get("media_attachments")):
             return False
@@ -1136,6 +1161,11 @@ class Crosspost(Cog):
         return all_embedded
 
     async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"inkbunny: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {sub_id}"
+        )
+
         url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
         post_text = await self.should_post_text(ctx)
@@ -1164,6 +1194,11 @@ class Crosspost(Cog):
         return True
 
     async def display_imgur_images(self, ctx: CrosspostContext, album_id: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"imgur: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {album_id}"
+        )
+
         async with self.get(
             f"https://api.imgur.com/3/album/{album_id}",
             use_default_headers=False,
@@ -1204,6 +1239,11 @@ class Crosspost(Cog):
         return True
 
     async def display_gelbooru_images(self, ctx: CrosspostContext, link: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"gelbooru: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         params = {**BOORU_API_PARAMS, **self.gelbooru_params}
         file_url = await self.booru_helper(link, GELBOORU_API_URL, params)
         if file_url is None:
@@ -1212,6 +1252,11 @@ class Crosspost(Cog):
         return True
 
     async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"r34: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         params = {**BOORU_API_PARAMS}
         file_url = await self.booru_helper(link, R34_API_URL, params)
         if file_url is None:
@@ -1255,6 +1300,10 @@ class Crosspost(Cog):
 
         guild = ctx.guild
         assert guild is not None
+        self.logger.info(
+            f"fanbox: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         filesize_limit = guild.filesize_limit
 
         post_type = post["type"]
