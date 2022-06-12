@@ -11,6 +11,7 @@ from collections import deque
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from hashlib import md5
+from html import unescape as html_unescape
 from io import BytesIO
 from itertools import groupby
 from pathlib import Path
@@ -690,6 +691,7 @@ class Crosspost(Cog):
         ):
             text = text[1:-1]
             text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
+            text = html_unescape(text)
             text = text.replace("\n", "\n> ")
             text = suppress_links(text)
 
