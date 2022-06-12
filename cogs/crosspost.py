@@ -52,8 +52,8 @@ TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
 TWITTER_IS_GIF = ".//div[contains(@class, 'PlayableMedia--gif')]"
 
 PIXIV_URL_EXPR = re.compile(
-    r"https?://(?:www\.)?pixiv\.net/(?:member_illust\.php\?"
-    r"[\w]+=[\w]+(?:&[\w]+=[\w]+)*|(?:\w{2}/)?artworks/\d+(?:#\w*)?)"
+    r"https?://(?:www\.)?pixiv\.net/(?:en/artworks/|"
+    r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=)(\d+)"
 )
 
 HICCEARS_URL_EXPR = re.compile(
@@ -759,21 +759,12 @@ class Crosspost(Cog):
         else:
             return False
 
-    async def display_pixiv_images(self, ctx: CrosspostContext, link: str) -> bool:
-        if "mode" in link:
-            link = re.sub(r"(?<=mode=)\w+", "medium", link)
-        elif "illust_id" in link:
-            link = f"{link}&mode=medium"
-        link = link.replace("http://", "https://")
-        if match := re.search(r"(?:illust_id=|artworks/)(\d+)", link):
-            illust_id = match.group(1)
-        else:
-            await ctx.send("Failed to find illust ID in pixiv link. This is a bug.")
-            return False
-
+    async def display_pixiv_images(self, ctx: CrosspostContext, illust_id: str) -> bool:
         guild = ctx.guild
         assert guild is not None
-        self.logger.info(f"pixiv: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}")
+        self.logger.info(
+            f"pixiv: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {illust_id}"
+        )
 
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
@@ -790,7 +781,10 @@ class Crosspost(Cog):
             )
             return False
 
-        headers = {**self.pixiv_headers, "referer": link}
+        headers = {
+            **self.pixiv_headers,
+            "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
+        }
         filesize_limit = guild.filesize_limit
         content = None
 
