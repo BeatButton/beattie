@@ -42,9 +42,11 @@ def remove_spoilers(content: str) -> str:
     return SPOILER_EXPR.sub("", content)
 
 
+# fmt: off
 KB = 2 ** 10
 MB = KB * KB
 GB = MB * KB
+# fmt: on
 
 
 def display_bytes(num_bytes: int) -> str:
