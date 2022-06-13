@@ -63,6 +63,7 @@ class BeattieBot(Bot):
             help_command=help_command,
             intents=Intents.all(),
             allowed_mentions=AllowedMentions.none(),
+            log_handler=None,
         )
 
         with open("config/config.toml") as file:
