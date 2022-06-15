@@ -868,7 +868,7 @@ class Crosspost(Cog):
         file = File(img, img_url.rpartition("/")[-1])
         return content, file
 
-    async def get_ugoira(self, illust_id: str) -> File:
+    async def get_ugoira(self, illust_id: str, timeout: int = 60) -> File:
         url = "https://app-api.pixiv.net/v1/ugoira/metadata"
         params = {"illust_id": illust_id}
         headers = self.pixiv_headers
@@ -926,7 +926,7 @@ class Crosspost(Cog):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
             )
-            stdout = await try_wait_for(proc)
+            stdout = await try_wait_for(proc, timeout=timeout)
 
         img = BytesIO(stdout)
         img.seek(0)
