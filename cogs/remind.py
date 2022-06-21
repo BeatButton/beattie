@@ -308,11 +308,15 @@ class Remind(Cog):
 
     async def sleep(self) -> None:
         while self.queue:
-            delta = (
-                self.queue[-1].time - datetime.now()
-            ).total_seconds()  # type: ignore
+            reminder_time: datetime = self.queue[-1].time  # type: ignore
+            delta = (reminder_time - datetime.now()).total_seconds()
             if delta <= 0:
-                await self.send_reminder(self.queue.pop())
+                try:
+                    await self.send_reminder(self.queue.pop())
+                except Exception as e:
+                    self.logger.exception(
+                        "Error sending reminder", exc_info=(type(e), e, e.__traceback__)
+                    )
             else:
                 self.logger.info(f"sleeping for {delta} seconds")
                 await asyncio.sleep(delta)
