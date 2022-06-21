@@ -23,10 +23,10 @@ MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 T = TypeVar("T")
 
 
-async def squash_forbidden(coro: Awaitable[T]) -> Optional[T]:
+async def squash_unfindable(coro: Awaitable[T]) -> Optional[T]:
     try:
         return await coro
-    except discord.Forbidden:
+    except (discord.Forbidden, discord.NotFound):
         return None
 
 
@@ -227,11 +227,11 @@ class Remind(Cog):
         if (
             (
                 guild := self.bot.get_guild(guild_id)
-                or await squash_forbidden(self.bot.fetch_guild(guild_id))
+                or await squash_unfindable(self.bot.fetch_guild(guild_id))
             )
             and (
                 member := guild.get_member(user_id)
-                or await squash_forbidden(guild.fetch_member(user_id))
+                or await squash_unfindable(guild.fetch_member(user_id))
             )
             and (
                 channel := guild.get_channel_or_thread(
@@ -242,7 +242,7 @@ class Remind(Cog):
                         or channel_id
                     )
                 )
-                or await squash_forbidden(guild.fetch_channel(reminder_channel_id))
+                or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
             )
         ):
             found = True
