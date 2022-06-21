@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Awaitable, Optional, TypeVar
 
 import discord
 from dateutil import rrule
@@ -19,6 +19,15 @@ from utils.etc import display_timedelta, reverse_insort_by_key
 from utils.type_hints import GuildMessageable
 
 MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
+
+T = TypeVar("T")
+
+
+async def squash_forbidden(coro: Awaitable[T]) -> Optional[T]:
+    try:
+        return await coro
+    except discord.Forbidden:
+        return None
 
 
 class Remind(Cog):
@@ -212,25 +221,28 @@ class Remind(Cog):
         self.logger.info(f"handling reminder {reminder}")
         found = False
         is_recurring = False
+        guild_id: int = reminder.guild_id  # type: ignore
+        user_id: int = reminder.user_id  # type: ignore
+        channel_id: int = reminder.channel_id  # type: ignore
         if (
             (
-                guild := self.bot.get_guild(reminder.guild_id)  # type: ignore
-                or await self.bot.fetch_guild(reminder.guild_id)  # type: ignore
+                guild := self.bot.get_guild(guild_id)
+                or await squash_forbidden(self.bot.fetch_guild(guild_id))
             )
             and (
-                member := guild.get_member(reminder.user_id)  # type: ignore
-                or await guild.fetch_member(reminder.user_id)  # type: ignore
+                member := guild.get_member(user_id)
+                or await squash_forbidden(guild.fetch_member(user_id))
             )
             and (
                 channel := guild.get_channel_or_thread(
                     (
                         reminder_channel_id := (
-                            await self.bot.config.get_guild(guild.id)  # type: ignore
+                            await self.bot.config.get_guild(guild.id)
                         ).get("reminder_channel")
-                        or reminder.channel_id
+                        or channel_id
                     )
                 )
-                or await guild.fetch_channel(reminder_channel_id)  # type: ignore
+                or await squash_forbidden(guild.fetch_channel(reminder_channel_id))
             )
         ):
             found = True
