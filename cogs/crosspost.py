@@ -45,11 +45,11 @@ _IO = TypeVar("_IO", bound=IO[bytes])
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+|t\.co/\w+)"
 )
-TWITTER_TEXT_TRAIL_EXPR = re.compile(r" ?https://t.co/\w+$")
-TWEET_SELECTOR = ".//div[contains(@class, 'permalink-tweet')]"
-TWITTER_IMG_SELECTOR = ".//img[@data-aria-label-part]"
+TWITTER_PROXY = "nitter.net"
+TWEET_SELECTOR = ".//div[@id='m']//div[contains(@class, 'tweet-body')]"
+TWITTER_IMG_SELECTOR = ".//a[contains(@class, 'still-image')]"
 TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
-TWITTER_IS_GIF = ".//div[contains(@class, 'PlayableMedia--gif')]"
+TWITTER_GIF_SELECTOR = ".//video[contains(@class, 'gif')]/source"
 
 PIXIV_URL_EXPR = re.compile(
     r"https?://(?:www\.)?pixiv\.net/(?:en/artworks/|"
@@ -676,16 +676,14 @@ class Crosspost(Cog):
         if await self.get_mode(ctx) == 1:
             return False
 
-        link = f"https://{link}"
-
         assert ctx.guild is not None
         self.logger.info(
             f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        async with self.get(link, use_default_headers=False) as resp:
+        proxy_link = f"https://{link.replace('twitter.com', TWITTER_PROXY)}"
+        async with self.get(proxy_link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
-
         try:
             tweet = root.xpath(TWEET_SELECTOR)[0]
         except IndexError:
@@ -696,55 +694,42 @@ class Crosspost(Cog):
         if await self.should_post_text(ctx) and (
             text := root.xpath(TWITTER_TEXT_SELECTOR)[0].get("content")
         ):
-            text = text[1:-1]
-            text = TWITTER_TEXT_TRAIL_EXPR.sub("", text)
             text = html_unescape(text)
             text = text.replace("\n", "\n> ")
             text = suppress_links(text)
 
-        if imgs := tweet.xpath(TWITTER_IMG_SELECTOR):
+        if anchors := tweet.xpath(TWITTER_IMG_SELECTOR):
             embedded = False
-            for img in imgs:
-                url = img.get("src")
-                msg = await self.send(ctx, f"{url}:orig")
+            for a in anchors:
+                url = f"https://{TWITTER_PROXY}/{a.get('href').lstrip('/')}"
+                msg = await self.send(ctx, url)
                 embedded = embedded or not too_large(msg)
             if embedded and text:
                 await ctx.send(f"> {text}")
             return embedded
-        elif tweet.xpath(TWITTER_IS_GIF):
-            with NamedTemporaryFile() as fp:
-                proc = await subprocess.create_subprocess_exec(
-                    "youtube-dl",
-                    link,
-                    "-o",
-                    "-",
-                    stdout=fp,
-                    stderr=subprocess.DEVNULL,
-                )
+        elif source := tweet.xpath(TWITTER_GIF_SELECTOR):
+            url = f"https://{TWITTER_PROXY}/{source[0].get('src').lstrip('/')}"
+            proc = await asyncio.create_subprocess_exec(
+                "ffmpeg",
+                "-i",
+                url,
+                "-vf",
+                "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+                "-f",
+                "gif",
+                "pipe:1",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
 
-                await proc.wait()
+            tweet_id = link.rpartition("/")[2].partition("?")[0]
+            filename = f"{tweet_id}.gif"
 
-                proc = await asyncio.create_subprocess_exec(
-                    "ffmpeg",
-                    "-i",
-                    fp.name,
-                    "-vf",
-                    "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1",
-                    "-f",
-                    "gif",
-                    "pipe:1",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                )
-
-                tweet_id = link.rpartition("/")[2].partition("?")[0]
-                filename = f"{tweet_id}.gif"
-
-                try:
-                    stdout = await try_wait_for(proc)
-                except asyncio.TimeoutError:
-                    await ctx.send("Gif took too long to process.")
-                    return False
+            try:
+                stdout = await try_wait_for(proc)
+            except asyncio.TimeoutError:
+                await ctx.send("Gif took too long to process.")
+                return False
 
             gif = BytesIO(stdout)
             gif.seek(0)
