@@ -45,7 +45,6 @@ _IO = TypeVar("_IO", bound=IO[bytes])
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+|t\.co/\w+)"
 )
-TWITTER_PROXY = "tweet.lambda.dance"
 TWEET_SELECTOR = ".//div[@id='m']//div[contains(@class, 'tweet-body')]"
 TWITTER_IMG_SELECTOR = ".//a[contains(@class, 'still-image')]"
 TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
@@ -399,6 +398,10 @@ class Crosspost(Cog):
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger("beattie.crosspost")
+        with open("config/config.toml") as fp:
+            config = toml.load(fp)
+            self.nitter_host = config["nitter_host"]
+            self.nitter_https = config["nitter_https"]
 
     async def cog_load(self) -> None:
         self.session = aiohttp.ClientSession()
@@ -681,7 +684,9 @@ class Crosspost(Cog):
             f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        proxy_link = f"https://{link.replace('twitter.com', TWITTER_PROXY)}"
+        s = "s" if self.nitter_https else ""
+
+        proxy_link = f"http{s}://{link.replace('twitter.com', self.nitter_host)}"
         async with self.get(proxy_link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
         try:
@@ -701,14 +706,14 @@ class Crosspost(Cog):
         if anchors := tweet.xpath(TWITTER_IMG_SELECTOR):
             embedded = False
             for a in anchors:
-                url = f"https://{TWITTER_PROXY}/{a.get('href').lstrip('/')}"
+                url = f"http{s}://{self.nitter_host}/{a.get('href').lstrip('/')}"
                 msg = await self.send(ctx, url)
                 embedded = embedded or not too_large(msg)
             if embedded and text:
                 await ctx.send(f"> {text}")
             return embedded
         elif source := tweet.xpath(TWITTER_GIF_SELECTOR):
-            url = f"https://{TWITTER_PROXY}/{source[0].get('src').lstrip('/')}"
+            url = f"http{s}://{self.nitter_host}/{source[0].get('src').lstrip('/')}"
             proc = await asyncio.create_subprocess_exec(
                 "ffmpeg",
                 "-i",
