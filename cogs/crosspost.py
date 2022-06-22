@@ -45,7 +45,7 @@ _IO = TypeVar("_IO", bound=IO[bytes])
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+|t\.co/\w+)"
 )
-TWITTER_PROXY = "nitter.net"
+TWITTER_PROXY = "tweet.lambda.dance"
 TWEET_SELECTOR = ".//div[@id='m']//div[contains(@class, 'tweet-body')]"
 TWITTER_IMG_SELECTOR = ".//a[contains(@class, 'still-image')]"
 TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
