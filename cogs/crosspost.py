@@ -687,7 +687,7 @@ class Crosspost(Cog):
         try:
             tweet = root.xpath(TWEET_SELECTOR)[0]
         except IndexError:
-            await ctx.send("Failed to get tweet. Maybe the account is locked?")
+            await ctx.send("Failed to find tweet content in page.")
             return False
 
         text = None
