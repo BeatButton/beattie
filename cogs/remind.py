@@ -263,9 +263,10 @@ class Remind(Cog):
             else:
                 topic = reminder.topic or "something"
                 message = f"You asked to be reminded about {topic}."
-                if reminder_channel_id == reminder.channel_id:
+                if reminder_channel_id == channel_id:
+                    message_id: int = reminder.message_id  # type: ignore
                     try:
-                        await channel.fetch_message(reminder.message_id)  # type: ignore
+                        await channel.fetch_message(message_id)
                     except (discord.NotFound, discord.Forbidden):
                         pass
                     else:
