@@ -16,7 +16,6 @@ from html import unescape as html_unescape
 from io import BytesIO
 from itertools import groupby
 from statistics import median
-from tempfile import NamedTemporaryFile
 from typing import IO, Any, Optional, TypeVar, overload
 from zipfile import ZipFile
 
@@ -1095,30 +1094,37 @@ class Crosspost(Cog):
                     urls[idx] = f"https://{netloc}/{url.lstrip('/')}"
 
             if image.get("type") == "gifv":
-                with NamedTemporaryFile() as fp:
+                proc = await asyncio.create_subprocess_exec(
+                    "ffmpeg",
+                    "-i",
+                    "pipe:0",
+                    "-vf",
+                    "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1",
+                    "-f",
+                    "gif",
+                    "pipe:1",
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
+
+                stdin = proc.stdin
+                assert stdin is not None
+
+                try:
                     async with self.get(*urls) as img_resp:
                         async for chunk in img_resp.content.iter_any():
-                            fp.write(chunk)
+                            stdin.write(chunk)
+                finally:
+                    waiter = asyncio.create_task(try_wait_for(proc))
+                    stdin.close()
 
-                    proc = await asyncio.create_subprocess_exec(
-                        "ffmpeg",
-                        "-i",
-                        fp.name,
-                        "-vf",
-                        "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,loop=-1",
-                        "-f",
-                        "gif",
-                        "pipe:1",
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.DEVNULL,
-                    )
-
-                    try:
-                        stdout = await try_wait_for(proc)
-                    except asyncio.TimeoutError:
-                        await ctx.send("Gif took too long to process.")
-                        all_embedded = False
-                        continue
+                try:
+                    stdout = await waiter
+                except asyncio.TimeoutError:
+                    await ctx.send("Gif took too long to process.")
+                    all_embedded = False
+                    continue
 
                 img = BytesIO(stdout)
 
