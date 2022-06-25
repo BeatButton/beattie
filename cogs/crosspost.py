@@ -15,8 +15,8 @@ from hashlib import md5
 from html import unescape as html_unescape
 from io import BytesIO
 from itertools import groupby
-from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from statistics import median
+from tempfile import NamedTemporaryFile
 from typing import IO, Any, Optional, TypeVar, overload
 from zipfile import ZipFile
 
@@ -28,6 +28,7 @@ from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import html
+from PIL import Image
 from tldextract.tldextract import TLDExtract
 
 from bot import BeattieBot
@@ -878,45 +879,44 @@ class Crosspost(Cog):
         zip_bytes = await self.save(zip_url, headers=headers, use_default_headers=False)
         zfp = ZipFile(zip_bytes)
 
-        with TemporaryDirectory() as td:
-            tempdir = Path(td)
-            zfp.extractall(tempdir)
-            with open(tempdir / "durations.txt", "w") as fp:
-                for frame in res["frames"]:
-                    duration = int(frame["delay"]) / 1000
-                    fp.write(f"file '{frame['file']}'\nduration {duration}\n")
+        median_duration = median(int(frame["delay"]) for frame in res["frames"])
+        fps = f"{median_duration / 50 * 3:.3}"
 
-            proc = await subprocess.create_subprocess_exec(
-                "ffmpeg",
-                "-i",
-                f"{tempdir}/%06d.jpg",
-                "-vf",
-                "palettegen",
-                f"{tempdir}/palette.png",
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            await proc.wait()
+        proc = await subprocess.create_subprocess_exec(
+            "ffmpeg",
+            "-framerate",
+            fps,
+            "-i",
+            "pipe:0",
+            "-vf",
+            f"split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse,fps={fps}",
+            "-f",
+            "gif",
+            "pipe:1",
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
 
-            proc = await subprocess.create_subprocess_exec(
-                "ffmpeg",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                f"{tempdir}/durations.txt",
-                "-i",
-                f"{tempdir}/palette.png",
-                "-lavfi",
-                "paletteuse",
-                "-f",
-                "gif",
-                "pipe:1",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-            )
-            stdout = await try_wait_for(proc, timeout=timeout)
+        stdin = proc.stdin
+        assert stdin is not None
+
+        img_fp = BytesIO()
+
+        for frame in res["frames"]:
+            img_fp.write(zfp.read(frame["file"]))
+            img = Image.open(img_fp).convert("RGB")
+            img_fp.seek(0)
+            img_fp.truncate()
+            img.save(img_fp, format="JPEG")
+            stdin.write(img_fp.getvalue())
+            img_fp.seek(0)
+            img_fp.truncate()
+            await asyncio.sleep(0)
+
+        stdin.close()
+
+        stdout = await try_wait_for(proc, timeout=timeout)
 
         img = BytesIO(stdout)
         img.seek(0)
