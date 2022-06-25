@@ -900,17 +900,10 @@ class Crosspost(Cog):
         stdin = proc.stdin
         assert stdin is not None
 
-        img_fp = BytesIO()
-
         for frame in res["frames"]:
-            img_fp.write(zfp.read(frame["file"]))
-            img = Image.open(img_fp).convert("RGB")
-            img_fp.seek(0)
-            img_fp.truncate()
-            img.save(img_fp, format="JPEG")
-            stdin.write(img_fp.getvalue())
-            img_fp.seek(0)
-            img_fp.truncate()
+            Image.open(BytesIO(zfp.read(frame["file"]))).convert("RGB").save(
+                stdin, format="JPEG"  # type: ignore
+            )
             await asyncio.sleep(0)
 
         stdin.close()
