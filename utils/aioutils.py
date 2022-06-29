@@ -1,5 +1,9 @@
 import asyncio
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, Optional, TypeVar
+
+import discord
+
+T = TypeVar("T")
 
 
 def do_every(
@@ -11,3 +15,10 @@ def do_every(
             await coro(*args, **kwargs)
 
     return asyncio.create_task(task())
+
+
+async def squash_unfindable(coro: Awaitable[T]) -> Optional[T]:
+    try:
+        return await coro
+    except (discord.Forbidden, discord.NotFound):
+        return None

@@ -13,6 +13,7 @@ from recurrent.event_parser import RecurringEvent
 from bot import BeattieBot
 from context import BContext
 from schema.remind import Recurring, Reminder, Table
+from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.converters import TimeConverter
 from utils.etc import display_timedelta, reverse_insort_by_key
@@ -21,13 +22,6 @@ from utils.type_hints import GuildMessageable
 MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 
 T = TypeVar("T")
-
-
-async def squash_unfindable(coro: Awaitable[T]) -> Optional[T]:
-    try:
-        return await coro
-    except (discord.Forbidden, discord.NotFound):
-        return None
 
 
 class Remind(Cog):
@@ -265,16 +259,13 @@ class Remind(Cog):
                 message = f"You asked to be reminded about {topic}."
                 if reminder_channel_id == channel_id:
                     message_id: int = reminder.message_id  # type: ignore
-                    try:
-                        await channel.fetch_message(message_id)
-                    except (discord.NotFound, discord.Forbidden):
-                        pass
-                    else:
-                        reference = discord.MessageReference(
-                            message_id=reminder.message_id,  # type: ignore
-                            channel_id=reminder.channel_id,  # type: ignore
-                            guild_id=reminder.guild_id,  # type: ignore
-                        )
+                    reference = await squash_unfindable(
+                        channel.fetch_message(message_id)
+                    ) and discord.MessageReference(
+                        message_id=reminder.message_id,  # type: ignore
+                        channel_id=reminder.channel_id,  # type: ignore
+                        guild_id=reminder.guild_id,  # type: ignore
+                    )
                 if reference is None:
                     message = f"{member.mention}\n{message}"
 

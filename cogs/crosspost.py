@@ -34,6 +34,7 @@ from bot import BeattieBot
 from context import BContext
 from schema.crosspost import Crosspost as CrosspostSettings
 from schema.crosspost import CrosspostMessage, Table
+from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
 from utils.etc import display_bytes, remove_spoilers, suppress_links
@@ -561,10 +562,7 @@ class Crosspost(Cog):
             for link in expr.findall(content):
                 try:
                     if await func(ctx, link.strip()) and do_suppress:
-                        try:
-                            await ctx.message.edit(suppress=True)
-                        except (discord.NotFound, discord.Forbidden):
-                            pass
+                        await squash_unfindable(ctx.message.edit(suppress=True))
                         do_suppress = False
                 except ResponseError as e:
                     if e.code == 404:
