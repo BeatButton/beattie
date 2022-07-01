@@ -6,7 +6,6 @@ asyncjisho
 asyncpg
 lxml
 objgraph
-Pillow
 psutil
 python-dateutil
 recurrent
