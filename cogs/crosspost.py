@@ -53,7 +53,7 @@ TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
 TWITTER_GIF_SELECTOR = ".//video[contains(@class, 'gif')]/source"
 
 PIXIV_URL_EXPR = re.compile(
-    r"https?://(?:www\.)?pixiv\.net/(?:en/artworks/|"
+    r"https?://(?:www\.)?pixiv\.net/(?:(?:en/)?artworks/|"
     r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=)(\d+)"
 )
 
