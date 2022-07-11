@@ -53,14 +53,11 @@ class BeattieBot(Bot):
                     prefix = prefix + (guild_pre,)
             return when_mentioned_or(*prefix)(self, message)
 
-        help_command: commands.HelpCommand = BHelp()
-        game = Game(name=f"{prefixes[0]}help")
-
         super().__init__(
             prefix_func,
-            activity=game,
+            activity=Game(name=f"{prefixes[0]}help"),
             case_insensitive=True,
-            help_command=help_command,
+            help_command=BHelp(),
             intents=Intents.all(),
             allowed_mentions=AllowedMentions.none(),
             log_handler=None,
