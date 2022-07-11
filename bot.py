@@ -9,7 +9,7 @@ import tarfile
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Optional, Type, TypeVar, overload
+from typing import Any, Awaitable, Iterable, Optional, Type, TypeVar, overload
 
 import aiohttp
 import toml
@@ -103,10 +103,10 @@ class BeattieBot(Bot):
             self.archive_task.cancel()
         await super().close()
 
-    async def swap_logs(self, new: bool = True) -> None:
+    def swap_logs(self, new: bool = True) -> Awaitable[None]:
         if new:
             self.new_logger()
-        await asyncio.to_thread(self.archive_logs)
+        return asyncio.to_thread(self.archive_logs)
 
     def new_logger(self) -> None:
         logger = logging.getLogger()
@@ -179,10 +179,10 @@ class BeattieBot(Bot):
     async def get_context(self, message: Message, *, cls: Type[C]) -> C:
         ...
 
-    async def get_context(
+    def get_context(
         self, message: Message, *, cls: Type[Context] = None
-    ) -> Context:
-        return await super().get_context(message, cls=cls or BContext)
+    ) -> Awaitable[Context]:
+        return super().get_context(message, cls=cls or BContext)
 
     async def on_command_error(self, ctx: Context, e: Exception) -> None:
         if not hasattr(ctx.command, "on_error"):
