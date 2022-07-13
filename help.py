@@ -8,7 +8,7 @@ class BHelp(MinimalHelpCommand):
         await super().send_bot_help(mapping)
         if ctx := self.context:
             await ctx.send(
-                "Join the support server for more help: discord.gg/a3kHCRs9Q8"
+                "Join the support server for more help: discord.gg/HKmAadu5sP"
             )
 
     def add_subcommand_formatting(self, command: Command) -> None:
