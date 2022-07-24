@@ -15,7 +15,6 @@ from hashlib import md5
 from html import unescape as html_unescape
 from io import BytesIO
 from itertools import groupby
-from statistics import median
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import IO, Any, Optional, TypeVar, overload

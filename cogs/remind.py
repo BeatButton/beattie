@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Awaitable, Optional, TypeVar
+from typing import Optional, TypeVar
 
 import discord
 from dateutil import rrule
