@@ -6,6 +6,7 @@ import lzma
 import os
 import sys
 import tarfile
+import traceback
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
@@ -91,7 +92,12 @@ class BeattieBot(Bot):
             try:
                 await self.load_extension(extension)
             except Exception as e:
-                print(f"Failed to load extension {extension}\n{type(e).__name__}: {e}")
+                print(
+                    "Failed to load extension",
+                    extension,
+                    file=sys.stderr,
+                )
+                traceback.print_exception(type(e), e, e.__traceback__)
 
     async def close(self) -> None:
         await self.session.close()
