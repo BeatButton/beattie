@@ -176,9 +176,10 @@ class Settings:
 
 
 class Database:
-    def __init__(self, bot: BeattieBot):
+    def __init__(self, bot: BeattieBot, cog: Crosspost):
         self.db = bot.db
         self.bot = bot
+        self.cog = cog
         self.db.bind_tables(Table)  # type: ignore
         self._settings_cache: dict[tuple[int, int], Settings] = {}
         self._expiry_deque: deque[int] = deque()
@@ -215,9 +216,10 @@ class Database:
                 until = snowflake_time(entry) + timedelta(seconds=MESSAGE_CACHE_TTL)
                 await sleep_until(until)
                 self._message_cache.pop(entry, None)
-        except Exception as e:
-            print("Exception in message cache expiry task", file=sys.stderr)
-            traceback.print_exception(type(e), e, e.__traceback__)
+        except Exception:
+            self.cog.logger.exception(
+                "Exception in message cache expiry task", exc_info=True
+            )
 
     async def get_settings(self, message: Message) -> Settings:
         guild = message.guild
@@ -380,7 +382,7 @@ class Crosspost(Cog):
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
-        self.db = Database(bot)
+        self.db = Database(bot, self)
         try:
             with open("config/headers.toml") as fp:
                 self.headers = toml.load(fp)
