@@ -9,7 +9,7 @@ import tarfile
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Awaitable, Iterable, Optional, Type, TypeVar, overload
+from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
 
 import aiohttp
 import toml
@@ -34,7 +34,7 @@ class BeattieBot(Bot):
     command_ignore = (commands.CommandNotFound, commands.CheckFailure)
     general_ignore = (ConnectionResetError,)
 
-    archive_task: Optional[Task[Any]]
+    archive_task: Task[Any] | None
     http: HTTPClient
     session: aiohttp.ClientSession
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import discord
 from discord import File, Message
@@ -29,9 +29,9 @@ class BContext(commands.Context):
 
     async def send(
         self,
-        content: Optional[str] = None,
+        content: str | None = None,
         *,
-        file: Optional[File] = None,
+        file: File | None = None,
         files: list[File] = None,
         **kwargs: Any,
     ) -> Message:

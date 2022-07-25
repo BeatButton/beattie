@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import discord
 from dateutil import rrule
@@ -161,8 +161,8 @@ class Remind(Cog):
         self,
         ctx: BContext,
         argument: RecurringEvent | datetime,
-        topic: Optional[str],
-    ) -> Optional[datetime]:
+        topic: str | None,
+    ) -> datetime | None:
         assert ctx.guild is not None
 
         if isinstance(argument, RecurringEvent):

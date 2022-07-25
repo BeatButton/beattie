@@ -1,10 +1,10 @@
-from typing import Mapping, Optional
+from typing import Mapping
 
 from discord.ext.commands import Cog, Command, MinimalHelpCommand
 
 
 class BHelp(MinimalHelpCommand):
-    async def send_bot_help(self, mapping: Mapping[Optional[Cog], list[Command]]):
+    async def send_bot_help(self, mapping: Mapping[Cog | None, list[Command]]):
         await super().send_bot_help(mapping)
         if ctx := self.context:
             await ctx.send(

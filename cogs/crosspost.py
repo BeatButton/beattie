@@ -17,7 +17,7 @@ from io import BytesIO
 from itertools import groupby
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import IO, Any, Optional, TypeVar, overload
+from typing import IO, Any, TypeVar, overload
 from zipfile import ZipFile
 
 import aiohttp
@@ -138,11 +138,11 @@ def too_large(message: Message) -> bool:
 class Settings:
     __slots__ = ("auto", "mode", "max_pages", "cleanup", "text")
 
-    auto: Optional[bool]
-    mode: Optional[int]
-    max_pages: Optional[int]
-    cleanup: Optional[bool]
-    text: Optional[bool]
+    auto: bool | None
+    mode: int | None
+    max_pages: int | None
+    cleanup: bool | None
+    text: bool | None
 
     def __init__(
         self,
@@ -332,7 +332,7 @@ class CrosspostContext(BContext):
         self,
         content: str = None,
         *,
-        file: Optional[File] = None,
+        file: File | None = None,
         **kwargs: Any,
     ) -> Message:
         if file:
@@ -506,8 +506,8 @@ class Crosspost(Cog):
         fp: None = ...,
         seek_begin: bool = ...,
         use_default_headers: bool = ...,
-        headers: Optional[dict[str, str]] = ...,
-        filesize_limit: Optional[int] = ...,
+        headers: dict[str, str] | None = ...,
+        filesize_limit: int | None = ...,
     ) -> BytesIO:
         ...
 
@@ -519,8 +519,8 @@ class Crosspost(Cog):
         fp: _IO,
         seek_begin: bool = ...,
         use_default_headers: bool = ...,
-        headers: Optional[dict[str, str]] = ...,
-        filesize_limit: Optional[int] = ...,
+        headers: dict[str, str] | None = ...,
+        filesize_limit: int | None = ...,
     ) -> _IO:
         ...
 
@@ -838,7 +838,7 @@ class Crosspost(Cog):
 
     async def save_pixiv(
         self, img_url: str, headers: dict[str, str], filesize_limit: int
-    ) -> tuple[Optional[str], File]:
+    ) -> tuple[str | None, File]:
         content = None
         try:
             img = await self.save(
@@ -1246,7 +1246,7 @@ class Crosspost(Cog):
 
     async def booru_helper(
         self, link: str, api_url: str, params: dict[str, str]
-    ) -> Optional[str]:
+    ) -> str | None:
         parsed = urlparse.urlparse(link)
         query = urlparse.parse_qs(parsed.query)
         page = query.get("page")
@@ -1294,7 +1294,6 @@ class Crosspost(Cog):
             file_map = body["fileMap"]
             do_text = await self.should_post_text(ctx)
             for block in blocks:
-                file: Optional[File]
                 block_type = block["type"]
                 if block_type == "image":
                     image = image_map[block["imageId"]]
@@ -1341,7 +1340,7 @@ class Crosspost(Cog):
         thumbnail_url: str,
         headers: dict[str, str],
         filesize_limit: int,
-    ) -> tuple[Optional[str], File]:
+    ) -> tuple[str | None, File]:
         content = None
         try:
             img = await self.save(
