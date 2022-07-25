@@ -332,7 +332,7 @@ class CrosspostContext(BContext):
         self,
         content: str = None,
         *,
-        file: File | None = None,
+        file: File = None,
         **kwargs: Any,
     ) -> Message:
         if file:

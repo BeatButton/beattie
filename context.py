@@ -29,9 +29,9 @@ class BContext(commands.Context):
 
     async def send(
         self,
-        content: str | None = None,
+        content: str = None,
         *,
-        file: File | None = None,
+        file: File = None,
         files: list[File] = None,
         **kwargs: Any,
     ) -> Message:
