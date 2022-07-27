@@ -273,7 +273,7 @@ class Remind(Cog):
                 allowed_mentions = AllowedMentions.all()
             else:
                 allowed_mentions = AllowedMentions.none().merge(
-                    AllowedMentions(replied_user=True)
+                    AllowedMentions(replied_user=True, users=[member])
                 )
 
             kwargs = {"allowed_mentions": allowed_mentions, "reference": reference}
