@@ -4,8 +4,6 @@ import asyncio
 import copy
 import logging
 import re
-import sys
-import traceback
 import urllib.parse as urlparse
 from asyncio import subprocess
 from collections import deque
