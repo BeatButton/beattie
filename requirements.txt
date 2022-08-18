@@ -1,9 +1,9 @@
 git+https://github.com/BeatButton/asyncqlio.git
-git+https://github.com/Rapptz/discord.py.git
-git+https://github.com/Gorialis/jishaku.git
-discord-ext-menus
 asyncjisho
 asyncpg
+discord-ext-menus
+discord.py
+jishaku
 lxml
 objgraph
 psutil
