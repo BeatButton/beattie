@@ -685,8 +685,27 @@ class Crosspost(Cog):
         s = "s" if self.nitter_https else ""
 
         proxy_link = f"http{s}://{link.replace('twitter.com', self.nitter_host)}"
-        async with self.get(proxy_link, use_default_headers=False) as resp:
-            root = html.document_fromstring(await resp.read(), self.parser)
+        timeout = 2
+
+        while True:
+            try:
+                async with self.get(
+                    proxy_link, use_default_headers=False, timeout=timeout
+                ) as resp:
+                    root = html.document_fromstring(await resp.read(), self.parser)
+            except asyncio.TimeoutError as e:
+                self.logger.info(
+                    f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+                    f"hit timeout of {timeout}"
+                )
+                if timeout > 60:
+                    raise e from None
+                timeout *= 2
+            except Exception as e:
+                raise e from None
+            else:
+                break
+
         try:
             tweet = root.xpath(TWEET_SELECTOR)[0]
         except IndexError:
