@@ -45,6 +45,7 @@ TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?twitter\.com/[^\s/]+/status/(\d+)"
 )
 TWITTER_TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
+TWITTER_VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
 
 PIXIV_URL_EXPR = re.compile(
     r"https?://(?:www\.)?pixiv\.net/(?:(?:en/)?artworks/|"
@@ -698,7 +699,11 @@ class Crosspost(Cog):
                 if too_large(msg):
                     await ctx.send(url)
         elif video := tweet.get("video"):
-            url = video["variants"][0]["src"]
+            mp4s = [v["src"] for v in video["variants"] if v["type"] == "video/mp4"]
+            if not mp4s:
+                await ctx.send("No mp4 candidate for video.")
+                return False
+            url = max(mp4s, key=lambda v: int(TWITTER_VIDEO_WIDTH.findall(v)[0]))
             if video["contentType"] == "gif":
                 proc = await asyncio.create_subprocess_exec(
                     "ffmpeg",
