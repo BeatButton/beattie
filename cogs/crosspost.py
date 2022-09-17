@@ -396,10 +396,6 @@ class Crosspost(Cog):
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger("beattie.crosspost")
-        with open("config/config.toml") as fp:
-            config = toml.load(fp)
-            self.nitter_host = config["nitter_host"]
-            self.nitter_https = config["nitter_https"]
 
     async def cog_load(self) -> None:
         self.session = aiohttp.ClientSession()
