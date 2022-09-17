@@ -42,12 +42,9 @@ from utils.type_hints import GuildMessageable
 _IO = TypeVar("_IO", bound=IO[bytes])
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:www|mobile|m)\.)?(twitter\.com/[^\s/]+/status/\d+|t\.co/\w+)"
+    r"https?://(?:(?:www|mobile|m)\.)?twitter\.com/[^\s/]+/status/(\d+)"
 )
-TWEET_SELECTOR = ".//div[@id='m']//div[contains(@class, 'tweet-body')]"
-TWITTER_IMG_SELECTOR = ".//a[contains(@class, 'still-image')]"
-TWITTER_TEXT_SELECTOR = ".//meta[@property='og:description']"
-TWITTER_GIF_SELECTOR = ".//video[contains(@class, 'gif')]/source"
+TWITTER_TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
 
 PIXIV_URL_EXPR = re.compile(
     r"https?://(?:www\.)?pixiv\.net/(?:(?:en/)?artworks/|"
@@ -673,89 +670,79 @@ class Crosspost(Cog):
         settings = await self.db.get_settings(ctx.message)
         return bool(settings.text)
 
-    async def display_twitter_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_twitter_images(
+        self, ctx: CrosspostContext, tweet_id: str
+    ) -> bool:
         if await self.get_mode(ctx) == 1:
             return False
 
         assert ctx.guild is not None
         self.logger.info(
-            f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+            f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
         )
 
-        s = "s" if self.nitter_https else ""
+        cdn_link = f"https://cdn.syndication.twimg.com/tweet?id={tweet_id}"
 
-        proxy_link = f"http{s}://{link.replace('twitter.com', self.nitter_host)}"
-        try:
-            async with self.get(proxy_link, use_default_headers=False) as resp:
-                root = html.document_fromstring(await resp.read(), self.parser)
-        except ResponseError as e:
-            if e.code == 404:
-                await ctx.send(
-                    "Tweet could not be fetched.\n"
-                    "It may be deleted, locked, or age-restricted."
-                )
-                return False
-            else:
-                raise e from None
-        try:
-            tweet = root.xpath(TWEET_SELECTOR)[0]
-        except IndexError:
-            await ctx.send("Failed to find tweet content in page.")
-            return False
+        async with self.get(cdn_link, use_default_headers=False) as resp:
+            tweet = await resp.json()
 
         text = None
         if await self.should_post_text(ctx) and (
-            text := root.xpath(TWITTER_TEXT_SELECTOR)[0].get("content")
+            text := TWITTER_TEXT_TRIM.sub("", tweet["text"])
         ):
             text = html_unescape(text)
             text = text.replace("\n", "\n> ")
             text = suppress_links(text)
 
-        if anchors := tweet.xpath(TWITTER_IMG_SELECTOR):
-            embedded = False
-            for a in anchors:
-                url = f"http{s}://{self.nitter_host}/{a.get('href').lstrip('/')}"
+        url: str
+        if photos := tweet["photos"]:
+            for photo in photos:
+                url = photo["url"]
                 msg = await self.send(ctx, url)
-                embedded = embedded or not too_large(msg)
-            if embedded and text:
-                await ctx.send(f"> {text}")
-            return embedded
-        elif source := tweet.xpath(TWITTER_GIF_SELECTOR):
-            url = f"http{s}://{self.nitter_host}/{source[0].get('src').lstrip('/')}"
-            proc = await asyncio.create_subprocess_exec(
-                "ffmpeg",
-                "-i",
-                url,
-                "-vf",
-                "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
-                "-f",
-                "gif",
-                "pipe:1",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-            )
+                if too_large(msg):
+                    await ctx.send(url)
+        elif video := tweet.get("video"):
+            url = video["variants"][0]["src"]
+            if video["contentType"] == "gif":
+                proc = await asyncio.create_subprocess_exec(
+                    "ffmpeg",
+                    "-i",
+                    url,
+                    "-vf",
+                    "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+                    "-f",
+                    "gif",
+                    "pipe:1",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
 
-            tweet_id = link.rpartition("/")[2].partition("?")[0]
-            filename = f"{tweet_id}.gif"
+                filename = f"{tweet_id}.gif"
 
-            try:
-                stdout = await try_wait_for(proc)
-            except asyncio.TimeoutError:
-                await ctx.send("Gif took too long to process.")
-                return False
-
-            gif = BytesIO(stdout)
-            gif.seek(0)
-
-            file = File(gif, filename)
-
-            msg = await ctx.send(file=file)
-            embedded = not too_large(msg)
-            if embedded and text:
-                await ctx.send(f"> {text}")
-            return embedded
+                try:
+                    stdout = await try_wait_for(proc)
+                except asyncio.TimeoutError:
+                    await ctx.send("Gif took too long to process.")
+                    await ctx.send(url)
+                else:
+                    gif = BytesIO(stdout)
+                    gif.seek(0)
+                    file = File(gif, filename)
+                    await ctx.send(file=file)
+            else:
+                async with self.get(url, "HEAD", use_default_headers=False) as resp:
+                    content_length = resp.content_length
+                    filename = url.rpartition("?")[0].rpartition("/")[-1]
+                if content_length and content_length < ctx.guild.filesize_limit:
+                    await self.send(ctx, url, use_default_headers=False)
+                else:
+                    await ctx.send(url)
         else:
             return False
+
+        if text:
+            await ctx.send(f"> {text}")
+        return True
 
     async def display_pixiv_images(self, ctx: CrosspostContext, illust_id: str) -> bool:
         guild = ctx.guild
