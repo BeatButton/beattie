@@ -685,8 +685,18 @@ class Crosspost(Cog):
         s = "s" if self.nitter_https else ""
 
         proxy_link = f"http{s}://{link.replace('twitter.com', self.nitter_host)}"
-        async with self.get(proxy_link, use_default_headers=False) as resp:
-            root = html.document_fromstring(await resp.read(), self.parser)
+        try:
+            async with self.get(proxy_link, use_default_headers=False) as resp:
+                root = html.document_fromstring(await resp.read(), self.parser)
+        except ResponseError as e:
+            if e.code == 404:
+                await ctx.send(
+                    "Tweet could not be fetched.\n"
+                    "It may be deleted, locked, or age-restricted."
+                )
+                return False
+            else:
+                raise e from None
         try:
             tweet = root.xpath(TWEET_SELECTOR)[0]
         except IndexError:
