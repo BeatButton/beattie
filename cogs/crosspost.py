@@ -703,7 +703,12 @@ class Crosspost(Cog):
             if not mp4s:
                 await ctx.send("No mp4 candidate for video.")
                 return False
-            url = max(mp4s, key=lambda v: int(TWITTER_VIDEO_WIDTH.findall(v)[0]))
+            url = max(
+                mp4s,
+                key=lambda v: int(
+                    next(map(lambda m: m.group(1), TWITTER_VIDEO_WIDTH.finditer(v)), 0)
+                ),
+            )
             if video["contentType"] == "gif":
                 proc = await asyncio.create_subprocess_exec(
                     "ffmpeg",
