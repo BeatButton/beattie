@@ -694,7 +694,7 @@ class Crosspost(Cog):
         url: str
         if photos := tweet["photos"]:
             for photo in photos:
-                url = photo["url"]
+                url = f"{photo['url']}:orig"
                 msg = await self.send(ctx, url)
                 if too_large(msg):
                     await ctx.send(url)
