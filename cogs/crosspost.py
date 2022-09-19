@@ -692,7 +692,7 @@ class Crosspost(Cog):
             text = suppress_links(text)
 
         url: str
-        if photos := tweet["photos"]:
+        if photos := tweet.get("photos"):
             for photo in photos:
                 url = f"{photo['url']}:orig"
                 msg = await self.send(ctx, url)
