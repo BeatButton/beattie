@@ -691,14 +691,17 @@ class Crosspost(Cog):
             text = text.replace("\n", "\n> ")
             text = suppress_links(text)
 
+        did_post = False
         url: str
         if photos := tweet.get("photos"):
+            did_post = True
             for photo in photos:
                 url = f"{photo['url']}:orig"
                 msg = await self.send(ctx, url)
                 if too_large(msg):
                     await ctx.send(url)
-        elif video := tweet.get("video"):
+        if video := tweet.get("video"):
+            did_post = True
             mp4s = [v["src"] for v in video["variants"] if v["type"] == "video/mp4"]
             if not mp4s:
                 await ctx.send("No mp4 candidate for video.")
@@ -743,7 +746,7 @@ class Crosspost(Cog):
                     await self.send(ctx, url, use_default_headers=False)
                 else:
                     await ctx.send(url)
-        else:
+        if not did_post:
             return False
 
         if text:
