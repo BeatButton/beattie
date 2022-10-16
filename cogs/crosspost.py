@@ -108,7 +108,10 @@ ConfigTarget = GuildMessageable | discord.CategoryChannel
 
 
 async def try_wait_for(
-    proc: asyncio.subprocess.Process, *, timeout: int = 30, kill_timeout: int = 5
+    proc: asyncio.subprocess.Process,
+    *,
+    timeout: float | None = 30,
+    kill_timeout: float | None = 5,
 ) -> bytes:
     try:
         out, _err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
@@ -119,7 +122,7 @@ async def try_wait_for(
         return out
 
 
-async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: int):
+async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: float | None):
     proc.terminate()
     try:
         await asyncio.wait_for(proc.wait(), timeout=timeout)
@@ -862,7 +865,7 @@ class Crosspost(Cog):
         file = File(img, img_url.rpartition("/")[-1])
         return content, file
 
-    async def get_ugoira(self, illust_id: str, timeout: int = 60) -> File:
+    async def get_ugoira(self, illust_id: str, timeout: float | None = 60) -> File:
         url = "https://app-api.pixiv.net/v1/ugoira/metadata"
         params = {"illust_id": illust_id}
         headers = self.pixiv_headers
