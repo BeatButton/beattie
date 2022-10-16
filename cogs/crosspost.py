@@ -452,6 +452,7 @@ class Crosspost(Cog):
             }
 
             while True:
+                wait = 1
                 try:
                     async with self.get(
                         url,
@@ -466,6 +467,8 @@ class Crosspost(Cog):
                     self.bot.logger.exception(
                         message, exc_info=(type(e), e, e.__traceback__)
                     )
+                    await asyncio.sleep(wait)
+                    wait *= 2
                 else:
                     break
 
