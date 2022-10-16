@@ -438,13 +438,8 @@ class Crosspost(Cog):
                 "client_secret": "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
             }
 
-            if (token := login.get("refresh_token")) is not None:
-                data["grant_type"] = "refresh_token"
-                data["refresh_token"] = token
-            else:
-                data["grant_type"] = "password"
-                data["username"] = login["username"]
-                data["password"] = login["password"]
+            data["grant_type"] = "refresh_token"
+            data["refresh_token"] = login["refresh_token"]
 
             hash_secret = (
                 "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
