@@ -1081,9 +1081,10 @@ class Crosspost(Cog):
         if not (images := post.get("media_attachments")):
             return False
 
-        mode = await self.get_mode(ctx)
+        settings = await self.db.get_settings(ctx.message)
+        mode = settings.mode or 1
 
-        idx = 0 if mode != 1 or post["sensitive"] else 1
+        idx = 0 if mode != 1 or post["sensitive"] or settings.cleanup else 1
 
         all_embedded = True
 
