@@ -679,7 +679,7 @@ class Crosspost(Cog):
             f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
         )
 
-        cdn_link = f"https://cdn.syndication.twimg.com/tweet?id={tweet_id}"
+        cdn_link = f"https://cdn.syndication.twimg.com/tweet-result?id={tweet_id}"
 
         async with self.get(cdn_link, use_default_headers=False) as resp:
             tweet = await resp.json()
