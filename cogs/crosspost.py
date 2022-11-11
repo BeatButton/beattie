@@ -59,6 +59,7 @@ HICCEARS_IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
 HICCEARS_THUMB_SELECTOR = ".//a[contains(@class, 'photo-preview')]"
 HICCEARS_TEXT_SELECTOR = ".//div[contains(@class, 'widget-box-content')]"
 HICCEARS_TITLE_SELECTOR = ".//h2[contains(@class, 'section-title')]"
+HICCEARS_NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
@@ -953,24 +954,34 @@ class Crosspost(Cog):
                 text = f"{text}\n> {description}"
             text = suppress_links(text)
 
-        thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
-
-        num_images = len(thumbs)
-
         max_pages = await self.get_max_pages(ctx)
+        pages_remaining = max_pages
 
-        if max_pages == 0:
-            max_pages = num_images
+        while True:
+            thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
 
-        pages_remaining = num_images - max_pages
+            if max_pages == 0:
+                pages_remaining = len(thumbs)
 
-        for thumb in thumbs[:max_pages]:
-            link = f"https://{resp.host}{thumb.get('href')}"
-            if not await self.send_single_hiccears(ctx, link):
-                return False
+            for thumb in thumbs[: max(0, pages_remaining)]:
+                href = f"https://{resp.host}{thumb.get('href')}"
+                if not await self.send_single_hiccears(ctx, href):
+                    return False
+
+            pages_remaining -= len(thumbs)
+
+            if next_page := root.xpath(HICCEARS_NEXT_SELECTOR):
+                next_url = f"https://{resp.host}{next_page[0].get('href')}"
+                async with self.get(next_url, headers=self.hiccears_headers) as resp:
+                    self.update_hiccears_cookies(resp)
+                    root = html.document_fromstring(await resp.read(), self.parser)
+            else:
+                break
 
         if text:
             await ctx.send(text)
+
+        pages_remaining *= -1
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
@@ -980,7 +991,11 @@ class Crosspost(Cog):
         return True
 
     async def send_single_hiccears(self, ctx: CrosspostContext, link: str) -> bool:
-        img_link = f"{link.removesuffix('preview')}download"
+        img_link = re.sub(
+            r"preview(/\d+)?",
+            "download",
+            link,
+        )
         async with self.get(
             img_link, headers=self.hiccears_headers, use_default_headers=False
         ) as resp:
