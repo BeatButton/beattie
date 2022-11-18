@@ -422,6 +422,8 @@ class Crosspost(Cog):
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
 
+        self.mastodon_auth = data["mastodon"]
+
         await self.db.async_init()
 
     def cog_check(self, ctx: BContext) -> bool:
@@ -1081,9 +1083,18 @@ class Crosspost(Cog):
         if ".".join(self.tldextract(link)[-2:]) in MASTODON_SITE_EXCLUDE:
             return False
 
-        api_url = MASTODON_API_FMT.format(*match.groups())
+        site, post = match.groups()
+
+        if cookies := self.mastodon_auth.get(site):
+            headers = {"Cookie": ";".join(f"{k}={v}" for k, v in cookies.items())}
+        else:
+            headers = None
+
+        api_url = MASTODON_API_FMT.format(site, post)
         try:
-            async with self.get(api_url, use_default_headers=False) as resp:
+            async with self.get(
+                api_url, headers=headers, use_default_headers=False
+            ) as resp:
                 post = await resp.json()
         except (ResponseError, aiohttp.ClientError):
             return False
