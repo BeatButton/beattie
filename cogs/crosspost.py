@@ -1088,7 +1088,7 @@ class Crosspost(Cog):
         if cookies := self.mastodon_auth.get(site):
             headers = {"Cookie": ";".join(f"{k}={v}" for k, v in cookies.items())}
         else:
-            headers = None
+            headers = {}
 
         api_url = MASTODON_API_FMT.format(site, post)
         try:
