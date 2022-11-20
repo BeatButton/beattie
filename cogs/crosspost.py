@@ -78,7 +78,9 @@ MASTODON_SITE_EXCLUDE = {
     "fanbox.cc",
     "discord.gg",
     "youtu.be",
+    "youtube.com",
     "itch.io",
+    "crepu.net",
 }
 MASTODON_URL_EXPR = re.compile(r"(https?://\S+/[\w-]+/?)(?:>|$|\s)")
 MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
