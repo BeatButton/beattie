@@ -150,7 +150,7 @@ class RPG(Cog):
         out = denest(result)
         await ctx.reply(f"{roll}: {out}")
 
-    @roll.error  # type: ignore
+    @roll.error
     async def roll_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
@@ -191,7 +191,7 @@ class RPG(Cog):
 
         await ctx.reply(result)
 
-    @shadowroll.error  # type: ignore
+    @shadowroll.error
     async def shadowroll_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
@@ -245,7 +245,7 @@ class RPG(Cog):
             else:
                 await ctx.reply(str(result))
 
-    @genesysroll.error  # type: ignore
+    @genesysroll.error
     async def genesysroll_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.CommandInvokeError):
             e = e.original

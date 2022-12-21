@@ -57,7 +57,7 @@ class Remind(Cog):
         """Commands for setting and managing reminders."""
         await self.set_reminder(ctx, time, topic=topic)
 
-    @remind.error  # type: ignore
+    @remind.error
     async def remind_error(self, ctx: BContext, e: Exception) -> None:
         if ctx.invoked_subcommand is None:
             await self.set_reminder_error(ctx, e)  # type: ignore
@@ -82,7 +82,7 @@ class Remind(Cog):
                 msg = f"{msg} on {scheduled:%Y-%m-%d}"
             await ctx.send(f"{msg}.")
 
-    @set_reminder.error  # type: ignore
+    @set_reminder.error
     async def set_reminder_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
             await ctx.send(

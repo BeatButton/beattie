@@ -21,7 +21,7 @@ class Default(Cog):
         filename = str(avatar).rpartition("/")[2].partition("?")[0]
         await ctx.send(file=File(img, filename))
 
-    @avatar.error  # type: ignore
+    @avatar.error
     async def avatar_error(self, ctx: BContext, exc: Exception) -> None:
         if isinstance(exc, commands.BadArgument):
             await ctx.send("User not found.")

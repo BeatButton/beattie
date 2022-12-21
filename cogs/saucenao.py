@@ -56,7 +56,7 @@ class SauceNao(Cog):
 
                 await ctx.send(f"Sauce found ({similarity}) {link}")
 
-    @saucenao.error  # type: ignore
+    @saucenao.error
     async def saucenao_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, commands.BadArgument):
             await ctx.send("Please include a link or attach a single image.")
