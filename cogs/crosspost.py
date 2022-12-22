@@ -557,7 +557,8 @@ class Crosspost(Cog):
 
     async def process_links(self, ctx: CrosspostContext) -> None:
         content = remove_spoilers(ctx.message.content)
-        do_suppress = await self.should_cleanup(ctx)
+        assert ctx.guild is not None
+        do_suppress = await self.should_cleanup(ctx.message, ctx.guild.me)
         for expr, func in self.expr_dict.items():
             for link in expr.findall(content):
                 try:
@@ -596,6 +597,16 @@ class Crosspost(Cog):
             await self._post(ctx)
 
     @Cog.listener()
+    async def on_message_edit(self, _: Message, message: Message) -> None:
+        if (
+            message.id in self.db._message_cache
+            # message.guild will always be set if the message is in the cache
+            and await self.should_cleanup(message, message.guild.me)  # type: ignore
+            and message.embeds
+        ):
+            await message.edit(suppress=True)
+
+    @Cog.listener()
     async def on_raw_message_delete(
         self, payload: discord.RawMessageDeleteEvent
     ) -> None:
@@ -632,7 +643,7 @@ class Crosspost(Cog):
         headers: dict[str, str] = None,
         use_default_headers: bool = True,
     ) -> Message:
-        mode = await self.get_mode(ctx)
+        mode = await self.get_mode(ctx.message)
         if mode == 1:
             return await ctx.send(link)
         elif mode == 2:
@@ -645,8 +656,8 @@ class Crosspost(Cog):
         else:
             raise RuntimeError("Invalid crosspost mode!")
 
-    async def get_mode(self, ctx: BContext) -> int:
-        return (await self.db.get_settings(ctx.message)).mode or 1
+    async def get_mode(self, message: Message) -> int:
+        return (await self.db.get_settings(message)).mode or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
         settings = await self.db.get_settings(ctx.message)
@@ -655,18 +666,17 @@ class Crosspost(Cog):
             max_pages = 4
         return max_pages
 
-    async def should_cleanup(self, ctx: BContext) -> bool:
-        settings = await self.db.get_settings(ctx.message)
+    async def should_cleanup(self, message: Message, me: discord.Member) -> bool:
+        settings = await self.db.get_settings(message)
         cleanup = settings.cleanup
         if cleanup is not None:
             return cleanup
-        me = ctx.me
-        channel = ctx.channel
-        assert isinstance(me, discord.Member)
+        channel = message.channel
+
         assert not isinstance(channel, PartialMessageable)
         return (
             channel.permissions_for(me).manage_messages
-            and await self.get_mode(ctx) == 2
+            and await self.get_mode(message) == 2
         )
 
     async def should_post_text(self, ctx: BContext) -> bool:
@@ -676,7 +686,7 @@ class Crosspost(Cog):
     async def display_twitter_images(
         self, ctx: CrosspostContext, tweet_id: str
     ) -> bool:
-        if await self.get_mode(ctx) == 1:
+        if await self.get_mode(ctx.message) == 1:
             return False
 
         assert ctx.guild is not None
@@ -1039,7 +1049,7 @@ class Crosspost(Cog):
             f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        mode = await self.get_mode(ctx)
+        mode = await self.get_mode(ctx.message)
         idx = 0 if mode != 1 else 1
         async with self.get(link) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
