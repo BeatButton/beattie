@@ -85,10 +85,18 @@ class Remind(Cog):
     @set_reminder.error
     async def set_reminder_error(self, ctx: BContext, e: Exception) -> None:
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
+            invoked = ctx.invoked_parents or []
+            if ctx.invoked_subcommand:
+                assert ctx.subcommand_passed is not None
+                invoked.append(ctx.subcommand_passed)
+            command_str = "{}{}".format(
+                ctx.prefix or "",
+                " ".join(invoked),
+            )
             await ctx.send(
                 "Bad input. Valid input examples:\n"
-                "remind 10m pizza\n"
-                'remind "every week" call your mom'
+                f"{command_str} 10m pizza\n"
+                f'{command_str} "every week" call your mom'
             )
         else:
             await ctx.bot.handle_error(ctx, e)
