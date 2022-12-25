@@ -105,6 +105,12 @@ R34_API_URL = "https://rule34.xxx/index.php"
 
 FANBOX_URL_EXPR = re.compile(r"https?://(?:[\w-]+.)?fanbox\.cc(?:/.+)*?/posts/\d+")
 
+LOFTER_URL_EXPR = re.compile(r"https?://[\w-]+\.lofter\.com/post/\w+")
+LOFTER_IMG_SELECTOR = ".//a[contains(@class, 'imgclasstag')]/img"
+LOFTER_TEXT_SELECTOR = (
+    ".//div[contains(@class, 'content')]/div[contains(@class, 'text')]"
+)
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | discord.CategoryChannel
@@ -1400,6 +1406,24 @@ class Crosspost(Cog):
                 raise e from None
         file = File(img, original_url.rpartition("/")[-1])
         return content, file
+
+    async def display_lofter_images(self, ctx: CrosspostContext, link: str) -> bool:
+        async with self.get(link, use_default_headers=False) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        if elems := root.xpath(LOFTER_IMG_SELECTOR):
+            img = elems[0]
+        else:
+            return False
+
+        await self.send(ctx, img.get("src"), use_default_headers=False)
+
+        if await self.should_post_text(ctx):
+            if elems := root.xpath(LOFTER_TEXT_SELECTOR):
+                text = elems[0].text_content()
+                await ctx.send(f"> {text}")
+
+        return True
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
