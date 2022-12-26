@@ -151,7 +151,13 @@ class BeattieBot(Bot):
         if isinstance(e, commands.MissingRequiredArgument):
             await ctx.send("Missing required arguments.")
         elif isinstance(e, commands.BadArgument):
-            await ctx.send("Bad arguments.")
+            args = e.args
+            if len(args) > 1:
+                await ctx.send(f"{args[0]}: {', '.join(args[1:])}")
+            elif args:
+                await ctx.send(f"Bad argument: {args[0]}")
+            else:
+                await ctx.send("Bad arguments.")
         elif isinstance(e, exceptions.ResponseError):
             await ctx.send(
                 f"An HTTP request to <{e.url}> failed with error code {e.code}"
