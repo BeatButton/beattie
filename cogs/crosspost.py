@@ -1565,9 +1565,9 @@ remove embeds from messages it processes successfully."""
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    auto_error = auto.error(crosspost_error)  # type: ignore
-    mode_error = mode.error(crosspost_error)  # type: ignore
-    pages_error = pages.error(crosspost_error)  # type: ignore
+    auto_error = auto.error(crosspost_error)
+    mode_error = mode.error(crosspost_error)
+    pages_error = pages.error(crosspost_error)
 
     async def _post(self, ctx: CrosspostContext) -> None:
         message = ctx.message
