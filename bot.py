@@ -38,6 +38,7 @@ class BeattieBot(Bot):
     archive_task: Task[Any] | None
     http: HTTPClient
     session: aiohttp.ClientSession
+    logger: logging.Logger
 
     extra: dict[str, Any]
 
