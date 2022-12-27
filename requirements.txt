@@ -5,7 +5,6 @@ discord-ext-menus
 discord.py
 jishaku
 lxml
-objgraph
 psutil
 python-dateutil
 recurrent
