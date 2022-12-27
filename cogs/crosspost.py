@@ -1103,8 +1103,8 @@ class Crosspost(Cog):
 
         site, post = match.groups()
 
-        if cookies := self.mastodon_auth.get(site):
-            headers = {"Cookie": ";".join(f"{k}={v}" for k, v in cookies.items())}
+        if auth := self.mastodon_auth.get(site):
+            headers = {"Authorization": f"Bearer {auth['token']}"}
         else:
             headers = {}
 
