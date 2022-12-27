@@ -18,3 +18,8 @@ class Reminder(Table):  # type: ignore
 class Recurring(Table):  # type: ignore
     id = Column(Integer, primary_key=True)
     rrule = Column(Text)
+
+
+class Timezone(Table):  # type: ignore
+    user_id = Column(BigInt, primary_key=True)
+    timezone = Column(Text)

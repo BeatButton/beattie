@@ -1,6 +1,7 @@
 import re
 from datetime import timedelta
 from typing import Callable, MutableSequence, TypeVar
+from zoneinfo import ZoneInfo
 
 from .type_hints import Comparable
 
@@ -11,6 +12,7 @@ SPOILER_EXPR = re.compile(r"\|\|.*?\|\|", flags=re.DOTALL)
 LINK_EXPR = re.compile(
     r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)"
 )
+UTC = ZoneInfo("UTC")
 
 
 def reverse_insort(

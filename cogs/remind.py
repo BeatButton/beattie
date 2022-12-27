@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import TypeVar
+from zoneinfo import ZoneInfo
 
 import discord
 from dateutil import rrule
@@ -12,11 +13,11 @@ from recurrent.event_parser import RecurringEvent
 
 from bot import BeattieBot
 from context import BContext
-from schema.remind import Recurring, Reminder, Table
+from schema.remind import Recurring, Reminder, Table, Timezone
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
-from utils.converters import TimeConverter
-from utils.etc import display_timedelta, reverse_insort_by_key
+from utils.converters import TimeConverter, TimezoneConverter
+from utils.etc import UTC, display_timedelta, reverse_insort_by_key
 from utils.type_hints import GuildMessageable
 
 MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
@@ -36,7 +37,7 @@ class Remind(Cog):
         return ctx.guild is not None
 
     async def cog_load(self) -> None:
-        for table in [Reminder, Recurring]:
+        for table in [Reminder, Recurring, Timezone]:
             await table.create(if_not_exists=True)  # type: ignore
         async with self.db.get_session() as s:
             query = s.select(Reminder).order_by(Reminder.time, sort_order="desc")
@@ -45,6 +46,16 @@ class Remind(Cog):
 
     def cog_unload(self) -> None:
         self.timer.cancel()
+
+    async def get_user_timezone(self, user_id: int) -> ZoneInfo | None:
+        async with self.bot.db.get_session() as s:
+            tz = (
+                await s.select(Timezone)
+                .where(Timezone.user_id == user_id)  # type: ignore
+                .first()
+            )
+        if tz:
+            return ZoneInfo(tz.timezone)
 
     @commands.group(invoke_without_command=True, usage="")
     async def remind(
@@ -75,9 +86,10 @@ class Remind(Cog):
         if topic is None and isinstance(time, RecurringEvent):
             await ctx.send("You must supply a message for a recurring reminder.")
             return
-        if scheduled := await self.process_reminder(ctx, time, topic):
+        tz = (await self.get_user_timezone(ctx.author.id)) or UTC
+        if scheduled := await self.process_reminder(ctx, time, topic, tz):
             msg = "Okay, I'll remind you"
-            now = datetime.now()
+            now = datetime.now(tz)
             if scheduled.date() != now.date():
                 msg = f"{msg} on {scheduled:%Y-%m-%d}"
             await ctx.send(f"{msg}.")
@@ -105,6 +117,7 @@ class Remind(Cog):
     async def list_reminders(self, ctx: BContext) -> None:
         """List all reminders active for you in this server."""
         assert ctx.guild is not None
+        tz = (await self.get_user_timezone(ctx.author.id)) or UTC
         async with self.db.get_session() as s:
             query = (
                 s.select(Reminder)
@@ -118,7 +131,9 @@ class Remind(Cog):
         if results:
             embed = Embed(
                 description="\n".join(
-                    f'ID {row.id}: "{row.topic}" at {row.time}' for row in results
+                    f'ID {row.id}: "{row.topic}" at '
+                    f"{row.time.astimezone().astimezone(tz)}"
+                    for row in results
                 )
             )
             await ctx.send(embed=embed)
@@ -170,12 +185,18 @@ class Remind(Cog):
         ctx: BContext,
         argument: RecurringEvent | datetime,
         topic: str | None,
+        tz: ZoneInfo,
     ) -> datetime | None:
         assert ctx.guild is not None
 
+        now = datetime.now(tz)
+
         if isinstance(argument, RecurringEvent):
-            rr = rrule.rrulestr(argument.get_RFC_rrule())
-            time = rr.after(datetime.now())
+            rrule_str = argument.get_RFC_rrule()
+            rr = rrule.rrulestr(rrule_str)
+            time: datetime | None = rr.after(now.replace(tzinfo=None))
+            if time is None:
+                raise RuntimeError("rr.after returned None")
             next_ = rr.after(time)
             if next_ - time < MINIMUM_RECURRING_DELTA:
                 await ctx.send(
@@ -183,6 +204,7 @@ class Remind(Cog):
                     f"{display_timedelta(MINIMUM_RECURRING_DELTA)}"
                 )
                 return None
+            time = time.replace(tzinfo=tz)
         else:
             time = argument
 
@@ -193,16 +215,12 @@ class Remind(Cog):
                     channel_id=ctx.channel.id,
                     message_id=ctx.message.id,
                     user_id=ctx.author.id,
-                    time=time,
+                    time=time.astimezone().replace(tzinfo=None),
                     topic=topic,
                 )
             )
             if isinstance(argument, RecurringEvent):
-                await s.add(
-                    Recurring(
-                        id=reminder.id, rrule=argument.get_RFC_rrule()  # type: ignore
-                    )
-                )
+                await s.add(Recurring(id=reminder.id, rrule=rrule_str))  # type: ignore
         await self.schedule_reminder(reminder)  # type: ignore
         return time
 
@@ -332,6 +350,58 @@ class Remind(Cog):
             else:
                 self.logger.info(f"sleeping for {delta} seconds")
                 await asyncio.sleep(delta)
+
+    @commands.group(invoke_without_command=True, usage="", aliases=["tz"])
+    async def timezone(
+        self,
+        ctx: BContext,
+        *,
+        timezone: ZoneInfo
+        | None = commands.param(converter=TimezoneConverter, default=None),
+    ) -> None:
+        """Commands for managing your timezone."""
+        if timezone:
+            await self.set_timezone(ctx, timezone=timezone)
+        else:
+            await self.get_timezone(ctx)
+
+    @timezone.command(name="get")
+    async def get_timezone(self, ctx: BContext) -> None:
+        """Get your timezone."""
+        tz = await self.get_user_timezone(ctx.author.id)
+        if tz is None:
+            await ctx.send("You have not set a timezone. Your reminders will use UTC.")
+        else:
+            await ctx.send(f"Your timezone is {tz}.")
+
+    @timezone.command(name="set")
+    async def set_timezone(
+        self,
+        ctx: BContext,
+        *,
+        timezone: ZoneInfo = commands.param(converter=TimezoneConverter),
+    ) -> None:
+        """Set your timezone.
+
+        A full list of timezones can be found at \
+<https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List>"""
+        tz = timezone.key
+        async with self.db.get_session() as s:
+            row = Timezone(user_id=ctx.author.id, timezone=tz)
+            await s.insert.rows(row).on_conflict(Timezone.user_id).update(
+                Timezone.timezone
+            )
+        await ctx.send(f"Your timezone has been set to {tz}.")
+
+    @timezone.command(name="unset")
+    async def unset_timezone(self, ctx: BContext) -> None:
+        """Unset your timezone."""
+        async with self.db.get_session() as s:
+            await s.delete(Timezone).where(
+                Timezone.user_id == ctx.author.id  # type: ignore
+            )
+
+        await ctx.send("I have forgotten your timezone.")
 
 
 async def setup(bot: BeattieBot) -> None:
