@@ -39,6 +39,7 @@ class TimeConverter(Converter):
 
 class TimezoneConverter(Converter):
     async def convert(self, ctx: BContext, argument: str) -> ZoneInfo:
+        argument = argument.replace(" ", "_")
         try:
             return ZoneInfo(argument)
         except ZoneInfoNotFoundError as e:
