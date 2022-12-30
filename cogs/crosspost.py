@@ -1133,7 +1133,7 @@ class Crosspost(Cog):
         all_embedded = True
 
         real_url = post["url"]
-        if real_url != link:
+        if real_url.casefold() != link.casefold():
             await ctx.send(f"<{real_url}>")
 
         for image in images[idx:]:
