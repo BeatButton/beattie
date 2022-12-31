@@ -94,7 +94,7 @@ class Manage(Cog):
         channel = ctx.channel
         assert isinstance(channel, GuildMessageable)
         await channel.purge(before=ctx.message, after=until)
-        await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
+        await ctx.message.add_reaction("<:blobuwu:1060009055860572210>")
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
@@ -105,7 +105,7 @@ class Manage(Cog):
         await channel.purge(
             before=ctx.message, after=until, check=lambda msg: msg.author == ctx.me
         )
-        await ctx.message.add_reaction("<:blobuwu:337437098036690944>")
+        await ctx.message.add_reaction("<:blobuwu:1060009055860572210>")
 
 
 async def setup(bot: BeattieBot) -> None:
