@@ -12,17 +12,17 @@ from context import BContext
 class Stats(Cog):
     """Bot usage statistics."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.process = psutil.Process()
         self.process.cpu_percent()
 
     @commands.command()
-    async def uptime(self, ctx: BContext) -> None:
+    async def uptime(self, ctx: BContext):
         """Tells you how long the bot has been up for."""
         await ctx.send(f"Uptime: {self.get_bot_uptime(ctx.bot)}")
 
     @commands.command(aliases=["stats"])
-    async def about(self, ctx: BContext) -> None:
+    async def about(self, ctx: BContext):
         """Tells you information about the bot itself."""
 
         embed = discord.Embed()
@@ -93,5 +93,5 @@ class Stats(Cog):
         return fmt.format(d=days, h=hours, m=minutes, s=seconds)
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(Stats())

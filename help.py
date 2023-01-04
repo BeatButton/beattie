@@ -11,7 +11,7 @@ class BHelp(MinimalHelpCommand):
                 "Join the support server for more help: discord.gg/HKmAadu5sP"
             )
 
-    def add_subcommand_formatting(self, command: Command) -> None:
+    def add_subcommand_formatting(self, command: Command):
         fmt = "{0} \N{EN DASH} {1}" if command.short_doc else "{0}"
         assert self.paginator is not None
         self.paginator.add_line(

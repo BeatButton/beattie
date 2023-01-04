@@ -16,7 +16,7 @@ class Config:
         self.db.bind_tables(Table)  # type: ignore
         self._cache: dict[int, dict[str, Any]] = {}
 
-    async def async_init(self) -> None:
+    async def async_init(self):
         await Guild.create(if_not_exists=True)
 
     async def get_guild(self, guild_id: int) -> dict[str, Any]:
@@ -33,7 +33,7 @@ class Config:
             self._cache[guild_id] = res
             return res
 
-    async def set_guild(self, guild_id: int, **kwargs: Any) -> None:
+    async def set_guild(self, guild_id: int, **kwargs: Any):
         guild = await self.get_guild(guild_id)
         self._cache[guild_id].update(kwargs)
         async with self.db.get_session() as s:

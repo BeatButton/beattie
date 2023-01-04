@@ -36,7 +36,7 @@ class Remind(Cog):
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
 
-    async def cog_load(self) -> None:
+    async def cog_load(self):
         for table in [Reminder, Recurring, Timezone]:
             await table.create(if_not_exists=True)  # type: ignore
         async with self.db.get_session() as s:
@@ -44,7 +44,7 @@ class Remind(Cog):
             self.queue = [reminder async for reminder in await query.all()]
         await self.start_timer()
 
-    def cog_unload(self) -> None:
+    def cog_unload(self):
         self.timer.cancel()
 
     async def get_user_timezone(self, user_id: int) -> ZoneInfo | None:
@@ -64,12 +64,12 @@ class Remind(Cog):
         time: RecurringEvent | datetime = commands.param(converter=TimeConverter),
         *,
         topic: str = None,
-    ) -> None:
+    ):
         """Commands for setting and managing reminders."""
         await self.set_reminder(ctx, time, topic=topic)
 
     @remind.error
-    async def remind_error(self, ctx: BContext, e: Exception) -> None:
+    async def remind_error(self, ctx: BContext, e: Exception):
         if ctx.invoked_subcommand is None:
             await self.set_reminder_error(ctx, e)  # type: ignore
 
@@ -80,7 +80,7 @@ class Remind(Cog):
         time: RecurringEvent | datetime = commands.param(converter=TimeConverter),
         *,
         topic: str = None,
-    ) -> None:
+    ):
         """Have the bot remind you about something.
         First put time (in quotes if there are spaces), then topic"""
         if topic is None and isinstance(time, RecurringEvent):
@@ -95,7 +95,7 @@ class Remind(Cog):
             await ctx.send(f"{msg}.")
 
     @set_reminder.error
-    async def set_reminder_error(self, ctx: BContext, e: Exception) -> None:
+    async def set_reminder_error(self, ctx: BContext, e: Exception):
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
             invoked = ctx.invoked_parents or []
             if ctx.invoked_subcommand:
@@ -114,7 +114,7 @@ class Remind(Cog):
             await ctx.bot.handle_error(ctx, e)
 
     @remind.command(name="list")
-    async def list_reminders(self, ctx: BContext) -> None:
+    async def list_reminders(self, ctx: BContext):
         """List all reminders active for you in this server."""
         assert ctx.guild is not None
         tz = (await self.get_user_timezone(ctx.author.id)) or UTC
@@ -141,7 +141,7 @@ class Remind(Cog):
             await ctx.send("No reminders found.")
 
     @remind.command(name="delete", aliases=["remove", "del", "cancel"])
-    async def delete_reminder(self, ctx: BContext, reminder_id: int) -> None:
+    async def delete_reminder(self, ctx: BContext, reminder_id: int):
         """Delete a specific reminder. Use `list` to get IDs."""
         async with ctx.bot.db.get_session() as s:
             query = s.select(Reminder).where(Reminder.id == reminder_id)  # type: ignore
@@ -166,9 +166,7 @@ class Remind(Cog):
 
     @remind.command(name="channel")
     @is_owner_or(manage_guild=True)
-    async def set_channel(
-        self, ctx: BContext, channel: GuildMessageable = None
-    ) -> None:
+    async def set_channel(self, ctx: BContext, channel: GuildMessageable = None):
         """Set the channel reminders will appear in. Invoke with no input to reset."""
         assert ctx.guild is not None
         await ctx.bot.config.set_guild(
@@ -224,7 +222,7 @@ class Remind(Cog):
         await self.schedule_reminder(reminder)  # type: ignore
         return time
 
-    async def schedule_reminder(self, reminder: Reminder) -> None:
+    async def schedule_reminder(self, reminder: Reminder):
         if not self.queue or reminder.time < self.queue[-1].time:
             self.queue.append(reminder)
             self.timer.cancel()
@@ -237,7 +235,7 @@ class Remind(Cog):
                 hi=len(self.queue) - 1,
             )
 
-    async def send_reminder(self, reminder: Reminder) -> None:
+    async def send_reminder(self, reminder: Reminder):
         self.logger.info(f"handling reminder {reminder}")
         found = False
         is_recurring = False
@@ -333,10 +331,10 @@ class Remind(Cog):
                         Recurring.id == reminder.id  # type: ignore
                     )
 
-    async def start_timer(self) -> None:
+    async def start_timer(self):
         self.timer = asyncio.create_task(self.sleep())
 
-    async def sleep(self) -> None:
+    async def sleep(self):
         while self.queue:
             reminder_time: datetime = self.queue[-1].time  # type: ignore
             delta = (reminder_time - datetime.now()).total_seconds()
@@ -358,7 +356,7 @@ class Remind(Cog):
         *,
         timezone: ZoneInfo
         | None = commands.param(converter=TimezoneConverter, default=None),
-    ) -> None:
+    ):
         """Commands for managing your timezone."""
         if timezone:
             await self.set_timezone(ctx, timezone=timezone)
@@ -366,7 +364,7 @@ class Remind(Cog):
             await self.get_timezone(ctx)
 
     @timezone.command(name="get")
-    async def get_timezone(self, ctx: BContext) -> None:
+    async def get_timezone(self, ctx: BContext):
         """Get your timezone."""
         tz = await self.get_user_timezone(ctx.author.id)
         if tz is None:
@@ -380,7 +378,7 @@ class Remind(Cog):
         ctx: BContext,
         *,
         timezone: ZoneInfo = commands.param(converter=TimezoneConverter),
-    ) -> None:
+    ):
         """Set your timezone.
 
         A full list of timezones can be found at \
@@ -394,7 +392,7 @@ class Remind(Cog):
         await ctx.send(f"Your timezone has been set to {tz}.")
 
     @timezone.command(name="unset")
-    async def unset_timezone(self, ctx: BContext) -> None:
+    async def unset_timezone(self, ctx: BContext):
         """Unset your timezone."""
         async with self.db.get_session() as s:
             await s.delete(Timezone).where(
@@ -404,5 +402,5 @@ class Remind(Cog):
         await ctx.send("I have forgotten your timezone.")
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(Remind(bot))

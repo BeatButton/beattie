@@ -83,7 +83,7 @@ class BeattieBot(Bot):
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
         self.new_logger()
 
-    async def setup_hook(self) -> None:
+    async def setup_hook(self):
         self.session = aiohttp.ClientSession()
         await self.db.connect()
         await self.config.async_init()
@@ -100,7 +100,7 @@ class BeattieBot(Bot):
                 )
                 traceback.print_exception(type(e), e, e.__traceback__)
 
-    async def close(self) -> None:
+    async def close(self):
         await self.session.close()
         await self.db.close()
         if self.archive_task is not None:
@@ -112,7 +112,7 @@ class BeattieBot(Bot):
             self.new_logger()
         return asyncio.to_thread(self.archive_logs)
 
-    def new_logger(self) -> None:
+    def new_logger(self):
         logger = logging.getLogger()
         logger.setLevel(self.loglevel)
         now = datetime.now().astimezone()
@@ -128,7 +128,7 @@ class BeattieBot(Bot):
         logger.addHandler(handler)
         self.logger = logger
 
-    def archive_logs(self) -> None:
+    def archive_logs(self):
         logname = "logs.tar"
         if os.path.exists(logname):
             mode = "a"
@@ -146,7 +146,7 @@ class BeattieBot(Bot):
                 os.unlink(name)
                 log.unlink()
 
-    async def handle_error(self, ctx: Context, e: Exception) -> None:
+    async def handle_error(self, ctx: Context, e: Exception):
         if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):
             e = e.original
         if isinstance(e, commands.MissingRequiredArgument):
@@ -174,7 +174,7 @@ class BeattieBot(Bot):
             self.logger.exception(message, exc_info=(type(e), e, e.__traceback__))
             raise e from None
 
-    async def on_ready(self) -> None:
+    async def on_ready(self):
         assert self.user is not None
         print("Logged in as")
         print(self.user.name)
@@ -194,11 +194,11 @@ class BeattieBot(Bot):
     ) -> Awaitable[Context]:
         return super().get_context(message, cls=cls or BContext)
 
-    async def on_command_error(self, ctx: Context, e: Exception) -> None:
+    async def on_command_error(self, ctx: Context, e: Exception):
         if not hasattr(ctx.command, "on_error"):
             await self.handle_error(ctx, e)
 
-    async def on_error(self, event_method: str, *args: Any, **kwargs: Any) -> None:
+    async def on_error(self, event_method: str, *args: Any, **kwargs: Any):
         _, e, _ = sys.exc_info()
         if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):
             e = e.original

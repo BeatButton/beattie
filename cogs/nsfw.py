@@ -45,21 +45,21 @@ class NSFW(Cog):
         self.parser = etree.HTMLParser()
 
     @commands.command(aliases=["gel"])
-    async def gelbooru(self, ctx: BContext, *tags: str) -> None:
+    async def gelbooru(self, ctx: BContext, *tags: str):
         """Search gelbooru for images."""
         await self.booru(ctx, tags)
 
     @commands.command(aliases=["r34"])
-    async def rule34(self, ctx: BContext, *tags: str) -> None:
+    async def rule34(self, ctx: BContext, *tags: str):
         """Search rule34.xxx for images."""
         await self.booru(ctx, tags)
 
     @commands.command(aliases=["fur"])
-    async def e621(self, ctx: BContext, *tags: str) -> None:
+    async def e621(self, ctx: BContext, *tags: str):
         """Search e621 for images."""
         await self.booru(ctx, tags, limit=320)
 
-    async def booru(self, ctx: BContext, tags: Iterable[str], limit: int = 100) -> None:
+    async def booru(self, ctx: BContext, tags: Iterable[str], limit: int = 100):
         assert ctx.command is not None
         async with ctx.typing():
             tags = frozenset(tags)
@@ -120,7 +120,7 @@ class NSFW(Cog):
             embed.description = f"[source]({source})"
         return embed, file
 
-    async def set_metadata(self, site: str) -> None:
+    async def set_metadata(self, site: str):
         url = self.urls[site]
         netloc = parse.urlsplit(url).netloc
         async with self.get(f"https://{netloc}") as resp:
@@ -128,5 +128,5 @@ class NSFW(Cog):
         self.titles[site] = root.find(".//title").text
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(NSFW(bot))

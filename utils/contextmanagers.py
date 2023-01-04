@@ -54,7 +54,5 @@ class get:
             raise ResponseError(code=self.resp.status, url=str(self.resp.url))
         return self.resp
 
-    async def __aexit__(
-        self, exc_type: type, exc: Exception, tb: TracebackType
-    ) -> None:
+    async def __aexit__(self, exc_type: type, exc: Exception, tb: TracebackType):
         self.resp.close()

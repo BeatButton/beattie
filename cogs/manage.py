@@ -8,7 +8,7 @@ from utils.type_hints import GuildMessageable
 
 
 class Manage(Cog):
-    def __init__(self, bot: BeattieBot) -> None:
+    def __init__(self, bot: BeattieBot):
         self.config = bot.config
 
     async def bot_check(self, ctx: BContext) -> bool:
@@ -46,7 +46,7 @@ class Manage(Cog):
         )
 
     @commands.command()
-    async def enable(self, ctx: BContext, cog: str) -> None:
+    async def enable(self, ctx: BContext, cog: str):
         """Enable a cog in the guild."""
         if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
@@ -63,7 +63,7 @@ class Manage(Cog):
         await ctx.send("Cog enabled for this guild.")
 
     @commands.command()
-    async def disable(self, ctx: BContext, cog: str) -> None:
+    async def disable(self, ctx: BContext, cog: str):
         """Disable a cog in the guild."""
         if ctx.bot.get_cog(cog) is None:
             await ctx.send("That cog doesn't exist.")
@@ -80,7 +80,7 @@ class Manage(Cog):
         await ctx.send("Cog disabled for this guild.")
 
     @commands.command()
-    async def prefix(self, ctx: BContext, prefix: str = "") -> None:
+    async def prefix(self, ctx: BContext, prefix: str = ""):
         """Set a custom prefix for this guild. Pass no prefix to reset."""
         guild = ctx.guild
         assert guild is not None
@@ -89,7 +89,7 @@ class Manage(Cog):
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge(self, ctx: BContext, until: Message) -> None:
+    async def purge(self, ctx: BContext, until: Message):
         """Delete messages since the specified message id."""
         channel = ctx.channel
         assert isinstance(channel, GuildMessageable)
@@ -98,7 +98,7 @@ class Manage(Cog):
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
-    async def clean(self, ctx: BContext, until: Message) -> None:
+    async def clean(self, ctx: BContext, until: Message):
         """Delete messages from the bot since the specified message id."""
         channel = ctx.channel
         assert isinstance(channel, GuildMessageable)
@@ -108,5 +108,5 @@ class Manage(Cog):
         await ctx.message.add_reaction("<:blobuwu:1060009055860572210>")
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(Manage(bot))

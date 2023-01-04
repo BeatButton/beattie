@@ -30,7 +30,7 @@ TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
 
 class RPG(Cog):
     @commands.command()
-    async def choose(self, ctx: BContext, *options: str) -> None:
+    async def choose(self, ctx: BContext, *options: str):
         """Choose between some options. Use quotes if they have spaces."""
         len_ = len(options)
         if len_ == 0:
@@ -42,7 +42,7 @@ class RPG(Cog):
             await ctx.send(f"I choose {choice}.")
 
     @commands.command()
-    async def tarot(self, ctx: BContext, *suits: str) -> None:
+    async def tarot(self, ctx: BContext, *suits: str):
         """Get a random tarot card.
 
         You can specify the suits from which to pull, options are:
@@ -79,7 +79,7 @@ class RPG(Cog):
             await ctx.send(file=discord.File(f"{card}"), embed=embed)
 
     @commands.command(aliases=["r"])
-    async def roll(self, ctx: BContext, *, roll: str = "1d20") -> None:
+    async def roll(self, ctx: BContext, *, roll: str = "1d20"):
         """Roll some dice!
 
         Can roll multiple dice of any size, with modifiers.
@@ -151,7 +151,7 @@ class RPG(Cog):
         await ctx.reply(f"{roll}: {out}")
 
     @roll.error
-    async def roll_error(self, ctx: BContext, e: Exception) -> None:
+    async def roll_error(self, ctx: BContext, e: Exception):
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
@@ -171,7 +171,7 @@ class RPG(Cog):
             await ctx.bot.handle_error(ctx, e)
 
     @commands.command(aliases=["shadroll", "sr"])
-    async def shadowroll(self, ctx: BContext, *, inp: str) -> None:
+    async def shadowroll(self, ctx: BContext, *, inp: str):
         """Roll some dice - for Shadowrun!
 
         Format: N[e]
@@ -192,7 +192,7 @@ class RPG(Cog):
         await ctx.reply(result)
 
     @shadowroll.error
-    async def shadowroll_error(self, ctx: BContext, e: Exception) -> None:
+    async def shadowroll_error(self, ctx: BContext, e: Exception):
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
@@ -203,7 +203,7 @@ class RPG(Cog):
             await ctx.bot.handle_error(ctx, e)
 
     @commands.command(aliases=["gr"])
-    async def genesysroll(self, ctx: BContext, *, inp: str) -> None:
+    async def genesysroll(self, ctx: BContext, *, inp: str):
         """Roll some dice - for Fantasy Flight Genesys!
 
         Available dice:
@@ -246,7 +246,7 @@ class RPG(Cog):
                 await ctx.reply(str(result))
 
     @genesysroll.error
-    async def genesysroll_error(self, ctx: BContext, e: Exception) -> None:
+    async def genesysroll_error(self, ctx: BContext, e: Exception):
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
         if isinstance(e, futures.TimeoutError):
@@ -312,5 +312,5 @@ def denest(rolls: L1) -> str:
     return str(rolls3)
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(RPG())

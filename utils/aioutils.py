@@ -9,7 +9,7 @@ T = TypeVar("T")
 def do_every(
     seconds: int, coro: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
 ) -> asyncio.Task:
-    async def task() -> None:
+    async def task():
         while True:
             await asyncio.sleep(seconds)
             await coro(*args, **kwargs)

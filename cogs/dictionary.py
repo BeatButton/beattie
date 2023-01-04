@@ -16,7 +16,7 @@ class Dictionary(Cog):
         self.jisho = Jisho(session=bot.session)
 
     @commands.command(name="jisho", aliases=["じしょ", "辞書"])
-    async def jisho_(self, ctx: BContext, *, keywords: str) -> None:
+    async def jisho_(self, ctx: BContext, *, keywords: str):
         """Get results from Jisho.org, Japanese dictionary"""
         async with ctx.typing():
             data = await self.jisho.lookup(keywords)
@@ -42,7 +42,7 @@ class Dictionary(Cog):
         await paginator.start(ctx)
 
     @commands.command(aliases=["ud", "urban", "urbandict"])
-    async def urbandictionary(self, ctx: BContext, *, word: str) -> None:
+    async def urbandictionary(self, ctx: BContext, *, word: str):
         """Look up a word on urbandictionary.com"""
         params = {"term": word}
         get = ctx.bot.get
@@ -68,5 +68,5 @@ class Dictionary(Cog):
             await paginator.start(ctx)
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(Dictionary(bot))

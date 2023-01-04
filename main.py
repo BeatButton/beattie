@@ -24,7 +24,7 @@ else:
     token = config["token"]
 
 
-async def main() -> None:
+async def main():
     bot = BeattieBot(tuple(prefixes), debug=debug)
     async with bot:
         await bot.start(token)

@@ -14,7 +14,7 @@ class SauceNao(Cog):
         self.parser = etree.HTMLParser()
 
     @commands.command(aliases=["sauce"])
-    async def saucenao(self, ctx: BContext, *, link: str = None) -> None:
+    async def saucenao(self, ctx: BContext, *, link: str = None):
         """Find the source of a linked or attached image using saucenao."""
         async with ctx.typing():
             if link is None:
@@ -57,12 +57,12 @@ class SauceNao(Cog):
                 await ctx.send(f"Sauce found ({similarity}) {link}")
 
     @saucenao.error
-    async def saucenao_error(self, ctx: BContext, e: Exception) -> None:
+    async def saucenao_error(self, ctx: BContext, e: Exception):
         if isinstance(e, commands.BadArgument):
             await ctx.send("Please include a link or attach a single image.")
         else:
             await ctx.bot.handle_error(ctx, e)
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(SauceNao(bot))

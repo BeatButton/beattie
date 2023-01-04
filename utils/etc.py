@@ -15,9 +15,7 @@ LINK_EXPR = re.compile(
 UTC = ZoneInfo("UTC")
 
 
-def reverse_insort(
-    seq: MutableSequence[U], val: U, lo: int = 0, hi: int = None
-) -> None:
+def reverse_insort(seq: MutableSequence[U], val: U, lo: int = 0, hi: int = None):
     reverse_insort_by_key(seq, val, key=lambda x: x, lo=lo, hi=hi)
 
 
@@ -28,7 +26,7 @@ def reverse_insort_by_key(
     key: Callable[[T], U],
     lo: int = 0,
     hi: int = None,
-) -> None:
+):
     if hi is None:
         hi = len(seq)
     while lo < hi:

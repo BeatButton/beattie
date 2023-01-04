@@ -12,17 +12,17 @@ from utils.exceptions import ResponseError
 
 
 class XKCD(Cog):
-    def __init__(self) -> None:
+    def __init__(self):
         with open("data/why.txt", encoding="utf8") as file:
             self.questions: tuple[str, ...] = tuple(file.readlines())
 
     @commands.command()
-    async def why(self, ctx: BContext) -> None:
+    async def why(self, ctx: BContext):
         """Asks a question."""
         await ctx.send(random.choice(self.questions))
 
     @commands.group()
-    async def xkcd(self, ctx: BContext, *, inp: str = None) -> None:
+    async def xkcd(self, ctx: BContext, *, inp: str = None):
         """Commands for getting xkcd comics"""
         async with ctx.typing():
             url = "https://xkcd.com/info.0.json"
@@ -36,17 +36,17 @@ class XKCD(Cog):
                 await self.comic(ctx, inp=inp)
 
     @xkcd.command()
-    async def random(self, ctx: BContext) -> None:
+    async def random(self, ctx: BContext):
         """Gets a random xkcd comic."""
         await self.comic(ctx, inp=str(random.randint(1, self.xkcd_data["num"])))
 
     @xkcd.command()
-    async def latest(self, ctx: BContext) -> None:
+    async def latest(self, ctx: BContext):
         """Gets the latest xkcd comic."""
         await ctx.send(embed=format_comic(self.xkcd_data))
 
     @xkcd.command()
-    async def comic(self, ctx: BContext, *, inp: str) -> None:
+    async def comic(self, ctx: BContext, *, inp: str):
         """Gets an xkcd comic by number or content."""
         try:
             number = int(inp)
@@ -80,7 +80,7 @@ class XKCD(Cog):
         await ctx.send(embed=format_comic(data))
 
     @commands.command(hidden=True)
-    async def sudo(self, ctx: BContext, *, _: str) -> None:
+    async def sudo(self, ctx: BContext, *, _: str):
         if await ctx.bot.is_owner(ctx.author):
             await ctx.send("Operation successful.")
         else:
@@ -96,5 +96,5 @@ def format_comic(data: Mapping[str, Any]) -> discord.Embed:
     return embed
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(XKCD())

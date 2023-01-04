@@ -159,7 +159,7 @@ class Settings:
         max_pages: int = None,
         cleanup: bool = None,
         text: bool = None,
-    ) -> None:
+    ):
         self.auto = auto
         self.mode = mode
         self.max_pages = max_pages
@@ -193,7 +193,7 @@ class Database:
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
 
-    async def async_init(self) -> None:
+    async def async_init(self):
         for table in (CrosspostSettings, CrosspostMessage):
             await table.create(if_not_exists=True)  # type: ignore
 
@@ -262,9 +262,7 @@ class Database:
             self._settings_cache[(guild_id, channel_id)] = res
             return res
 
-    async def set_settings(
-        self, guild_id: int, channel_id: int, settings: Settings
-    ) -> None:
+    async def set_settings(self, guild_id: int, channel_id: int, settings: Settings):
         if cached := self._settings_cache.get((guild_id, channel_id)):
             settings = cached.apply(settings)
         self._settings_cache[(guild_id, channel_id)] = settings
@@ -410,7 +408,7 @@ class Crosspost(Cog):
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger("beattie.crosspost")
 
-    async def cog_load(self) -> None:
+    async def cog_load(self):
         self.session = aiohttp.ClientSession()
         self.login_task = asyncio.create_task(self.pixiv_login_loop())
         with open("config/logins.toml") as fp:
@@ -437,7 +435,7 @@ class Crosspost(Cog):
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
 
-    async def pixiv_login_loop(self) -> None:
+    async def pixiv_login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
             with open("config/logins.toml") as fp:
@@ -489,7 +487,7 @@ class Crosspost(Cog):
                 toml.dump(logins, fp)
             await asyncio.sleep(res["expires_in"])
 
-    async def cog_unload(self) -> None:
+    async def cog_unload(self):
         await self.session.close()
         self.login_task.cancel()
 
@@ -561,7 +559,7 @@ class Crosspost(Cog):
                 raise ResponseError(413)
         return img
 
-    async def process_links(self, ctx: CrosspostContext) -> None:
+    async def process_links(self, ctx: CrosspostContext):
         content = remove_spoilers(ctx.message.content)
         assert ctx.guild is not None
         do_suppress = await self.should_cleanup(ctx.message, ctx.guild.me)
@@ -580,7 +578,7 @@ class Crosspost(Cog):
                     await ctx.bot.handle_error(ctx, e)
 
     @Cog.listener()
-    async def on_message(self, message: Message) -> None:
+    async def on_message(self, message: Message):
         if (guild := message.guild) is None or message.author.bot:
             return
         channel = message.channel
@@ -603,7 +601,7 @@ class Crosspost(Cog):
             await self._post(ctx)
 
     @Cog.listener()
-    async def on_message_edit(self, _: Message, message: Message) -> None:
+    async def on_message_edit(self, _: Message, message: Message):
         if (
             message.id in self.db._message_cache
             # message.guild will always be set if the message is in the cache
@@ -613,9 +611,7 @@ class Crosspost(Cog):
             await message.edit(suppress=True)
 
     @Cog.listener()
-    async def on_raw_message_delete(
-        self, payload: discord.RawMessageDeleteEvent
-    ) -> None:
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         async def delete_messages(messages: list[int]):
             channel_id = payload.channel_id
             for message_id in messages:
@@ -1427,7 +1423,7 @@ class Crosspost(Cog):
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
-    async def twitter(self, ctx: BContext, enabled: bool = True) -> None:
+    async def twitter(self, ctx: BContext, enabled: bool = True):
         await ctx.send(
             "This command is deprecated! "
             f"Please use `{ctx.prefix}crosspost` to manage settings."
@@ -1435,7 +1431,7 @@ class Crosspost(Cog):
 
     @commands.group()
     @is_owner_or(manage_guild=True)
-    async def crosspost(self, ctx: BContext) -> None:
+    async def crosspost(self, ctx: BContext):
         """Change image crosspost settings.
 
         Each subcommand takes, in addition to the configuration value, an optional \
@@ -1450,7 +1446,7 @@ applying it to the guild as a whole."""
         enabled: bool,
         *,
         target: ConfigTarget = None,
-    ) -> None:
+    ):
         """Enable or disable automatic crossposting."""
         guild = ctx.guild
         assert guild is not None
@@ -1469,7 +1465,7 @@ applying it to the guild as a whole."""
         mode: str,
         *,
         target: ConfigTarget = None,
-    ) -> None:
+    ):
         """Change image crossposting mode.
 
         link: send a link to images when available
@@ -1503,7 +1499,7 @@ remove embeds from messages it processes successfully."""
         max_pages: int,
         *,
         target: ConfigTarget = None,
-    ) -> None:
+    ):
         """Set the maximum number of images to send.
 
         Set to 0 for no limit."""
@@ -1523,7 +1519,7 @@ remove embeds from messages it processes successfully."""
         enabled: bool,
         *,
         target: ConfigTarget = None,
-    ) -> None:
+    ):
         """Toggle automatic embed removal."""
         guild = ctx.guild
         assert guild is not None
@@ -1542,7 +1538,7 @@ remove embeds from messages it processes successfully."""
         enabled: bool,
         *,
         target: ConfigTarget = None,
-    ) -> None:
+    ):
         """Toggle crossposting of text context."""
         guild = ctx.guild
         assert guild is not None
@@ -1554,7 +1550,7 @@ remove embeds from messages it processes successfully."""
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
 
-    async def crosspost_error(self, ctx: BContext, e: Exception) -> None:
+    async def crosspost_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
             inner = e.errors[0]
             assert isinstance(inner, ChannelNotFound)
@@ -1569,7 +1565,7 @@ remove embeds from messages it processes successfully."""
     mode_error = mode.error(crosspost_error)
     pages_error = pages.error(crosspost_error)
 
-    async def _post(self, ctx: CrosspostContext) -> None:
+    async def _post(self, ctx: CrosspostContext):
         message = ctx.message
         task = asyncio.create_task(self.process_links(ctx))
         self.ongoing_tasks[message.id] = task
@@ -1583,18 +1579,18 @@ remove embeds from messages it processes successfully."""
             del self.ongoing_tasks[message.id]
 
     @commands.command()
-    async def post(self, ctx: BContext, *, _: str) -> None:
+    async def post(self, ctx: BContext, *, _: str):
         """Embed images in the given links regardless of the auto setting."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self._post(new_ctx)
 
     @commands.command(aliases=["_"])
-    async def nopost(self, ctx: BContext, *, _: str = "") -> None:
+    async def nopost(self, ctx: BContext, *, _: str = ""):
         """Ignore links in the following message.
 
         You can also use ||spoiler tags|| to achieve the same thing."""
         pass
 
 
-async def setup(bot: BeattieBot) -> None:
+async def setup(bot: BeattieBot):
     await bot.add_cog(Crosspost(bot))
