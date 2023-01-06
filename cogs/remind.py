@@ -9,6 +9,7 @@ from dateutil import rrule
 from discord import AllowedMentions, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
+from discord.utils import format_dt
 from recurrent.event_parser import RecurringEvent
 
 from bot import BeattieBot
@@ -88,11 +89,7 @@ class Remind(Cog):
             return
         tz = (await self.get_user_timezone(ctx.author.id)) or UTC
         if scheduled := await self.process_reminder(ctx, time, topic, tz):
-            msg = "Okay, I'll remind you"
-            now = datetime.now(tz)
-            if scheduled.date() != now.date():
-                msg = f"{msg} on {scheduled:%Y-%m-%d}"
-            await ctx.send(f"{msg}.")
+            await ctx.send(f"Okay, reminder scheduled for {format_dt(scheduled)}.")
 
     @set_reminder.error
     async def set_reminder_error(self, ctx: BContext, e: Exception):
