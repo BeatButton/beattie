@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Collection
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from discord.ext.commands import BadArgument, Converter
@@ -9,6 +10,8 @@ from schema.remind import Timezone
 from utils.etc import UTC
 
 GMT_TRANS = str.maketrans("+-", "-+")
+MINOR = frozenset(("cups", "swords", "wands", "pentacles"))
+SUITS = frozenset((*MINOR, "major"))
 
 
 class TimeConverter(Converter):
@@ -52,3 +55,19 @@ class TimezoneConverter(Converter):
                     raise BadArgument("Not a time zone", e.args[0])
             else:
                 raise BadArgument("Not a time zone", e.args[0])
+
+
+class SuitConverter(Converter):
+    async def convert(self, ctx: BContext, argument: str) -> Collection[str]:
+        if not argument:
+            return SUITS
+
+        suits = set(argument.lower().split())
+        if "minor" in suits:
+            suits.remove("minor")
+            suits.update(MINOR)
+
+        if bad_suits := suits - SUITS:
+            raise BadArgument("Not a suit", ", ".join(bad_suits))
+
+        return suits

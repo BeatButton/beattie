@@ -3,6 +3,8 @@ import os
 import random
 import re
 from concurrent import futures
+from itertools import islice
+from typing import Collection
 
 import discord
 from discord.ext import commands
@@ -10,6 +12,7 @@ from discord.ext.commands import Cog
 
 from bot import BeattieBot
 from context import BContext
+from utils.converters import SUITS, SuitConverter
 from utils.genesys import die_names, genesysroller
 
 RollArg = tuple[int, int, int, int, int, int]
@@ -42,7 +45,14 @@ class RPG(Cog):
                 await ctx.send(f"I choose {choice}.")
 
     @commands.command()
-    async def tarot(self, ctx: BContext, *suits: str):
+    async def tarot(
+        self,
+        ctx: BContext,
+        *,
+        suits: Collection[str] = commands.param(
+            converter=SuitConverter, default=SUITS, displayed_default=""
+        ),
+    ):
         """Get a random tarot card.
 
         You can specify the suits from which to pull, options are:
@@ -52,31 +62,21 @@ class RPG(Cog):
             wands
             pentacles
         major"""
-        async with ctx.typing():
-            cards = []
-            if not suits:
-                suits = ("cups", "swords", "wands", "pentacles", "major")
-            if "minor" in suits:
-                suits = suits + ("cups", "swords", "wands", "pentacles")
-            suit_set = set(suit.lower() for suit in suits)
-            for root, _dirs, files in os.walk("data/tarot"):
-                if any(suit in root for suit in suit_set):
-                    cards += [f"{root}/{card}" for card in files]
-            try:
-                card = random.choice(cards).replace("\\", "/")
-            except IndexError:
-                await ctx.send("Please specify a valid suit, or no suit.")
-                return
-            match = TAROT_EXPR.match(card)
-            assert match is not None
-            name = match.groups()[0].replace("_", " ")
-            url = TAROT_URL.format(name.lower().replace(" ", "-"))
-            embed = discord.Embed()
-            embed.title = name
-            embed.url = url
-            filename = card.rpartition("/")[2]
-            embed.set_image(url=f"attachment://{filename}")
-            await ctx.send(file=discord.File(f"{card}"), embed=embed)
+        cards = []
+        for root, _dirs, files in islice(os.walk("data/tarot"), 1, None):
+            if root.rpartition("/")[2] in suits:
+                cards += [f"{root}/{card}" for card in files]
+        card = random.choice(cards).replace("\\", "/")
+        match = TAROT_EXPR.match(card)
+        assert match is not None
+        name = match.groups()[0].replace("_", " ")
+        url = TAROT_URL.format(name.lower().replace(" ", "-"))
+        embed = discord.Embed()
+        embed.title = name
+        embed.url = url
+        filename = card.rpartition("/")[2]
+        embed.set_image(url=f"attachment://{filename}")
+        await ctx.send(file=discord.File(f"{card}"), embed=embed)
 
     @commands.command(aliases=["r"])
     async def roll(self, ctx: BContext, *, roll: str = "1d20"):
