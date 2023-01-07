@@ -1429,15 +1429,18 @@ class Crosspost(Cog):
             f"Please use `{ctx.prefix}crosspost` to manage settings."
         )
 
-    @commands.group()
+    @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
-    async def crosspost(self, ctx: BContext):
+    async def crosspost(self, ctx: BContext, argument: str = None, *_):
         """Change image crosspost settings.
 
         Each subcommand takes, in addition to the configuration value, an optional \
 target, which specifies a channel or category to apply the setting to, instead of \
 applying it to the guild as a whole."""
-        pass
+        if argument is not None:
+            await ctx.send(f"No such configuration option: {argument}")
+        else:
+            await ctx.send("Missing configuration option.")
 
     @crosspost.command()
     async def auto(
@@ -1550,20 +1553,27 @@ remove embeds from messages it processes successfully."""
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
 
+    @crosspost.error
     async def crosspost_error(self, ctx: BContext, e: Exception):
+        if isinstance(e, commands.CommandNotFound):
+            await ctx.send("No such configuration option.")
+        else:
+            await ctx.bot.handle_error(ctx, e)
+
+    async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
             inner = e.errors[0]
             assert isinstance(inner, ChannelNotFound)
             await ctx.send(
                 f"Could not resolve `{inner.argument}`"
-                " as a category, channel, or thread"
+                " as a category, channel, or thread."
             )
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    auto_error = auto.error(crosspost_error)
-    mode_error = mode.error(crosspost_error)
-    pages_error = pages.error(crosspost_error)
+    auto_error = auto.error(subcommand_error)
+    mode_error = mode.error(subcommand_error)
+    pages_error = pages.error(subcommand_error)
 
     async def _post(self, ctx: CrosspostContext):
         message = ctx.message
