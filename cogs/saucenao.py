@@ -1,3 +1,4 @@
+from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
@@ -18,8 +19,22 @@ class SauceNao(Cog):
         """Find the source of a linked or attached image using saucenao."""
         async with ctx.typing():
             if link is None:
+                if (ref := ctx.message.reference) and isinstance(
+                    resolved := ref.resolved, Message
+                ):
+                    reply = resolved
+                else:
+                    reply = None
                 if len(ctx.message.attachments) == 1:
                     link = ctx.message.attachments[0].url
+                elif reply and (attachments := reply.attachments):
+                    link = attachments[0].url
+                elif (
+                    reply
+                    and (embeds := reply.embeds)
+                    and (url := embeds[0].url) is not None
+                ):
+                    link = url
                 else:
                     raise commands.BadArgument
             elif ctx.message.attachments:
