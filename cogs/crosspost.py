@@ -227,7 +227,7 @@ class Database:
                 "Exception in message cache expiry task", exc_info=True
             )
 
-    async def get_settings(self, message: Message) -> Settings:
+    async def get_effective_settings(self, message: Message) -> Settings:
         guild = message.guild
         assert guild is not None
         channel = message.channel
@@ -561,7 +561,7 @@ class Crosspost(Cog):
 
         if not channel.permissions_for(me).send_messages:
             return
-        if not (await self.db.get_settings(message)).auto:
+        if not (await self.db.get_effective_settings(message)).auto:
             return
         if "http" not in message.content:
             return
@@ -630,17 +630,17 @@ class Crosspost(Cog):
             raise RuntimeError("Invalid crosspost mode!")
 
     async def get_mode(self, message: Message) -> int:
-        return (await self.db.get_settings(message)).mode or 1
+        return (await self.db.get_effective_settings(message)).mode or 1
 
     async def get_max_pages(self, ctx: BContext) -> int:
-        settings = await self.db.get_settings(ctx.message)
+        settings = await self.db.get_effective_settings(ctx.message)
         max_pages = settings.max_pages
         if max_pages is None:
             max_pages = 4
         return max_pages
 
     async def should_cleanup(self, message: Message, me: discord.Member) -> bool:
-        settings = await self.db.get_settings(message)
+        settings = await self.db.get_effective_settings(message)
         cleanup = settings.cleanup
         if cleanup is not None:
             return cleanup
@@ -653,7 +653,7 @@ class Crosspost(Cog):
         )
 
     async def should_post_text(self, ctx: BContext) -> bool:
-        settings = await self.db.get_settings(ctx.message)
+        settings = await self.db.get_effective_settings(ctx.message)
         return bool(settings.text)
 
     async def display_twitter_images(
@@ -1092,7 +1092,7 @@ class Crosspost(Cog):
         if not (images := post.get("media_attachments")):
             return False
 
-        settings = await self.db.get_settings(ctx.message)
+        settings = await self.db.get_effective_settings(ctx.message)
         mode = settings.mode or 1
 
         idx = 0 if mode != 1 or post["sensitive"] or settings.cleanup else 1
