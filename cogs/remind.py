@@ -128,8 +128,7 @@ class Remind(Cog):
         if results:
             embed = Embed(
                 description="\n".join(
-                    f'ID {row.id}: "{row.topic}" at '
-                    f"{row.time.astimezone().astimezone(tz)}"
+                    f'ID {row.id}: "{row.topic}" at {row.time.astimezone(tz)}'
                     for row in results
                 )
             )
