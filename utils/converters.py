@@ -28,9 +28,7 @@ class TimeConverter(Converter):
         else:
             tz = UTC
 
-        now = datetime.now().astimezone(tz)
-
-        event = RecurringEvent(now)
+        event = RecurringEvent(datetime.now(tz))
         time: str | datetime | None = event.parse(argument)
         if time is None:
             raise BadArgument
