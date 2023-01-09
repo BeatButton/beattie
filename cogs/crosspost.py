@@ -1524,13 +1524,6 @@ remove embeds from messages it processes successfully."""
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
 
-    @crosspost.error
-    async def crosspost_error(self, ctx: BContext, e: Exception):
-        if isinstance(e, commands.CommandNotFound):
-            await ctx.send("No such configuration option.")
-        else:
-            await ctx.bot.handle_error(ctx, e)
-
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
             inner = e.errors[0]
