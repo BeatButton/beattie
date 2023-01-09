@@ -35,10 +35,10 @@ class RPG(Cog):
     @commands.command()
     async def choose(self, ctx: BContext, *options: str):
         """Choose between some options. Use quotes if they have spaces."""
-        match len(options):
-            case 0:
+        match options:
+            case []:
                 await ctx.send("Choose nothing? Is this some sort of metaphor?")
-            case 1:
+            case [_]:
                 await ctx.send("That's not much of a choice!")
             case _:
                 choice = random.choice(options)
