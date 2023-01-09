@@ -15,7 +15,7 @@ from io import BytesIO
 from itertools import groupby
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import IO, Any, TypeVar, overload
+from typing import Any
 from zipfile import ZipFile
 
 import aiohttp
@@ -38,8 +38,6 @@ from utils.contextmanagers import get
 from utils.etc import display_bytes, remove_spoilers, suppress_links
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
-
-_IO = TypeVar("_IO", bound=IO[bytes])
 
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?twitter\.com/[^\s/]+/status/(\d+)"
@@ -502,44 +500,17 @@ class Crosspost(Cog):
             kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
         return get(self.session, *urls, method=method, **kwargs)
 
-    @overload
     async def save(
         self,
         img_url: str,
         *,
-        fp: None = ...,
-        seek_begin: bool = ...,
-        use_default_headers: bool = ...,
-        headers: dict[str, str] | None = ...,
-        filesize_limit: int | None = ...,
-    ) -> BytesIO:
-        ...
-
-    @overload
-    async def save(
-        self,
-        img_url: str,
-        *,
-        fp: _IO,
-        seek_begin: bool = ...,
-        use_default_headers: bool = ...,
-        headers: dict[str, str] | None = ...,
-        filesize_limit: int | None = ...,
-    ) -> _IO:
-        ...
-
-    async def save(
-        self,
-        img_url: str,
-        *,
-        fp=None,
         seek_begin: bool = True,
         use_default_headers: bool = True,
         headers: dict[str, str] = None,
         filesize_limit: int = None,
-    ):
+    ) -> BytesIO:
         headers = headers or {}
-        img = fp or BytesIO()
+        img = BytesIO()
         length_checked = filesize_limit is None
         async with self.get(
             img_url, use_default_headers=use_default_headers, headers=headers
