@@ -189,7 +189,7 @@ class Remind(Cog):
         if isinstance(argument, RecurringEvent):
             rrule_str = argument.get_RFC_rrule()
             rr = rrule.rrulestr(rrule_str)
-            time: datetime | None = rr.after(now.replace(tzinfo=None))
+            time: datetime | None = rr.after(now.astimezone().replace(tzinfo=None))
             if time is None:
                 raise RuntimeError("rr.after returned None")
             next_ = rr.after(time)
@@ -199,7 +199,7 @@ class Remind(Cog):
                     f"{display_timedelta(MINIMUM_RECURRING_DELTA)}"
                 )
                 return None
-            time = time.replace(tzinfo=tz)
+            time = time.astimezone(tz)
         else:
             time = argument
 
