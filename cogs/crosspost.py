@@ -1307,7 +1307,7 @@ class Crosspost(Cog):
 
         post_type = post["type"]
 
-        if post["type"] == "article":
+        if post_type == "article":
             blocks = body["blocks"]
             image_map = body["imageMap"]
             file_map = body["fileMap"]
@@ -1347,8 +1347,20 @@ class Crosspost(Cog):
                     image["originalUrl"], image["thumbnailUrl"], headers, filesize_limit
                 )
                 await ctx.send(content, file=file)
+        elif post_type == "file":
+            for file_info in body["files"]:
+                url = file_info["url"]
+                if file_info["size"] > filesize_limit:
+                    content = url
+                    file = None
+                else:
+                    filename = file_info["name"] + "." + file_info["extension"]
+                    img = await self.save(url, headers=headers)
+                    content = None
+                    file = File(img, filename)
+                await ctx.send(content, file=file)
         else:
-            await ctx.send("Unrecognized post type! This is a bug.")
+            await ctx.send(f"Unrecognized post type {post_type}! This is a bug.")
             return False
 
         return True
