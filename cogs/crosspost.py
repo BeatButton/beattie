@@ -745,6 +745,8 @@ class Crosspost(Cog):
                             await self.send(ctx, url, use_default_headers=False)
                         else:
                             await ctx.send(url)
+                case other:
+                    await ctx.send(f"Unrecognized media type {other}")
 
         if text:
             await ctx.send(f"> {text}")
