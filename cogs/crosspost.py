@@ -672,6 +672,9 @@ class Crosspost(Cog):
         async with self.get(cdn_link, use_default_headers=False) as resp:
             tweet = await resp.json()
 
+        if (media_info := tweet.get("mediaDetails")) is None:
+            return False
+
         text = None
         if await self.should_post_text(ctx) and (
             text := TWITTER_TEXT_TRIM.sub("", tweet["text"])
@@ -680,63 +683,68 @@ class Crosspost(Cog):
             text = text.replace("\n", "\n> ")
             text = suppress_links(text)
 
-        did_post = False
         url: str
-        if photos := tweet.get("photos"):
-            did_post = True
-            for photo in photos:
-                url = f"{photo['url']}:orig"
-                msg = await self.send(ctx, url)
-                if too_large(msg):
-                    await ctx.send(url)
-        if video := tweet.get("video"):
-            did_post = True
-            mp4s = [v["src"] for v in video["variants"] if v["type"] == "video/mp4"]
-            if not mp4s:
-                await ctx.send("No mp4 candidate for video.")
-                return False
-            url = max(
-                mp4s,
-                key=lambda v: int(
-                    next(map(lambda m: m.group(1), TWITTER_VIDEO_WIDTH.finditer(v)), 0)
-                ),
-            )
-            if video["contentType"] == "gif":
-                proc = await asyncio.create_subprocess_exec(
-                    "ffmpeg",
-                    "-i",
-                    url,
-                    "-vf",
-                    "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
-                    "-f",
-                    "gif",
-                    "pipe:1",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                )
+        for media in media_info:
+            match (type_ := media["type"]):
+                case "photo":
+                    url = f"{media['media_url_https']}:orig"
+                    msg = await self.send(ctx, url)
+                    if too_large(msg):
+                        await ctx.send(url)
+                case "video" | "animated_gif":
+                    video = media["video_info"]
+                    mp4s = [
+                        v["url"]
+                        for v in video["variants"]
+                        if v["content_type"] == "video/mp4"
+                    ]
+                    if not mp4s:
+                        await ctx.send("No mp4 candidate for video.")
+                        return False
+                    url = max(
+                        mp4s,
+                        key=lambda v: next(
+                            (int(m.group(1)) for m in TWITTER_VIDEO_WIDTH.finditer(v)),
+                            0,
+                        ),
+                    )
 
-                filename = f"{tweet_id}.gif"
+                    if type_ == "animated_gif":
+                        proc = await asyncio.create_subprocess_exec(
+                            "ffmpeg",
+                            "-i",
+                            url,
+                            "-vf",
+                            "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+                            "-f",
+                            "gif",
+                            "pipe:1",
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL,
+                        )
 
-                try:
-                    stdout = await try_wait_for(proc)
-                except asyncio.TimeoutError:
-                    await ctx.send("Gif took too long to process.")
-                    await ctx.send(url)
-                else:
-                    gif = BytesIO(stdout)
-                    gif.seek(0)
-                    file = File(gif, filename)
-                    await ctx.send(file=file)
-            else:
-                async with self.get(url, "HEAD", use_default_headers=False) as resp:
-                    content_length = resp.content_length
-                    filename = url.rpartition("?")[0].rpartition("/")[-1]
-                if content_length and content_length < ctx.guild.filesize_limit:
-                    await self.send(ctx, url, use_default_headers=False)
-                else:
-                    await ctx.send(url)
-        if not did_post:
-            return False
+                        filename = f"{tweet_id}.gif"
+
+                        try:
+                            stdout = await try_wait_for(proc)
+                        except asyncio.TimeoutError:
+                            await ctx.send("Gif took too long to process.")
+                            await ctx.send(url)
+                        else:
+                            gif = BytesIO(stdout)
+                            gif.seek(0)
+                            file = File(gif, filename)
+                            await ctx.send(file=file)
+                    else:
+                        async with self.get(
+                            url, "HEAD", use_default_headers=False
+                        ) as resp:
+                            content_length = resp.content_length
+                            filename = url.rpartition("?")[0].rpartition("/")[-1]
+                        if content_length and content_length < ctx.guild.filesize_limit:
+                            await self.send(ctx, url, use_default_headers=False)
+                        else:
+                            await ctx.send(url)
 
         if text:
             await ctx.send(f"> {text}")
