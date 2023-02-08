@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import io
+import logging
 from typing import TYPE_CHECKING, Any
 
+from aiohttp import ClientOSError
 import discord
 from discord import File, Message
 from discord.ext import commands
@@ -51,7 +53,13 @@ class BContext(commands.Context):
         kwargs["file"] = file
         kwargs["files"] = files
 
-        return await super().send(
-            content,
-            **kwargs,
-        )
+        try:
+            return await super().send(
+                content,
+                **kwargs,
+            )
+        except ClientOSError:
+            logging.getLogger("beattie.core").exception(
+                "Ignoring ClientOSError in BContext.send"
+            )
+            return await self.send(content, **kwargs)
