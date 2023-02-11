@@ -223,9 +223,7 @@ class Database:
                 await sleep_until(until)
                 self._message_cache.pop(entry, None)
         except Exception:
-            self.cog.logger.exception(
-                "Exception in message cache expiry task", exc_info=True
-            )
+            self.cog.logger.exception("Exception in message cache expiry task")
 
     async def get_effective_settings(self, message: Message) -> Settings:
         guild = message.guild
@@ -469,11 +467,9 @@ class Crosspost(Cog):
                         headers=headers,
                     ) as resp:
                         res = (await resp.json())["response"]
-                except Exception as e:
+                except Exception:
                     message = "An error occurred in the pixiv login loop"
-                    self.bot.logger.exception(
-                        message, exc_info=(type(e), e, e.__traceback__)
-                    )
+                    self.bot.logger.exception(message)
                     await asyncio.sleep(wait)
                     wait *= 2
                 else:

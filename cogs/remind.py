@@ -301,12 +301,12 @@ class Remind(Cog):
                 await channel.send(message, **kwargs)
             except discord.Forbidden:
                 pass
-            except Exception as e:
+            except Exception:
                 message = (
                     "An error occured in sending a reminder to "
                     f"{channel.guild.name}#{channel.name}"
                 )
-                self.logger.exception(message, exc_info=(type(e), e, e.__traceback__))
+                self.logger.exception(message)
             self.logger.info(f"reminder {reminder.id} was sent")
             if is_recurring:
                 rr = rrule.rrulestr(recurring.rrule, dtstart=reminder.time)
@@ -337,10 +337,8 @@ class Remind(Cog):
             if delta <= 0:
                 try:
                     await self.send_reminder(self.queue.pop())
-                except Exception as e:
-                    self.logger.exception(
-                        "Error sending reminder", exc_info=(type(e), e, e.__traceback__)
-                    )
+                except Exception:
+                    self.logger.exception("Error sending reminder")
             else:
                 self.logger.info(f"sleeping for {delta} seconds")
                 await asyncio.sleep(delta)
