@@ -29,9 +29,10 @@ def reverse_insort_by_key(
 ):
     if hi is None:
         hi = len(seq)
+    k = key(val)
     while lo < hi:
         mid = (lo + hi) // 2
-        if key(val) > key(seq[mid]):
+        if k > key(seq[mid]):
             hi = mid
         else:
             lo = mid + 1
