@@ -573,7 +573,6 @@ class Crosspost(Cog):
             message.id in self.db._message_cache
             # message.guild will always be set if the message is in the cache
             and await self.should_cleanup(message, message.guild.me)  # type: ignore
-            and message.embeds
         ):
             await message.edit(suppress=True)
 
@@ -636,17 +635,14 @@ class Crosspost(Cog):
         return max_pages
 
     async def should_cleanup(self, message: Message, me: discord.Member) -> bool:
-        settings = await self.db.get_effective_settings(message)
-        cleanup = settings.cleanup
-        if cleanup is not None:
+        if not (message.channel.permissions_for(me).manage_messages and message.embeds):
+            return False
+        elif (
+            cleanup := (await self.db.get_effective_settings(message)).cleanup
+        ) is not None:
             return cleanup
-        channel = message.channel
-
-        assert not isinstance(channel, PartialMessageable)
-        return (
-            channel.permissions_for(me).manage_messages
-            and await self.get_mode(message) == 2
-        )
+        else:
+            return await self.get_mode(message) == 2
 
     async def should_post_text(self, ctx: BContext) -> bool:
         settings = await self.db.get_effective_settings(ctx.message)
