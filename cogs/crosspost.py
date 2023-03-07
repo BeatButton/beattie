@@ -635,7 +635,7 @@ class Crosspost(Cog):
         return max_pages
 
     async def should_cleanup(self, message: Message, me: discord.Member) -> bool:
-        if not (message.channel.permissions_for(me).manage_messages and message.embeds):
+        if not message.channel.permissions_for(me).manage_messages:
             return False
         elif (
             cleanup := (await self.db.get_effective_settings(message)).cleanup
