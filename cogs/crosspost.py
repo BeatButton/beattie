@@ -1154,8 +1154,11 @@ class Crosspost(Cog):
                 async with self.get(*urls, method="HEAD") as resp:
                     await self.send(ctx, str(resp.url))
 
-        if all_embedded and await self.should_post_text(ctx):
-            content = post["content"]
+        if (
+            all_embedded
+            and await self.should_post_text(ctx)
+            and (content := post["content"])
+        ):
             fragments = html.fragments_fromstring(content, parser=self.parser)
             text = "> " + "\n> ".join(
                 f if isinstance(f, str) else f.text_content() for f in fragments
