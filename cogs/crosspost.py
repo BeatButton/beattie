@@ -1404,6 +1404,11 @@ class Crosspost(Cog):
         else:
             return False
 
+        assert ctx.guild is not None
+        self.logger.info(
+            f"lofter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         await self.send(ctx, img.get("src"), use_default_headers=False)
 
         if await self.should_post_text(ctx):
