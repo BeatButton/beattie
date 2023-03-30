@@ -198,7 +198,7 @@ class Remind(Cog):
                     f"{display_timedelta(MINIMUM_RECURRING_DELTA)}"
                 )
                 return None
-            time = time.astimezone(tz)
+            time = time.replace(tzinfo=tz)
         else:
             time = argument
 
