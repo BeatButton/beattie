@@ -275,6 +275,14 @@ class Database:
             ).update(*(getattr(CrosspostSettings, key) for key in kwargs))
             await query.run()
 
+    async def clear_settings(self, guild_id: int, channel_id: int):
+        self._settings_cache.pop((guild_id, channel_id))
+        async with self.db.get_session() as s:
+            await s.delete(CrosspostSettings).where(
+                (CrosspostSettings.guild_id == guild_id)
+                & (CrosspostSettings.channel_id == channel_id)  # type: ignore
+            ).run()
+
     async def get_sent_messages(self, invoking_message: int) -> list[int]:
         if sent_messages := self._message_cache.get(invoking_message):
             return sent_messages
@@ -1549,6 +1557,12 @@ remove embeds from messages it processes successfully."""
         if target is not None:
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
+
+    @crosspost.command()
+    async def clear(self, ctx: BContext, *, target: ConfigTarget):
+        """Clear channel-specific settings"""
+        await self.db.clear_settings(target.guild.id, target.id)
+        await ctx.send(f"Crosspost settings overrides cleared for {target}.")
 
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
