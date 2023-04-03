@@ -276,7 +276,7 @@ class Database:
             await query.run()
 
     async def clear_settings(self, guild_id: int, channel_id: int):
-        self._settings_cache.pop((guild_id, channel_id))
+        self._settings_cache.pop((guild_id, channel_id), None)
         async with self.db.get_session() as s:
             await s.delete(CrosspostSettings).where(
                 (CrosspostSettings.guild_id == guild_id)
