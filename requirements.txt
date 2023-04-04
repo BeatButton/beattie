@@ -1,4 +1,3 @@
-git+https://github.com/BeatButton/asyncqlio.git
 asyncjisho
 asyncpg
 discord-ext-menus

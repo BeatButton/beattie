@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import TypeVar
+from operator import attrgetter
+from typing import Any, Mapping, Self, TypeVar
 from zoneinfo import ZoneInfo
 
 import discord
@@ -14,7 +15,6 @@ from recurrent.event_parser import RecurringEvent
 
 from bot import BeattieBot
 from context import BContext
-from schema.remind import Recurring, Reminder, Table, Timezone
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.converters import TimeConverter, TimezoneConverter
@@ -26,37 +26,101 @@ MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 T = TypeVar("T")
 
 
+class Reminder:
+    __slots__ = (
+        "id",
+        "guild_id",
+        "channel_id",
+        "message_id",
+        "user_id",
+        "time",
+        "topic",
+    )
+    id: int
+    guild_id: int
+    channel_id: int
+    message_id: int
+    user_id: int
+    time: datetime
+    topic: str
+
+    def __init__(
+        self,
+        id: int,
+        guild_id: int,
+        channel_id: int,
+        message_id: int,
+        user_id: int,
+        time: datetime,
+        topic: str,
+    ):
+        self.id = id
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        self.message_id = message_id
+        self.user_id = user_id
+        self.time = time
+        self.topic = topic
+
+    def __eq__(self, other: Any):
+        if not isinstance(other, Reminder):
+            return NotImplemented
+        return self.id == other.id
+
+    def asdict(self) -> dict[str, Any]:
+        return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
+
+    @classmethod
+    def from_record(cls, row: Mapping[str, Any]) -> Self:
+        return cls(*(row[attr] for attr in cls.__slots__))
+
+
 class Remind(Cog):
     def __init__(self, bot: BeattieBot):
         self.queue: list[Reminder] = []
-        self.db = bot.db
+        self.pool = bot.pool
         self.bot = bot
-        self.db.bind_tables(Table)  # type: ignore
         self.logger = logging.getLogger("beattie.remind")
 
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None
 
     async def cog_load(self):
-        for table in [Reminder, Recurring, Timezone]:
-            await table.create(if_not_exists=True)  # type: ignore
-        async with self.db.get_session() as s:
-            query = s.select(Reminder).order_by(Reminder.time, sort_order="desc")
-            self.queue = [reminder async for reminder in await query.all()]
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS public.reminder (
+                    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    guild_id bigint NOT NULL,
+                    channel_id bigint NOT NULL,
+                    message_id bigint NOT NULL,
+                    user_id bigint NOT NULL,
+                    "time" timestamp without time zone NOT NULL,
+                    topic text
+                );
+
+                CREATE TABLE IF NOT EXISTS public.recurring (
+                    id integer PRIMARY KEY NOT NULL,
+                    rrule text NOT NULL
+                );
+                """
+            )
+            self.queue = [
+                Reminder.from_record(row)
+                for row in await conn.fetch("SELECT * FROM reminder ORDER BY time DESC")
+            ]
         await self.start_timer()
 
     def cog_unload(self):
         self.timer.cancel()
 
     async def get_user_timezone(self, user_id: int) -> ZoneInfo | None:
-        async with self.bot.db.get_session() as s:
-            tz = (
-                await s.select(Timezone)
-                .where(Timezone.user_id == user_id)  # type: ignore
-                .first()
+        async with self.pool.acquire() as conn:
+            tz = await conn.fetchval(
+                "SELECT timezone FROM timezone WHERE user_id = $1", user_id
             )
         if tz:
-            return ZoneInfo(tz.timezone)
+            return ZoneInfo(tz)
 
     @commands.group(invoke_without_command=True, usage="")
     async def remind(
@@ -72,7 +136,7 @@ class Remind(Cog):
     @remind.error
     async def remind_error(self, ctx: BContext, e: Exception):
         if ctx.invoked_subcommand is None:
-            await self.set_reminder_error(ctx, e)  # type: ignore
+            await self.set_reminder_error(ctx, e)
 
     @remind.command(name="set", aliases=["me"])
     async def set_reminder(
@@ -115,21 +179,24 @@ class Remind(Cog):
         """List all reminders active for you in this server."""
         assert ctx.guild is not None
         tz = (await self.get_user_timezone(ctx.author.id)) or UTC
-        async with self.db.get_session() as s:
-            query = (
-                s.select(Reminder)
-                .where(
-                    (Reminder.user_id == ctx.author.id)
-                    & (Reminder.guild_id == ctx.guild.id)  # type: ignore
+        async with self.pool.acquire() as conn:
+            rows = [
+                Reminder.from_record(row)
+                for row in await conn.fetch(
+                    """
+                    SELECT * FROM reminder
+                    WHERE user_id = $1 AND guild_id = $2
+                    ORDER BY id DESC
+                    """,
+                    ctx.author.id,
+                    ctx.guild.id,
                 )
-                .order_by(Reminder.id, sort_order="desc")
-            )
-            results = [reminder async for reminder in await query.all()]
-        if results:
+            ]
+        if rows:
             embed = Embed(
                 description="\n".join(
                     f'ID {row.id}: "{row.topic}" at {row.time.astimezone(tz)}'
-                    for row in results
+                    for row in rows
                 )
             )
             await ctx.send(embed=embed)
@@ -139,24 +206,38 @@ class Remind(Cog):
     @remind.command(name="delete", aliases=["remove", "del", "cancel"])
     async def delete_reminder(self, ctx: BContext, reminder_id: int):
         """Delete a specific reminder. Use `list` to get IDs."""
-        async with ctx.bot.db.get_session() as s:
-            query = s.select(Reminder).where(Reminder.id == reminder_id)  # type: ignore
-            reminder = await query.first()
-            if reminder is None:
+        async with self.pool.acquire() as conn:
+            record = await conn.fetchrow(
+                """
+                SELECT *
+                FROM reminder
+                WHERE id = $1
+                """,
+                reminder_id,
+            )
+            if record is None:
                 await ctx.send("No such reminder.")
                 return
-            if reminder.user_id != ctx.author.id:  # type: ignore
+            reminder = Reminder.from_record(record)
+            if reminder.user_id != ctx.author.id:
                 await ctx.send("That reminder belongs to someone else.")
                 return
-            await s.remove(reminder)
-            await s.delete(Recurring).where(Recurring.id == reminder_id)  # type: ignore
+
+            await conn.execute(
+                """
+                DELETE FROM reminder
+                WHERE id = $1;
+                """,
+                reminder.id,
+            )
+            await conn.execute("DELETE FROM recurring WHERE id = $1", reminder.id)
 
         if self.queue[-1] == reminder:
             self.timer.cancel()
             self.queue.pop()
             await self.start_timer()
         else:
-            self.queue.remove(reminder)  # type: ignore
+            self.queue.remove(reminder)
 
         await ctx.send("Reminder deleted.")
 
@@ -202,20 +283,37 @@ class Remind(Cog):
         else:
             time = argument
 
-        async with self.db.get_session() as s:
-            reminder = await s.add(
-                Reminder(
-                    guild_id=ctx.guild.id,
-                    channel_id=ctx.channel.id,
-                    message_id=ctx.message.id,
-                    user_id=ctx.author.id,
-                    time=time.astimezone().replace(tzinfo=None),
-                    topic=topic,
+        async with self.pool.acquire() as conn:
+            record = await conn.fetchrow(
+                """
+                INSERT INTO reminder(
+                    guild_id,
+                    channel_id,
+                    message_id,
+                    user_id,
+                    time,
+                    topic
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6
                 )
+                RETURNING *
+                """,
+                ctx.guild.id,
+                ctx.channel.id,
+                ctx.message.id,
+                ctx.author.id,
+                time.astimezone().replace(tzinfo=None),
+                topic,
             )
+            assert record is not None
+            reminder = Reminder.from_record(record)
             if isinstance(argument, RecurringEvent):
-                await s.add(Recurring(id=reminder.id, rrule=rrule_str))  # type: ignore
-        await self.schedule_reminder(reminder)  # type: ignore
+                await conn.execute(
+                    "INSERT INTO recurring(id, rrule) VALUES ($1, $2)",
+                    reminder.id,
+                    rrule_str,
+                )
+        await self.schedule_reminder(reminder)
         return time
 
     async def schedule_reminder(self, reminder: Reminder):
@@ -227,17 +325,17 @@ class Remind(Cog):
             reverse_insort_by_key(
                 self.queue,
                 reminder,
-                key=lambda r: r.time,  # type: ignore
+                key=attrgetter("time"),
                 hi=len(self.queue) - 1,
             )
 
     async def send_reminder(self, reminder: Reminder):
         self.logger.info(f"handling reminder {reminder}")
         found = False
-        is_recurring = False
-        guild_id: int = reminder.guild_id  # type: ignore
-        user_id: int = reminder.user_id  # type: ignore
-        channel_id: int = reminder.channel_id  # type: ignore
+        recurring = None
+        guild_id: int = reminder.guild_id
+        user_id: int = reminder.user_id
+        channel_id: int = reminder.channel_id
         if (
             (
                 guild := self.bot.get_guild(guild_id)
@@ -261,30 +359,30 @@ class Remind(Cog):
         ):
             found = True
             assert isinstance(channel, GuildMessageable)
-            async with self.db.get_session() as s:
-                query = s.select(Recurring).where(
-                    Recurring.id == reminder.id  # type: ignore
+            async with self.pool.acquire() as conn:
+                recurring = await conn.fetchrow(
+                    "SELECT * FROM recurring WHERE id = $1", reminder.id
                 )
-                recurring = await query.first()
-                is_recurring = recurring is not None
 
-            self.logger.info(f"reminder {reminder.id} found, recurring={is_recurring}")
+            self.logger.info(
+                f"reminder {reminder.id} found, recurring={recurring is not None}"
+            )
 
             reference = None
             message: str
-            if is_recurring:
-                message = reminder.topic  # type: ignore
+            if recurring is not None:
+                message = reminder.topic
             else:
                 topic = reminder.topic or "something"
                 message = f"You asked to be reminded about {topic}."
                 if reminder_channel_id == channel_id:
-                    message_id: int = reminder.message_id  # type: ignore
+                    message_id: int = reminder.message_id
                     reference = await squash_unfindable(
                         channel.fetch_message(message_id)
                     ) and discord.MessageReference(
-                        message_id=reminder.message_id,  # type: ignore
-                        channel_id=reminder.channel_id,  # type: ignore
-                        guild_id=reminder.guild_id,  # type: ignore
+                        message_id=reminder.message_id,
+                        channel_id=reminder.channel_id,
+                        guild_id=reminder.guild_id,
                     )
                 if reference is None:
                     message = f"{member.mention}\n{message}"
@@ -308,23 +406,26 @@ class Remind(Cog):
                 )
                 self.logger.exception(message)
             self.logger.info(f"reminder {reminder.id} was sent")
-            if is_recurring:
-                rr = rrule.rrulestr(recurring.rrule, dtstart=reminder.time)
+            if recurring is not None:
+                rr = rrule.rrulestr(recurring["rrule"], dtstart=reminder.time)
                 time = rr.after(reminder.time)
-                async with self.db.get_session() as s:
-                    await s.update(Reminder).set(Reminder.time, time).where(
-                        Reminder.id == reminder.id  # type: ignore
+                async with self.pool.acquire() as conn:
+                    await conn.execute(
+                        "UPDATE reminder SET time = $1 WHERE id = $2",
+                        time,
+                        reminder.id,
                     )
                 reminder.time = time
                 await self.schedule_reminder(reminder)
         else:
             self.logger.info(f"reminder {reminder.id} could not be resolved")
-        if not is_recurring:
-            async with self.db.get_session() as s:
-                await s.remove(reminder)
+        if recurring is None:
+            async with self.pool.acquire() as conn:
+                await conn.execute("DELETE FROM reminder WHERE id = $1", reminder.id)
+
                 if not found:
-                    await s.delete(Recurring).where(
-                        Recurring.id == reminder.id  # type: ignore
+                    await conn.execute(
+                        "DELETE FROM recurring WHERE id = $1", reminder.id
                     )
 
     async def start_timer(self):
@@ -332,7 +433,7 @@ class Remind(Cog):
 
     async def sleep(self):
         while self.queue:
-            reminder_time: datetime = self.queue[-1].time  # type: ignore
+            reminder_time: datetime = self.queue[-1].time
             delta = (reminder_time - datetime.now()).total_seconds()
             if delta <= 0:
                 try:
@@ -378,20 +479,24 @@ class Remind(Cog):
         A full list of timezones can be found at \
 <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List>"""
         tz = timezone.key
-        async with self.db.get_session() as s:
-            row = Timezone(user_id=ctx.author.id, timezone=tz)
-            await s.insert.rows(row).on_conflict(Timezone.user_id).update(
-                Timezone.timezone
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO timezone(user_id, timezone)
+                VALUES ($1, $2)
+                ON CONFLICT (user_id)
+                DO UPDATE SET timezone=EXCLUDED.timezone
+                """,
+                ctx.author.id,
+                tz,
             )
         await ctx.send(f"Your timezone has been set to {tz}.")
 
     @timezone.command(name="unset")
     async def unset_timezone(self, ctx: BContext):
         """Unset your timezone."""
-        async with self.db.get_session() as s:
-            await s.delete(Timezone).where(
-                Timezone.user_id == ctx.author.id  # type: ignore
-            )
+        async with self.pool.acquire() as conn:
+            await conn.execute("DELETE FROM timezone WHERE user_id = $1", ctx.author.id)
 
         await ctx.send("I have forgotten your timezone.")
 

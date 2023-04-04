@@ -13,9 +13,10 @@ from hashlib import md5
 from html import unescape as html_unescape
 from io import BytesIO
 from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, Mapping, Self
 from zipfile import ZipFile
 
 import aiohttp
@@ -30,8 +31,6 @@ from tldextract.tldextract import TLDExtract
 
 from bot import BeattieBot
 from context import BContext
-from schema.crosspost import Crosspost as CrosspostSettings
-from schema.crosspost import CrosspostMessage, Table
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
@@ -177,41 +176,58 @@ class Settings:
         return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
 
     @classmethod
-    def from_record(cls, row: CrosspostSettings) -> Settings:
-        return cls(*(getattr(row, attr) for attr in cls.__slots__))
+    def from_record(cls, row: Mapping[str, Any]) -> Self:
+        return cls(*(row[attr] for attr in cls.__slots__))
 
 
 class Database:
     def __init__(self, bot: BeattieBot, cog: Crosspost):
-        self.db = bot.db
+        self.pool = bot.pool
         self.bot = bot
         self.cog = cog
-        self.db.bind_tables(Table)  # type: ignore
         self._settings_cache: dict[tuple[int, int], Settings] = {}
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
 
     async def async_init(self):
-        for table in (CrosspostSettings, CrosspostMessage):
-            await table.create(if_not_exists=True)  # type: ignore
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS public.crosspost (
+                    guild_id bigint NOT NULL,
+                    channel_id bigint NOT NULL,
+                    auto boolean,
+                    mode integer,
+                    max_pages integer,
+                    cleanup boolean,
+                    text boolean,
+                    PRIMARY KEY(guild_id, channel_id)
+                );
 
-        async with self.db.get_session() as s:
-            query = (
-                s.select(CrosspostMessage)
-                .where(
-                    CrosspostMessage.invoking_message
-                    > time_snowflake(utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL))
-                )
-                .order_by(CrosspostMessage.invoking_message)
+                CREATE TABLE IF NOT EXISTS public.crosspostmessage (
+                    sent_message bigint NOT NULL PRIMARY KEY,
+                    invoking_message bigint NOT NULL
+                );
+                """
+            )
+
+            rows = await conn.fetch(
+                """
+                SELECT *
+                FROM crosspostmessage
+                WHERE invoking_message > $1
+                ORDER BY invoking_message
+                """,
+                time_snowflake(utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL)),
             )
 
             for invoking_message, elems in groupby(
-                await (await query.all()).flatten(),
-                key=lambda elem: elem.invoking_message,  # type: ignore
+                rows,
+                key=itemgetter("invoking_message"),
             ):
                 self._expiry_deque.append(invoking_message)
                 self._message_cache[invoking_message] = [
-                    elem.sent_message for elem in elems  # type: ignore
+                    elem["sent_message"] for elem in elems
                 ]
             self._expiry_task = asyncio.create_task(self._expire())
 
@@ -245,16 +261,16 @@ class Database:
         try:
             return self._settings_cache[(guild_id, channel_id)]
         except KeyError:
-            async with self.db.get_session() as s:
-                query = s.select(CrosspostSettings).where(
-                    (CrosspostSettings.guild_id == guild_id)
-                    & (CrosspostSettings.channel_id == channel_id)  # type: ignore
+            async with self.pool.acquire() as conn:
+                config = await conn.fetchrow(
+                    "SELECT * FROM crosspost WHERE guild_id = $1 AND channel_id = $2",
+                    guild_id,
+                    channel_id,
                 )
-                config = await query.first()
             if config is None:
                 res = Settings()
             else:
-                res = Settings.from_record(config)  # type: ignore
+                res = Settings.from_record(config)
             self._settings_cache[(guild_id, channel_id)] = res
             return res
 
@@ -263,25 +279,33 @@ class Database:
             settings = cached.apply(settings)
         self._settings_cache[(guild_id, channel_id)] = settings
         kwargs = settings.asdict()
-        async with self.db.get_session() as s:
-            row = CrosspostSettings(
-                guild_id=guild_id,
-                channel_id=channel_id,
-                **kwargs,
+        cols = ",".join(kwargs)
+        params = ",".join(f"${i}" for i, _ in enumerate(kwargs, 1))
+        update = ",".join(f"{col}=EXCLUDED.{col}" for col in kwargs)
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                f"""
+                INSERT INTO crosspost(guild_id,channel_id,{cols})
+                VALUES({guild_id},{channel_id},{params})
+                ON CONFLICT (guild_id,channel_id)
+                DO UPDATE SET {update}
+                """,
+                *kwargs.values(),
             )
-            query = s.insert.rows(row)
-            query = query.on_conflict(
-                CrosspostSettings.guild_id, CrosspostSettings.channel_id
-            ).update(*(getattr(CrosspostSettings, key) for key in kwargs))
-            await query.run()
 
     async def clear_settings(self, guild_id: int, channel_id: int):
         self._settings_cache.pop((guild_id, channel_id), None)
-        async with self.db.get_session() as s:
-            await s.delete(CrosspostSettings).where(
-                (CrosspostSettings.guild_id == guild_id)
-                & (CrosspostSettings.channel_id == channel_id)  # type: ignore
-            ).run()
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                DELETE FROM crosspost
+                WHERE
+                    guild_id = $1
+                    AND channel_id = $2
+                """,
+                guild_id,
+                channel_id,
+            )
 
     async def get_sent_messages(self, invoking_message: int) -> list[int]:
         if sent_messages := self._message_cache.get(invoking_message):
@@ -289,15 +313,12 @@ class Database:
         elif (
             utcnow() - snowflake_time(invoking_message)
         ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
-            async with self.db.get_session() as s:
-                query = s.select(CrosspostMessage).where(
-                    CrosspostMessage.invoking_message
-                    == invoking_message  # type: ignore
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(
+                    "SELECT * FROM crosspostmessage WHERE invoking_message = $1",
+                    invoking_message,
                 )
-                return [
-                    elem.sent_message  # type: ignore
-                    for elem in await (await query.all()).flatten()
-                ]
+                return [row["sent_message"] for row in rows]
         else:
             return []
 
@@ -307,21 +328,25 @@ class Database:
             self._message_cache[invoking_message] = messages
             self._expiry_deque.append(invoking_message)
         messages.append(sent_message)
-        async with self.db.get_session() as s:
-            await s.add(
-                CrosspostMessage(
-                    sent_message=sent_message, invoking_message=invoking_message
-                )
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO crosspostmessage(sent_message, invoking_message)
+                VALUES ($1, $2)
+                """,
+                sent_message,
+                invoking_message,
             )
         if self._expiry_task.done():
             self._expiry_task = asyncio.create_task(self._expire())
 
     async def del_sent_messages(self, invoking_message: int):
         self._message_cache.pop(invoking_message, None)
-        async with self.db.get_session() as s:
-            await s.delete(CrosspostMessage).where(
-                CrosspostMessage.invoking_message == invoking_message  # type: ignore
-            ).run()
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM crosspostmessage WHERE invoking_message = $1",
+                invoking_message,
+            )
 
 
 class CrosspostContext(BContext):

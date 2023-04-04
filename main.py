@@ -3,6 +3,7 @@ import asyncio
 import platform
 import sys
 
+import asyncpg
 import toml
 
 from bot import BeattieBot
@@ -23,9 +24,14 @@ else:
     prefixes = config["prefixes"]
     token = config["token"]
 
+password = config.get("config_password", "")
+dsn = f"postgresql://beattie:{password}@localhost/beattie"
+
 
 async def main():
-    bot = BeattieBot(tuple(prefixes), debug=debug)
+    pool = await asyncpg.create_pool(dsn)
+    assert pool is not None
+    bot = BeattieBot(tuple(prefixes), pool=pool, debug=debug)
     async with bot:
         await bot.start(token)
 

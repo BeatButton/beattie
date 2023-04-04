@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
 
 import aiohttp
+import asyncpg
 import toml
-from asyncqlio.db import DatabaseInterface
 from discord import AllowedMentions, Game, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
@@ -38,6 +38,7 @@ class BeattieBot(Bot):
     archive_task: Task[Any] | None
     http: HTTPClient
     session: aiohttp.ClientSession
+    pool: asyncpg.Pool
     logger: logging.Logger
 
     extra: dict[str, Any]
@@ -45,6 +46,7 @@ class BeattieBot(Bot):
     def __init__(
         self,
         prefixes: tuple[str, ...],
+        pool: asyncpg.Pool,
         debug: bool = False,
     ):
         async def prefix_func(bot: BeattieBot, message: Message) -> Iterable[str]:
@@ -68,11 +70,9 @@ class BeattieBot(Bot):
         with open("config/config.toml") as file:
             data = toml.load(file)
 
-        password = data.get("config_password", "")
         self.loglevel = data.get("loglevel", logging.WARNING)
         self.debug = debug
-        dsn = f"postgresql://beattie:{password}@localhost/beattie"
-        self.db = DatabaseInterface(dsn)
+        self.pool = pool
         self.config = Config(self)
         self.uptime = datetime.now().astimezone()
         self.extra = {}
@@ -85,7 +85,6 @@ class BeattieBot(Bot):
 
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
-        await self.db.connect()
         await self.config.async_init()
         extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
         extensions.append("jishaku")
@@ -102,7 +101,7 @@ class BeattieBot(Bot):
 
     async def close(self):
         await self.session.close()
-        await self.db.close()
+        await self.pool.close()
         if self.archive_task is not None:
             self.archive_task.cancel()
         await super().close()

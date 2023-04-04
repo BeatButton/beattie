@@ -6,7 +6,6 @@ from discord.ext.commands import BadArgument, Converter
 from recurrent import RecurringEvent
 
 from context import BContext
-from schema.remind import Timezone
 from utils.etc import UTC
 
 GMT_TRANS = str.maketrans("+-", "-+")
@@ -16,15 +15,13 @@ SUITS = frozenset((*MINOR, "major"))
 
 class TimeConverter(Converter):
     async def convert(self, ctx: BContext, argument: str) -> RecurringEvent | datetime:
-        async with ctx.bot.db.get_session() as s:
-            tz = (
-                await s.select(Timezone)
-                .where(Timezone.user_id == ctx.author.id)  # type: ignore
-                .first()
+        async with ctx.bot.pool.acquire() as conn:
+            tz = await conn.fetchval(
+                "SELECT timezone FROM timezone WHERE user_id = $1", ctx.author.id
             )
 
         if tz:
-            tz = ZoneInfo(tz.timezone)
+            tz = ZoneInfo(tz)
         else:
             tz = UTC
 

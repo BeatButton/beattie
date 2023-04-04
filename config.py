@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-from schema.config import Guild, Table
-from utils.asyncqlio import to_dict
+from typing import TYPE_CHECKING, Any, Mapping
 
 if TYPE_CHECKING:
     from bot import BeattieBot
@@ -11,35 +8,50 @@ if TYPE_CHECKING:
 
 class Config:
     def __init__(self, bot: BeattieBot):
-        self.db = bot.db
+        self.pool = bot.pool
         self.bot = bot
-        self.db.bind_tables(Table)  # type: ignore
         self._cache: dict[int, dict[str, Any]] = {}
 
     async def async_init(self):
-        await Guild.create(if_not_exists=True)
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS
+                public.guild (
+                    id bigint PRIMARY KEY NOT NULL,
+                    cog_blacklist text,
+                    prefix text,
+                    reminder_channel bigint
+                );"""
+            )
 
-    async def get_guild(self, guild_id: int) -> dict[str, Any]:
+    async def get_guild(self, guild_id: int) -> Mapping[str, Any]:
         try:
             return self._cache[guild_id]
         except KeyError:
-            async with self.db.get_session() as s:
-                query = s.select(Guild).where(Guild.id == guild_id)  # type: ignore
-                guild = await query.first()
+            async with self.pool.acquire() as conn:
+                guild = await conn.fetchrow(
+                    "SELECT * FROM guild WHERE guild.id = $1", guild_id
+                )
             if guild is None:
-                res = {"id": guild_id}
+                guild = {"id": guild_id}
             else:
-                res = to_dict(guild)
-            self._cache[guild_id] = res
-            return res
+                guild = dict(guild)
+            self._cache[guild_id] = dict(guild)
+            return guild
 
     async def set_guild(self, guild_id: int, **kwargs: Any):
-        guild = await self.get_guild(guild_id)
         self._cache[guild_id].update(kwargs)
-        async with self.db.get_session() as s:
-            row = Guild(**{**guild, **kwargs})
-            query = s.insert.rows(row)
-            query = query.on_conflict(Guild.id).update(
-                getattr(Guild, name) for name in kwargs  # type: ignore
+        cols = ",".join(kwargs)
+        params = ",".join(f"${i}" for i, _ in enumerate(kwargs, 1))
+        update = ",".join(f"{col}=EXCLUDED.{col}" for col in kwargs)
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                f"""
+                INSERT INTO guild(id,{cols})
+                VALUES({guild_id},{params})
+                ON CONFLICT (id)
+                DO UPDATE SET {update}
+                """,
+                *kwargs.values(),
             )
-            await query.run()
