@@ -37,7 +37,7 @@ class Config:
                 guild = {"id": guild_id}
             else:
                 guild = dict(guild)
-            self._cache[guild_id] = dict(guild)
+            self._cache[guild_id] = guild
             return guild
 
     async def set_guild(self, guild_id: int, **kwargs: Any):
