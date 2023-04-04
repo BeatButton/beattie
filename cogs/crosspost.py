@@ -297,15 +297,20 @@ class Database:
         self._settings_cache.pop((guild_id, channel_id), None)
         async with self.pool.acquire() as conn:
             await conn.execute(
-                """
-                DELETE FROM crosspost
-                WHERE
-                    guild_id = $1
-                    AND channel_id = $2
-                """,
+                "DELETE FROM crosspost WHERE guild_id = $1 AND channel_id = $2",
                 guild_id,
                 channel_id,
             )
+
+    async def clear_settings_all(self, guild_id: int):
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                "DELETE FROM crosspost WHERE guild_id = $1 RETURNING channel_id",
+                guild_id,
+            )
+
+        for row in rows:
+            self._settings_cache.pop((guild_id, row["channel_id"]), None)
 
     async def get_sent_messages(self, invoking_message: int) -> list[int]:
         if sent_messages := self._message_cache.get(invoking_message):
@@ -1584,10 +1589,19 @@ remove embeds from messages it processes successfully."""
         await ctx.send(f"{message}.")
 
     @crosspost.command()
-    async def clear(self, ctx: BContext, *, target: ConfigTarget):
-        """Clear channel-specific settings"""
-        await self.db.clear_settings(target.guild.id, target.id)
-        await ctx.send(f"Crosspost settings overrides cleared for {target}.")
+    async def clear(self, ctx: BContext, *, target: ConfigTarget = None):
+        """Clear crosspost settings.
+
+        If no channel is specified, will clear all crosspost settings for the server."""
+        if target is None:
+            guild = ctx.guild
+            assert guild is not None
+            await self.db.clear_settings_all(guild.id)
+            where = "this server"
+        else:
+            await self.db.clear_settings(target.guild.id, target.id)
+            where = str(target)
+        await ctx.send(f"Crosspost settings overrides cleared for {where}.")
 
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
