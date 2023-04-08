@@ -703,8 +703,17 @@ class Crosspost(Cog):
 
         cdn_link = f"https://cdn.syndication.twimg.com/tweet-result?id={tweet_id}"
 
-        async with self.get(cdn_link, use_default_headers=False) as resp:
-            tweet = await resp.json()
+        try:
+            async with self.get(cdn_link, use_default_headers=False) as resp:
+                tweet = await resp.json()
+        except ResponseError as e:
+            if e.code == 404:
+                await ctx.send(
+                    "Failed to fetch tweet. It may be age-restricted, "
+                    "or be from a banned or suspended account."
+                )
+                return False
+            raise e
 
         if (media_info := tweet.get("mediaDetails")) is None:
             return False
