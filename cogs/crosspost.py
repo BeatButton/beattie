@@ -710,7 +710,7 @@ class Crosspost(Cog):
             if e.code == 404:
                 await ctx.send(
                     "Failed to fetch tweet. It may be age-restricted, "
-                    "or be from a banned or suspended account."
+                    "or be from a private or suspended account."
                 )
                 return False
             raise e
