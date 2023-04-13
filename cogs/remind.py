@@ -208,12 +208,7 @@ class Remind(Cog):
         """Delete a specific reminder. Use `list` to get IDs."""
         async with self.pool.acquire() as conn:
             record = await conn.fetchrow(
-                """
-                SELECT *
-                FROM reminder
-                WHERE id = $1
-                """,
-                reminder_id,
+                "SELECT * FROM reminder WHERE id = $1", reminder_id
             )
             if record is None:
                 await ctx.send("No such reminder.")
@@ -224,10 +219,7 @@ class Remind(Cog):
                 return
 
             await conn.execute(
-                """
-                DELETE FROM reminder
-                WHERE id = $1;
-                """,
+                "DELETE FROM reminder WHERE id = $1",
                 reminder.id,
             )
             await conn.execute("DELETE FROM recurring WHERE id = $1", reminder.id)
