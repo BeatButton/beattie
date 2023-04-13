@@ -329,7 +329,6 @@ class Remind(Cog):
 
     async def send_reminder(self, reminder: Reminder):
         self.logger.info(f"handling reminder {reminder}")
-        found = False
         recurring = None
         guild_id: int = reminder.guild_id
         user_id: int = reminder.user_id
@@ -355,7 +354,6 @@ class Remind(Cog):
                 or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
             )
         ):
-            found = True
             assert isinstance(channel, GuildMessageable)
             async with self.pool.acquire() as conn:
                 recurring = await conn.fetchrow(
