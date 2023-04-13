@@ -258,6 +258,7 @@ class Remind(Cog):
 
         now = datetime.now(tz)
 
+        rrule_str = None
         if isinstance(argument, RecurringEvent):
             rrule_str = argument.get_RFC_rrule()
             rr = rrule.rrulestr(rrule_str)
@@ -300,6 +301,7 @@ class Remind(Cog):
             assert record is not None
             reminder = Reminder.from_record(record)
             if isinstance(argument, RecurringEvent):
+                assert isinstance(rrule_str, str)
                 await conn.execute(
                     "INSERT INTO recurring(id, rrule) VALUES ($1, $2)",
                     reminder.id,
