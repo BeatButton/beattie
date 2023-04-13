@@ -100,7 +100,8 @@ class Remind(Cog):
                 );
 
                 CREATE TABLE IF NOT EXISTS public.recurring (
-                    id integer PRIMARY KEY NOT NULL,
+                    id integer PRIMARY KEY
+                        REFERENCES public.reminder(id) ON DELETE CASCADE,
                     rrule text NOT NULL
                 );
                 """
@@ -222,7 +223,6 @@ class Remind(Cog):
                 "DELETE FROM reminder WHERE id = $1",
                 reminder.id,
             )
-            await conn.execute("DELETE FROM recurring WHERE id = $1", reminder.id)
 
         if self.queue[-1] == reminder:
             self.timer.cancel()
@@ -416,11 +416,6 @@ class Remind(Cog):
         if recurring is None:
             async with self.pool.acquire() as conn:
                 await conn.execute("DELETE FROM reminder WHERE id = $1", reminder.id)
-
-                if not found:
-                    await conn.execute(
-                        "DELETE FROM recurring WHERE id = $1", reminder.id
-                    )
 
     async def start_timer(self):
         self.timer = asyncio.create_task(self.sleep())
