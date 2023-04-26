@@ -84,7 +84,8 @@ MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
 
 INKBUNNY_URL_EXPR = re.compile(
-    r"https?://(?:www\.)?inkbunny\.net/s/(\d+)(?:-p\d+-)?(?:#.*)?"
+    r"https?://(?:www\.)?inkbunny\.net/"
+    r"(?:s/|submissionview\.php\?id=)(\d+)(?:-p\d+-)?(?:#.*)?"
 )
 INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
