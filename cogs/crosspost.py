@@ -710,7 +710,7 @@ class Crosspost(Cog):
 
         try:
             async with self.get(api_link, use_default_headers=False) as resp:
-                tweet = await resp.json()
+                tweet = (await resp.json())["tweet"]
         except ResponseError as e:
             if e.code == 404:
                 await ctx.send(
@@ -721,7 +721,7 @@ class Crosspost(Cog):
             raise e
 
         print(tweet)
-        if (media := tweet["tweet"].get("media")) is None:
+        if (media := tweet.get("media")) is None:
             print("no media")
             return False
 
