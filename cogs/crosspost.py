@@ -714,7 +714,7 @@ class Crosspost(Cog):
         except ResponseError as e:
             if e.code == 404:
                 await ctx.send(
-                    "Failed to fetch tweet. It may be age-restricted, "
+                    "Failed to fetch tweet. It may have been deleted, "
                     "or be from a private or suspended account."
                 )
                 return False
