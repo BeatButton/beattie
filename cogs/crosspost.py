@@ -720,9 +720,7 @@ class Crosspost(Cog):
                 return False
             raise e
 
-        print(tweet)
         if (media := tweet.get("media")) is None:
-            print("no media")
             return False
 
         text = None
@@ -736,7 +734,6 @@ class Crosspost(Cog):
         did_post = False
         url: str
         if photos := media.get("photos"):
-            print("photos")
             did_post = True
             for photo in photos:
                 url = f"{photo['url']}:orig"
@@ -744,7 +741,6 @@ class Crosspost(Cog):
                 if too_large(msg):
                     await ctx.send(url)
         if videos := media.get("videos"):
-            print("videos")
             did_post = True
             for video in videos:
                 url = video["url"]
