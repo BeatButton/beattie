@@ -4,6 +4,7 @@ import asyncio
 import copy
 import logging
 import re
+import json
 import urllib.parse as urlparse
 from asyncio import subprocess
 from collections import deque
@@ -112,6 +113,9 @@ LOFTER_IMG_SELECTOR = ".//a[contains(@class, 'imgclasstag')]/img"
 LOFTER_TEXT_SELECTOR = (
     ".//div[contains(@class, 'content')]/div[contains(@class, 'text')]"
 )
+
+MISSKEY_URL_EXPR = re.compile(r"https?://misskey\.\w+/notes/\w+")
+MISSKEY_URL_GROUPS = re.compile(r"https?://(misskey\.(?:\w+))/notes/(\w+)")
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
@@ -1456,6 +1460,37 @@ class Crosspost(Cog):
                 await ctx.send(f"> {text}")
 
         return True
+
+    async def display_misskey_images(self, ctx: CrosspostContext, link: str) -> bool:
+        if (match := MISSKEY_URL_GROUPS.match(link)) is None:
+            return False
+
+        self.logger.info(
+            f"misskey: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
+        site, post = match.groups()
+
+        url = f"https://{site}/api/notes/show"
+        body = json.dumps({"noteId": post}).encode("utf-8")
+
+        async with self.get(
+            url,
+            method="POST",
+            data=body,
+            use_default_headers=False,
+            headers={"Content-Type": "application/json"},
+        ) as resp:
+            data = await resp.json()
+
+        if not (files := data["files"]):
+            return False
+
+        for file in files:
+            await self.send(ctx, file["url"])
+
+        if await self.should_post_text(ctx) and (text := data["text"]):
+            await ctx.send(f"> {text}")
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
