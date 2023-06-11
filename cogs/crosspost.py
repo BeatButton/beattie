@@ -1492,6 +1492,8 @@ class Crosspost(Cog):
         if await self.should_post_text(ctx) and (text := data["text"]):
             await ctx.send(f"> {text}")
 
+        return True
+
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
     async def twitter(self, ctx: BContext, enabled: bool = True):
