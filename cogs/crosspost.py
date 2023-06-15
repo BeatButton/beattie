@@ -1465,6 +1465,7 @@ class Crosspost(Cog):
         if (match := MISSKEY_URL_GROUPS.match(link)) is None:
             return False
 
+        assert ctx.guild is not None
         self.logger.info(
             f"misskey: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
