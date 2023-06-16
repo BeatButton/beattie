@@ -115,7 +115,7 @@ LOFTER_TEXT_SELECTOR = (
 )
 
 MISSKEY_URL_EXPR = re.compile(r"https?://misskey\.\w+/notes/\w+")
-MISSKEY_URL_GROUPS = re.compile(r"https?://(misskey\.(?:\w+))/notes/(\w+)")
+MISSKEY_URL_GROUPS = re.compile(r"https?://(misskey\.\w+)/notes/(\w+)")
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
