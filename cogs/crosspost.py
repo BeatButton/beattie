@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import json
 import logging
 import re
-import json
 import urllib.parse as urlparse
 from asyncio import subprocess
 from collections import deque
