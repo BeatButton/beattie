@@ -1,9 +1,11 @@
 import random
 from collections import defaultdict
+from base64 import b64encode
 from typing import TYPE_CHECKING, Any, Iterable
 from urllib import parse
 
 import discord
+import toml
 from discord import Embed, File, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -26,7 +28,7 @@ class NSFW(Cog):
     urls = {
         "gelbooru": "http://gelbooru.com/index.php",
         "rule34": "http://rule34.xxx/index.php",
-        "e621": "https://e621.net/post/index.xml",
+        "e621": "https://e621.net/posts.json",
     }
 
     def cog_check(self, ctx: BContext) -> bool:
@@ -43,6 +45,14 @@ class NSFW(Cog):
         self.get = bot.get
         self.log = bot.logger.debug
         self.parser = etree.HTMLParser()
+        with open("config/logins.toml") as fp:
+            data = toml.load(fp)
+        if e621 := data.get("e621"):
+            self.e621_key = e621["api_key"]
+            self.e621_user = e621["user"]
+        else:
+            self.e621_key = ""
+            self.e621_user = ""
 
     @commands.command(aliases=["gel"])
     async def gelbooru(self, ctx: BContext, *tags: str):
@@ -63,7 +73,6 @@ class NSFW(Cog):
         assert ctx.command is not None
         async with ctx.typing():
             tags = frozenset(tags)
-            sort = "order:" in ctx.message.content
             site = ctx.command.name
             channel = ctx.channel
             if site not in self.titles:
@@ -71,20 +80,38 @@ class NSFW(Cog):
             try:
                 posts = self.cache[channel][site][tags]
             except KeyError:
-                params = {
-                    "page": "dapi",
-                    "s": "post",
-                    "q": "index",
-                    "limit": limit,
-                    "tags": " ".join(tags),
-                }
-                async with ctx.bot.get(self.urls[site], params=params) as resp:
-                    root = etree.fromstring(await resp.read(), self.parser)
-                posts = root.findall(".//post")
-                if sort:
-                    posts = posts[::-1]
+                if site == "e621":
+                    params = {"limit": limit, "tags": " ".join(tags)}
+                    if self.e621_key:
+                        auth_slug = b64encode(
+                            f"{self.e621_user}:{self.e621_key}".encode()
+                        ).decode()
+                        headers = {"Authorization": f"Basic {auth_slug}"}
+                    else:
+                        headers = {}
+                    async with ctx.bot.get(
+                        self.urls[site], params=params, headers=headers
+                    ) as resp:
+                        data = await resp.json()
+                    posts = [
+                        {
+                            "file_url": post["file"]["url"],
+                            "id": post["id"],
+                        }
+                        for post in data["posts"]
+                    ]
                 else:
-                    random.shuffle(posts)
+                    params = {
+                        "page": "dapi",
+                        "s": "post",
+                        "q": "index",
+                        "limit": limit,
+                        "tags": " ".join(tags),
+                    }
+                    async with ctx.bot.get(self.urls[site], params=params) as resp:
+                        root = etree.fromstring(await resp.read(), self.parser)
+                    posts = root.findall(".//post")
+                random.shuffle(posts)
                 self.cache[channel][site][tags] = posts
             if not posts:
                 await ctx.send("No images found.")
@@ -95,11 +122,12 @@ class NSFW(Cog):
                 self.cache[channel][site].pop(tags, None)
 
     def make_embed(
-        self, post_element: etree.Element, site: str  # type: ignore
+        self, post: "etree.Element | dict", site: str  # type: ignore
     ) -> tuple[Embed, File]:
-        post = dict(post_element.items())
-        if not post:
-            post = {child.tag: child.text for child in post_element.getchildren()}
+        if not isinstance(post, dict):
+            post = dict(post.items()) or {
+                child.tag: child.text for child in post.getchildren()
+            }
         embed = discord.Embed()
         file = discord.File(f"data/favicons/{site}.png", "favicon.png")
         embed.set_thumbnail(url="attachment://favicon.png")
