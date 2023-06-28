@@ -32,12 +32,16 @@ class Stats(Cog):
         if bot.owner_id is None:
             await bot.is_owner(ctx.author)
 
-        owner_id = bot.owner_id
-        assert owner_id is not None
-        owner = bot.get_user(owner_id)
-        assert owner is not None
+        owner = None
+        if owner_id := bot.owner_id:
+            owner = bot.get_user(owner_id)
+        elif owner_ids := bot.owner_ids:
+            owner = bot.get_user(next(iter(owner_ids)))
 
-        embed.set_author(name=f"Created by {owner}", icon_url=owner.display_avatar.url)
+        if owner is not None:
+            embed.set_author(
+                name=f"Created by {owner}", icon_url=owner.display_avatar.url
+            )
 
         total_members = sum(len(s.members) for s in bot.guilds)
         unique_members = len(bot.users)
