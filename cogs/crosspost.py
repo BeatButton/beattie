@@ -117,6 +117,9 @@ LOFTER_TEXT_SELECTOR = (
 MISSKEY_URL_EXPR = re.compile(r"https?://misskey\.\w+/notes/\w+")
 MISSKEY_URL_GROUPS = re.compile(r"https?://(misskey\.\w+)/notes/(\w+)")
 
+POIPIKU_URL_EXPR = re.compile(r"https?://poipiku\.com/\d+/\d+\.html")
+POIPIKU_URL_GROUPS = re.compile(r"https?://poipiku\.com/(\d+)/(\d+)\.html")
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | discord.CategoryChannel
@@ -1494,6 +1497,129 @@ class Crosspost(Cog):
             await ctx.send(f"> {text}")
 
         return True
+
+    async def display_poipiku_images(self, ctx: CrosspostContext, link: str) -> bool:
+        if (match := POIPIKU_URL_GROUPS.match(link)) is None:
+            return False
+
+        async with self.get(link, use_default_headers=False) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        embedded = False
+        refer = {"Referer": link}
+
+        img = root.xpath(".//img[contains(@class, 'IllustItemThumbImg')]")[0]
+        src: str = img.get("src")
+        if "/img/" not in src:
+            src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
+            src = f"https:{src}"
+            await self.send(ctx, src, use_default_headers=False, headers=refer)
+            embedded = True
+
+        user, post = match.groups()
+
+        headers = {
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "X-Requested-With": "XMLHttpRequest",
+            "Origin": "https://poipiku.com",
+            **refer,
+        }
+
+        body = {
+            "UID": user,
+            "IID": post,
+            "PAS": "",
+            "MD": "0",
+            "TWF": "-1",
+        }
+
+        async with self.get(
+            "https://poipiku.com/f/ShowAppendFileF.jsp",
+            method="POST",
+            use_default_headers=False,
+            headers=headers,
+            data=body,
+        ) as resp:
+            data = json.loads(await resp.read())
+
+        frag = data["html"]
+        if not frag:
+            return embedded
+
+        if frag == "You need to sign in.":
+            await ctx.send("Post requires authentication.")
+            return embedded
+
+        if frag == "Password is incorrect.":
+
+            def check(m: Message):
+                return (
+                    (r := m.reference) is not None
+                    and r.message_id == msg.id
+                    and m.author.id == ctx.author.id
+                )
+
+            async def clean():
+                if do_clean:
+                    for msg in to_clean:
+                        await msg.delete()
+
+            assert isinstance(ctx.me, discord.Member)
+            do_clean = await self.should_cleanup(ctx.message, ctx.me)
+
+            delete_after = 10 if do_clean else None
+
+            msg = await ctx.reply(
+                "Post requires a password. Reply to this message with the password.",
+                mention_author=True,
+            )
+            to_clean = [msg]
+
+            while True:
+                try:
+                    reply = await ctx.bot.wait_for("message", check=check, timeout=60)
+                except asyncio.TimeoutError:
+                    await ctx.send(
+                        "Poipiku password timeout expired.", delete_after=delete_after
+                    )
+                    await clean()
+                    return embedded
+
+                to_clean.append(reply)
+
+                body["PAS"] = reply.content
+
+                async with self.get(
+                    "https://poipiku.com/f/ShowAppendFileF.jsp",
+                    method="POST",
+                    use_default_headers=False,
+                    headers=headers,
+                    data=body,
+                ) as resp:
+                    data = json.loads(await resp.read())
+
+                frag = data["html"]
+
+                if frag == "Password is incorrect.":
+                    msg = await reply.reply(
+                        "Incorrect password. Try again, replying to this message.",
+                        mention_author=True,
+                    )
+                    to_clean.append(msg)
+                else:
+                    await clean()
+                    break
+
+        root = html.document_fromstring(frag, self.parser)
+
+        for img in root.xpath(".//img"):
+            src = img.get("src")
+            src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
+            src = f"https:{src}"
+            await self.send(ctx, src, use_default_headers=False, headers=refer)
+            embedded = True
+
+        return embedded
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
