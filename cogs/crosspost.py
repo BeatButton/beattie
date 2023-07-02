@@ -47,7 +47,7 @@ TWITTER_VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
 
 PIXIV_URL_EXPR = re.compile(
     r"https?://(?:www\.)?pixiv\.net/(?:(?:en/)?artworks/|"
-    r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=)(\d+)"
+    r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=|i/)(\d+)"
 )
 
 HICCEARS_URL_EXPR = re.compile(
