@@ -620,8 +620,16 @@ class Crosspost(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
+        embedded = True
+        for m in self.db._message_cache.get(message.id, []):
+            if (
+                msg := await squash_unfindable(message.channel.fetch_message(m))
+            ) and msg.embeds:
+                break
+        else:
+            embedded = False
         if (
-            message.id in self.db._message_cache
+            embedded
             # message.guild will always be set if the message is in the cache
             and await self.should_cleanup(message, message.guild.me)  # type: ignore
             and message.embeds
