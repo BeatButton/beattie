@@ -51,7 +51,7 @@ PIXIV_URL_EXPR = re.compile(
 )
 
 HICCEARS_URL_EXPR = re.compile(
-    r"https?://(?:www\.)?hiccears\.com/(?:[\w-]+/)"
+    r"https?://(?:www\.)?hiccears\.com/(?:[\w-]+/)?"
     r"(?:contents/[\w-]+|file/[\w-]+/[\w-]+/preview)"
 )
 HICCEARS_IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
