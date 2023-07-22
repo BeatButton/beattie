@@ -636,12 +636,13 @@ class Crosspost(Cog):
         else:
             return
 
-        if (
-            message.embeds
-            # message.guild will always be set if the message is in the cache
-            and await self.should_cleanup(message, message.guild.me)  # type: ignore
+        assert message.guild is not None
+        if not (
+            message.embeds and await self.should_cleanup(message, message.guild.me)
         ):
-            await message.edit(suppress=True)
+            return
+
+        await message.edit(suppress=True)
 
     @Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
