@@ -95,10 +95,11 @@ class NSFW(Cog):
                         data = await resp.json()
                     posts = [
                         {
-                            "file_url": post["file"]["url"],
+                            "file_url": url,
                             "id": post["id"],
                         }
                         for post in data["posts"]
+                        if (url := post["file"]["url"])
                     ]
                 else:
                     params = {
