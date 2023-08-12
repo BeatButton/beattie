@@ -730,11 +730,11 @@ class Crosspost(Cog):
             f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
         )
 
-        api_link = f"https://api.fxtwitter.com/status/{tweet_id}"
+        api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
 
         try:
             async with self.get(api_link, use_default_headers=False) as resp:
-                tweet = (await resp.json())["tweet"]
+                tweet = await resp.json()
         except ResponseError as e:
             if e.code == 404:
                 await ctx.send(
@@ -744,7 +744,8 @@ class Crosspost(Cog):
                 return False
             raise e
 
-        if (media := tweet.get("media")) is None:
+        media = tweet["media_extended"]
+        if not media:
             return False
 
         text = None
@@ -755,21 +756,16 @@ class Crosspost(Cog):
             text = text.replace("\n", "\n> ")
             text = suppress_links(text)
 
-        did_post = False
         url: str
-        if photos := media.get("photos"):
-            did_post = True
-            for photo in photos:
-                url = f"{photo['url']}:orig"
-                msg = await self.send(ctx, url)
-                if too_large(msg):
-                    await ctx.send(url)
-        if videos := media.get("videos"):
-            did_post = True
-            for video in videos:
-                url = video["url"]
-
-                if video["type"] == "gif":
+        for medium in media:
+            url = medium["url"]
+            match medium["type"]:
+                case "image":
+                    url = f"{url}:orig"
+                    msg = await self.send(ctx, url)
+                    if too_large(msg):
+                        await ctx.send(url)
+                case "gif":
                     proc = await asyncio.create_subprocess_exec(
                         "ffmpeg",
                         "-i",
@@ -795,17 +791,15 @@ class Crosspost(Cog):
                         gif.seek(0)
                         file = File(gif, filename)
                         await ctx.send(file=file)
-                else:
+                case "video":
                     async with self.get(url, "HEAD", use_default_headers=False) as resp:
                         content_length = resp.content_length
                         filename = url.rpartition("?")[0].rpartition("/")[-1]
-                    if content_length and content_length < ctx.guild.filesize_limit:
+                    msg = None
+                    if content_length and content_length > ctx.guild.filesize_limit:
+                        msg = await ctx.send(url)
+                    if msg is None or too_large(msg):
                         await self.send(ctx, url, use_default_headers=False)
-                    else:
-                        await ctx.send(url)
-
-        if not did_post:
-            return False
 
         if text:
             await ctx.send(f"> {text}")
