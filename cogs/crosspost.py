@@ -785,7 +785,8 @@ class Crosspost(Cog):
                         stderr=subprocess.DEVNULL,
                     )
 
-                    filename = f"{tweet_id}.gif"
+                    base = url.rpartition("/")[-1].rpartition(".")[0]
+                    filename = f"{base}.gif"
 
                     try:
                         stdout = await try_wait_for(proc)
