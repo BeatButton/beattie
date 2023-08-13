@@ -804,13 +804,14 @@ class Crosspost(Cog):
                     ) as resp:
                         content_length = resp.content_length
                         filename = url.rpartition("?")[0].rpartition("/")[-1]
-                    msg = None
                     if content_length and content_length > ctx.guild.filesize_limit:
-                        msg = await ctx.send(url)
-                    if msg is None or too_large(msg):
-                        await self.send(
+                        await ctx.send(url)
+                    else:
+                        msg = await self.send(
                             ctx, url, headers=headers, use_default_headers=False
                         )
+                        if too_large(msg):
+                            await ctx.send(url)
 
         if text:
             await ctx.send(f"> {text}")
