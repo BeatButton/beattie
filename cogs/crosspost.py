@@ -761,7 +761,6 @@ class Crosspost(Cog):
             url = medium["url"]
             match medium["type"]:
                 case "image":
-                    url = f"{url}:orig"
                     msg = await self.send(ctx, url)
                     if too_large(msg):
                         await ctx.send(url)
