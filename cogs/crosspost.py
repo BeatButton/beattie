@@ -722,9 +722,6 @@ class Crosspost(Cog):
     async def display_twitter_images(
         self, ctx: CrosspostContext, tweet_id: str
     ) -> bool:
-        if await self.get_mode(ctx.message) == 1:
-            return False
-
         assert ctx.guild is not None
         self.logger.info(
             f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
