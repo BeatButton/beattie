@@ -729,17 +729,24 @@ class Crosspost(Cog):
 
         api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
 
-        try:
-            async with self.get(api_link, use_default_headers=False) as resp:
-                tweet = await resp.json()
-        except ResponseError as e:
-            if e.code == 404:
-                await ctx.send(
-                    "Failed to fetch tweet. It may have been deleted, "
-                    "or be from a private or suspended account."
-                )
-                return False
-            raise e
+        tries = 1
+        while True:
+            try:
+                async with self.get(api_link, use_default_headers=False) as resp:
+                    tweet = await resp.json()
+            except ResponseError as e:
+                if e.code == 404:
+                    await ctx.send(
+                        "Failed to fetch tweet. It may have been deleted, "
+                        "or be from a private or suspended account."
+                    )
+                    return False
+                elif e.code == 500 and tries <= 3:
+                    await asyncio.sleep(tries)
+                    tries += 1
+                raise e
+            else:
+                break
 
         media = tweet["media_extended"]
         if not media:
