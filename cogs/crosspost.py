@@ -727,6 +727,7 @@ class Crosspost(Cog):
             f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
         )
 
+        headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
         api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
 
         tries = 1
@@ -765,7 +766,9 @@ class Crosspost(Cog):
             url = medium["url"]
             match medium["type"]:
                 case "image":
-                    msg = await self.send(ctx, url, use_default_headers=False)
+                    msg = await self.send(
+                        ctx, url, headers=headers, use_default_headers=False
+                    )
                     if too_large(msg):
                         await ctx.send(url)
                 case "gif":
@@ -795,14 +798,18 @@ class Crosspost(Cog):
                         file = File(gif, filename)
                         await ctx.send(file=file)
                 case "video":
-                    async with self.get(url, "HEAD", use_default_headers=False) as resp:
+                    async with self.get(
+                        url, "HEAD", headers=headers, use_default_headers=False
+                    ) as resp:
                         content_length = resp.content_length
                         filename = url.rpartition("?")[0].rpartition("/")[-1]
                     msg = None
                     if content_length and content_length > ctx.guild.filesize_limit:
                         msg = await ctx.send(url)
                     if msg is None or too_large(msg):
-                        await self.send(ctx, url, use_default_headers=False)
+                        await self.send(
+                            ctx, url, headers=headers, use_default_headers=False
+                        )
 
         if text:
             await ctx.send(f"> {text}")
