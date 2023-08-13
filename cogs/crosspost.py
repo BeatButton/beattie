@@ -40,7 +40,7 @@ from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:www|mobile|m)\.|.x)?tw[ix]tter\.com/[^\s/]+/status/(\d+)"
+    r"https?://(?:(?:(?:www|mobile|m)\.|.x)?tw[ix]tter|x)\.com/[^\s/]+/status/(\d+)"
 )
 TWITTER_TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
 TWITTER_VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
