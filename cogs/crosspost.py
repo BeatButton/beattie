@@ -766,6 +766,7 @@ class Crosspost(Cog):
             url = medium["url"]
             match medium["type"]:
                 case "image":
+                    url = f"{url}:orig"
                     msg = await self.send(
                         ctx, url, headers=headers, use_default_headers=False
                     )
