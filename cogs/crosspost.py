@@ -742,7 +742,7 @@ class Crosspost(Cog):
                         "or be from a private or suspended account."
                     )
                     return False
-                elif e.code == 500 and tries <= 3:
+                elif e.code == 500 and tries <= 6:
                     await asyncio.sleep(tries)
                     tries += 1
                 raise e
