@@ -731,6 +731,7 @@ class Crosspost(Cog):
         api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
 
         tries = 1
+        max_tries = 6
         while True:
             try:
                 async with self.get(api_link, use_default_headers=False) as resp:
@@ -742,9 +743,15 @@ class Crosspost(Cog):
                         "or be from a private or suspended account."
                     )
                     return False
-                elif e.code == 500 and tries <= 6:
-                    await asyncio.sleep(tries)
-                    tries += 1
+                elif e.code == 500:
+                    if tries <= max_tries:
+                        await asyncio.sleep(tries)
+                        tries += 1
+                    else:
+                        await ctx.send(
+                            f"Failed to get an API response after {max_tries} tries."
+                        )
+                        return False
                 raise e
             else:
                 break
