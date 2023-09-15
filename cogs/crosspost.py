@@ -729,22 +729,35 @@ class Crosspost(Cog):
         )
 
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
-        api_link = f"https://api.fxtwitter.com/status/{tweet_id}"
+        api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
 
-        try:
-            async with self.get(api_link, use_default_headers=False) as resp:
-                tweet = (await resp.json())["tweet"]
-        except ResponseError as e:
-            if e.code == 404:
-                await ctx.send(
-                    "Failed to fetch tweet. It may have been deleted, "
-                    "or be from a private or suspended account."
-                )
-                return False
-            else:
+        tries = 1
+        max_tries = 6
+        while True:
+            try:
+                async with self.get(api_link, use_default_headers=False) as resp:
+                    tweet = await resp.json()
+            except ResponseError as e:
+                if e.code == 404:
+                    await ctx.send(
+                        "Failed to fetch tweet. It may have been deleted, "
+                        "or be from a private or suspended account."
+                    )
+                    return False
+                elif e.code == 500:
+                    if tries <= max_tries:
+                        await asyncio.sleep(tries)
+                        tries += 1
+                    else:
+                        await ctx.send(
+                            f"Failed to get an API response after {max_tries} tries."
+                        )
+                        return False
                 raise e
+            else:
+                break
 
-        media = tweet.get("media")
+        media = tweet["media_extended"]
         if not media:
             return False
 
@@ -757,10 +770,10 @@ class Crosspost(Cog):
             text = suppress_links(text)
 
         url: str
-        for medium in media["all"]:
+        for medium in media:
             url = medium["url"]
             match medium["type"]:
-                case "photo":
+                case "image":
                     url = f"{url}:orig"
                     msg = await self.send(
                         ctx, url, headers=headers, use_default_headers=False
