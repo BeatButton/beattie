@@ -1149,7 +1149,8 @@ class Crosspost(Cog):
         if (match := MASTODON_URL_GROUPS.match(link)) is None:
             return False
 
-        if ".".join(self.tldextract(link)[-2:]) in MASTODON_SITE_EXCLUDE:
+        site = self.tldextract(link)
+        if f"{site.domain}.{site.suffix}" in MASTODON_SITE_EXCLUDE:
             return False
 
         site, post = match.groups()
