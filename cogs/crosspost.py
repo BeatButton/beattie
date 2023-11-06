@@ -1205,7 +1205,9 @@ class Crosspost(Cog):
                 except asyncio.TimeoutError:
                     await ctx.send("Gif took too long to process.")
                     async with self.get(*urls, method="HEAD") as resp:
-                        await self.send(ctx, str(resp.url))
+                        msg = await self.send(ctx, str(resp.url))
+                        if all_embedded and too_large(msg):
+                            all_embedded = False
                     continue
 
                 img = BytesIO(stdout)
