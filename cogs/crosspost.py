@@ -687,7 +687,9 @@ class Crosspost(Cog):
             img = await self.save(
                 link, headers=headers, use_default_headers=use_default_headers
             )
-            filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
+            filename: str = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
+            if filename.endswith(".jfif"):
+                filename = f"{filename[:-4]}jpeg"
             file = File(img, filename)
             return await ctx.send(file=file)
         else:
