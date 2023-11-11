@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from discord import File, User
+from discord import File, Member, User
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -12,7 +12,7 @@ class Default(Cog):
     """Default useful commands."""
 
     @commands.command()
-    async def avatar(self, ctx: BContext, *, user: User = commands.Author):
+    async def avatar(self, ctx: BContext, *, user: Member | User = commands.Author):
         img = BytesIO()
         avatar = user.display_avatar.with_format(
             "gif" if user.display_avatar.is_animated() else "png"
