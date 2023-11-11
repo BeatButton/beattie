@@ -12,11 +12,29 @@ class Default(Cog):
     """Default useful commands."""
 
     @commands.command()
-    async def avatar(self, ctx: BContext, *, user: Member | User = commands.Author):
+    async def avatar(
+        self,
+        ctx: BContext,
+        user: Member | User = commands.Author,
+        which: str = "server",
+    ):
+        """Get someone's avatar.
+
+        Optionally, specify "which" avatar you want: server, global, or default"""
         img = BytesIO()
-        avatar = user.display_avatar.with_format(
-            "gif" if user.display_avatar.is_animated() else "png"
-        )
+        match which:
+            case "server" | "guild" | "local":
+                avatar = user.display_avatar.with_format(
+                    "gif" if user.display_avatar.is_animated() else "png"
+                )
+            case "global":
+                asset = user.avatar or user.display_avatar
+                avatar = asset.with_format("gif" if asset.is_animated() else "png")
+            case "default":
+                avatar = user.default_avatar.with_format("png")
+            case _:
+                await ctx.send(f'"{which}" is not a type of avatar.')
+                return
         await avatar.save(img)
         filename = str(avatar).rpartition("/")[2].partition("?")[0]
         await ctx.send(file=File(img, filename))
