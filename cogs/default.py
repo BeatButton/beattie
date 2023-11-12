@@ -41,7 +41,7 @@ class Default(Cog):
 
     @avatar.error
     async def avatar_error(self, ctx: BContext, exc: Exception):
-        if isinstance(exc, commands.BadArgument):
+        if isinstance(exc, commands.BadUnionArgument):
             await ctx.send("User not found.")
         else:
             await ctx.bot.handle_error(ctx, exc)
