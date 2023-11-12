@@ -18,7 +18,7 @@ class Default(Cog):
         user: Member | User = commands.Author,
         which: str = "server",
     ):
-        """Get someone's avatar.
+        """Get someone's avatar
 
         Optionally, specify "which" avatar you want: server, global, or default"""
         img = BytesIO()
@@ -45,6 +45,18 @@ class Default(Cog):
             await ctx.send("User not found.")
         else:
             await ctx.bot.handle_error(ctx, exc)
+
+    @commands.command()
+    async def icon(self, ctx: BContext):
+        """Get the server icon"""
+        icon = ctx.guild and ctx.guild.icon
+        if icon is None:
+            await ctx.send("This server has no icon.")
+            return
+        img = BytesIO()
+        await icon.save(img)
+        filename = str(icon).rpartition("/")[2].partition("?")[0]
+        await ctx.send(file=File(img, filename))
 
     @commands.command()
     async def latency(self, ctx: BContext):
