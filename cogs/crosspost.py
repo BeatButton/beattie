@@ -123,6 +123,12 @@ MISSKEY_URL_GROUPS = re.compile(r"https?://(misskey\.\w+)/notes/(\w+)")
 POIPIKU_URL_EXPR = re.compile(r"https?://poipiku\.com/\d+/\d+\.html")
 POIPIKU_URL_GROUPS = re.compile(r"https?://poipiku\.com/(\d+)/(\d+)\.html")
 
+BSKY_URL_EXPR = re.compile(r"https?://bsky\.app/profile/([^/]+)/post/(.+)")
+BSKY_XRPC_FMT = (
+    "https://bsky.social/xrpc/com.atproto.repo.getRecord"
+    "?repo={}&collection=app.bsky.feed.post&rkey={}"
+)
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | discord.CategoryChannel
@@ -1650,6 +1656,41 @@ class Crosspost(Cog):
             embedded = True
 
         return embedded
+
+    async def display_bsky_images(
+        self, ctx: CrosspostContext, repo: str, rkey: str
+    ) -> bool:
+        xrpc_url = BSKY_XRPC_FMT.format(repo, rkey)
+        async with self.get(xrpc_url, use_default_headers=False) as resp:
+            data = await resp.json()
+
+        post = data["value"]
+
+        if not (images := post.get("embed", {}).get("images")):
+            return False
+
+        did = data["uri"].removeprefix("at://").partition("/")[0]
+        all_embedded = True
+
+        for image in images:
+            image = image["image"]
+            image_id = image["ref"]["$link"]
+            ext = image["mimeType"].rpartition("/")[-1]
+            url = f"https://cdn.bsky.app/img/feed_fullsize/plain/{did}/{image_id}@{ext}"
+            filename = f"{image_id}.{ext}"
+            msg = await self.send(
+                ctx, url, filename=filename, use_default_headers=False
+            )
+            if too_large(msg):
+                await ctx.send(url)
+                all_embedded = False
+
+        if all_embedded and await self.should_post_text(ctx):
+            text = post["text"]
+            text = suppress_links(text)
+            await ctx.send(f">>> {text}")
+
+        return all_embedded
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
