@@ -88,8 +88,7 @@ HICCEARS_NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
-MASTODON_URL_EXPR = re.compile(r"(https?://\S+/[\w-]+/?)(?:>|$|\s)")
-MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
+MASTODON_URL_EXPR = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:>|$|\s)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
 
 INKBUNNY_URL_EXPR = re.compile(
@@ -585,9 +584,12 @@ class Crosspost(Cog):
         assert ctx.guild is not None
         do_suppress = await self.should_cleanup(ctx.message, ctx.guild.me)
         for expr, func in self.expr_dict.items():
-            for link in expr.findall(content):
+            for args in expr.findall(content):
                 try:
-                    if await func(ctx, link.strip()) and do_suppress:
+                    if isinstance(args, str):
+                        args = [args]
+                    args = map(str.strip, args)
+                    if await func(ctx, *args) and do_suppress:
                         await squash_unfindable(ctx.message.edit(suppress=True))
                         do_suppress = False
                 except ResponseError as e:
@@ -1136,22 +1138,19 @@ class Crosspost(Cog):
             await ctx.send(message)
         return True
 
-    async def display_mastodon_images(self, ctx: CrosspostContext, link: str) -> bool:
-        if (match := MASTODON_URL_GROUPS.match(link)) is None:
+    async def display_mastodon_images(
+        self, ctx: CrosspostContext, link: str, site: str, post_id: str
+    ) -> bool:
+        info = self.tldextract(link)
+        if f"{info.domain}.{info.suffix}" in GLOB_SITE_EXCLUDE:
             return False
-
-        site = self.tldextract(link)
-        if f"{site.domain}.{site.suffix}" in GLOB_SITE_EXCLUDE:
-            return False
-
-        site, post = match.groups()
 
         if auth := self.mastodon_auth.get(site):
             headers = {"Authorization": f"Bearer {auth['token']}"}
         else:
             headers = {}
 
-        api_url = MASTODON_API_FMT.format(site, post)
+        api_url = MASTODON_API_FMT.format(site, post_id)
         try:
             async with self.get(
                 api_url, headers=headers, use_default_headers=False
