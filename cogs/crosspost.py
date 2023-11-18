@@ -681,6 +681,7 @@ class Crosspost(Cog):
         ctx: CrosspostContext,
         link: str,
         *,
+        filename: str = None,
         headers: dict[str, str] = None,
         use_default_headers: bool = True,
     ) -> Message:
@@ -691,9 +692,12 @@ class Crosspost(Cog):
             img = await self.save(
                 link, headers=headers, use_default_headers=use_default_headers
             )
-            filename: str = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
+            if filename is None:
+                filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
+            if filename is None:
+                raise RuntimeError(f"could not parse filename from URL: {link}")
             if filename.endswith(".jfif"):
-                filename = f"{filename[:-4]}jpeg"
+                filename = f"{filename.removesuffix('fif')}peg"
             file = File(img, filename)
             return await ctx.send(file=file)
         else:
