@@ -39,6 +39,31 @@ from utils.etc import display_bytes, remove_spoilers, suppress_links
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
+
+GLOB_SITE_EXCLUDE = {
+    "tenor.com",
+    "giphy.com",
+    "pixiv.net",
+    "twitter.com",
+    "fxtwitter.com",
+    "vxtwitter.com",
+    "sxtwitter.com",
+    "twxtter.com",
+    "inkbunny.net",
+    "imgur.com",
+    "tumblr.com",
+    "rule34.xxx",
+    "hiccears.com",
+    "gelbooru.com",
+    "fanbox.cc",
+    "discord.gg",
+    "youtu.be",
+    "youtube.com",
+    "itch.io",
+    "crepu.net",
+    "x.com",
+}
+
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:(?:www|mobile|m)\.|.x)?tw[ix]tter|x)\.com/[^\s/]+/status/(\d+)"
 )
@@ -63,29 +88,6 @@ HICCEARS_NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
 TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
-MASTODON_SITE_EXCLUDE = {
-    "tenor.com",
-    "giphy.com",
-    "pixiv.net",
-    "twitter.com",
-    "fxtwitter.com",
-    "vxtwitter.com",
-    "sxtwitter.com",
-    "twxtter.com",
-    "inkbunny.net",
-    "imgur.com",
-    "tumblr.com",
-    "rule34.xxx",
-    "hiccears.com",
-    "gelbooru.com",
-    "fanbox.cc",
-    "discord.gg",
-    "youtu.be",
-    "youtube.com",
-    "itch.io",
-    "crepu.net",
-    "x.com",
-}
 MASTODON_URL_EXPR = re.compile(r"(https?://\S+/[\w-]+/?)(?:>|$|\s)")
 MASTODON_URL_GROUPS = re.compile(r"https?://([^\s/]+)(?:/.+)+/([\w-]+)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
@@ -1139,7 +1141,7 @@ class Crosspost(Cog):
             return False
 
         site = self.tldextract(link)
-        if f"{site.domain}.{site.suffix}" in MASTODON_SITE_EXCLUDE:
+        if f"{site.domain}.{site.suffix}" in GLOB_SITE_EXCLUDE:
             return False
 
         site, post = match.groups()
