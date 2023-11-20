@@ -62,10 +62,12 @@ GLOB_SITE_EXCLUDE = {
     "itch.io",
     "crepu.net",
     "x.com",
+    "fixupx.com",
 }
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:(?:www|mobile|m)\.|.x)?tw[ix]tter|x)\.com/[^\s/]+/status/(\d+)"
+    r"https?://(?:(?:(?:www|mobile|m)\.|.x)?tw[ix]tter|(?:fixup)?x)"
+    r"\.com/[^\s/]+/status/(\d+)"
 )
 TWITTER_TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
 TWITTER_VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
