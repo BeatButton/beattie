@@ -6,7 +6,7 @@ import sys
 import asyncpg
 import toml
 
-from bot import BeattieBot
+from bot import BeattieBot, Shared
 from utils.contextmanagers import MultiAsyncWith
 
 if platform.system() != "Windows":
@@ -37,6 +37,10 @@ async def main():
     ]
     async with MultiAsyncWith(bots) as bots:
         bots_tokens = list(zip(bots, tokens))
+        bot_ids: set[int] = set()
+        shared = Shared(bot_ids)
+        for bot in bots:
+            bot.shared = shared
         for bot, token in bots_tokens[:-1]:
             asyncio.create_task(bot.start(token))
         bot, token = bots_tokens[-1]

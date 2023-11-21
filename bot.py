@@ -8,6 +8,7 @@ import sys
 import tarfile
 import traceback
 from asyncio import Task
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
@@ -15,10 +16,11 @@ from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
 import aiohttp
 import asyncpg
 import toml
-from discord import AllowedMentions, Game, Intents, Message
+from discord import AllowedMentions, Game, Guild, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
+from discord.utils import find
 
 from config import Config
 from context import BContext
@@ -27,6 +29,11 @@ from utils import contextmanagers, exceptions
 from utils.aioutils import do_every
 
 C = TypeVar("C", bound=Context)
+
+
+@dataclass
+class Shared:
+    bot_ids: set[int]
 
 
 class BeattieBot(Bot):
@@ -40,6 +47,7 @@ class BeattieBot(Bot):
     session: aiohttp.ClientSession
     pool: asyncpg.Pool
     logger: logging.Logger
+    shared: Shared
 
     extra: dict[str, Any]
 
@@ -174,11 +182,20 @@ class BeattieBot(Bot):
             raise e from None
 
     async def on_ready(self):
-        assert self.user is not None
+        user = self.user
+        assert user is not None
+        self.shared.bot_ids.add(user.id)
         print("Logged in as")
-        print(self.user.name)
-        print(self.user.id)
+        print(user.name)
+        print(user.id)
         print("------")
+
+    async def on_guild_join(self, guild: Guild):
+        user = self.user
+        assert user is not None
+        others = self.shared.bot_ids - {user.id}
+        if find(lambda m: m.id in others, guild.members):
+            await guild.leave()
 
     @overload
     async def get_context(self, message: Message) -> BContext:
