@@ -91,10 +91,13 @@ class Remind(Cog):
 
     async def cog_load(self):
         async with self.pool.acquire() as conn:
+            user = self.bot.user
+            assert user is not None
             await conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS public.reminder (
                     id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    bot_id bigint NOT NULL,
                     guild_id bigint NOT NULL,
                     channel_id bigint NOT NULL,
                     message_id bigint NOT NULL,
@@ -112,7 +115,10 @@ class Remind(Cog):
             )
             self.queue = [
                 Reminder.from_record(row)
-                for row in await conn.fetch("SELECT * FROM reminder ORDER BY time DESC")
+                for row in await conn.fetch(
+                    "SELECT * FROM reminder WHERE bot_id = $1 ORDER BY time DESC",
+                    user.id,
+                )
             ]
         await self.start_timer()
 
@@ -280,10 +286,13 @@ class Remind(Cog):
         else:
             time = argument
 
+        user = self.bot.user
+        assert user is not None
         async with self.pool.acquire() as conn:
             record = await conn.fetchrow(
                 """
                 INSERT INTO reminder(
+                    bot_id,
                     guild_id,
                     channel_id,
                     message_id,
@@ -291,10 +300,11 @@ class Remind(Cog):
                     time,
                     topic
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6
+                    $1, $2, $3, $4, $5, $6, $7
                 )
                 RETURNING *
                 """,
+                user.id,
                 ctx.guild.id,
                 ctx.channel.id,
                 ctx.message.id,

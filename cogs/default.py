@@ -85,7 +85,10 @@ class Default(Cog):
     @commands.command()
     async def invite(self, ctx: BContext):
         """Get the invite for the bot."""
-        url = "<https://discordapp.com/oauth2/authorize?client_id={}&scope=bot>"
+        url = (
+            "<https://discordapp.com/oauth2/authorize?"
+            "client_id=1176310541329903706&scope=bot>"
+        )
         await ctx.send(url.format(ctx.me.id))
 
 

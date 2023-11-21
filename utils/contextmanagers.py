@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Any
+from typing import Any, AsyncContextManager, Generic, TypeVar
 
 from aiohttp import ClientResponse, ClientSession, ServerDisconnectedError
 
@@ -56,3 +56,20 @@ class get:
 
     async def __aexit__(self, exc_type: type, exc: Exception, tb: TracebackType):
         self.resp.close()
+
+
+CM = TypeVar("CM", bound=AsyncContextManager)
+
+
+class MultiAsyncWith(Generic[CM]):
+    def __init__(self, ctxs: list[CM]):
+        self.ctxs = ctxs
+
+    async def __aenter__(self) -> list[CM]:
+        for ctx in self.ctxs:
+            await ctx.__aenter__()
+        return self.ctxs
+
+    async def __aexit__(self, exc_type: type, exc: Exception, tb: TracebackType):
+        for ctx in self.ctxs:
+            await ctx.__aexit__(exc_type, exc, tb)

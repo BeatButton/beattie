@@ -7,6 +7,7 @@ import asyncpg
 import toml
 
 from bot import BeattieBot
+from utils.contextmanagers import MultiAsyncWith
 
 if platform.system() != "Windows":
     import uvloop
@@ -19,10 +20,10 @@ with open("config/config.toml") as file:
 debug = config.get("debug") or "debug" in sys.argv
 if debug:
     prefixes = config["test_prefixes"]
-    token = config["test_token"]
+    tokens = [config["test_token"]]
 else:
     prefixes = config["prefixes"]
-    token = config["token"]
+    tokens = config["tokens"]
 
 password = config.get("config_password", "")
 dsn = f"postgresql://beattie:{password}@localhost/beattie"
@@ -31,8 +32,14 @@ dsn = f"postgresql://beattie:{password}@localhost/beattie"
 async def main():
     pool = await asyncpg.create_pool(dsn)
     assert pool is not None
-    bot = BeattieBot(tuple(prefixes), pool=pool, debug=debug)
-    async with bot:
+    bots: list[BeattieBot] = [
+        BeattieBot(tuple(prefixes), pool=pool, debug=debug) for _ in tokens
+    ]
+    async with MultiAsyncWith(bots) as bots:
+        bots_tokens = list(zip(bots, tokens))
+        for bot, token in bots_tokens[:-1]:
+            asyncio.create_task(bot.start(token))
+        bot, token = bots_tokens[-1]
         await bot.start(token)
 
 
