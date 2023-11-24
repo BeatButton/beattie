@@ -1543,6 +1543,11 @@ class Crosspost(Cog):
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
             return False
 
+        assert ctx.guild is not None
+        self.logger.info(
+            f"poipiku: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
@@ -1665,6 +1670,11 @@ class Crosspost(Cog):
     async def display_bsky_images(
         self, ctx: CrosspostContext, repo: str, rkey: str
     ) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"bsky: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {repo}/{rkey}"
+        )
+
         xrpc_url = BSKY_XRPC_FMT.format(repo, rkey)
         async with self.get(xrpc_url, use_default_headers=False) as resp:
             data = await resp.json()
@@ -1698,6 +1708,11 @@ class Crosspost(Cog):
         return all_embedded
 
     async def display_paheal_images(self, ctx: CrosspostContext, link: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"paheal: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
