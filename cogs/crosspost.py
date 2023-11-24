@@ -131,6 +131,9 @@ BSKY_XRPC_FMT = (
     "?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
 
+PAHEAL_URL_EXPR = re.compile(r"https?://rule34\.paheal\.net/post/view/\d+")
+PAHEAL_LINK_SELECTOR = ".//table[contains(@class,'image_info')]//a[text()='File Only']"
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | discord.CategoryChannel
@@ -1693,6 +1696,18 @@ class Crosspost(Cog):
             await ctx.send(f">>> {text}")
 
         return all_embedded
+
+    async def display_paheal_images(self, ctx: CrosspostContext, link: str) -> bool:
+        async with self.get(link, use_default_headers=False) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        url = root.xpath(PAHEAL_LINK_SELECTOR)[0].get("href")
+        msg = await self.send(ctx, url, use_default_headers=False)
+        if too_large(msg):
+            await ctx.send(url)
+            return False
+
+        return True
 
     @commands.command(hidden=True)
     @is_owner_or(manage_guild=True)
