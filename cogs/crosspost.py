@@ -48,6 +48,7 @@ GLOB_SITE_EXCLUDE = {
     "fxtwitter.com",
     "vxtwitter.com",
     "sxtwitter.com",
+    "zztwitter.com",
     "twxtter.com",
     "inkbunny.net",
     "imgur.com",
@@ -66,7 +67,7 @@ GLOB_SITE_EXCLUDE = {
 }
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x)?tw[ix]tter|(?:fixup)?x)"
+    r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x|zz)?tw[ix]tter|(?:fixup)?x)"
     r"\.com/[^\s/]+/status/(\d+)"
 )
 TWITTER_TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
