@@ -1357,10 +1357,11 @@ class Crosspost(Cog):
             notes = list(root)
             if notes:
                 notes.sort(key=lambda n: int(n.get("y")))
-                text = "\n".join(n.get("body") for n in notes)
+                text = "\n\n".join(n.get("body") for n in notes)
                 text = f">>> {text}"
                 for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]:
                     text = re.sub(rf"</?{tag}>", mkd, text)
+                text = re.sub(r"<br ?/?>", "\n", text)
 
         await self.send(ctx, post["file_url"])
         if text:
