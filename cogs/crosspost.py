@@ -1341,10 +1341,10 @@ class Crosspost(Cog):
         )
 
         params = {**BOORU_API_PARAMS, **self.gelbooru_params}
-        file_url = await self.booru_helper(link, GELBOORU_API_URL, params)
-        if file_url is None:
+        post = await self.booru_helper(link, GELBOORU_API_URL, params)
+        if post is None:
             return False
-        await self.send(ctx, file_url)
+        await self.send(ctx, post["file_url"])
         return True
 
     async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
@@ -1354,15 +1354,15 @@ class Crosspost(Cog):
         )
 
         params = {**BOORU_API_PARAMS}
-        file_url = await self.booru_helper(link, R34_API_URL, params)
-        if file_url is None:
+        post = await self.booru_helper(link, R34_API_URL, params)
+        if post is None:
             return False
-        await self.send(ctx, file_url)
+        await self.send(ctx, post["file_url"])
         return True
 
     async def booru_helper(
         self, link: str, api_url: str, params: dict[str, str]
-    ) -> str | None:
+    ) -> dict[str, Any] | None:
         parsed = urlparse.urlparse(link)
         query = urlparse.parse_qs(parsed.query)
         page = query.get("page")
@@ -1380,7 +1380,7 @@ class Crosspost(Cog):
         if isinstance(data, dict):
             data = data["post"]
         post = data[0]
-        return post["file_url"]
+        return post
 
     async def display_fanbox_images(self, ctx: CrosspostContext, link: str) -> bool:
         *_, post_id = link.rpartition("/")
