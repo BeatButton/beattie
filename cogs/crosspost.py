@@ -27,7 +27,7 @@ from discord import File, Message, PartialMessageable, Thread
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
-from lxml import html
+from lxml import etree, html
 from tldextract.tldextract import TLDExtract
 
 from bot import BeattieBot
@@ -456,6 +456,7 @@ class Crosspost(Cog):
         except FileNotFoundError:
             self.headers = {}
         self.parser = html.HTMLParser(encoding="utf-8")
+        self.xml_parser = etree.XMLParser(encoding="utf-8")
         self.expr_dict = {
             expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
             for name, expr in globals().items()
@@ -1344,7 +1345,26 @@ class Crosspost(Cog):
         post = await self.booru_helper(link, GELBOORU_API_URL, params)
         if post is None:
             return False
+
+        text = None
+        if await self.should_post_text(ctx):
+            params["s"] = "note"
+            del params["json"]
+            params["post_id"] = params.pop("id")
+            async with self.get(GELBOORU_API_URL, params=params) as resp:
+                root = etree.fromstring(await resp.read(), self.xml_parser)
+
+            notes = list(root)
+            if notes:
+                notes.sort(key=lambda n: int(n.get("y")))
+                text = "\n".join(n.get("body") for n in notes)
+                text = f">>> {text}"
+                for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]:
+                    text = re.sub(rf"</?{tag}>", mkd, text)
+
         await self.send(ctx, post["file_url"])
+        if text:
+            await ctx.send(text)
         return True
 
     async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
