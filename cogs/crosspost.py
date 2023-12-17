@@ -1712,9 +1712,8 @@ class Crosspost(Cog):
         for image in images:
             image = image["image"]
             image_id = image["ref"]["$link"]
-            ext = image["mimeType"].rpartition("/")[-1]
-            url = f"https://cdn.bsky.app/img/feed_fullsize/plain/{did}/{image_id}@{ext}"
-            filename = f"{image_id}.{ext}"
+            url = f"https://cdn.bsky.app/img/feed_fullsize/plain/{did}/{image_id}@jpeg"
+            filename = f"{image_id}.jpeg"
             msg = await self.send(
                 ctx, url, filename=filename, use_default_headers=False
             )
