@@ -785,7 +785,17 @@ class Crosspost(Cog):
             url = medium["url"]
             match medium["type"]:
                 case "photo":
-                    url = f"{url}:orig"
+                    try:
+                        async with self.get(
+                            f"{url}:orig",
+                            method="HEAD",
+                            headers=headers,
+                            use_default_headers=False,
+                        ) as resp:
+                            url = str(resp.url)
+                    except ResponseError as e:
+                        if e.code != 404:
+                            raise e
                     msg = await self.send(
                         ctx, url, headers=headers, use_default_headers=False
                     )
