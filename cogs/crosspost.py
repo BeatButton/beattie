@@ -820,7 +820,7 @@ class Crosspost(Cog):
                         await ctx.send(file=file)
                 case "video":
                     async with self.get(
-                        url, "HEAD", headers=headers, use_default_headers=False
+                        url, method="HEAD", headers=headers, use_default_headers=False
                     ) as resp:
                         content_length = resp.content_length
                         filename = url.rpartition("?")[0].rpartition("/")[-1]
