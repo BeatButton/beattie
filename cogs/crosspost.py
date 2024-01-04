@@ -768,7 +768,7 @@ class Crosspost(Cog):
             else:
                 raise e
 
-        media = tweet.get("media")
+        media = tweet.get("media", {}).get("all")
         if not media:
             return False
 
@@ -781,7 +781,7 @@ class Crosspost(Cog):
             text = suppress_links(text)
 
         url: str
-        for medium in media["all"]:
+        for medium in media:
             url = medium["url"]
             match medium["type"]:
                 case "photo":
