@@ -10,7 +10,12 @@ class get:
     """Returns a response to the first URL that returns a 200 status code."""
 
     def __init__(
-        self, session: ClientSession, *urls: str, method: str = "GET", **kwargs: Any
+        self,
+        session: ClientSession,
+        *urls: str,
+        method: str = "GET",
+        error_for_status: bool = True,
+        **kwargs: Any
     ):
         self.session = session
         self.urls = urls
@@ -25,6 +30,7 @@ class get:
             kwargs["timeout"] = None
         self.kwargs = kwargs
         self.method = method
+        self.error_for_status = error_for_status
 
     async def __aenter__(self) -> ClientResponse:
         while True:
@@ -49,7 +55,7 @@ class get:
                 return await self.__aenter__()
             else:
                 raise e from None
-        if self.resp.status not in range(200, 300):
+        if self.error_for_status and self.resp.status not in range(200, 300):
             self.resp.close()
             raise ResponseError(code=self.resp.status, url=str(self.resp.url))
         return self.resp
