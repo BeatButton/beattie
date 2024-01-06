@@ -67,6 +67,10 @@ GLOB_SITE_EXCLUDE = {
     "fixupx.com",
 }
 
+OG_IMAGE = ".//meta[@property='og:image']"
+OG_TITLE = ".//meta[@property='og:title']"
+OG_DESCRIPTION = ".//meta[@property='og:description']"
+
 TWITTER_URL_EXPR = re.compile(
     r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x|zz)?tw[ix]tter|(?:fixup)?x)(?:vx)?"
     r"\.com/[^\s/]+/status/(\d+)"
@@ -90,7 +94,6 @@ HICCEARS_TITLE_SELECTOR = ".//h2[contains(@class, 'section-title')]"
 HICCEARS_NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 
 TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
-TUMBLR_IMG_SELECTOR = ".//meta[@property='og:image']"
 
 MASTODON_URL_EXPR = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:>|$|\s)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
@@ -135,6 +138,10 @@ BSKY_XRPC_FMT = (
 
 PAHEAL_URL_EXPR = re.compile(r"https?://rule34\.paheal\.net/post/view/\d+")
 PAHEAL_LINK_SELECTOR = ".//table[contains(@class,'image_info')]//a[text()='File Only']"
+
+FURAFFINITY_URL_EXPR = re.compile(
+    r"https?://(?:www\.)?(?:fx)?f[ux]raffinity\.net/view/(\d+)"
+)
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
@@ -1137,7 +1144,7 @@ class Crosspost(Cog):
             ) as resp:  # somehow this doesn't get redirected?
                 root = html.document_fromstring(await resp.read(), self.parser)
             idx = 0
-        images = root.xpath(TUMBLR_IMG_SELECTOR)
+        images = root.xpath(OG_IMAGE)
         max_pages = await self.get_max_pages(ctx)
 
         num_images = len(images)
@@ -1753,6 +1760,33 @@ class Crosspost(Cog):
         if too_large(msg):
             await ctx.send(url)
             return False
+
+        return True
+
+    async def display_furaffinity_images(
+        self, ctx: CrosspostContext, sub_id: str
+    ) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"furaffinity: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {sub_id}"
+        )
+
+        link = f"https://www.fxraffinity.net/view/{sub_id}?full"
+        async with self.get(
+            link, error_for_status=False, allow_redirects=False
+        ) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        url = root.xpath(OG_IMAGE)[0].get("content")
+        msg = await self.send(ctx, url, use_default_headers=False)
+        if too_large(msg):
+            await ctx.send(url)
+
+        if await self.should_post_text(ctx):
+            title = root.xpath(OG_TITLE)[0].get("content")
+            desc = root.xpath(OG_DESCRIPTION)[0].get("content")
+
+            await ctx.send(f"**{title}**\n>>> {desc}")
 
         return True
 
