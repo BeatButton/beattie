@@ -39,7 +39,6 @@ from utils.etc import display_bytes, remove_spoilers, suppress_links
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
-
 GLOB_SITE_EXCLUDE = {
     "tenor.com",
     "giphy.com",

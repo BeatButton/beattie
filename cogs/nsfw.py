@@ -1,6 +1,6 @@
 import random
-from collections import defaultdict
 from base64 import b64encode
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Iterable
 from urllib import parse
 
