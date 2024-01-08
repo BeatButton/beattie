@@ -136,8 +136,8 @@ BSKY_XRPC_FMT = (
     "?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
 
-PAHEAL_URL_EXPR = re.compile(r"https?://rule34\.paheal\.net/post/view/\d+")
-PAHEAL_LINK_SELECTOR = ".//table[contains(@class,'image_info')]//a[text()='File Only']"
+PAHEAL_URL_EXPR = re.compile(r"https?://rule34\.paheal\.net/post/view/(\d+)")
+PAHEAL_IMG_SELECTOR = ".//img[@id='main_image']"
 
 FURAFFINITY_URL_EXPR = re.compile(
     r"https?://(?:www\.)?(?:fx)?f[ux]raffinity\.net/view/(\d+)"
@@ -1755,7 +1755,9 @@ class Crosspost(Cog):
 
         return all_embedded
 
-    async def display_paheal_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_paheal_images(self, ctx: CrosspostContext, post: str) -> bool:
+        link = f"https://rule34.paheal.net/post/view/{post}"
+
         assert ctx.guild is not None
         self.logger.info(
             f"paheal: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -1764,8 +1766,12 @@ class Crosspost(Cog):
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
-        url = root.xpath(PAHEAL_LINK_SELECTOR)[0].get("href")
-        msg = await self.send(ctx, url, use_default_headers=False)
+        img = root.xpath(PAHEAL_IMG_SELECTOR)[0]
+        url = img.get("src")
+        mime = img.get("data-mime").partition("/")[2]
+        filename = f"{post}.{mime}"
+
+        msg = await self.send(ctx, url, filename=filename, use_default_headers=False)
         if too_large(msg):
             await ctx.send(url)
             return False
