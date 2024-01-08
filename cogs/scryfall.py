@@ -73,8 +73,15 @@ class Scryfall(Cog):
                         f"{card['name']} had neither image_uris nor card_faces"
                     )
                     return
+
+            if (colors := card.get("colors")) is None:
+                if faces := card.get("card_faces"):
+                    colors = list({color for face in faces for color in face["colors"]})
+                else:
+                    await ctx.send(f"{card['name']} had neither colors nor card_faces")
+                    return
             embed.set_image(url=uris["large"])
-            match card["colors"]:
+            match colors:
                 case []:
                     color = Color.light_gray()
                 case ["W"]:
