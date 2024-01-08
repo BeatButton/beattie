@@ -143,6 +143,11 @@ FURAFFINITY_URL_EXPR = re.compile(
     r"https?://(?:www\.)?(?:fx)?f[ux]raffinity\.net/view/(\d+)"
 )
 
+YGAL_URL_EXPR = re.compile(r"https?://(?:(?:old|www)\.)?y-gallery\.net/view/(\d+)")
+YGAL_FULLSIZE_EXPR = re.compile(r"""popup\((['"])(?P<link>[^\1]*?)\1""")
+YGAL_IMG_SELECTOR = "//img[@id='idPreviewImage']"
+YGAL_TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'commentData')]"
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | discord.CategoryChannel
@@ -450,6 +455,8 @@ class Crosspost(Cog):
         "Accept": "application/json, text/plain, */*",
         "Origin": "https://www.fanbox.cc",
     }
+    hiccears_headers: dict[str, str]
+    ygal_headers: dict[str, str]
     inkbunny_sid: str = ""
 
     ongoing_tasks: dict[int, asyncio.Task]
@@ -499,6 +506,8 @@ class Crosspost(Cog):
             self.inkbunny_sid = json["sid"]
 
         self.mastodon_auth = data["mastodon"]
+
+        self.ygal_headers = data["ygal"]
 
         await self.db.async_init()
 
@@ -1787,6 +1796,35 @@ class Crosspost(Cog):
             desc = root.xpath(OG_DESCRIPTION)[0].get("content")
 
             await ctx.send(f"**{title}**\n>>> {desc}")
+
+        return True
+
+    async def display_ygal_images(self, ctx: CrosspostContext, gal_id: str) -> bool:
+        assert ctx.guild is not None
+
+        self.logger.info(
+            f"ygal: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {gal_id}"
+        )
+
+        link = f"https://old.y-gallery.net/view/{gal_id}/"
+
+        async with self.get(
+            link, use_default_headers=False, headers=self.ygal_headers
+        ) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        img = root.xpath(YGAL_IMG_SELECTOR)[0]
+        m = YGAL_FULLSIZE_EXPR.match(img.get("onclick"))
+        assert m is not None
+        link = m["link"]
+
+        await self.send(ctx, link, use_default_headers=False, headers={"Referer": link})
+
+        if await self.should_post_text(ctx):
+            comment = root.xpath(YGAL_TEXT_SELECTOR)[0].text.strip()
+            title = img.get("alt")
+            text = f"**{title}**\n>>> {comment}"
+            await ctx.send(text)
 
         return True
 
