@@ -92,7 +92,7 @@ HICCEARS_TEXT_SELECTOR = ".//div[contains(@class, 'widget-box-content')]"
 HICCEARS_TITLE_SELECTOR = ".//h2[contains(@class, 'section-title')]"
 HICCEARS_NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 
-TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/post/\d+")
+TUMBLR_URL_EXPR = re.compile(r"https?://[\w-]+\.tumblr\.com/[\w-]+/\d+")
 
 MASTODON_URL_EXPR = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:>|$|\s)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
