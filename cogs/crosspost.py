@@ -1596,9 +1596,6 @@ class Crosspost(Cog):
         return True
 
     async def display_poipiku_images(self, ctx: CrosspostContext, link: str) -> bool:
-        if (match := POIPIKU_URL_GROUPS.match(link)) is None:
-            return False
-
         assert ctx.guild is not None
         self.logger.info(
             f"poipiku: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -1606,6 +1603,10 @@ class Crosspost(Cog):
 
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
+
+        link = str(resp.url)
+        if (match := POIPIKU_URL_GROUPS.match(link)) is None:
+            return False
 
         embedded = False
         refer = {"Referer": link}
