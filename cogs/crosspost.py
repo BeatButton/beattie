@@ -1175,6 +1175,14 @@ class Crosspost(Cog):
                 if start.startswith(b"GIF"):
                     url = url[:-1]
             await self.send(ctx, url)
+
+        if (
+            await self.should_post_text(ctx)
+            and (desc := root.xpath(OG_DESCRIPTION))
+            and (text := desc[0].get("content"))
+        ):
+            await ctx.send(f">>> {text}")
+
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
             message = f"{pages_remaining} more image{s} at <{link}>"
