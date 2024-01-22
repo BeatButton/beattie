@@ -1154,13 +1154,15 @@ class Crosspost(Cog):
         mode = await self.get_mode(ctx.message)
         idx = 0 if mode != 1 else 1
         async with self.get(link) as resp:
-            root = html.document_fromstring(await resp.read(), self.parser)
+            content = await resp.read()
         if not str(resp.url).startswith(link):  # explicit blog redirect
             async with self.bot.session.get(
                 link
             ) as resp:  # somehow this doesn't get redirected?
-                root = html.document_fromstring(await resp.read(), self.parser)
+                content = await resp.read()
             idx = 0
+
+        root = html.document_fromstring(content, self.parser)
         images = root.xpath(OG_IMAGE)
         max_pages = await self.get_max_pages(ctx)
 
