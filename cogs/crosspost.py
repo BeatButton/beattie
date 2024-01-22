@@ -725,8 +725,12 @@ class Crosspost(Cog):
                 filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
             if filename is None:
                 raise RuntimeError(f"could not parse filename from URL: {link}")
-            if filename.endswith(".jfif"):
-                filename = f"{filename.removesuffix('fif')}peg"
+            for ext, sub in [
+                ("jfif", "jpeg"),
+                ("pnj", "png"),
+            ]:
+                if filename.endswith(f".{ext}"):
+                    filename = f"{filename.removesuffix(ext)}{sub}"
             file = File(img, filename)
             return await ctx.send(file=file)
         else:
