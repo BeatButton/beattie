@@ -23,7 +23,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import File, Message, PartialMessageable, Thread
+from discord import CategoryChannel, File, Message, PartialMessageable, Thread
 from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
@@ -150,7 +150,7 @@ YGAL_TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'comment
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
-ConfigTarget = GuildMessageable | discord.CategoryChannel
+ConfigTarget = GuildMessageable | CategoryChannel
 
 
 async def try_wait_for(
@@ -202,6 +202,11 @@ class Settings:
         self.max_pages = max_pages
         self.cleanup = cleanup
         self.text = text
+
+    def __str__(self):
+        return ", ".join(
+            f"{k}={v}" for k in self.__slots__ if (v := getattr(self, k)) is not None
+        )
 
     def apply(self, other: Settings) -> Settings:
         """Returns a Settings with own values overwritten by non-None values of other"""
@@ -1999,6 +2004,46 @@ remove embeds from messages it processes successfully."""
             await self.db.clear_settings(target.guild.id, target.id)
             where = str(target)
         await ctx.send(f"Crosspost settings overrides cleared for {where}.")
+
+    @crosspost.command()
+    async def info(self, ctx: BContext, *, target: ConfigTarget = None):
+        """Get info on crosspost settings.
+
+        If no channel is specified, will get info for the current channel."""
+        if target is None:
+            target = ctx.channel
+            assert isinstance(target, ConfigTarget)
+
+        guild = ctx.guild
+        assert guild is not None
+
+        guild_id = guild.id
+
+        guild_conf = await self.db._get_settings(guild_id, 0)
+        final_conf = Settings()
+        final_conf = final_conf.apply(guild_conf)
+        msg = f"{guild.name}: {str(guild_conf) or '(none)'}"
+
+        if (category := getattr(target, "category", None)) is None and isinstance(
+            target, CategoryChannel
+        ):
+            category = target
+        if category is not None:
+            cat_conf = await self.db._get_settings(guild_id, category.id)
+            final_conf = final_conf.apply(cat_conf)
+            msg = f"{msg}\n{category.name}: {str(cat_conf) or '(none)'}"
+
+        if target is not category:
+            if isinstance(target, Thread):
+                chan_id = target.parent_id
+            else:
+                chan_id = target.id
+            chan_conf = await self.db._get_settings(guild_id, chan_id)
+            final_conf = final_conf.apply(chan_conf)
+            msg = f"{msg}\n{target.name}: {str(chan_conf) or '(none)'}"
+
+        msg = f"{msg}\nEffective: {str(final_conf) or '(none)'}"
+        await ctx.send(msg)
 
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
