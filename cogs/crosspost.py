@@ -2024,9 +2024,8 @@ remove embeds from messages it processes successfully."""
         final_conf = final_conf.apply(guild_conf)
         msg = f"{guild.name}: {str(guild_conf) or '(none)'}"
 
-        if (category := getattr(target, "category", None)) is None and isinstance(
-            target, CategoryChannel
-        ):
+        category = getattr(target, "category", None)
+        if category is None and isinstance(target, CategoryChannel):
             category = target
         if category is not None:
             cat_conf = await self.db._get_settings(guild_id, category.id)
