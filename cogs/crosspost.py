@@ -2011,8 +2011,8 @@ remove embeds from messages it processes successfully."""
 
         If no channel is specified, will get info for the current channel."""
         if target is None:
+            assert isinstance(ctx.channel, ConfigTarget)
             target = ctx.channel
-            assert isinstance(target, ConfigTarget)
 
         guild = ctx.guild
         assert guild is not None
