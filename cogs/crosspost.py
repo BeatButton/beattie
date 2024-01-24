@@ -2035,10 +2035,10 @@ remove embeds from messages it processes successfully."""
 
         if target is not category:
             if isinstance(target, Thread):
-                chan_id = target.parent_id
-            else:
-                chan_id = target.id
-            chan_conf = await self.db._get_settings(guild_id, chan_id)
+                parent = await guild.fetch_channel(target.parent_id)
+                assert isinstance(parent, ConfigTarget)
+                target = parent
+            chan_conf = await self.db._get_settings(guild_id, target.id)
             final_conf = final_conf.apply(chan_conf)
             msg = f"{msg}\n{target.name}: {str(chan_conf) or '(none)'}"
 
