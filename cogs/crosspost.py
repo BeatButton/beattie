@@ -140,7 +140,7 @@ PAHEAL_URL_EXPR = re.compile(r"https?://rule34\.paheal\.net/post/view/(\d+)")
 PAHEAL_IMG_SELECTOR = ".//img[@id='main_image']"
 
 FURAFFINITY_URL_EXPR = re.compile(
-    r"https?://(?:www\.)?(?:fx)?f[ux]raffinity\.net/view/(\d+)"
+    r"https?://(?:www\.)?(?:[fv]x)?f[ux]raffinity\.net/view/(\d+)"
 )
 
 YGAL_URL_EXPR = re.compile(r"https?://(?:(?:old|www)\.)?y-gallery\.net/view/(\d+)")
