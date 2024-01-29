@@ -148,6 +148,8 @@ YGAL_FULLSIZE_EXPR = re.compile(r"""popup\((['"])(?P<link>[^\1]*?)\1""")
 YGAL_IMG_SELECTOR = "//img[@id='idPreviewImage']"
 YGAL_TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'commentData')]"
 
+PILLOWFORT_URL_EXPR = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | CategoryChannel
@@ -1855,6 +1857,49 @@ class Crosspost(Cog):
             title = img.get("alt")
             text = f"**{title}**\n>>> {comment}"
             await ctx.send(text)
+
+        return True
+
+    async def display_pillowfort_images(self, ctx: CrosspostContext, link: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"pillowfort: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
+        async with self.get(link) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        if not (images := root.xpath(OG_IMAGE)):
+            return False
+
+        images.reverse()
+
+        max_pages = await self.get_max_pages(ctx)
+        num_images = len(images)
+        if max_pages == 0:
+            max_pages = num_images
+
+        pages_remaining = num_images - max_pages
+        images = images[:max_pages]
+
+        headers = {"Referer": link}
+
+        for image in images:
+            url = image.get("content").replace("_small.png", ".png")
+            msg = await self.send(ctx, url, headers=headers)
+            if too_large(msg):
+                await ctx.send(url)
+
+        if await self.should_post_text(ctx):
+            title = html_unescape(root.xpath(OG_TITLE)[0].get("content"))
+            desc = html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content"))
+
+            await ctx.send(f"**{title}**\n>>> {desc}")
+
+        if pages_remaining > 0:
+            s = "s" if pages_remaining > 1 else ""
+            message = f"{pages_remaining} more image{s} at <{link}>"
+            await ctx.send(message)
 
         return True
 
