@@ -20,7 +20,6 @@ from discord import AllowedMentions, Game, Guild, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
-from discord.utils import find
 
 from config import Config
 from context import BContext
@@ -194,7 +193,7 @@ class BeattieBot(Bot):
         user = self.user
         assert user is not None
         others = self.shared.bot_ids - {user.id}
-        if find(lambda m: m.id in others, guild.members):
+        if any(m.id in others for m in guild.members):
             await guild.leave()
 
     @overload
