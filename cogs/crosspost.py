@@ -787,11 +787,11 @@ class Crosspost(Cog):
         )
 
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
-        api_link = f"https://api.fxtwitter.com/status/{tweet_id}"
+        api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
 
         try:
             async with self.get(api_link, use_default_headers=False) as resp:
-                tweet = (await resp.json())["tweet"]
+                tweet = await resp.json()
         except ResponseError as e:
             if e.code == 404:
                 await ctx.send(
@@ -802,7 +802,7 @@ class Crosspost(Cog):
             else:
                 raise e
 
-        media = tweet.get("media", {}).get("all")
+        media = tweet.get("media_extended")
         if not media:
             return False
 
@@ -818,7 +818,7 @@ class Crosspost(Cog):
         for medium in media:
             url = medium["url"]
             match medium["type"]:
-                case "photo":
+                case "image":
                     try:
                         async with self.get(
                             f"{url}:orig",
