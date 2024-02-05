@@ -148,6 +148,11 @@ YGAL_FULLSIZE_EXPR = re.compile(r"""popup\((['"])(?P<link>[^\1]*?)\1""")
 YGAL_IMG_SELECTOR = "//img[@id='idPreviewImage']"
 YGAL_TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'commentData')]"
 
+YTCOMMUNITY_URL_EXPR = re.compile(
+    r"https?://(?:www\.)?youtube\.com/(?:post/|channel/[^/]+/community\?lb=)([\w-]+)"
+)
+YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
+
 PILLOWFORT_URL_EXPR = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
@@ -1900,6 +1905,46 @@ class Crosspost(Cog):
             s = "s" if pages_remaining > 1 else ""
             message = f"{pages_remaining} more image{s} at <{link}>"
             await ctx.send(message)
+
+        return True
+
+    async def display_ytcommunity_images(
+        self, ctx: CrosspostContext, post_id: str
+    ) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"yt_community: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {post_id}"
+        )
+
+        link = f"https://youtube.com/post/{post_id}"
+
+        async with self.get(link) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        if not (script := root.xpath(YT_SCRIPT_SELECTOR)):
+            return False
+
+        data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition(';')[0]}")
+
+        # jesus christ
+        tab = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][0]
+        section = tab["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]
+        item = section["itemSectionRenderer"]["contents"][0]
+        post = item["backstagePostThreadRenderer"]["post"]["backstagePostRenderer"]
+
+        thumbs = post["backstageAttachment"]["backstageImageRenderer"]["image"][
+            "thumbnails"
+        ]
+
+        img = max(thumbs, key=lambda t: t["width"])["url"]
+
+        text = None
+        if await self.should_post_text(ctx):
+            text = "".join(frag.get("text", "") for frag in post["contentText"]["runs"])
+
+        await self.send(ctx, img, filename=f"{post_id}.jpeg")
+        if text:
+            await ctx.send(f">>> {text}")
 
         return True
 
