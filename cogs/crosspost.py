@@ -1932,9 +1932,10 @@ class Crosspost(Cog):
         item = section["itemSectionRenderer"]["contents"][0]
         post = item["backstagePostThreadRenderer"]["post"]["backstagePostRenderer"]
 
-        thumbs = post["backstageAttachment"]["backstageImageRenderer"]["image"][
-            "thumbnails"
-        ]
+        if not (attachment := post.get("backstageAttachment")):
+            return False
+
+        thumbs = attachment["backstageImageRenderer"]["image"]["thumbnails"]
 
         img = max(thumbs, key=lambda t: t["width"])["url"]
 
