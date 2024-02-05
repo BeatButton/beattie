@@ -148,7 +148,7 @@ YGAL_FULLSIZE_EXPR = re.compile(r"""popup\((['"])(?P<link>[^\1]*?)\1""")
 YGAL_IMG_SELECTOR = "//img[@id='idPreviewImage']"
 YGAL_TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'commentData')]"
 
-YTCOMMUNITY_URL_EXPR = re.compile(
+YT_COMMUNITY_URL_EXPR = re.compile(
     r"https?://(?:www\.)?youtube\.com/(?:post/|channel/[^/]+/community\?lb=)([\w-]+)"
 )
 YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
@@ -485,9 +485,11 @@ class Crosspost(Cog):
         self.parser = html.HTMLParser(encoding="utf-8")
         self.xml_parser = etree.XMLParser(encoding="utf-8")
         self.expr_dict = {
-            expr: getattr(self, f"display_{name.partition('_')[0].lower()}_images")
+            expr: getattr(
+                self, f"display_{name.removesuffix('_URL_EXPR').lower()}_images"
+            )
             for name, expr in globals().items()
-            if name.endswith("URL_EXPR")
+            if name.endswith("_URL_EXPR")
         }
         if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
             self.ongoing_tasks = ongoing_tasks
@@ -1908,7 +1910,7 @@ class Crosspost(Cog):
 
         return True
 
-    async def display_ytcommunity_images(
+    async def display_yt_community_images(
         self, ctx: CrosspostContext, post_id: str
     ) -> bool:
         assert ctx.guild is not None
