@@ -17,7 +17,7 @@ from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Mapping, Self
+from typing import Any, Literal, Mapping, Self
 from zipfile import ZipFile
 
 import aiohttp
@@ -470,6 +470,7 @@ class Crosspost(Cog):
     hiccears_headers: dict[str, str]
     ygal_headers: dict[str, str]
     inkbunny_sid: str = ""
+    twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "vxtwitter"
 
     ongoing_tasks: dict[int, asyncio.Task]
     expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
@@ -783,26 +784,50 @@ class Crosspost(Cog):
     ) -> bool:
         assert ctx.guild is not None
         self.logger.info(
-            f"twitter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
+            f"twitter ({self.twitter_method}): "
+            f"{ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
         )
 
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
-        api_link = f"https://api.vxtwitter.com/status/{tweet_id}"
+        api_link = f"https://api.{self.twitter_method}.com/status/{tweet_id}"
 
-        try:
-            async with self.get(api_link, use_default_headers=False) as resp:
+        async with self.get(
+            api_link,
+            use_default_headers=False,
+            error_for_status=False,
+        ) as resp:
+            status = resp.status
+            try:
                 tweet = await resp.json()
-        except ResponseError as e:
-            if e.code == 404:
+                if self.twitter_method == "fxtwitter":
+                    tweet = tweet["tweet"]
+            except (json.JSONDecodeError, KeyError):
+                await ctx.send(f"Invalid response from API (code {status})")
+                return False
+
+        match status:
+            case 200:
+                pass
+            case 404:
                 await ctx.send(
                     "Failed to fetch tweet. It may have been deleted, "
                     "or be from a private or suspended account."
                 )
                 return False
-            else:
-                raise e
+            case 500:
+                if self.twitter_method == "vxtwitter":
+                    await ctx.send(tweet.get("error", "Unspecified error."))
+                    return False
+                raise ResponseError(500, api_link)
+            case other:
+                raise ResponseError(other, api_link)
 
-        media = tweet.get("media_extended")
+        match self.twitter_method:
+            case "fxtwitter":
+                media = tweet.get("media", {}).get("all")
+            case "vxtwitter":
+                media = tweet.get("media_extended")
+
         if not media:
             return False
 
@@ -818,7 +843,7 @@ class Crosspost(Cog):
         for medium in media:
             url = medium["url"]
             match medium["type"]:
-                case "image":
+                case "photo" | "image":
                     try:
                         async with self.get(
                             f"{url}:orig",
