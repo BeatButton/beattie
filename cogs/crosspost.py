@@ -92,8 +92,10 @@ HICCEARS_TEXT_SELECTOR = ".//div[contains(@class, 'widget-box-content')]"
 HICCEARS_TITLE_SELECTOR = ".//h2[contains(@class, 'section-title')]"
 HICCEARS_NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 
-TUMBLR_URL_EXPR = re.compile(r"https?://(?:[\w-]+\.)?tumblr\.com/[\w-]+/\d+")
-TUMBLR_SHARE_EXPR = re.compile(r"https?://(?:www\.)?tumblr\.com/([\w-]+)/(\d+)")
+TUMBLR_URL_EXPR = re.compile(
+    r"https?://(?:(?:www\.)?tumb(?:lr|ex)\.com/)?"
+    r"([\w-]+)(?:/|\.tumblr(?:\.com)?/post/)(\d+)"
+)
 
 MASTODON_URL_EXPR = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:>|$|\s)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
@@ -1180,15 +1182,15 @@ class Crosspost(Cog):
             with open("config/logins.toml", "w") as fp:
                 toml.dump(logins, fp)
 
-    async def display_tumblr_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_tumblr_images(
+        self, ctx: CrosspostContext, blog: str, post: str
+    ) -> bool:
         assert ctx.guild is not None
         self.logger.info(
-            f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+            f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {blog}/{post}"
         )
 
-        if match := TUMBLR_SHARE_EXPR.match(link):
-            blog, post = match.groups()
-            link = f"https://{blog}.tumblr.com/post/{post}"
+        link = f"https://{blog}.tumblr.com/post/{post}"
 
         mode = await self.get_mode(ctx.message)
         idx = 0 if mode != 1 else 1
