@@ -1206,7 +1206,7 @@ class Crosspost(Cog):
         blocks: list[dict[str, str]]
         blocks = data["params"]["content"]["posts"][0]["blocks"][0]["content"]
 
-        if not any(block["type"] == "image" for block in blocks):
+        if not any(block["type"] in ("image", "video") for block in blocks):
             return False
 
         max_pages = await self.get_max_pages(ctx)
@@ -1221,29 +1221,38 @@ class Crosspost(Cog):
             return ctx.send(f">>> {send}")
 
         for block in blocks:
-            match block["type"]:
-                case "image":
-                    if do_text and text:
-                        await send_text()
-                    num_images += 1
-                    url = block["hd"]
-                    if url.endswith(".gifv"):
-                        async with self.get(
-                            url, headers={"Range": "bytes=0-2"}
-                        ) as resp:
-                            start = await resp.read()
-                        if start.startswith(b"GIF"):
-                            url = url[:-1]
-                    await self.send(ctx, url)
-                case "text" if do_text:
-                    text = f"{text}\n{block['text']}"
+            if block["type"] == "text":
+                text = f"{text}\n{block['text']}"
+            else:
+                if do_text and text:
+                    await send_text()
+                match block["type"]:
+                    case "image":
+                        num_images += 1
+                        if max_pages and num_images > max_pages:
+                            continue
+                        url = block["hd"]
+                        if url.endswith(".gifv"):
+                            async with self.get(
+                                url, headers={"Range": "bytes=0-2"}
+                            ) as resp:
+                                start = await resp.read()
+                            if start.startswith(b"GIF"):
+                                url = url[:-1]
+                        await self.send(ctx, url)
+                    case "video":
+                        num_images += 1
+                        if max_pages and num_images > max_pages:
+                            continue
+                        await self.send(ctx, block["url"])
 
         if do_text and text:
             await send_text()
-        pages_remaining = num_images - max_pages
+        pages_remaining = max_pages and num_images - max_pages
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
+            link = f"https://{blog}.tumblr.com/post/{post}"
             message = f"{pages_remaining} more image{s} at <{link}>"
             await ctx.send(message)
         return True
