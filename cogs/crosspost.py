@@ -96,6 +96,7 @@ TUMBLR_URL_EXPR = re.compile(
     r"https?://(?:(?:www\.)?tumb(?:lr|ex)\.com/)?"
     r"([\w-]+)(?:/|\.tumblr(?:\.com)?/post/)(\d+)"
 )
+TUMBLR_SCRIPT_SELECTOR = ".//script[contains(text(),'window.launcher')]"
 
 MASTODON_URL_EXPR = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:>|$|\s)")
 MASTODON_API_FMT = "https://{}/api/v1/statuses/{}"
@@ -1196,36 +1197,50 @@ class Crosspost(Cog):
             content = await resp.read()
 
         root = html.document_fromstring(content, self.parser)
-        images = root.xpath(OG_IMAGE)
-        max_pages = await self.get_max_pages(ctx)
 
-        num_images = len(images)
-
-        if max_pages == 0:
-            max_pages = num_images
-
-        pages_remaining = num_images - max_pages
-
-        images = images[:max_pages]
-
-        if not images:
+        if not (script := root.xpath(TUMBLR_SCRIPT_SELECTOR)):
             return False
 
-        for image in images:
-            url = image.get("content")
-            if url.endswith(".gifv"):
-                async with self.get(url, headers={"Range": "bytes=0-2"}) as resp:
-                    start = await resp.read()
-                if start.startswith(b"GIF"):
-                    url = url[:-1]
-            await self.send(ctx, url)
+        data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition('}')[0]}}}")
 
-        if (
-            await self.should_post_text(ctx)
-            and (desc := root.xpath(OG_DESCRIPTION))
-            and (text := desc[0].get("content"))
-        ):
-            await ctx.send(f">>> {text}")
+        blocks: list[dict[str, str]]
+        blocks = data["params"]["content"]["posts"][0]["blocks"][0]["content"]
+
+        if not any(block["type"] == "image" for block in blocks):
+            return False
+
+        max_pages = await self.get_max_pages(ctx)
+        num_images = 0
+        do_text = await self.should_post_text(ctx)
+        text = ""
+
+        def send_text():
+            nonlocal text
+            send = text.strip()
+            text = ""
+            return ctx.send(f">>> {send}")
+
+        for block in blocks:
+            match block["type"]:
+                case "image":
+                    if do_text and text:
+                        await send_text()
+                    num_images += 1
+                    url = block["hd"]
+                    if url.endswith(".gifv"):
+                        async with self.get(
+                            url, headers={"Range": "bytes=0-2"}
+                        ) as resp:
+                            start = await resp.read()
+                        if start.startswith(b"GIF"):
+                            url = url[:-1]
+                    await self.send(ctx, url)
+                case "text" if do_text:
+                    text = f"{text}\n{block['text']}"
+
+        if do_text and text:
+            await send_text()
+        pages_remaining = num_images - max_pages
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
