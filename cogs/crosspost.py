@@ -1190,18 +1190,10 @@ class Crosspost(Cog):
             f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {blog}/{post}"
         )
 
-        link = f"https://{blog}.tumblr.com/post/{post}"
+        link = f"https://tumbex.com/{blog}.tumblr/post/{post}"
 
-        mode = await self.get_mode(ctx.message)
-        idx = 0 if mode != 1 else 1
         async with self.get(link) as resp:
             content = await resp.read()
-        if not str(resp.url).startswith(link):  # explicit blog redirect
-            async with self.bot.session.get(
-                link
-            ) as resp:  # somehow this doesn't get redirected?
-                content = await resp.read()
-            idx = 0
 
         root = html.document_fromstring(content, self.parser)
         images = root.xpath(OG_IMAGE)
@@ -1214,7 +1206,7 @@ class Crosspost(Cog):
 
         pages_remaining = num_images - max_pages
 
-        images = images[idx:max_pages]
+        images = images[:max_pages]
 
         if not images:
             return False
