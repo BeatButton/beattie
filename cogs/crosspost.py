@@ -1203,8 +1203,12 @@ class Crosspost(Cog):
 
         data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition('}')[0]}}}")
 
+        if (post_content := data["params"]["content"]) is None:
+            await ctx.send("Post inaccessible. It may require authentication.")
+            return False
+
         blocks: list[dict[str, str]]
-        blocks = data["params"]["content"]["posts"][0]["blocks"][0]["content"]
+        blocks = post_content["posts"][0]["blocks"][0]["content"]
 
         if not any(block["type"] in ("image", "video") for block in blocks):
             return False
