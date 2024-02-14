@@ -470,8 +470,7 @@ class Crosspost(Cog):
         "Accept": "application/json, text/plain, */*",
         "Origin": "https://www.fanbox.cc",
     }
-    hiccears_headers: dict[str, str]
-    ygal_headers: dict[str, str]
+    ygal_headers: dict[str, str] = {}
     inkbunny_sid: str = ""
     twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "vxtwitter"
 
