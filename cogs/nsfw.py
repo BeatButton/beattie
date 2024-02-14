@@ -38,9 +38,9 @@ class NSFW(Cog):
         return True
 
     def __init__(self, bot: BeattieBot):
-        self.cache: dict[
-            MessageableChannel, dict[str, dict[frozenset[str], Any]]
-        ] = defaultdict(lambda: defaultdict(dict))
+        self.cache: dict[MessageableChannel, dict[str, dict[frozenset[str], Any]]] = (
+            defaultdict(lambda: defaultdict(dict))
+        )
         self.titles: dict[str, str] = {}
         self.get = bot.get
         self.log = bot.logger.debug

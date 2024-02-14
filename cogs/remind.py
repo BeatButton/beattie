@@ -450,8 +450,9 @@ class Remind(Cog):
         self,
         ctx: BContext,
         *,
-        timezone: ZoneInfo
-        | None = commands.param(converter=TimezoneConverter, default=None),
+        timezone: ZoneInfo | None = commands.param(
+            converter=TimezoneConverter, default=None
+        ),
     ):
         """Commands for managing your timezone."""
         if timezone:

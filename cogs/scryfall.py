@@ -48,9 +48,10 @@ class Scryfall(Cog):
         """Search for cards on Scryfall"""
         params = {"q": query}
         try:
-            async with ctx.typing(), (
-                await self.request("cards/search", params=params)
-            ) as resp:
+            async with (
+                ctx.typing(),
+                await self.request("cards/search", params=params) as resp,
+            ):
                 data = await resp.json()
         except ResponseError as e:
             if e.code == 404:
