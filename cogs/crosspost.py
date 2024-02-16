@@ -1987,11 +1987,41 @@ class Crosspost(Cog):
 
         img = max(thumbs, key=lambda t: t["width"])["url"]
 
+        ext = None
+        async with self.get(img, method="HEAD") as resp:
+            if (disp := resp.content_disposition) and (name := disp.filename):
+                ext = name.rpartition(".")[-1]
+
+        if not ext:
+            ext = "jpeg"
+
         text = None
         if await self.should_post_text(ctx):
             text = "".join(frag.get("text", "") for frag in post["contentText"]["runs"])
 
-        await self.send(ctx, img, filename=f"{post_id}.jpeg")
+        if ext == "webp":
+            proc = await asyncio.create_subprocess_exec(
+                "magick",
+                "convert",
+                img,
+                "gif:-",
+                stderr=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+            )
+            filename = f"{post_id}.gif"
+
+            try:
+                stdout = await try_wait_for(proc)
+            except asyncio.TimeoutError:
+                await ctx.send("Gif took too long to process.")
+                await self.send(ctx, img, filename=f"{post_id}.{ext}")
+            else:
+                gif = BytesIO(stdout)
+                gif.seek(0)
+                file = File(gif, filename)
+                await ctx.send(file=file)
+        else:
+            await self.send(ctx, img, filename=f"{post_id}.{ext}")
         if text:
             await ctx.send(f">>> {text}")
 
