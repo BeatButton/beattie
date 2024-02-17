@@ -1,6 +1,6 @@
 import random
 import re
-from typing import Any, Mapping
+from typing import TypedDict
 
 import discord
 from discord.ext import commands
@@ -11,7 +11,17 @@ from context import BContext
 from utils.exceptions import ResponseError
 
 
+class XkcdData(TypedDict):
+    num: int
+    year: str
+    title: str
+    img: str
+    alt: str
+
+
 class XKCD(Cog):
+    xkcd_data: XkcdData
+
     def __init__(self):
         with open("data/why.txt", encoding="utf8") as file:
             self.questions: tuple[str, ...] = tuple(file.readlines())
@@ -67,6 +77,7 @@ class XKCD(Cog):
                 return
 
         url = f"https://xkcd.com/{number}/info.0.json"
+        data: XkcdData
         try:
             async with ctx.bot.get(url) as resp:
                 data = await resp.json()
@@ -76,6 +87,7 @@ class XKCD(Cog):
                 "img": "http://www.explainxkcd.com/wiki/images/9/92/not_found.png",
                 "alt": "Comic not found.",
                 "num": 404,
+                "year": "",
             }
         await ctx.send(embed=format_comic(data))
 
@@ -87,7 +99,7 @@ class XKCD(Cog):
             await ctx.send("Unable to lock /var/lib/dpkg/, are you root?")
 
 
-def format_comic(data: Mapping[str, Any]) -> discord.Embed:
+def format_comic(data: XkcdData) -> discord.Embed:
     embed = discord.Embed()
     embed.title = data["title"]
     embed.set_image(url=data["img"])
