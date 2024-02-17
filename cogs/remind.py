@@ -348,10 +348,12 @@ class Remind(Cog):
                 guild := self.bot.get_guild(guild_id)
                 or await squash_unfindable(self.bot.fetch_guild(guild_id))
             )
+            is not None
             and (
                 member := guild.get_member(user_id)
                 or await squash_unfindable(guild.fetch_member(user_id))
             )
+            is not None
             and (
                 channel := guild.get_channel_or_thread(
                     (
@@ -363,6 +365,7 @@ class Remind(Cog):
                 )
                 or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
             )
+            is not None
         ):
             assert isinstance(channel, GuildMessageable)
             async with self.pool.acquire() as conn:
