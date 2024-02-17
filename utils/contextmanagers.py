@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Any, AsyncContextManager, Generic, TypeVar
+from typing import Any, AsyncContextManager, Generic, Mapping, TypeVar
 
 from aiohttp import ClientResponse, ClientSession, ServerDisconnectedError
 
@@ -8,6 +8,14 @@ from .exceptions import ResponseError
 
 class get:
     """Returns a response to the first URL that returns a 200 status code."""
+
+    session: ClientSession
+    resp: ClientResponse
+    urls: tuple[str, ...]
+    index: int
+    method: str
+    error_for_status: bool
+    kwargs: Mapping[str, Any]
 
     def __init__(
         self,
