@@ -87,7 +87,3 @@ def display_timedelta(delta: timedelta) -> str:
         out.append(f"{seconds} second{s}")
 
     return ", ".join(out)
-
-
-def suppress_links(text: str) -> str:
-    return LINK_EXPR.sub(r"<\1>", text)

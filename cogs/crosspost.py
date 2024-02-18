@@ -35,7 +35,7 @@ from context import BContext
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
-from utils.etc import display_bytes, remove_spoilers, suppress_links
+from utils.etc import display_bytes, remove_spoilers
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
@@ -838,8 +838,6 @@ class Crosspost(Cog):
             text := TWITTER_TEXT_TRIM.sub("", tweet["text"])
         ):
             text = html_unescape(text)
-            text = text.replace("\n", "\n> ")
-            text = suppress_links(text)
 
         url: str
         for medium in media:
@@ -905,7 +903,7 @@ class Crosspost(Cog):
                             await ctx.send(url)
 
         if text:
-            await ctx.send(f"> {text}")
+            await ctx.send(f">>> {text}", suppress_embeds=True)
         return True
 
     async def display_pixiv_images(self, ctx: CrosspostContext, illust_id: str) -> bool:
@@ -940,14 +938,6 @@ class Crosspost(Cog):
         text = None
         if await self.should_post_text(ctx):
             text = f"**{res['title']}**"
-            if caption := res["caption"]:
-                fragment = html.fragment_fromstring(f"<p>{caption}</p>")
-                for br in fragment.xpath(".//br"):
-                    tail = br.tail or ""
-                    br.tail = f"\n> {tail}"
-                caption = fragment.text_content()
-                text = f"{text}\n> {caption}"
-                text = suppress_links(text)
 
         if single := res["meta_single_page"]:
             img_url = single["original_image_url"]
@@ -982,7 +972,7 @@ class Crosspost(Cog):
                 await ctx.send(content, file=file)
 
             if text:
-                await ctx.send(text)
+                await ctx.send(text, suppress_embeds=True)
 
             remaining = num_pages - max_pages
 
@@ -1104,8 +1094,7 @@ class Crosspost(Cog):
             description = description.replace("\n", "\n> ")
             text = f"**{title}**"
             if description:
-                text = f"{text}\n> {description}"
-            text = suppress_links(text)
+                text = f"{text}\n>>> {description}"
 
         max_pages = await self.get_max_pages(ctx)
         pages_remaining = max_pages
@@ -1132,7 +1121,7 @@ class Crosspost(Cog):
                 break
 
         if text:
-            await ctx.send(text)
+            await ctx.send(text, suppress_embeds=True)
 
         pages_remaining *= -1
 
@@ -1221,7 +1210,7 @@ class Crosspost(Cog):
             nonlocal text
             send = text.strip()
             text = ""
-            return ctx.send(f">>> {send}")
+            return ctx.send(f">>> {send}", suppress_embeds=True)
 
         for block in blocks:
             if block["type"] == "text":
@@ -1354,11 +1343,10 @@ class Crosspost(Cog):
             and (content := post["content"])
         ):
             fragments = html.fragments_fromstring(content, parser=self.parser)
-            text = "> " + "\n> ".join(
+            text = ">>> " + "\n".join(
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
-            text = suppress_links(text)
-            await ctx.send(text)
+            await ctx.send(text, suppress_embeds=True)
 
         return all_embedded
 
@@ -1389,9 +1377,8 @@ class Crosspost(Cog):
             description = sub["description"].strip().replace("\n", "\n> ")
             text = f"**{title}**"
             if description:
-                text = f"{text}\n> {description}"
-            text = suppress_links(text)
-            await ctx.send(text)
+                text = f"{text}\n>>> {description}"
+            await ctx.send(text, suppress_embeds=True)
 
         return True
 
@@ -1470,7 +1457,7 @@ class Crosspost(Cog):
 
         await self.send(ctx, post["file_url"])
         if text:
-            await ctx.send(text)
+            await ctx.send(text, suppress_embeds=True)
         return True
 
     async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
@@ -1563,7 +1550,7 @@ class Crosspost(Cog):
                     file = None
                 else:
                     continue
-                await ctx.send(content, file=file)
+                await ctx.send(content, file=file, suppress_embeds=True)
         elif post_type == "image":
             for image in body["images"]:
                 content, file = await self.save_fanbox(
@@ -1628,7 +1615,7 @@ class Crosspost(Cog):
         if await self.should_post_text(ctx):
             if elems := root.xpath(LOFTER_TEXT_SELECTOR):
                 text = elems[0].text_content()
-                await ctx.send(f"> {text}")
+                await ctx.send(f">>> {text}", suppress_embeds=True)
 
         return True
 
@@ -1662,7 +1649,7 @@ class Crosspost(Cog):
             await self.send(ctx, file["url"])
 
         if await self.should_post_text(ctx) and (text := data["text"]):
-            await ctx.send(f"> {text}")
+            await ctx.send(f">>> {text}", suppress_embeds=True)
 
         return True
 
@@ -1829,8 +1816,7 @@ class Crosspost(Cog):
 
         if all_embedded and await self.should_post_text(ctx):
             text = post["text"]
-            text = suppress_links(text)
-            await ctx.send(f">>> {text}")
+            await ctx.send(f">>> {text}", suppress_embeds=True)
 
         return all_embedded
 
@@ -1880,7 +1866,7 @@ class Crosspost(Cog):
             title = root.xpath(OG_TITLE)[0].get("content")
             desc = root.xpath(OG_DESCRIPTION)[0].get("content")
 
-            await ctx.send(f"**{title}**\n>>> {desc}")
+            await ctx.send(f"**{title}**\n>>> {desc}", suppress_embeds=True)
 
         return True
 
@@ -1909,7 +1895,7 @@ class Crosspost(Cog):
             comment = root.xpath(YGAL_TEXT_SELECTOR)[0].text.strip()
             title = img.get("alt")
             text = f"**{title}**\n>>> {comment}"
-            await ctx.send(text)
+            await ctx.send(text, suppress_embeds=True)
 
         return True
 
@@ -1947,7 +1933,7 @@ class Crosspost(Cog):
             title = html_unescape(root.xpath(OG_TITLE)[0].get("content"))
             desc = html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content"))
 
-            await ctx.send(f"**{title}**\n>>> {desc}")
+            await ctx.send(f"**{title}**\n>>> {desc}", suppress_embeds=True)
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
@@ -2023,7 +2009,7 @@ class Crosspost(Cog):
         else:
             await self.send(ctx, img, filename=f"{post_id}.{ext}")
         if text:
-            await ctx.send(f">>> {text}")
+            await ctx.send(f">>> {text}", suppress_embeds=True)
 
         return True
 
