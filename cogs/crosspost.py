@@ -1529,7 +1529,7 @@ class Crosspost(Cog):
                         filesize_limit,
                     )
                     await ctx.send(content, file=file)
-                    return True
+                return True
             case "file":
                 for file_info in body["files"]:
                     url = file_info["url"]
@@ -1542,7 +1542,7 @@ class Crosspost(Cog):
                         content = None
                         file = File(img, filename)
                     await ctx.send(content, file=file)
-                    return True
+                return True
             case "article":
                 pass
             case other:
