@@ -1378,7 +1378,7 @@ class Crosspost(Cog):
 
         if post_text:
             title = sub["title"]
-            description = sub["description"].strip().replace("\n", "\n> ")
+            description = sub["description"].strip()
             text = f"**{title}**"
             if description:
                 text = f"{text}\n>>> {description}"
@@ -1604,7 +1604,7 @@ class Crosspost(Cog):
                             content = None
                             file = File(img, filename)
 
-                await ctx.send(content, file=file, suppress_embeds=True)
+                await ctx.send(content, file=file)
 
         pages_remaining = max_pages and num_images - max_pages
         if do_text and text and not pages_remaining:
