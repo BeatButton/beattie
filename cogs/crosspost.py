@@ -2011,7 +2011,10 @@ class Crosspost(Cog):
         if not (attachment := post.get("backstageAttachment")):
             return False
 
-        thumbs = attachment["backstageImageRenderer"]["image"]["thumbnails"]
+        if not (renderer := attachment.get("backstageImageRenderer")):
+            return False
+
+        thumbs = renderer["image"]["thumbnails"]
 
         img = max(thumbs, key=lambda t: t["width"])["url"]
 
@@ -2024,8 +2027,9 @@ class Crosspost(Cog):
             ext = "jpeg"
 
         text = None
-        if await self.should_post_text(ctx):
-            text = "".join(frag.get("text", "") for frag in post["contentText"]["runs"])
+        do_text = await self.should_post_text(ctx)
+        if do_text and (frags := post["contentText"].get("runs")):
+            text = "".join(frag.get("text", "") for frag in frags)
 
         if ext == "webp":
             proc = await asyncio.create_subprocess_exec(
