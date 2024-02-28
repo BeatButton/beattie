@@ -1518,41 +1518,9 @@ class Crosspost(Cog):
         )
 
         filesize_limit = guild.filesize_limit
-
-        match post["type"]:
-            case "image":
-                for image in body["images"]:
-                    content, file = await self.save_fanbox(
-                        image["originalUrl"],
-                        image["thumbnailUrl"],
-                        headers,
-                        filesize_limit,
-                    )
-                    await ctx.send(content, file=file)
-                return True
-            case "file":
-                for file_info in body["files"]:
-                    url = file_info["url"]
-                    if file_info["size"] > filesize_limit:
-                        content = url
-                        file = None
-                    else:
-                        filename = file_info["name"] + "." + file_info["extension"]
-                        img = await self.save(url, headers=headers)
-                        content = None
-                        file = File(img, filename)
-                    await ctx.send(content, file=file)
-                return True
-            case "article":
-                pass
-            case other:
-                await ctx.send(f"Unrecognized post type {other}! This is a bug.")
-                return False
-
-        # post_type is article
-
         max_pages = await self.get_max_pages(ctx)
         num_images = 0
+
         do_text = await self.should_post_text(ctx)
         text = ""
 
@@ -1565,46 +1533,89 @@ class Crosspost(Cog):
             else:
                 return asyncio.sleep(0)
 
-        blocks = body["blocks"]
-        image_map = body["imageMap"]
-        file_map = body["fileMap"]
+        match post["type"]:
+            case "image":
+                asset = "image"
+                images = body["images"]
+                num_images = len(images)
+                if max_pages:
+                    images = images[:max_pages]
+                for image in images:
+                    content, file = await self.save_fanbox(
+                        image["originalUrl"],
+                        image["thumbnailUrl"],
+                        headers,
+                        filesize_limit,
+                    )
+                    await ctx.send(content, file=file)
+            case "file":
+                asset = "file"
+                files = body["files"]
+                num_images = len(files)
+                if max_pages:
+                    files = files[:max_pages]
+                for file_info in files:
+                    url = file_info["url"]
+                    if file_info["size"] > filesize_limit:
+                        content = url
+                        file = None
+                    else:
+                        filename = file_info["name"] + "." + file_info["extension"]
+                        img = await self.save(url, headers=headers)
+                        content = None
+                        file = File(img, filename)
+                    await ctx.send(content, file=file)
+            case "article":
+                asset = None
+                blocks = body["blocks"]
+                image_map = body["imageMap"]
+                file_map = body["fileMap"]
 
-        for block in blocks:
-            block_type = block["type"]
-            if block_type == "p":
-                text = f"{text}\n{block['text']}"
-            else:
-                if do_text and text and max_pages and num_images <= max_pages:
-                    await send_text()
-                file = None
-                match block_type:
-                    case "image":
-                        num_images += 1
-                        if max_pages and num_images > max_pages:
-                            continue
-                        image = image_map[block["imageId"]]
-                        content, file = await self.save_fanbox(
-                            image["originalUrl"],
-                            image["thumbnailUrl"],
-                            headers,
-                            filesize_limit,
-                        )
-                    case "file":
-                        num_images += 1
-                        if max_pages and num_images > max_pages:
-                            continue
-                        file_info = file_map[block["fileId"]]
-                        url = file_info["url"]
-                        if file_info["size"] > filesize_limit:
-                            content = url
-                            file = None
-                        else:
-                            filename = file_info["name"] + "." + file_info["extension"]
-                            img = await self.save(url, headers=headers)
-                            content = None
-                            file = File(img, filename)
+                if not (image_map or file_map):
+                    return False
 
-                await ctx.send(content, file=file)
+                for block in blocks:
+                    block_type = block["type"]
+                    if block_type == "p":
+                        text = f"{text}\n{block['text']}"
+                    else:
+                        if do_text and text and max_pages and num_images <= max_pages:
+                            await send_text()
+                        file = None
+                        content = None
+                        match block_type:
+                            case "image":
+                                num_images += 1
+                                if max_pages and num_images > max_pages:
+                                    continue
+                                image = image_map[block["imageId"]]
+                                content, file = await self.save_fanbox(
+                                    image["originalUrl"],
+                                    image["thumbnailUrl"],
+                                    headers,
+                                    filesize_limit,
+                                )
+                            case "file":
+                                num_images += 1
+                                if max_pages and num_images > max_pages:
+                                    continue
+                                file_info = file_map[block["fileId"]]
+                                url = file_info["url"]
+                                if file_info["size"] > filesize_limit:
+                                    content = url
+                                    file = None
+                                else:
+                                    filename = (
+                                        f"{file_info['name']}.{file_info['extension']}"
+                                    )
+                                    img = await self.save(url, headers=headers)
+                                    content = None
+                                    file = File(img, filename)
+                        if content or file:
+                            await ctx.send(content, file=file)
+            case other:
+                await ctx.send(f"Unrecognized post type {other}! This is a bug.")
+                return False
 
         pages_remaining = max_pages and num_images - max_pages
         if do_text and text and not pages_remaining:
@@ -1612,7 +1623,12 @@ class Crosspost(Cog):
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
-            message = f"{pages_remaining} more file{s}/image{s} at <{link}>"
+            match asset:
+                case None:
+                    asset = f"file{s}/image{s}"
+                case other:
+                    asset = f"{other}{s}"
+            message = f"{pages_remaining} more {asset} at <{link}>"
             await ctx.send(message)
 
         return True
