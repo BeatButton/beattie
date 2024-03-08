@@ -101,6 +101,8 @@ class Scryfall(Cog):
             embed.color = color
             embed.set_footer(text="Page {}/{}".format(i, size))
             embeds.append(embed)
+        if size == 1:
+            embed.set_footer(text=None)
         paginator = Paginator(embeds)
         await paginator.start(ctx)
 
