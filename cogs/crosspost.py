@@ -1548,6 +1548,7 @@ class Crosspost(Cog):
                         filesize_limit,
                     )
                     await ctx.send(content, file=file)
+                text = body.get("text")
             case "file":
                 asset = "file"
                 files = body["files"]
@@ -1565,6 +1566,7 @@ class Crosspost(Cog):
                         content = None
                         file = File(img, filename)
                     await ctx.send(content, file=file)
+                text = body.get("text")
             case "article":
                 asset = None
                 blocks = body["blocks"]
@@ -1579,7 +1581,11 @@ class Crosspost(Cog):
                     if block_type == "p":
                         text = f"{text}\n{block['text']}"
                     else:
-                        if do_text and text and max_pages and num_images <= max_pages:
+                        if (
+                            do_text
+                            and text
+                            and not (max_pages and num_images > max_pages)
+                        ):
                             await send_text()
                         file = None
                         content = None
