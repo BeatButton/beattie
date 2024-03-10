@@ -1880,8 +1880,7 @@ class Crosspost(Cog):
                 await ctx.send(url)
                 all_embedded = False
 
-        if all_embedded and await self.should_post_text(ctx):
-            text = post["text"]
+        if all_embedded and await self.should_post_text(ctx) and (text := post["text"]):
             await ctx.send(f">>> {text}", suppress_embeds=True)
 
         return all_embedded
