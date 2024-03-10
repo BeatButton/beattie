@@ -886,7 +886,9 @@ class Crosspost(Cog):
                         gif = BytesIO(stdout)
                         gif.seek(0)
                         file = File(gif, filename)
-                        await ctx.send(file=file)
+                        msg = await ctx.send(file=file)
+                        if too_large(msg):
+                            await ctx.send(url)
                 case "video":
                     async with self.get(
                         url, method="HEAD", headers=headers, use_default_headers=False
