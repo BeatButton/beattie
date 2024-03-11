@@ -784,10 +784,11 @@ class Crosspost(Cog):
     async def display_twitter_images(
         self, ctx: CrosspostContext, tweet_id: str
     ) -> bool:
-        assert ctx.guild is not None
+        guild = ctx.guild
+        assert guild is not None
         self.logger.info(
             f"twitter ({self.twitter_method}): "
-            f"{ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
+            f"{guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
         )
 
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
@@ -839,6 +840,23 @@ class Crosspost(Cog):
         ):
             text = html_unescape(text)
 
+        async def do_video():
+            async with self.get(
+                url, method="HEAD", headers=headers, use_default_headers=False
+            ) as resp:
+                content_length = resp.content_length
+            if content_length and content_length > guild.filesize_limit:
+                await ctx.send(url)
+            else:
+                msg = await self.send(
+                    ctx,
+                    url,
+                    headers=headers,
+                    use_default_headers=False,
+                )
+                if too_large(msg):
+                    await ctx.send(url)
+
         url: str
         for medium in media:
             url = medium["url"]
@@ -859,7 +877,7 @@ class Crosspost(Cog):
                         ctx, url, headers=headers, use_default_headers=False
                     )
                     if too_large(msg):
-                        await ctx.send(url)
+                        await do_video()
                 case "gif":
                     proc = await asyncio.create_subprocess_exec(
                         "ffmpeg",
@@ -881,28 +899,16 @@ class Crosspost(Cog):
                         stdout = await try_wait_for(proc)
                     except asyncio.TimeoutError:
                         await ctx.send("Gif took too long to process.")
-                        await ctx.send(url)
+                        await do_video()
                     else:
                         gif = BytesIO(stdout)
                         gif.seek(0)
                         file = File(gif, filename)
                         msg = await ctx.send(file=file)
                         if too_large(msg):
-                            await ctx.send(url)
+                            await do_video()
                 case "video":
-                    async with self.get(
-                        url, method="HEAD", headers=headers, use_default_headers=False
-                    ) as resp:
-                        content_length = resp.content_length
-                        filename = url.rpartition("?")[0].rpartition("/")[-1]
-                    if content_length and content_length > ctx.guild.filesize_limit:
-                        await ctx.send(url)
-                    else:
-                        msg = await self.send(
-                            ctx, url, headers=headers, use_default_headers=False
-                        )
-                        if too_large(msg):
-                            await ctx.send(url)
+                    await do_video()
 
         if text:
             await ctx.send(f">>> {text}", suppress_embeds=True)
