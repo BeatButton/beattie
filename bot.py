@@ -197,12 +197,10 @@ class BeattieBot(Bot):
             await guild.leave()
 
     @overload
-    async def get_context(self, message: Message) -> BContext:
-        ...
+    async def get_context(self, message: Message) -> BContext: ...
 
     @overload
-    async def get_context(self, message: Message, *, cls: Type[C]) -> C:
-        ...
+    async def get_context(self, message: Message, *, cls: Type[C]) -> C: ...
 
     def get_context(
         self, message: Message, *, cls: Type[Context] = None
