@@ -87,3 +87,16 @@ def display_timedelta(delta: timedelta) -> str:
         out.append(f"{seconds} second{s}")
 
     return ", ".join(out)
+
+
+MD_TRANS = [
+    (re.compile(rf"</?{tag}>"), mkd)
+    for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]
+]
+
+
+def translate_markdown(text: str) -> str:
+    for expr, mkd in MD_TRANS:
+        text = expr.sub(mkd, text)
+    text = re.sub(r"<br ?/?>", "\n", text)
+    return text

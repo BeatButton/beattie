@@ -35,7 +35,7 @@ from context import BContext
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
-from utils.etc import display_bytes, remove_spoilers
+from utils.etc import display_bytes, remove_spoilers, translate_markdown
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
@@ -1466,10 +1466,8 @@ class Crosspost(Cog):
             if notes:
                 notes.sort(key=lambda n: int(n.get("y")))
                 text = "\n\n".join(n.get("body") for n in notes)
+                text = translate_markdown(text)
                 text = f">>> {text}"
-                for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]:
-                    text = re.sub(rf"</?{tag}>", mkd, text)
-                text = re.sub(r"<br ?/?>", "\n", text)
 
         await self.send(ctx, post["file_url"])
         if text:
@@ -1967,7 +1965,13 @@ class Crosspost(Cog):
         await self.send(ctx, link, use_default_headers=False, headers={"Referer": link})
 
         if await self.should_post_text(ctx):
-            comment = root.xpath(YGAL_TEXT_SELECTOR)[0].text.strip()
+            comment = html.tostring(root.xpath(YGAL_TEXT_SELECTOR)[0], encoding=str)
+            assert isinstance(comment, str)
+            comment = comment.strip()
+            comment = comment.removeprefix('<div class="commentData">')
+            comment = comment.removesuffix("</div>")
+            comment = re.sub(r" ?<img[^>]*> ?", "", comment)
+            comment = translate_markdown(comment).strip()
             title = img.get("alt")
             text = f"**{title}**\n>>> {comment}"
             await ctx.send(text, suppress_embeds=True)
