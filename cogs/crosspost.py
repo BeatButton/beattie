@@ -1634,8 +1634,6 @@ class Crosspost(Cog):
                 return False
 
         pages_remaining = max_pages and num_images - max_pages
-        if do_text and text and not pages_remaining:
-            await send_text()
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
@@ -1646,6 +1644,8 @@ class Crosspost(Cog):
                     asset = f"{other}{s}"
             message = f"{pages_remaining} more {asset} at <{link}>"
             await ctx.send(message)
+        elif do_text and text:
+            await send_text()
 
         return True
 
