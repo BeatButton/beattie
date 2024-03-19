@@ -1720,7 +1720,10 @@ class Crosspost(Cog):
             return False
 
         for file in files:
-            await self.send(ctx, file["url"])
+            url = file["url"]
+            msg = await self.send(ctx, url)
+            if too_large(msg):
+                await ctx.send(url)
 
         if await self.should_post_text(ctx) and (text := data["text"]):
             await ctx.send(f">>> {text}", suppress_embeds=True)
