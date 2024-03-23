@@ -1313,14 +1313,14 @@ class Crosspost(Cog):
 
             if image.get("type") == "gifv":
                 async with self.get(*urls, method="HEAD") as img_resp:
-                    gif_url = img_resp.url
+                    gif_url = f"{img_resp.url}"
 
                 proc = await asyncio.create_subprocess_exec(
                     "ffmpeg",
                     "-i",
-                    f"{gif_url}",
+                    gif_url,
                     "-i",
-                    f"{gif_url}",
+                    gif_url,
                     "-filter_complex",
                     "[0:v]palettegen[p];[1:v][p]paletteuse",
                     "-f",
@@ -1347,8 +1347,8 @@ class Crosspost(Cog):
                 )
                 file = File(img, filename)
                 msg = await ctx.send(file=file)
-                if all_embedded and too_large(msg):
-                    all_embedded = False
+                if too_large(msg):
+                    await ctx.send(gif_url)
             else:
                 async with self.get(*urls, method="HEAD") as resp:
                     await self.send(ctx, str(resp.url))
