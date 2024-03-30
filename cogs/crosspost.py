@@ -1788,6 +1788,10 @@ class Crosspost(Cog):
             await ctx.send("Post requires authentication.")
             return embedded
 
+        if frag == "Error occurred.":
+            await ctx.send("Poipiku reported a generic error.")
+            return embedded
+
         if frag == "Password is incorrect.":
 
             def check(m: Message):
