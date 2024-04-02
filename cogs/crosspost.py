@@ -1351,7 +1351,9 @@ class Crosspost(Cog):
                     await ctx.send(gif_url)
             else:
                 async with self.get(*urls, method="HEAD") as resp:
-                    await self.send(ctx, str(resp.url))
+                    msg = await self.send(ctx, str(resp.url))
+                    if too_large(msg):
+                        await ctx.send(url)
 
         if (
             all_embedded
