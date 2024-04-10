@@ -64,6 +64,7 @@ GLOB_SITE_EXCLUDE = {
     "crepu.net",
     "x.com",
     "fixupx.com",
+    "fixvx.com",
 }
 
 OG_IMAGE = ".//meta[@property='og:image']"
@@ -71,7 +72,7 @@ OG_TITLE = ".//meta[@property='og:title']"
 OG_DESCRIPTION = ".//meta[@property='og:description']"
 
 TWITTER_URL_EXPR = re.compile(
-    r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x|zz)?tw[ix]tter|(?:fixup)?x)(?:vx)?"
+    r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x|zz)?tw[ix]tter|(?:fix(?:up|v))?x)(?:vx)?"
     r"\.com/[^\s/]+/status/(\d+)"
 )
 TWITTER_TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
