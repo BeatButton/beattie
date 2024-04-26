@@ -7,6 +7,7 @@ import logging
 import re
 import urllib.parse as urlparse
 from asyncio import subprocess
+from base64 import b64encode
 from collections import deque
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
@@ -156,6 +157,8 @@ YT_COMMUNITY_URL_EXPR = re.compile(
     r"https?://(?:www\.)?youtube\.com/(?:post/|channel/[^/]+/community\?lb=)([\w-]+)"
 )
 YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
+
+E621_URL_EXPR = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)")
 
 PILLOWFORT_URL_EXPR = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
 
@@ -473,6 +476,9 @@ class Crosspost(Cog):
     }
     ygal_headers: dict[str, str] = {}
     inkbunny_sid: str = ""
+    mastodon_auth: dict[str, dict[str, str]]
+    e621_key: str
+    e621_user: str
     twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "vxtwitter"
 
     ongoing_tasks: dict[int, asyncio.Task]
@@ -526,6 +532,13 @@ class Crosspost(Cog):
         self.mastodon_auth = data["mastodon"]
 
         self.ygal_headers = data["ygal"]
+
+        if e621 := data.get("e621"):
+            self.e621_key = e621["api_key"]
+            self.e621_user = e621["user"]
+        else:
+            self.e621_key = ""
+            self.e621_user = ""
 
         await self.db.async_init()
 
@@ -2134,6 +2147,28 @@ class Crosspost(Cog):
             await self.send(ctx, img, filename=f"{post_id}.{ext}")
         if text:
             await ctx.send(f">>> {text}", suppress_embeds=True)
+
+        return True
+
+    async def display_e621_images(self, ctx: CrosspostContext, post_id: str) -> bool:
+        params = {"tags": f"id:{post_id}"}
+        if self.e621_key:
+            auth_slug = b64encode(f"{self.e621_user}:{self.e621_key}".encode()).decode()
+            headers = {"Authorization": f"Basic {auth_slug}"}
+        else:
+            headers = {}
+        api_url = "https://e621.net/posts.json"
+        async with ctx.bot.get(api_url, params=params, headers=headers) as resp:
+            data = await resp.json()
+        try:
+            post = data["posts"][0]
+        except:
+            raise ResponseError(404, api_url)
+
+        await self.send(ctx, post["file"]["url"])
+
+        if (text := post.get("description")) and await self.should_post_text(ctx):
+            await ctx.send(f">>> {text}")
 
         return True
 
