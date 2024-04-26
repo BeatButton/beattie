@@ -22,7 +22,7 @@ class NSFW(Cog):
     view = {
         "gelbooru": "https://gelbooru.com/index.php?page=post&s=view&id={}",
         "rule34": "https://rule34.xxx/index.php?page=post&s=view&id={}",
-        "e621": "http://e621.net/post/show/{}",
+        "e621": "http://e621.net/posts/{}",
     }
 
     urls = {
