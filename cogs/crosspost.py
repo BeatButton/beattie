@@ -1102,7 +1102,6 @@ class Crosspost(Cog):
             description = root.xpath(HICCEARS_TEXT_SELECTOR)[0].text_content().strip()
             description = description.removeprefix("Description")
             description = re.sub(r"\r?\n\t+", "", description)
-            description = description.replace("\n", "\n> ")
             text = f"**{title}**"
             if description:
                 text = f"{text}\n>>> {description}"
