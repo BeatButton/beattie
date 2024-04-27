@@ -2172,14 +2172,6 @@ class Crosspost(Cog):
 
         return True
 
-    @commands.command(hidden=True)
-    @is_owner_or(manage_guild=True)
-    async def twitter(self, ctx: BContext, enabled: bool = True):
-        await ctx.send(
-            "This command is deprecated! "
-            f"Please use `{ctx.prefix}crosspost` to manage settings."
-        )
-
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
     async def crosspost(self, ctx: BContext, argument: str = None, *_):
