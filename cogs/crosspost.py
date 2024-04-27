@@ -2162,7 +2162,7 @@ class Crosspost(Cog):
             data = await resp.json()
         try:
             post = data["posts"][0]
-        except:
+        except IndexError:
             raise ResponseError(404, api_url)
 
         await self.send(ctx, post["file"]["url"])
