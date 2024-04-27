@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-from numbers import Real
 from typing import Any
 
 
@@ -67,7 +66,7 @@ class Result:
     __radd__ = __add__
 
     def __mul__(self, other: Any) -> Result:
-        if isinstance(other, Real):
+        if isinstance(other, int):
             return type(self)(
                 self.advantages * other, self.successs * other, self.triumphs * other
             )
@@ -111,7 +110,7 @@ class Force:
     __radd__ = __add__
 
     def __mul__(self, other: Any) -> Force:
-        if isinstance(other, Real):
+        if isinstance(other, int):
             return type(self)(self.light * other, self.dark * other)
         else:
             return NotImplemented
