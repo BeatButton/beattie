@@ -479,7 +479,7 @@ class Crosspost(Cog):
     mastodon_auth: dict[str, dict[str, str]]
     e621_key: str
     e621_user: str
-    twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "vxtwitter"
+    twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
 
     ongoing_tasks: dict[int, asyncio.Task]
     expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
