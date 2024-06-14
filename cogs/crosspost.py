@@ -529,7 +529,7 @@ class Crosspost(Cog):
             json = await resp.json()
             self.inkbunny_sid = json["sid"]
 
-        self.mastodon_auth = data["mastodon"]
+        self.mastodon_auth = data.get("mastodon", {})
 
         self.ygal_headers = data["ygal"]
 
