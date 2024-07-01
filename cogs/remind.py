@@ -125,6 +125,20 @@ class Remind(Cog):
     def cog_unload(self):
         self.timer.cancel()
 
+    @Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        user = self.bot.user
+        assert user is not None
+        others = self.bot.shared.bot_ids - {user.id}
+        if any(m.id in others for m in guild.members):
+            return
+        async with self.bot.pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE reminder SET bot_id = $1 WHERE guild_id = $2;",
+                user.id,
+                guild.id,
+            )
+
     async def get_user_timezone(self, user_id: int) -> ZoneInfo | None:
         async with self.pool.acquire() as conn:
             tz = await conn.fetchval(
