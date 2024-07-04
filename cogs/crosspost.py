@@ -781,17 +781,12 @@ class Crosspost(Cog):
     async def should_cleanup(self, message: Message, me: discord.Member) -> bool:
         if not message.channel.permissions_for(me).manage_messages:
             return False
-        settings = await self.db.get_effective_settings(message)
-        cleanup = settings.cleanup
-        if cleanup is not None:
-            return cleanup
-        channel = message.channel
 
-        assert not isinstance(channel, PartialMessageable)
-        return (
-            channel.permissions_for(me).manage_messages
-            and await self.get_mode(message) == 2
-        )
+        settings = await self.db.get_effective_settings(message)
+        if (cleanup := settings.cleanup) is not None:
+            return cleanup
+
+        return await self.get_mode(message) == 2
 
     async def should_post_text(self, ctx: BContext) -> bool:
         settings = await self.db.get_effective_settings(ctx.message)
