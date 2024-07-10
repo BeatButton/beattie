@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from hashlib import md5
 from html import unescape as html_unescape
 from io import BytesIO
-from itertools import groupby
+from itertools import chain, groupby
 from operator import itemgetter
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -1370,9 +1370,14 @@ class Crosspost(Cog):
             and await self.should_post_text(ctx)
             and (content := post["content"])
         ):
+            content_warning = []
+            if cw := post.get("spoiler_text"):
+                content_warning = [cw]
+
             fragments = html.fragments_fromstring(content, parser=self.parser)
             text = ">>> " + "\n".join(
-                f if isinstance(f, str) else f.text_content() for f in fragments
+                f if isinstance(f, str) else f.text_content()
+                for f in chain(content_warning, fragments)
             )
             await ctx.send(text, suppress_embeds=True)
 
