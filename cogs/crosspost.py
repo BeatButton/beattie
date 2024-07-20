@@ -605,11 +605,12 @@ class Crosspost(Cog):
         *urls: str,
         method: str = "GET",
         use_default_headers: bool = True,
+        session: aiohttp.ClientSession = None,
         **kwargs: Any,
     ) -> get:
         if use_default_headers:
             kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
-        return get(self.session, *urls, method=method, **kwargs)
+        return get(session or self.session, *urls, method=method, **kwargs)
 
     async def save(
         self,
@@ -1530,7 +1531,10 @@ class Crosspost(Cog):
         *_, post_id = link.rpartition("/")
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
         headers = {**self.fanbox_headers, "Referer": link}
-        async with self.get(url, headers=headers) as resp:
+        async with (
+            aiohttp.ClientSession() as sess,
+            self.get(url, headers=headers, session=sess) as resp,
+        ):
             data = await resp.json()
 
         post = data["body"]
