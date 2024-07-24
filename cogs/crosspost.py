@@ -2108,53 +2108,60 @@ class Crosspost(Cog):
         if not (attachment := post.get("backstageAttachment")):
             return False
 
-        if not (renderer := attachment.get("backstageImageRenderer")):
-            return False
+        images = attachment.get("postMultiImageRenderer", {}).get("images", [])
 
-        thumbs = renderer["image"]["thumbnails"]
+        if not images:
+            images = [attachment]
 
-        img = max(thumbs, key=lambda t: t["width"])["url"]
+        posted = False
+        for image in images:
+            if not (renderer := image.get("backstageImageRenderer")):
+                continue
 
-        ext = None
-        async with self.get(img, method="HEAD") as resp:
-            if (disp := resp.content_disposition) and (name := disp.filename):
-                ext = name.rpartition(".")[-1]
+            thumbs = renderer["image"]["thumbnails"]
+            img: str = max(thumbs, key=lambda t: t["width"])["url"]
 
-        if not ext:
-            ext = "jpeg"
+            ext = None
+            async with self.get(img, method="HEAD") as resp:
+                if (disp := resp.content_disposition) and (name := disp.filename):
+                    ext = name.rpartition(".")[-1]
 
-        text = None
-        do_text = await self.should_post_text(ctx)
-        if do_text and (frags := post["contentText"].get("runs")):
-            text = "".join(frag.get("text", "") for frag in frags)
+            ext = ext or "jpeg"
 
-        if ext == "webp":
-            proc = await asyncio.create_subprocess_exec(
-                "magick",
-                "convert",
-                img,
-                "gif:-",
-                stderr=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-            )
-            filename = f"{post_id}.gif"
+            if ext == "webp":
+                proc = await asyncio.create_subprocess_exec(
+                    "magick",
+                    "convert",
+                    img,
+                    "gif:-",
+                    stderr=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                )
+                filename = f"{post_id}.gif"
 
-            try:
-                stdout = await try_wait_for(proc)
-            except asyncio.TimeoutError:
-                await ctx.send("Gif took too long to process.")
-                await self.send(ctx, img, filename=f"{post_id}.{ext}")
+                try:
+                    stdout = await try_wait_for(proc)
+                except asyncio.TimeoutError:
+                    await ctx.send("Gif took too long to process.")
+                    await self.send(ctx, img, filename=f"{post_id}.{ext}")
+                else:
+                    gif = BytesIO(stdout)
+                    gif.seek(0)
+                    file = File(gif, filename)
+                    await ctx.send(file=file)
             else:
-                gif = BytesIO(stdout)
-                gif.seek(0)
-                file = File(gif, filename)
-                await ctx.send(file=file)
-        else:
-            await self.send(ctx, img, filename=f"{post_id}.{ext}")
-        if text:
+                await self.send(ctx, img, filename=f"{post_id}.{ext}")
+            posted = True
+
+        if (
+            posted
+            and await self.should_post_text(ctx)
+            and (frags := post["contentText"].get("runs"))
+        ):
+            text = "".join(frag.get("text", "") for frag in frags)
             await ctx.send(f">>> {text}", suppress_embeds=True)
 
-        return True
+        return posted
 
     async def display_e621_images(self, ctx: CrosspostContext, post_id: str) -> bool:
         params = {"tags": f"id:{post_id}"}
