@@ -26,7 +26,13 @@ import discord
 import toml
 from discord import CategoryChannel, File, Message, PartialMessageable, Thread
 from discord.ext import commands
-from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
+from discord.ext.commands import (
+    BadArgument,
+    BadUnionArgument,
+    ChannelNotFound,
+    Cog,
+    Converter,
+)
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import etree, html
 from tldextract.tldextract import TLDExtract
@@ -162,6 +168,13 @@ E621_URL_EXPR = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)"
 
 PILLOWFORT_URL_EXPR = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
 
+HANDLER_EXPR: list[tuple[str, re.Pattern]] = [
+    (name.removesuffix("_URL_EXPR").lower(), expr)
+    for name, expr in globals().items()
+    if name.endswith("_URL_EXPR")
+]
+
+
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 ConfigTarget = GuildMessageable | CategoryChannel
@@ -192,6 +205,13 @@ async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: float | None
 
 def too_large(message: Message) -> bool:
     return message.content.startswith("Image too large to upload")
+
+
+class Site(Converter):
+    async def convert(self, ctx: BContext, argument: str) -> str:
+        if argument not in HANDLER_DICT:
+            raise BadArgument
+        return argument
 
 
 class Settings:
@@ -245,6 +265,7 @@ class Database:
         self.bot = bot
         self.cog = cog
         self._settings_cache: dict[tuple[int, int], Settings] = {}
+        self._blacklist_cache: dict[int, set[str]] = {}
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
 
@@ -266,6 +287,12 @@ class Database:
                 CREATE TABLE IF NOT EXISTS public.crosspostmessage (
                     sent_message bigint NOT NULL PRIMARY KEY,
                     invoking_message bigint NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS public.crosspostblacklist (
+                    guild_id bigint NOT NULL,
+                    site text NOT NULL,
+                    PRIMARY KEY(guild_id, site)
                 );
                 """
             )
@@ -412,6 +439,53 @@ class Database:
                 invoking_message,
             )
 
+    async def get_blacklist(self, guild_id: int) -> set[str]:
+        try:
+            return self._blacklist_cache[guild_id]
+        except KeyError:
+            res = set()
+            async with self.pool.acquire() as conn:
+                for row in await conn.fetch(
+                    "SELECT * FROM crosspostblacklist WHERE guild_id = $1",
+                    guild_id,
+                ):
+                    res.add(row["site"])
+
+            self._blacklist_cache[guild_id] = res
+            return res
+
+    async def add_blacklist(self, guild_id: int, site: str) -> bool:
+        blacklist = await self.get_blacklist(guild_id)
+        if site in blacklist:
+            return False
+
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO crosspostblacklist VALUES ($1, $2)",
+                guild_id,
+                site,
+            )
+
+        blacklist.add(site)
+
+        return True
+
+    async def del_blacklist(self, guild_id: int, site: str) -> bool:
+        blacklist = await self.get_blacklist(guild_id)
+        try:
+            blacklist.remove(site)
+        except KeyError:
+            return False
+
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM crosspostblacklist WHERE guild_id = $1 AND site = $2",
+                guild_id,
+                site,
+            )
+
+        return True
+
 
 class CrosspostContext(BContext):
     cog: Crosspost
@@ -473,7 +547,8 @@ class Crosspost(Cog):
     fanbox_headers: dict[str, str] = {
         "Accept": "application/json, text/plain, */*",
         "Origin": "https://www.fanbox.cc",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     }
     ygal_headers: dict[str, str] = {}
     inkbunny_sid: str = ""
@@ -483,7 +558,6 @@ class Crosspost(Cog):
     twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
 
     ongoing_tasks: dict[int, asyncio.Task]
-    expr_dict: dict[re.Pattern, Callable[[CrosspostContext, str], Awaitable[bool]]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -495,13 +569,6 @@ class Crosspost(Cog):
             self.headers = {}
         self.parser = html.HTMLParser(encoding="utf-8")
         self.xml_parser = etree.XMLParser(encoding="utf-8")
-        self.expr_dict = {
-            expr: getattr(
-                self, f"display_{name.removesuffix('_URL_EXPR').lower()}_images"
-            )
-            for name, expr in globals().items()
-            if name.endswith("_URL_EXPR")
-        }
         if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
             self.ongoing_tasks = ongoing_tasks
         else:
@@ -642,17 +709,24 @@ class Crosspost(Cog):
                 raise ResponseError(413)
         return img
 
-    async def process_links(self, ctx: CrosspostContext):
+    async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
         content = remove_spoilers(ctx.message.content)
-        assert ctx.guild is not None
-        do_suppress = await self.should_cleanup(ctx.message, ctx.guild.me)
-        for expr, func in self.expr_dict.items():
+        guild = ctx.guild
+        assert guild is not None
+        do_suppress = await self.should_cleanup(ctx.message, guild.me)
+        if force:
+            blacklist = set()
+        else:
+            blacklist = await self.db.get_blacklist(guild.id)
+        for site, (expr, func) in HANDLER_DICT.items():
+            if site in blacklist:
+                continue
             for args in expr.findall(content):
                 try:
                     if isinstance(args, str):
                         args = [args]
                     args = map(str.strip, args)
-                    if await func(ctx, *args) and do_suppress:
+                    if await func(self, ctx, *args) and do_suppress:
                         await squash_unfindable(ctx.message.edit(suppress=True))
                         do_suppress = False
                 except ResponseError as e:
@@ -2324,6 +2398,78 @@ remove embeds from messages it processes successfully."""
             where = str(target)
         await ctx.send(f"Crosspost settings overrides cleared for {where}.")
 
+    @crosspost.group(invoke_without_command=True)
+    async def blacklist(self, ctx: BContext, site: str = ""):
+        """Manage site blacklist for this server.
+
+        To view all possible sites, run `blacklist list all`.
+        """
+        if site:
+            try:
+                site = await Site().convert(ctx, site)
+            except BadArgument:
+                raise
+            else:
+                await self.blacklist_add(ctx, site)
+        else:
+            await self.blacklist_list(ctx)
+
+    @blacklist.command(name="add")
+    async def blacklist_add(
+        self, ctx: BContext, site: str = commands.param(converter=Site)
+    ):
+        """Add a site to the blacklist.
+
+        Shortcut: `crosspost blacklist <site>`."""
+        guild = ctx.guild
+        assert guild is not None
+        if await self.db.add_blacklist(guild.id, site):
+            await ctx.send(f"Site {site} blacklisted.")
+        else:
+            await ctx.send(f"Site {site} already blacklisted.")
+
+    @blacklist.command(name="remove", aliases=["del", "rm"])
+    async def blacklist_remove(
+        self, ctx: BContext, site: str = commands.param(converter=Site)
+    ):
+        """Remove a site from the blacklist."""
+        guild = ctx.guild
+        assert guild is not None
+        if await self.db.del_blacklist(guild.id, site):
+            await ctx.send(f"Site {site} removed from blacklist.")
+        else:
+            await ctx.send(f"Site {site} not in blacklist.")
+
+    @staticmethod
+    def blacklist_list_msg(blacklist: set[str]) -> str:
+        if blacklist:
+            return f"Currently blacklisted sites:\n{'\n'.join(sorted(blacklist))}"
+        else:
+            return "No sites are currently blacklisted."
+
+    @blacklist.group(name="list", aliases=["get", "info"], invoke_without_command=True)
+    async def blacklist_list(self, ctx: BContext):
+        """List currently blacklisted sites.
+
+        To view all sites, run `blacklist list all`."""
+        guild = ctx.guild
+        assert guild is not None
+        blacklist = await self.db.get_blacklist(guild.id)
+        await ctx.send(self.blacklist_list_msg(blacklist))
+
+    @blacklist_list.command(name="all")
+    async def blacklist_list_all(self, ctx: BContext):
+        """List all sites and whether they're blacklisted."""
+        guild = ctx.guild
+        assert guild is not None
+        blacklist = await self.db.get_blacklist(guild.id)
+        list_msg = self.blacklist_list_msg(blacklist)
+        if sites_left := set(HANDLER_DICT) - blacklist:
+            left_msg = "\n".join(sorted(sites_left))
+        else:
+            left_msg = "... none...?"
+        await ctx.send("\n".join([list_msg, "Sites you could blacklist:", left_msg]))
+
     @crosspost.command()
     async def info(self, ctx: BContext, *, target: ConfigTarget = None):
         """Get info on crosspost settings.
@@ -2374,12 +2520,25 @@ remove embeds from messages it processes successfully."""
         else:
             await ctx.bot.handle_error(ctx, e)
 
+    async def blacklist_error(self, ctx: BContext, e: Exception):
+        if isinstance(e, (commands.BadArgument, commands.ConversionError)):
+            await ctx.send(
+                "Invalid site. "
+                f"To list all sites, run {ctx.prefix}crosspost blacklist list all"
+            )
+        else:
+            await ctx.bot.handle_error(ctx, e)
+
     for subcommand in crosspost.walk_commands():
         subcommand.on_error = subcommand_error
 
-    async def _post(self, ctx: CrosspostContext):
+    blacklist.on_error = blacklist_error
+    for subcommand in blacklist.walk_commands():
+        subcommand.on_error = blacklist_error
+
+    async def _post(self, ctx: CrosspostContext, *, force=False):
         message = ctx.message
-        task = asyncio.create_task(self.process_links(ctx))
+        task = asyncio.create_task(self.process_links(ctx, force=force))
         self.ongoing_tasks[message.id] = task
         try:
             await asyncio.wait_for(task, None)
@@ -2394,7 +2553,7 @@ remove embeds from messages it processes successfully."""
     async def post(self, ctx: BContext, *, _: str):
         """Embed images in the given links regardless of the auto setting."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        await self._post(new_ctx)
+        await self._post(new_ctx, force=True)
 
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = ""):
@@ -2402,6 +2561,18 @@ remove embeds from messages it processes successfully."""
 
         You can also use ||spoiler tags|| to achieve the same thing."""
         pass
+
+
+HANDLER_DICT: dict[
+    str,
+    tuple[
+        re.Pattern,
+        Callable[[Crosspost, CrosspostContext, str], Awaitable[bool]],
+    ],
+] = {
+    site: (expr, getattr(Crosspost, f"display_{site}_images"))
+    for site, expr in HANDLER_EXPR
+}
 
 
 async def setup(bot: BeattieBot):
