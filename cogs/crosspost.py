@@ -115,7 +115,7 @@ INKBUNNY_URL_EXPR = re.compile(
 )
 INKBUNNY_API_FMT = "https://inkbunny.net/api_{}.php"
 
-IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/(\w+)")
+IMGUR_URL_EXPR = re.compile(r"https?://(?:www\.)?imgur\.com/(a|gallery/)?(\w+)")
 
 BOORU_API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
 
@@ -1490,20 +1490,29 @@ class Crosspost(Cog):
 
         return True
 
-    async def display_imgur_images(self, ctx: CrosspostContext, album_id: str) -> bool:
+    async def display_imgur_images(
+        self, ctx: CrosspostContext, fragment: str | None, album_id: str
+    ) -> bool:
         assert ctx.guild is not None
+        is_album = bool(fragment)
         self.logger.info(
-            f"imgur: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {album_id}"
+            f"imgur: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+            f"{album_id} album={is_album}"
         )
 
+        target = "album" if is_album else "image"
+
         async with self.get(
-            f"https://api.imgur.com/3/album/{album_id}",
+            f"https://api.imgur.com/3/{target}/{album_id}",
             use_default_headers=False,
             headers=self.imgur_headers,
         ) as resp:
-            data = await resp.json()
+            data = (await resp.json())["data"]
 
-        images = data["data"]["images"]
+        if is_album:
+            images = data["images"]
+        else:
+            images = [data]
         urls = (image["link"] for image in images)
 
         max_pages = await self.get_max_pages(ctx)
