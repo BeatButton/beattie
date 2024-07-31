@@ -2247,6 +2247,10 @@ class Crosspost(Cog):
         return posted
 
     async def display_e621_images(self, ctx: CrosspostContext, post_id: str) -> bool:
+        assert ctx.guild is not None
+        self.logger.info(
+            f"e621: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {post_id}"
+        )
         params = {"tags": f"id:{post_id}"}
         if self.e621_key:
             auth_slug = b64encode(f"{self.e621_user}:{self.e621_key}".encode()).decode()
