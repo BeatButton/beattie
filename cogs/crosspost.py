@@ -150,6 +150,7 @@ BSKY_XRPC_FMT = (
 
 PAHEAL_URL_EXPR = re.compile(r"https?://rule34\.paheal\.net/post/view/(\d+)")
 PAHEAL_IMG_SELECTOR = ".//img[@id='main_image']"
+PAHEAL_SOURCE_SELECTOR = ".//tr[@data-row='Source Link']/td//a"
 
 FURAFFINITY_URL_EXPR = re.compile(
     r"https?://(?:www\.)?(?:[fv]x)?f[ux]raffinity\.net/view/(\d+)"
@@ -1583,6 +1584,8 @@ class Crosspost(Cog):
         await self.send(ctx, post["file_url"])
         if text:
             await ctx.send(text, suppress_embeds=True)
+        if source := post.get("source"):
+            await ctx.send(html_unescape(source), suppress_embeds=True)
         return True
 
     async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
@@ -1596,6 +1599,8 @@ class Crosspost(Cog):
         if post is None:
             return False
         await self.send(ctx, post["file_url"])
+        if source := post.get("source"):
+            await ctx.send(html_unescape(source), suppress_embeds=True)
         return True
 
     async def booru_helper(
@@ -2067,6 +2072,9 @@ class Crosspost(Cog):
             await ctx.send(url)
             return False
 
+        if source := root.xpath(PAHEAL_SOURCE_SELECTOR):
+            await ctx.send(source[0].get("href"), suppress_embeds=True)
+
         return True
 
     async def display_furaffinity_images(
@@ -2279,6 +2287,9 @@ class Crosspost(Cog):
 
         if (text := post.get("description")) and await self.should_post_text(ctx):
             await ctx.send(f">>> {text}")
+
+        if sources := post.get("sources"):
+            await ctx.send(sources[-1], suppress_embeds=True)
 
         return True
 
