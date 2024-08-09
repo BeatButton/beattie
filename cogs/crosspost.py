@@ -32,6 +32,7 @@ from discord.ext.commands import (
     ChannelNotFound,
     Cog,
     Converter,
+    FlagConverter,
 )
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import etree, html
@@ -214,6 +215,11 @@ class Site(Converter):
         return argument
 
 
+class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
+    pages: int | None
+    text: bool | None
+
+
 class Settings:
     __slots__ = ("auto", "mode", "max_pages", "cleanup", "text")
 
@@ -268,6 +274,7 @@ class Database:
         self._blacklist_cache: dict[int, set[str]] = {}
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
+        self.overrides: dict[int, Settings] = {}
 
     async def async_init(self):
         async with self.pool.acquire() as conn:
@@ -340,6 +347,9 @@ class Database:
         if isinstance(channel, Thread):
             out = out.apply(await self._get_settings(guild_id, channel.parent_id))
         out = out.apply(await self._get_settings(guild_id, channel.id))
+
+        if override := self.overrides.get(message.id):
+            out = out.apply(override)
 
         return out
 
@@ -2563,10 +2573,18 @@ remove embeds from messages it processes successfully."""
             del self.ongoing_tasks[message.id]
 
     @commands.command()
-    async def post(self, ctx: BContext, *, _: str):
-        """Embed images in the given links regardless of the auto setting."""
+    async def post(self, ctx: BContext, flags: PostFlags, *, _: str | None):
+        """Embed images in the given links regardless of the auto setting.
+
+        Put text=true or pages=X after post to change settings for this message only."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        await self._post(new_ctx, force=True)
+        self.db.overrides[ctx.message.id] = Settings(
+            max_pages=flags.pages, text=flags.text
+        )
+        try:
+            await self._post(new_ctx, force=True)
+        finally:
+            del self.db.overrides[ctx.message.id]
 
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = ""):
