@@ -222,10 +222,9 @@ class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
 
 
 class Settings:
-    __slots__ = ("auto", "mode", "max_pages", "cleanup", "text")
+    __slots__ = ("auto", "max_pages", "cleanup", "text")
 
     auto: bool | None
-    mode: int | None
     max_pages: int | None
     cleanup: bool | None
     text: bool | None
@@ -233,13 +232,11 @@ class Settings:
     def __init__(
         self,
         auto: bool = None,
-        mode: int = None,
         max_pages: int = None,
         cleanup: bool = None,
         text: bool = None,
     ):
         self.auto = auto
-        self.mode = mode
         self.max_pages = max_pages
         self.cleanup = cleanup
         self.text = text
@@ -285,7 +282,6 @@ class Database:
                     guild_id bigint NOT NULL,
                     channel_id bigint NOT NULL,
                     auto boolean,
-                    mode integer,
                     max_pages integer,
                     cleanup boolean,
                     text boolean,
@@ -833,30 +829,21 @@ class Crosspost(Cog):
         headers: dict[str, str] = None,
         use_default_headers: bool = True,
     ) -> Message:
-        mode = await self.get_mode(ctx.message)
-        if mode == 1:
-            return await ctx.send(link)
-        elif mode == 2:
-            img = await self.save(
-                link, headers=headers, use_default_headers=use_default_headers
-            )
-            if filename is None:
-                filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
-            if filename is None:
-                raise RuntimeError(f"could not parse filename from URL: {link}")
-            for ext, sub in [
-                ("jfif", "jpeg"),
-                ("pnj", "png"),
-            ]:
-                if filename.endswith(f".{ext}"):
-                    filename = f"{filename.removesuffix(ext)}{sub}"
-            file = File(img, filename)
-            return await ctx.send(file=file)
-        else:
-            raise RuntimeError("Invalid crosspost mode!")
-
-    async def get_mode(self, message: Message) -> int:
-        return (await self.db.get_effective_settings(message)).mode or 1
+        img = await self.save(
+            link, headers=headers, use_default_headers=use_default_headers
+        )
+        if filename is None:
+            filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
+        if filename is None:
+            raise RuntimeError(f"could not parse filename from URL: {link}")
+        for ext, sub in [
+            ("jfif", "jpeg"),
+            ("pnj", "png"),
+        ]:
+            if filename.endswith(f".{ext}"):
+                filename = f"{filename.removesuffix(ext)}{sub}"
+        file = File(img, filename)
+        return await ctx.send(file=file)
 
     async def get_max_pages(self, ctx: BContext) -> int:
         settings = await self.db.get_effective_settings(ctx.message)
@@ -870,10 +857,8 @@ class Crosspost(Cog):
             return False
 
         settings = await self.db.get_effective_settings(message)
-        if (cleanup := settings.cleanup) is not None:
-            return cleanup
 
-        return await self.get_mode(message) == 2
+        return bool(settings.cleanup)
 
     async def should_post_text(self, ctx: BContext) -> bool:
         settings = await self.db.get_effective_settings(ctx.message)
@@ -1390,9 +1375,6 @@ class Crosspost(Cog):
             return False
 
         settings = await self.db.get_effective_settings(ctx.message)
-        mode = settings.mode or 1
-
-        idx = 0 if mode != 1 or post["sensitive"] or settings.cleanup else 1
 
         all_embedded = True
 
@@ -1400,7 +1382,7 @@ class Crosspost(Cog):
         if real_url.casefold() != link.casefold():
             await ctx.send(f"<{real_url}>")
 
-        for image in images[idx:]:
+        for image in images:
             urls = [url for url in [image["remote_url"], image["url"]] if url]
 
             for idx, url in enumerate(urls):
@@ -2325,39 +2307,10 @@ applying it to the guild as a whole."""
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
 
-    @crosspost.command()
-    async def mode(
-        self,
-        ctx: BContext,
-        mode: str,
-        *,
-        target: ConfigTarget = None,
-    ):
-        """Change image crossposting mode.
-
-        link: send a link to images when available
-        upload: always upload image files
-
-        Fetching images from Twitter is disabled in link mode.
-        When in upload mode and the bot has the Manage Messages permission, it'll \
-remove embeds from messages it processes successfully."""
-        if mode == "link":
-            crosspost_mode = 1
-        elif mode == "upload":
-            crosspost_mode = 2
-        else:
-            raise commands.BadArgument(mode)
-
-        guild = ctx.guild
-        assert guild is not None
-
-        settings = Settings(mode=crosspost_mode)
-
-        await self.db.set_settings(guild.id, target.id if target else 0, settings)
-        message = "Crosspost mode updated"
-        if target is not None:
-            message = f"{message} in {target.mention}"
-        await ctx.send(f"{message}.")
+    @crosspost.command(hidden=True)
+    async def mode(self, ctx: BContext, mode: str, *, _: str):
+        """Setting crosspost mode is no longer supported."""
+        await ctx.send("Setting crosspost mode is no longer supported.")
 
     @crosspost.command()
     async def pages(
