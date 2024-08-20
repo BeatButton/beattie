@@ -274,11 +274,14 @@ class ImageFragment(Fragment):
         return self.dl_task
 
     async def _save(self):
-        img = await self.cog.save(
+        img, filename = await self.cog.save(
             *self.urls,
             headers=self.headers,
             use_default_headers=self.use_default_headers,
         )
+
+        if filename is not None:
+            self.filename = filename
 
         if self.postprocess is not None:
             img = await self.postprocess(self, img, self.pp_extra)
@@ -523,7 +526,9 @@ async def ugoira_pp(frag: ImageFragment, img: BytesIO, illust_id: str) -> BytesI
         "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
     }
 
-    zip_bytes = await frag.cog.save(zip_url, headers=headers, use_default_headers=False)
+    zip_bytes, _ = await frag.cog.save(
+        zip_url, headers=headers, use_default_headers=False
+    )
     zfp = ZipFile(zip_bytes)
 
     with TemporaryDirectory() as td:
@@ -1042,17 +1047,20 @@ class Crosspost(Cog):
         *img_urls: str,
         use_default_headers: bool = True,
         headers: dict[str, str] = None,
-    ) -> BytesIO:
+    ) -> tuple[BytesIO, str | None]:
         headers = headers or {}
         img = BytesIO()
+        filename = None
         async with self.get(
             *img_urls, use_default_headers=use_default_headers, headers=headers
-        ) as img_resp:
-            async for chunk in img_resp.content.iter_any():
+        ) as resp:
+            if disposition := resp.content_disposition:
+                filename = disposition.filename
+            async for chunk in resp.content.iter_any():
                 img.write(chunk)
 
         img.seek(0)
-        return img
+        return img, filename
 
     async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
         content = remove_spoilers(ctx.message.content)
@@ -1167,9 +1175,11 @@ class Crosspost(Cog):
         headers: dict[str, str] = None,
         use_default_headers: bool = True,
     ) -> Message:
-        img = await self.save(
+        img, disp_filename = await self.save(
             link, headers=headers, use_default_headers=use_default_headers
         )
+        if filename is None:
+            filename = disp_filename
         if filename is None:
             filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
         if filename is None:
@@ -1346,78 +1356,56 @@ class Crosspost(Cog):
             f"hiccears: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        if link.endswith("preview"):
-            return await self.send_single_hiccears(ctx, link)
-
         async with self.get(link, headers=self.hiccears_headers) as resp:
             self.update_hiccears_cookies(resp)
             root = html.document_fromstring(await resp.read(), self.parser)
 
-        text = None
-        if await self.should_post_text(ctx):
-            title = root.xpath(HICCEARS_TITLE_SELECTOR)[0].text
-            description = root.xpath(HICCEARS_TEXT_SELECTOR)[0].text_content().strip()
+        queue = FragmentQueue(ctx, link)
+
+        if link.endswith("preview"):
+            queue.push_image(
+                re.sub(
+                    r"preview(/\d+)?",
+                    "download",
+                    link,
+                ),
+                headers=self.hiccears_headers,
+            )
+        else:
+            while True:
+                thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
+
+                for thumb in thumbs:
+                    href = f"https://{resp.host}{thumb.get('href')}"
+                    queue.push_image(
+                        re.sub(
+                            r"preview(/\d+)?",
+                            "download",
+                            href,
+                        ),
+                        headers=self.hiccears_headers,
+                    )
+
+                if next_page := root.xpath(HICCEARS_NEXT_SELECTOR):
+                    next_url = f"https://{resp.host}{next_page[0].get('href')}"
+                    async with self.get(
+                        next_url, headers=self.hiccears_headers
+                    ) as resp:
+                        self.update_hiccears_cookies(resp)
+                        root = html.document_fromstring(await resp.read(), self.parser)
+                else:
+                    break
+
+        if title := root.xpath(HICCEARS_TITLE_SELECTOR):
+            queue.push_text(f"**{title[0].text}**")
+        if elem := root.xpath(HICCEARS_TEXT_SELECTOR):
+            description = elem[0].text_content().strip()
             description = description.removeprefix("Description")
             description = re.sub(r"\r?\n\t+", "", description)
-            text = f"**{title}**"
             if description:
-                text = f"{text}\n>>> {description}"
+                queue.push_text(f">>> {description}")
 
-        max_pages = await self.get_max_pages(ctx)
-        pages_remaining = max_pages
-
-        while True:
-            thumbs = root.xpath(HICCEARS_THUMB_SELECTOR)
-
-            if max_pages == 0:
-                pages_remaining = len(thumbs)
-
-            for thumb in thumbs[: max(0, pages_remaining)]:
-                href = f"https://{resp.host}{thumb.get('href')}"
-                if not await self.send_single_hiccears(ctx, href):
-                    return False
-
-            pages_remaining -= len(thumbs)
-
-            if next_page := root.xpath(HICCEARS_NEXT_SELECTOR):
-                next_url = f"https://{resp.host}{next_page[0].get('href')}"
-                async with self.get(next_url, headers=self.hiccears_headers) as resp:
-                    self.update_hiccears_cookies(resp)
-                    root = html.document_fromstring(await resp.read(), self.parser)
-            else:
-                break
-
-        if text:
-            await ctx.send(text, suppress_embeds=True)
-
-        pages_remaining *= -1
-
-        if pages_remaining > 0:
-            s = "s" if pages_remaining > 1 else ""
-            message = f"{pages_remaining} more image{s} at <{link}>"
-            await ctx.send(message)
-
-        return True
-
-    async def send_single_hiccears(self, ctx: CrosspostContext, link: str) -> bool:
-        img_link = re.sub(
-            r"preview(/\d+)?",
-            "download",
-            link,
-        )
-        async with self.get(
-            img_link, headers=self.hiccears_headers, use_default_headers=False
-        ) as resp:
-            self.update_hiccears_cookies(resp)
-            disposition = resp.content_disposition
-            if disposition is None:
-                await ctx.send("Failed to get Hiccears image.")
-                return False
-            filename = disposition.filename
-            img = BytesIO(await resp.read())
-        img.seek(0)
-        await ctx.send(file=File(img, filename))
-        return True
+        return await queue.resolve(ctx)
 
     def update_hiccears_cookies(self, resp: aiohttp.ClientResponse):
         if sess := resp.cookies.get("hiccears"):
@@ -1849,7 +1837,7 @@ class Crosspost(Cog):
                         file = None
                     else:
                         filename = file_info["name"] + "." + file_info["extension"]
-                        img = await self.save(url, headers=headers)
+                        img, _ = await self.save(url, headers=headers)
                         content = None
                         file = File(img, filename)
                     await ctx.send(content, file=file)
@@ -1901,7 +1889,7 @@ class Crosspost(Cog):
                                     filename = (
                                         f"{file_info['name']}.{file_info['extension']}"
                                     )
-                                    img = await self.save(url, headers=headers)
+                                    img, _ = await self.save(url, headers=headers)
                                     content = None
                                     file = File(img, filename)
                         if content or file:
@@ -1935,10 +1923,10 @@ class Crosspost(Cog):
     ) -> tuple[str | None, File]:
         content = None
         try:
-            img = await self.save(original_url, headers=headers)
+            img, _ = await self.save(original_url, headers=headers)
         except ResponseError as e:
             if e.code == 413:
-                img = await self.save(thumbnail_url, headers=headers)
+                img, _ = await self.save(thumbnail_url, headers=headers)
                 content = "Full size too large, standard resolution used."
             else:
                 raise e from None
