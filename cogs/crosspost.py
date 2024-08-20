@@ -232,8 +232,9 @@ class ImageFragment(Fragment):
     use_default_headers: bool
     filename: str
     img: BytesIO | None
-    dl_task: asyncio.Task
+    dl_task: asyncio.Task | None
     postprocess: PP | None
+    pp_extra: Any
 
     def __init__(
         self,
@@ -243,10 +244,12 @@ class ImageFragment(Fragment):
         headers: dict[str, str] = None,
         use_default_headers: bool = False,
         postprocess: PP = None,
+        pp_extra: Any = None,
     ):
         self.cog = cog
         self.urls = urls
         self.postprocess = postprocess
+        self.pp_extra = pp_extra
         self.headers = headers if headers is not None else {}
         self.use_default_headers = use_default_headers
 
@@ -263,11 +266,12 @@ class ImageFragment(Fragment):
         self.filename = filename
 
         self.img = None
-        self.dl_task = asyncio.Task(self._save())
-        self.pp_task = None
+        self.dl_task = None
 
-    async def save(self):
-        await self.dl_task
+    def save(self) -> Awaitable[None]:
+        if self.dl_task is None:
+            self.dl_task = asyncio.Task(self._save())
+        return self.dl_task
 
     async def _save(self):
         img = await self.cog.save(
@@ -275,13 +279,71 @@ class ImageFragment(Fragment):
             headers=self.headers,
             use_default_headers=self.use_default_headers,
         )
+
         if self.postprocess is not None:
-            img = await self.postprocess(self, img)
+            img = await self.postprocess(self, img, self.pp_extra)
 
         self.img = img
 
 
-PP = Callable[[ImageFragment, BytesIO], Awaitable[BytesIO]]
+PP = Callable[[ImageFragment, BytesIO, Any], Awaitable[BytesIO]]
+
+
+class PixivFragment(Fragment):
+    fullsize_url: str
+    compressed_url: str
+    headers: dict[str, str]
+    fullsize_len: int | None
+    fullsize_frag: ImageFragment | None
+    compressed_frag: ImageFragment | None
+
+    def __init__(
+        self,
+        cog: Crosspost,
+        fullsize_url: str,
+        compressed_url: str,
+        headers: dict[str, str],
+    ):
+        self.cog = cog
+        self.fullsize_url = fullsize_url
+        self.compressed_url = compressed_url
+        self.headers = headers
+
+        self.fullsize_frag = None
+        self.compressed_frag = None
+        self.fullsize_len = None
+
+    async def to_image(self, ctx: CrosspostContext) -> ImageFragment:
+        if self.fullsize_len is None:
+            async with self.cog.get(
+                self.fullsize_url,
+                "HEAD",
+                use_default_headers=False,
+                headers=self.headers,
+            ) as resp:
+                self.fullsize_len = resp.content_length
+
+        guild = ctx.guild
+        assert guild is not None
+        if self.fullsize_len is not None and guild.filesize_limit > self.fullsize_len:
+
+            if (frag := self.fullsize_frag) is None:
+                frag = self.fullsize_frag = ImageFragment(
+                    ctx.cog,
+                    self.fullsize_url,
+                    headers=self.headers,
+                    use_default_headers=False,
+                )
+        else:
+            if (frag := self.compressed_frag) is None:
+                frag = self.compressed_frag = ImageFragment(
+                    ctx.cog,
+                    self.compressed_url,
+                    headers=self.headers,
+                    use_default_headers=False,
+                )
+
+        return frag
 
 
 class TextFragment(Fragment, str):
@@ -292,15 +354,44 @@ class FragmentQueue:
     cog: Crosspost
     fragments: list[Fragment]
 
-    def __init__(self, ctx: CrosspostContext):
+    def __init__(self, ctx: CrosspostContext, link: str):
         assert ctx.command is not None
+        self.link = link
         self.cog = ctx.command.cog
         self.fragments = []
-        self.text = None
 
-    def push_image(self, *urls: str, filename: str = None, postprocess: PP = None):
+    def push_image(
+        self,
+        *urls: str,
+        filename: str = None,
+        postprocess: PP = None,
+        pp_extra: Any = None,
+        headers: dict[str, str] = None,
+    ):
         self.fragments.append(
-            ImageFragment(self.cog, *urls, filename=filename, postprocess=postprocess)
+            ImageFragment(
+                self.cog,
+                *urls,
+                filename=filename,
+                postprocess=postprocess,
+                pp_extra=pp_extra,
+                headers=headers,
+            )
+        )
+
+    def push_pixiv(
+        self,
+        fullsize_url: str,
+        compressed_url: str,
+        headers: dict[str, str],
+    ):
+        self.fragments.append(
+            PixivFragment(
+                self.cog,
+                fullsize_url,
+                compressed_url,
+                headers,
+            )
         )
 
     def push_text(self, text: str):
@@ -310,13 +401,29 @@ class FragmentQueue:
         if not self.fragments:
             return False
 
+        fragments = self.fragments[:]
+
         guild = ctx.guild
         assert guild is not None
         limit = guild.filesize_limit
         do_text = await self.cog.should_post_text(ctx)
-        text_batch = ""
+        text = ""
         image_batch = []
         batch_size = 0
+        max_pages = await self.cog.get_max_pages(ctx)
+
+        to_dl = []
+
+        for idx, frag in enumerate(fragments):
+            if isinstance(frag, PixivFragment):
+                fragments[idx] = frag = await frag.to_image(ctx)
+            if isinstance(frag, ImageFragment):
+                to_dl.append(frag)
+            if max_pages and len(to_dl) >= max_pages:
+                break
+
+        for frag in to_dl:
+            frag.save()
 
         async def send_images():
             nonlocal batch_size
@@ -325,47 +432,58 @@ class FragmentQueue:
                 image_batch.clear()
                 batch_size = 0
 
-        async def send_text():
-            nonlocal text_batch
-            if text_batch:
-                await ctx.send(text_batch, suppress_embeds=True)
-                text_batch = ""
+        def send_text():
+            nonlocal text
+            send = text.strip()
+            text = ""
+            if send:
+                return ctx.send(send, suppress_embeds=True)
+            else:
+                return asyncio.sleep(0)
 
-        for frag in self.fragments:
-            match frag:
-                case ImageFragment():
+        num_files = 0
+        for frag in fragments:
+            if isinstance(frag, str):
+                text = f"{text}\n{frag}"
+            else:
+                num_files += 1
+                if max_pages and num_files > max_pages:
+                    continue
+                assert isinstance(frag, ImageFragment)
+                if do_text and text and not (max_pages and num_files > max_pages):
                     await send_text()
-                    await frag.save()
-                    img = frag.img
-                    if img is None:
-                        raise RuntimeError("frag.save failed to set img")
-                    size = len(img.getbuffer())
-                    if size > limit:
-                        await ctx.send(frag.urls[0])
-                        continue
-                    if batch_size + size > limit:
-                        await send_images()
-                    batch_size += size
-                    img.seek(0)
-                    image_batch.append(File(img, frag.filename))
-                case TextFragment() if do_text:
+                await frag.save()
+                img = frag.img
+                if img is None:
+                    raise RuntimeError("frag.save failed to set img")
+                size = len(img.getbuffer())
+                if size > limit:
                     await send_images()
-                    text_batch = f"{text_batch}{frag}"
-                case TextFragment() if not do_text:
-                    pass
-                case _:
-                    raise RuntimeError(f"Unrecognized post fragment type: {type(frag)}")
+                    await ctx.send(frag.urls[0])
+                    continue
+                if batch_size + size > limit or len(image_batch) == 10:
+                    await send_images()
+                batch_size += size
+                img.seek(0)
+                image_batch.append(File(img, frag.filename))
 
         if image_batch:
             await send_images()
 
-        if text_batch:
+        if do_text and text:
             await send_text()
+
+        pages_remaining = max_pages and num_files - max_pages
+
+        if pages_remaining > 0:
+            s = "s" if pages_remaining > 1 else ""
+            message = f"{pages_remaining} more item{s} at {self.link}"
+            await ctx.send(message, suppress_embeds=True)
 
         return True
 
 
-async def gif_pp(frag: ImageFragment, img: BytesIO) -> BytesIO:
+async def gif_pp(frag: ImageFragment, img: BytesIO, _) -> BytesIO:
     proc = await asyncio.create_subprocess_exec(
         "ffmpeg",
         "-i",
@@ -386,6 +504,72 @@ async def gif_pp(frag: ImageFragment, img: BytesIO) -> BytesIO:
         return img
     else:
         return BytesIO(stdout)
+
+
+async def ugoira_pp(frag: ImageFragment, img: BytesIO, illust_id: str) -> BytesIO:
+    url = "https://app-api.pixiv.net/v1/ugoira/metadata"
+    params = {"illust_id": illust_id}
+    headers = frag.headers
+    async with frag.cog.get(
+        url, params=params, use_default_headers=False, headers=headers
+    ) as resp:
+        res = (await resp.json())["ugoira_metadata"]
+
+    zip_url = res["zip_urls"]["medium"]
+    zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
+
+    headers = {
+        **frag.headers,
+        "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
+    }
+
+    zip_bytes = await frag.cog.save(zip_url, headers=headers, use_default_headers=False)
+    zfp = ZipFile(zip_bytes)
+
+    with TemporaryDirectory() as td:
+        tempdir = Path(td)
+        zfp.extractall(tempdir)
+        with open(tempdir / "durations.txt", "w") as fp:
+            for frame in res["frames"]:
+                duration = int(frame["delay"]) / 1000
+                fp.write(f"file '{frame['file']}'\nduration {duration}\n")
+
+        proc = await subprocess.create_subprocess_exec(
+            "ffmpeg",
+            "-i",
+            f"{tempdir}/%06d.jpg",
+            "-vf",
+            "palettegen",
+            f"{tempdir}/palette.png",
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        await proc.wait()
+
+        proc = await subprocess.create_subprocess_exec(
+            "ffmpeg",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            f"{tempdir}/durations.txt",
+            "-i",
+            f"{tempdir}/palette.png",
+            "-lavfi",
+            "paletteuse",
+            "-f",
+            "gif",
+            "pipe:1",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        stdout = await try_wait_for(proc, timeout=120)
+
+    frag.filename = f"{illust_id}.gif"
+    img = BytesIO(stdout)
+    img.seek(0)
+    return img
 
 
 class Settings:
@@ -856,30 +1040,18 @@ class Crosspost(Cog):
     async def save(
         self,
         *img_urls: str,
-        seek_begin: bool = True,
         use_default_headers: bool = True,
         headers: dict[str, str] = None,
-        filesize_limit: int = None,
     ) -> BytesIO:
         headers = headers or {}
         img = BytesIO()
-        length_checked = filesize_limit is None
         async with self.get(
             *img_urls, use_default_headers=use_default_headers, headers=headers
         ) as img_resp:
-            if not length_checked and img_resp.content_length is not None:
-                assert filesize_limit is not None
-                if img_resp.content_length > filesize_limit:
-                    raise ResponseError(413)  # yes I know that's not how this works
-                length_checked = True
             async for chunk in img_resp.content.iter_any():
                 img.write(chunk)
-        if seek_begin:
-            img.seek(0)
-        if not length_checked:
-            assert filesize_limit is not None
-            if len(img.getbuffer()) > filesize_limit:
-                raise ResponseError(413)
+
+        img.seek(0)
         return img
 
     async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
@@ -1083,7 +1255,8 @@ class Crosspost(Cog):
         if not media:
             return False
 
-        queue = FragmentQueue(ctx)
+        post_link = f"https://twitter.com/i/status/{tweet_id}"
+        queue = FragmentQueue(ctx, post_link)
 
         url: str
         for medium in media:
@@ -1109,9 +1282,7 @@ class Crosspost(Cog):
                 case "video":
                     queue.push_image(url)
 
-        if await self.should_post_text(ctx) and (
-            text := TWITTER_TEXT_TRIM.sub("", tweet["text"])
-        ):
+        if text := TWITTER_TEXT_TRIM.sub("", tweet["text"]):
             text = html_unescape(text)
             queue.push_text(f">>> {text}")
 
@@ -1143,145 +1314,31 @@ class Crosspost(Cog):
             **self.pixiv_headers,
             "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
         }
-        filesize_limit = guild.filesize_limit
-        content = None
 
-        text = None
-        if await self.should_post_text(ctx):
-            text = f"**{res['title']}**"
+        post_link = f"https://www.pixiv.net/en/artworks/{illust_id}"
+        queue = FragmentQueue(ctx, post_link)
 
         if single := res["meta_single_page"]:
-            img_url = single["original_image_url"]
-            if "ugoira" in img_url:
-                try:
-                    file = await self.get_ugoira(illust_id)
-                except asyncio.TimeoutError:
-                    await ctx.send("Ugoira took too long to process.")
-                    return False
-            else:
-                content, file = await self.save_pixiv(img_url, headers, filesize_limit)
-            await ctx.send(content, file=file)
-            if text:
-                await ctx.send(text)
-        elif multi := res["meta_pages"]:
-            # multi_image_post
-            urls = (page["image_urls"]["original"] for page in multi)
+            url = single["original_image_url"]
 
-            max_pages = await self.get_max_pages(ctx)
-            num_pages = len(multi)
-
-            if max_pages == 0:
-                max_pages = num_pages
-
-            tasks = [
-                asyncio.create_task(self.save_pixiv(img_url, headers, filesize_limit))
-                for img_url, _ in zip(urls, range(max_pages))
-            ]
-
-            for task in tasks:
-                content, file = await task
-                await ctx.send(content, file=file)
-
-            if text:
-                await ctx.send(text, suppress_embeds=True)
-
-            remaining = num_pages - max_pages
-
-            if remaining > 0:
-                s = "s" if remaining > 1 else ""
-                message = (
-                    f"{remaining} more image{s} at "
-                    f"<https://www.pixiv.net/en/artworks/{illust_id}>"
+            if "ugoira" in url:
+                queue.push_image(
+                    url, postprocess=ugoira_pp, headers=headers, pp_extra=illust_id
                 )
-                await ctx.send(message)
-        else:
-            return False
-        return True
-
-    async def save_pixiv(
-        self, img_url: str, headers: dict[str, str], filesize_limit: int
-    ) -> tuple[str | None, File]:
-        content = None
-        try:
-            img = await self.save(
-                img_url, headers=headers, filesize_limit=filesize_limit
-            )
-        except ResponseError as e:
-            if e.code == 413:
-                img_url = img_url.replace("img-original", "img-master")
-                head, _, _ext = img_url.rpartition(".")
-                img_url = f"{head}_master1200.jpg"
-                img = await self.save(img_url, headers=headers)
-                content = "Full size too large, standard resolution used."
             else:
-                raise e from None
-        file = File(img, img_url.rpartition("/")[-1])
-        return content, file
+                queue.push_pixiv(url, res["image_urls"]["large"], headers=headers)
 
-    async def get_ugoira(self, illust_id: str, timeout: float | None = 120) -> File:
-        url = "https://app-api.pixiv.net/v1/ugoira/metadata"
-        params = {"illust_id": illust_id}
-        headers = self.pixiv_headers
-        async with self.get(
-            url, params=params, use_default_headers=False, headers=headers
-        ) as resp:
-            res = (await resp.json())["ugoira_metadata"]
+        elif multi := res["meta_pages"]:
+            for page in multi:
+                queue.push_pixiv(
+                    page["image_urls"]["original"],
+                    page["image_urls"]["large"],
+                    headers=headers,
+                )
 
-        zip_url = res["zip_urls"]["medium"]
-        zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
+        queue.push_text(f"**{res['title']}**")
 
-        headers = {
-            **self.pixiv_headers,
-            "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
-        }
-
-        zip_bytes = await self.save(zip_url, headers=headers, use_default_headers=False)
-        zfp = ZipFile(zip_bytes)
-
-        with TemporaryDirectory() as td:
-            tempdir = Path(td)
-            zfp.extractall(tempdir)
-            with open(tempdir / "durations.txt", "w") as fp:
-                for frame in res["frames"]:
-                    duration = int(frame["delay"]) / 1000
-                    fp.write(f"file '{frame['file']}'\nduration {duration}\n")
-
-            proc = await subprocess.create_subprocess_exec(
-                "ffmpeg",
-                "-i",
-                f"{tempdir}/%06d.jpg",
-                "-vf",
-                "palettegen",
-                f"{tempdir}/palette.png",
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            await proc.wait()
-
-            proc = await subprocess.create_subprocess_exec(
-                "ffmpeg",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                f"{tempdir}/durations.txt",
-                "-i",
-                f"{tempdir}/palette.png",
-                "-lavfi",
-                "paletteuse",
-                "-f",
-                "gif",
-                "pipe:1",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-            )
-            stdout = await try_wait_for(proc, timeout=timeout)
-
-        img = BytesIO(stdout)
-        img.seek(0)
-        name = f"{illust_id}.gif"
-        return File(img, name)
+        return await queue.resolve(ctx)
 
     async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
         assert ctx.guild is not None
@@ -1587,19 +1644,18 @@ class Crosspost(Cog):
 
         sub = response["submissions"][0]
 
-        queue = FragmentQueue(ctx)
+        post_link = f"https://inkbunny.net/s/{sub_id}"
+        queue = FragmentQueue(ctx, post_link)
 
         for file in sub["files"]:
             url = file["file_url_full"]
             queue.push_image(url)
 
-        if post_text:
-            title = sub["title"]
-            description = sub["description"].strip()
-            text = f"**{title}**"
-            if description:
-                text = f"{text}\n>>> {description}"
-            queue.push_text(text)
+        title = sub["title"]
+        description = sub["description"].strip()
+        queue.push_text(f"**{title}**")
+        if description:
+            queue.push_text(f">>> {description}")
 
         return await queue.resolve(ctx)
 
@@ -1879,9 +1935,7 @@ class Crosspost(Cog):
     ) -> tuple[str | None, File]:
         content = None
         try:
-            img = await self.save(
-                original_url, headers=headers, filesize_limit=filesize_limit
-            )
+            img = await self.save(original_url, headers=headers)
         except ResponseError as e:
             if e.code == 413:
                 img = await self.save(thumbnail_url, headers=headers)
