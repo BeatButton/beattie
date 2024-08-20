@@ -306,7 +306,10 @@ class FragmentQueue:
     def push_text(self, text: str):
         self.fragments.append(TextFragment(text))
 
-    async def resolve(self, ctx: CrosspostContext):
+    async def resolve(self, ctx: CrosspostContext) -> bool:
+        if not self.fragments:
+            return False
+
         guild = ctx.guild
         assert guild is not None
         limit = guild.filesize_limit
@@ -337,9 +340,13 @@ class FragmentQueue:
                     if img is None:
                         raise RuntimeError("frag.save failed to set img")
                     size = len(img.getbuffer())
+                    if size > limit:
+                        await ctx.send(frag.urls[0])
+                        continue
                     if batch_size + size > limit:
                         await send_images()
                     batch_size += size
+                    img.seek(0)
                     image_batch.append(File(img, frag.filename))
                 case TextFragment() if do_text:
                     await send_images()
@@ -354,6 +361,31 @@ class FragmentQueue:
 
         if text_batch:
             await send_text()
+
+        return True
+
+
+async def gif_pp(frag: ImageFragment, img: BytesIO) -> BytesIO:
+    proc = await asyncio.create_subprocess_exec(
+        "ffmpeg",
+        "-i",
+        frag.urls[0],
+        "-i",
+        frag.urls[0],
+        "-filter_complex",
+        "[0:v]palettegen[p];[1:v][p]paletteuse",
+        "-f",
+        "gif",
+        "pipe:1",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        stdout = await try_wait_for(proc)
+    except asyncio.TimeoutError:
+        return img
+    else:
+        return BytesIO(stdout)
 
 
 class Settings:
@@ -1051,28 +1083,7 @@ class Crosspost(Cog):
         if not media:
             return False
 
-        text = None
-        if await self.should_post_text(ctx) and (
-            text := TWITTER_TEXT_TRIM.sub("", tweet["text"])
-        ):
-            text = html_unescape(text)
-
-        async def do_video():
-            async with self.get(
-                url, method="HEAD", headers=headers, use_default_headers=False
-            ) as resp:
-                content_length = resp.content_length
-            if content_length and content_length > guild.filesize_limit:
-                await ctx.send(url)
-            else:
-                msg = await self.send(
-                    ctx,
-                    url,
-                    headers=headers,
-                    use_default_headers=False,
-                )
-                if too_large(msg):
-                    await ctx.send(url)
+        queue = FragmentQueue(ctx)
 
         url: str
         for medium in media:
@@ -1090,48 +1101,21 @@ class Crosspost(Cog):
                     except ResponseError as e:
                         if e.code != 404:
                             raise e
-                    msg = await self.send(
-                        ctx, url, headers=headers, use_default_headers=False
-                    )
-                    if too_large(msg):
-                        await do_video()
+                    queue.push_image(url)
                 case "gif":
-                    proc = await asyncio.create_subprocess_exec(
-                        "ffmpeg",
-                        "-i",
-                        url,
-                        "-i",
-                        url,
-                        "-filter_complex",
-                        "[0:v]palettegen[p];[1:v][p]paletteuse",
-                        "-f",
-                        "gif",
-                        "pipe:1",
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.DEVNULL,
-                    )
-
                     base = url.rpartition("/")[-1].rpartition(".")[0]
                     filename = f"{base}.gif"
-
-                    try:
-                        stdout = await try_wait_for(proc)
-                    except asyncio.TimeoutError:
-                        await ctx.send("Gif took too long to process.")
-                        await do_video()
-                    else:
-                        gif = BytesIO(stdout)
-                        gif.seek(0)
-                        file = File(gif, filename)
-                        msg = await ctx.send(file=file)
-                        if too_large(msg):
-                            await do_video()
+                    queue.push_image(url, filename=filename, postprocess=gif_pp)
                 case "video":
-                    await do_video()
+                    queue.push_image(url)
 
-        if text:
-            await ctx.send(f">>> {text}", suppress_embeds=True)
-        return True
+        if await self.should_post_text(ctx) and (
+            text := TWITTER_TEXT_TRIM.sub("", tweet["text"])
+        ):
+            text = html_unescape(text)
+            queue.push_text(f">>> {text}")
+
+        return await queue.resolve(ctx)
 
     async def display_pixiv_images(self, ctx: CrosspostContext, illust_id: str) -> bool:
         guild = ctx.guild
@@ -1617,9 +1601,7 @@ class Crosspost(Cog):
                 text = f"{text}\n>>> {description}"
             queue.push_text(text)
 
-        await queue.resolve(ctx)
-
-        return True
+        return await queue.resolve(ctx)
 
     async def display_imgur_images(
         self, ctx: CrosspostContext, fragment: str | None, album_id: str
