@@ -688,8 +688,7 @@ class Crosspost(Cog):
 
     async def save(
         self,
-        img_url: str,
-        *,
+        *img_urls: str,
         seek_begin: bool = True,
         use_default_headers: bool = True,
         headers: dict[str, str] = None,
@@ -699,7 +698,7 @@ class Crosspost(Cog):
         img = BytesIO()
         length_checked = filesize_limit is None
         async with self.get(
-            img_url, use_default_headers=use_default_headers, headers=headers
+            *img_urls, use_default_headers=use_default_headers, headers=headers
         ) as img_resp:
             if not length_checked and img_resp.content_length is not None:
                 assert filesize_limit is not None
