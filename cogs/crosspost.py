@@ -2536,14 +2536,19 @@ applying it to the guild as a whole."""
             del self.ongoing_tasks[message.id]
 
     @commands.command()
-    async def post(self, ctx: BContext, flags: PostFlags, *, _: str | None):
+    async def post(self, ctx: BContext, *flags: PostFlags, _: str | None):
         """Embed images in the given links regardless of the auto setting.
 
         Put text=true or pages=X after post to change settings for this message only."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        self.db.overrides[ctx.message.id] = Settings(
-            max_pages=flags.pages, text=flags.text
-        )
+        pages = None
+        text = None
+        for flag in flags:
+            if flag.pages is not None:
+                pages = flag.pages
+            if flag.text is not None:
+                text = flag.text
+        self.db.overrides[ctx.message.id] = Settings(max_pages=pages, text=text)
         try:
             await self._post(new_ctx, force=True)
         finally:
