@@ -221,6 +221,141 @@ class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
     text: bool | None
 
 
+class Fragment:
+    pass
+
+
+class ImageFragment(Fragment):
+    cog: Crosspost
+    urls: tuple[str, ...]
+    headers: dict[str, str]
+    use_default_headers: bool
+    filename: str
+    img: BytesIO | None
+    dl_task: asyncio.Task
+    postprocess: PP | None
+
+    def __init__(
+        self,
+        cog: Crosspost,
+        *urls: str,
+        filename: str = None,
+        headers: dict[str, str] = None,
+        use_default_headers: bool = False,
+        postprocess: PP = None,
+    ):
+        self.cog = cog
+        self.urls = urls
+        self.postprocess = postprocess
+        self.headers = headers if headers is not None else {}
+        self.use_default_headers = use_default_headers
+
+        if filename is None:
+            filename = re.findall(r"[\w. -]+\.[\w. -]+", urls[0])[-1]
+        if filename is None:
+            raise RuntimeError(f"could not parse filename from URL: {urls[0]}")
+        for ext, sub in [
+            ("jfif", "jpeg"),
+            ("pnj", "png"),
+        ]:
+            if filename.endswith(f".{ext}"):
+                filename = f"{filename.removesuffix(ext)}{sub}"
+        self.filename = filename
+
+        self.img = None
+        self.dl_task = asyncio.Task(self._save())
+        self.pp_task = None
+
+    async def save(self):
+        await self.dl_task
+
+    async def _save(self):
+        img = await self.cog.save(
+            *self.urls,
+            headers=self.headers,
+            use_default_headers=self.use_default_headers,
+        )
+        if self.postprocess is not None:
+            img = await self.postprocess(self, img)
+
+        self.img = img
+
+
+PP = Callable[[ImageFragment, BytesIO], Awaitable[BytesIO]]
+
+
+class TextFragment(Fragment, str):
+    pass
+
+
+class FragmentQueue:
+    cog: Crosspost
+    fragments: list[Fragment]
+
+    def __init__(self, ctx: CrosspostContext):
+        assert ctx.command is not None
+        self.cog = ctx.command.cog
+        self.fragments = []
+        self.text = None
+
+    def push_image(self, *urls: str, filename: str = None, postprocess: PP = None):
+        self.fragments.append(
+            ImageFragment(self.cog, *urls, filename=filename, postprocess=postprocess)
+        )
+
+    def push_text(self, text: str):
+        self.fragments.append(TextFragment(text))
+
+    async def resolve(self, ctx: CrosspostContext):
+        guild = ctx.guild
+        assert guild is not None
+        limit = guild.filesize_limit
+        do_text = await self.cog.should_post_text(ctx)
+        text_batch = ""
+        image_batch = []
+        batch_size = 0
+
+        async def send_images():
+            nonlocal batch_size
+            if image_batch:
+                await ctx.send(files=image_batch)
+                image_batch.clear()
+                batch_size = 0
+
+        async def send_text():
+            nonlocal text_batch
+            if text_batch:
+                await ctx.send(text_batch, suppress_embeds=True)
+                text_batch = ""
+
+        for frag in self.fragments:
+            match frag:
+                case ImageFragment():
+                    await send_text()
+                    await frag.save()
+                    img = frag.img
+                    if img is None:
+                        raise RuntimeError("frag.save failed to set img")
+                    size = len(img.getbuffer())
+                    if batch_size + size > limit:
+                        await send_images()
+                    batch_size += size
+                    image_batch.append(File(img, frag.filename))
+                case TextFragment() if do_text:
+                    await send_images()
+                    text_batch = f"{text_batch}{frag}"
+                case TextFragment() if not do_text:
+                    pass
+                case _:
+                    raise RuntimeError(f"Unrecognized post fragment type: {type(frag)}")
+
+        if image_batch:
+            await send_images()
+
+        if text_batch:
+            await send_text()
+
+
 class Settings:
     __slots__ = ("auto", "max_pages", "cleanup", "text")
 
