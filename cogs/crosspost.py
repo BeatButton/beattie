@@ -1603,9 +1603,11 @@ class Crosspost(Cog):
 
         sub = response["submissions"][0]
 
+        queue = FragmentQueue(ctx)
+
         for file in sub["files"]:
             url = file["file_url_full"]
-            await self.send(ctx, url)
+            queue.push_image(url)
 
         if post_text:
             title = sub["title"]
@@ -1613,7 +1615,9 @@ class Crosspost(Cog):
             text = f"**{title}**"
             if description:
                 text = f"{text}\n>>> {description}"
-            await ctx.send(text, suppress_embeds=True)
+            queue.push_text(text)
+
+        await queue.resolve(ctx)
 
         return True
 
