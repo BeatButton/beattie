@@ -2057,21 +2057,21 @@ class Crosspost(Cog):
         assert m is not None
         link = m["link"]
 
-        await self.send(ctx, link, use_default_headers=False, headers={"Referer": link})
+        queue = FragmentQueue(ctx, link)
+        queue.push_file(link, headers={"Referer": link})
 
-        if await self.should_post_text(ctx):
-            comment = html.tostring(root.xpath(YGAL_TEXT_SELECTOR)[0], encoding=str)
-            assert isinstance(comment, str)
-            comment = comment.strip()
-            comment = comment.removeprefix('<div class="commentData">')
-            comment = comment.removesuffix("</div>")
-            comment = re.sub(r" ?<img[^>]*> ?", "", comment)
-            comment = translate_markdown(comment).strip()
-            title = img.get("alt")
-            text = f"**{title}**\n>>> {comment}"
-            await ctx.send(text, suppress_embeds=True)
+        comment = html.tostring(root.xpath(YGAL_TEXT_SELECTOR)[0], encoding=str)
+        assert isinstance(comment, str)
+        if title := img.get("alt"):
+            queue.push_text(f"**{title}**")
+        comment = comment.strip()
+        comment = comment.removeprefix('<div class="commentData">')
+        comment = comment.removesuffix("</div>")
+        comment = re.sub(r" ?<img[^>]*> ?", "", comment)
+        if comment := translate_markdown(comment).strip():
+            queue.push_text(f">>> {comment}")
 
-        return True
+        return await queue.resolve(ctx)
 
     async def display_pillowfort_images(self, ctx: CrosspostContext, link: str) -> bool:
         assert ctx.guild is not None
