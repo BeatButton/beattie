@@ -2026,18 +2026,17 @@ class Crosspost(Cog):
         ) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
+        queue = FragmentQueue(ctx, link)
+
         url = root.xpath(OG_IMAGE)[0].get("content")
-        msg = await self.send(ctx, url, use_default_headers=False)
-        if too_large(msg):
-            await ctx.send(url)
+        queue.push_file(url)
 
-        if await self.should_post_text(ctx):
-            title = root.xpath(OG_TITLE)[0].get("content")
-            desc = root.xpath(OG_DESCRIPTION)[0].get("content")
+        title = root.xpath(OG_TITLE)[0].get("content")
+        desc = root.xpath(OG_DESCRIPTION)[0].get("content")
+        queue.push_text(f"**{title}**")
+        queue.push_text(f">>> {desc}")
 
-            await ctx.send(f"**{title}**\n>>> {desc}", suppress_embeds=True)
-
-        return True
+        return await queue.resolve(ctx)
 
     async def display_ygal_images(self, ctx: CrosspostContext, gal_id: str) -> bool:
         assert ctx.guild is not None
