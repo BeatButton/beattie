@@ -1971,24 +1971,21 @@ class Crosspost(Cog):
             return False
 
         did = data["uri"].removeprefix("at://").partition("/")[0]
-        all_embedded = True
+
+        post_link = f"https://bsky.app/profile/{repo}/post/{rkey}"
+        queue = FragmentQueue(ctx, post_link)
 
         for image in images:
             image = image["image"]
             image_id = image["ref"]["$link"]
             url = f"https://cdn.bsky.app/img/feed_fullsize/plain/{did}/{image_id}@jpeg"
             filename = f"{image_id}.jpeg"
-            msg = await self.send(
-                ctx, url, filename=filename, use_default_headers=False
-            )
-            if too_large(msg):
-                await ctx.send(url)
-                all_embedded = False
+            queue.push_file(url, filename=filename)
 
-        if all_embedded and await self.should_post_text(ctx) and (text := post["text"]):
-            await ctx.send(f">>> {text}", suppress_embeds=True)
+        if text := post["text"]:
+            queue.push_text(f">>> {text}")
 
-        return all_embedded
+        return await queue.resolve(ctx)
 
     async def display_paheal_images(self, ctx: CrosspostContext, post: str) -> bool:
         link = f"https://rule34.paheal.net/post/view/{post}"
