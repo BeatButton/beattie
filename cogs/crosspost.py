@@ -225,10 +225,10 @@ class Fragment:
     pass
 
 
-class ImageFragment(Fragment):
+class FileFragment(Fragment):
     cog: Crosspost
     urls: tuple[str, ...]
-    headers: dict[str, str]
+    headers: dict[str, str] | None
     use_default_headers: bool
     filename: str
     img: BytesIO | None
@@ -250,7 +250,7 @@ class ImageFragment(Fragment):
         self.urls = urls
         self.postprocess = postprocess
         self.pp_extra = pp_extra
-        self.headers = headers if headers is not None else {}
+        self.headers = headers
         self.use_default_headers = use_default_headers
 
         if filename is None:
@@ -289,59 +289,59 @@ class ImageFragment(Fragment):
         self.img = img
 
 
-PP = Callable[[ImageFragment, BytesIO, Any], Awaitable[BytesIO]]
+PP = Callable[[FileFragment, BytesIO, Any], Awaitable[BytesIO]]
 
 
-class PixivFragment(Fragment):
-    fullsize_url: str
-    compressed_url: str
-    headers: dict[str, str]
-    fullsize_len: int | None
-    fullsize_frag: ImageFragment | None
-    compressed_frag: ImageFragment | None
+class FallbackFragment(Fragment):
+    preferred_url: str
+    fallback_url: str
+    headers: dict[str, str] | None
+    preferred_len: int | None
+    preferred_frag: FileFragment | None
+    fallback_frag: FileFragment | None
 
     def __init__(
         self,
         cog: Crosspost,
-        fullsize_url: str,
-        compressed_url: str,
-        headers: dict[str, str],
+        preferred_url: str,
+        fallback_url: str,
+        headers: dict[str, str] | None,
     ):
         self.cog = cog
-        self.fullsize_url = fullsize_url
-        self.compressed_url = compressed_url
+        self.preferred_url = preferred_url
+        self.fallback_url = fallback_url
         self.headers = headers
 
-        self.fullsize_frag = None
-        self.compressed_frag = None
-        self.fullsize_len = None
+        self.preferred_frag = None
+        self.fallback_frag = None
+        self.preferred_len = None
 
-    async def to_image(self, ctx: CrosspostContext) -> ImageFragment:
-        if self.fullsize_len is None:
+    async def to_file(self, ctx: CrosspostContext) -> FileFragment:
+        if self.preferred_len is None:
             async with self.cog.get(
-                self.fullsize_url,
+                self.preferred_url,
                 "HEAD",
                 use_default_headers=False,
                 headers=self.headers,
             ) as resp:
-                self.fullsize_len = resp.content_length
+                self.preferred_len = resp.content_length
 
         guild = ctx.guild
         assert guild is not None
-        if self.fullsize_len is not None and guild.filesize_limit > self.fullsize_len:
+        if self.preferred_len is not None and guild.filesize_limit > self.preferred_len:
 
-            if (frag := self.fullsize_frag) is None:
-                frag = self.fullsize_frag = ImageFragment(
+            if (frag := self.preferred_frag) is None:
+                frag = self.preferred_frag = FileFragment(
                     ctx.cog,
-                    self.fullsize_url,
+                    self.preferred_url,
                     headers=self.headers,
                     use_default_headers=False,
                 )
         else:
-            if (frag := self.compressed_frag) is None:
-                frag = self.compressed_frag = ImageFragment(
+            if (frag := self.fallback_frag) is None:
+                frag = self.fallback_frag = FileFragment(
                     ctx.cog,
-                    self.compressed_url,
+                    self.fallback_url,
                     headers=self.headers,
                     use_default_headers=False,
                 )
@@ -368,7 +368,7 @@ class FragmentQueue:
         self.cog = ctx.command.cog
         self.fragments = []
 
-    def push_image(
+    def push_file(
         self,
         *urls: str,
         filename: str = None,
@@ -377,7 +377,7 @@ class FragmentQueue:
         headers: dict[str, str] = None,
     ):
         self.fragments.append(
-            ImageFragment(
+            FileFragment(
                 self.cog,
                 *urls,
                 filename=filename,
@@ -387,17 +387,17 @@ class FragmentQueue:
             )
         )
 
-    def push_pixiv(
+    def push_fallback(
         self,
-        fullsize_url: str,
-        compressed_url: str,
+        preferred_url: str,
+        fallback_url: str,
         headers: dict[str, str],
     ):
         self.fragments.append(
-            PixivFragment(
+            FallbackFragment(
                 self.cog,
-                fullsize_url,
-                compressed_url,
+                preferred_url,
+                fallback_url,
                 headers,
             )
         )
@@ -416,16 +416,16 @@ class FragmentQueue:
         limit = guild.filesize_limit
         do_text = await self.cog.should_post_text(ctx)
         text = ""
-        image_batch = []
+        file_batch = []
         batch_size = 0
         max_pages = await self.cog.get_max_pages(ctx)
 
         to_dl = []
 
         for idx, frag in enumerate(fragments):
-            if isinstance(frag, PixivFragment):
-                fragments[idx] = frag = await frag.to_image(ctx)
-            if isinstance(frag, ImageFragment):
+            if isinstance(frag, FallbackFragment):
+                fragments[idx] = frag = await frag.to_file(ctx)
+            if isinstance(frag, FileFragment):
                 to_dl.append(frag)
             if max_pages and len(to_dl) >= max_pages:
                 break
@@ -433,11 +433,11 @@ class FragmentQueue:
         for frag in to_dl:
             frag.save()
 
-        async def send_images():
+        async def senf_files():
             nonlocal batch_size
-            if image_batch:
-                await ctx.send(files=image_batch)
-                image_batch.clear()
+            if file_batch:
+                await ctx.send(files=file_batch)
+                file_batch.clear()
                 batch_size = 0
 
         def send_text():
@@ -453,7 +453,7 @@ class FragmentQueue:
         for frag in fragments:
             if isinstance(frag, TextFragment):
                 if frag.force:
-                    await send_images()
+                    await senf_files()
                     await ctx.send(frag.content, suppress_embeds=True)
                 else:
                     text = f"{text}\n{frag}"
@@ -461,7 +461,7 @@ class FragmentQueue:
                 num_files += 1
                 if max_pages and num_files > max_pages:
                     continue
-                assert isinstance(frag, ImageFragment)
+                assert isinstance(frag, FileFragment)
                 if do_text and text and not (max_pages and num_files > max_pages):
                     await send_text()
                 await frag.save()
@@ -470,17 +470,17 @@ class FragmentQueue:
                     raise RuntimeError("frag.save failed to set img")
                 size = len(img.getbuffer())
                 if size > limit:
-                    await send_images()
+                    await senf_files()
                     await ctx.send(frag.urls[0])
                     continue
-                if batch_size + size > limit or len(image_batch) == 10:
-                    await send_images()
+                if batch_size + size > limit or len(file_batch) == 10:
+                    await senf_files()
                 batch_size += size
                 img.seek(0)
-                image_batch.append(File(img, frag.filename))
+                file_batch.append(File(img, frag.filename))
 
-        if image_batch:
-            await send_images()
+        if file_batch:
+            await senf_files()
 
         if do_text and text:
             await send_text()
@@ -495,7 +495,7 @@ class FragmentQueue:
         return True
 
 
-async def gif_pp(frag: ImageFragment, img: BytesIO, _) -> BytesIO:
+async def gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
     proc = await asyncio.create_subprocess_exec(
         "ffmpeg",
         "-i",
@@ -518,7 +518,7 @@ async def gif_pp(frag: ImageFragment, img: BytesIO, _) -> BytesIO:
         return BytesIO(stdout)
 
 
-async def ugoira_pp(frag: ImageFragment, img: BytesIO, illust_id: str) -> BytesIO:
+async def ugoira_pp(frag: FileFragment, img: BytesIO, illust_id: str) -> BytesIO:
     url = "https://app-api.pixiv.net/v1/ugoira/metadata"
     params = {"illust_id": illust_id}
     headers = frag.headers
@@ -530,8 +530,10 @@ async def ugoira_pp(frag: ImageFragment, img: BytesIO, illust_id: str) -> BytesI
     zip_url = res["zip_urls"]["medium"]
     zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
 
+    headers = frag.headers or {}
+
     headers = {
-        **frag.headers,
+        **headers,
         "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
     }
 
@@ -1293,13 +1295,13 @@ class Crosspost(Cog):
                     except ResponseError as e:
                         if e.code != 404:
                             raise e
-                    queue.push_image(url)
+                    queue.push_file(url)
                 case "gif":
                     base = url.rpartition("/")[-1].rpartition(".")[0]
                     filename = f"{base}.gif"
-                    queue.push_image(url, filename=filename, postprocess=gif_pp)
+                    queue.push_file(url, filename=filename, postprocess=gif_pp)
                 case "video":
-                    queue.push_image(url)
+                    queue.push_file(url)
 
         if text := TWITTER_TEXT_TRIM.sub("", tweet["text"]):
             text = html_unescape(text)
@@ -1341,15 +1343,15 @@ class Crosspost(Cog):
             url = single["original_image_url"]
 
             if "ugoira" in url:
-                queue.push_image(
+                queue.push_file(
                     url, postprocess=ugoira_pp, headers=headers, pp_extra=illust_id
                 )
             else:
-                queue.push_pixiv(url, res["image_urls"]["large"], headers=headers)
+                queue.push_fallback(url, res["image_urls"]["large"], headers=headers)
 
         elif multi := res["meta_pages"]:
             for page in multi:
-                queue.push_pixiv(
+                queue.push_fallback(
                     page["image_urls"]["original"],
                     page["image_urls"]["large"],
                     headers=headers,
@@ -1372,7 +1374,7 @@ class Crosspost(Cog):
         queue = FragmentQueue(ctx, link)
 
         if link.endswith("preview"):
-            queue.push_image(
+            queue.push_file(
                 re.sub(
                     r"preview(/\d+)?",
                     "download",
@@ -1386,7 +1388,7 @@ class Crosspost(Cog):
 
                 for thumb in thumbs:
                     href = f"https://{resp.host}{thumb.get('href')}"
-                    queue.push_image(
+                    queue.push_file(
                         re.sub(
                             r"preview(/\d+)?",
                             "download",
@@ -1481,9 +1483,9 @@ class Crosspost(Cog):
                             start = await resp.read()
                         if start.startswith(b"GIF"):
                             url = url[:-1]
-                    queue.push_image(url)
+                    queue.push_file(url)
                 case "video":
-                    queue.push_image(block["url"])
+                    queue.push_file(block["url"])
 
         return await queue.resolve(ctx)
 
@@ -1532,9 +1534,9 @@ class Crosspost(Cog):
                 filename = (
                     f"{str(resp.url).rpartition('/')[2].removesuffix('.mp4')}.gif"
                 )
-                queue.push_image(*urls, filename=filename, postprocess=gif_pp)
+                queue.push_file(*urls, filename=filename, postprocess=gif_pp)
             else:
-                queue.push_image(*urls)
+                queue.push_file(*urls)
 
         if content := post["content"]:
             if cw := post.get("spoiler_text"):
@@ -1571,7 +1573,7 @@ class Crosspost(Cog):
 
         for file in sub["files"]:
             url = file["file_url_full"]
-            queue.push_image(url)
+            queue.push_file(url)
 
         title = sub["title"]
         description = sub["description"].strip()
@@ -1609,7 +1611,7 @@ class Crosspost(Cog):
         queue = FragmentQueue(ctx, post_link)
 
         for image in images:
-            queue.push_image(image["link"])
+            queue.push_file(image["link"])
 
         return await queue.resolve(ctx)
 
@@ -1626,7 +1628,7 @@ class Crosspost(Cog):
 
         queue = FragmentQueue(ctx, link)
 
-        queue.push_image(post["file_url"])
+        queue.push_file(post["file_url"])
 
         params["s"] = "note"
         del params["json"]
@@ -1657,7 +1659,7 @@ class Crosspost(Cog):
         if post is None:
             return False
         queue = FragmentQueue(ctx, link)
-        queue.push_image(post["file_url"])
+        queue.push_file(post["file_url"])
         if source := post.get("source"):
             queue.push_text(html_unescape(source), force=True)
         return await queue.resolve(ctx)
@@ -1705,58 +1707,24 @@ class Crosspost(Cog):
             f"fanbox: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        filesize_limit = guild.filesize_limit
-        max_pages = await self.get_max_pages(ctx)
-        num_images = 0
-
-        do_text = await self.should_post_text(ctx)
-        text = ""
-
-        def send_text():
-            nonlocal text
-            send = text.strip()
-            text = ""
-            if send:
-                return ctx.send(f">>> {send}", suppress_embeds=True)
-            else:
-                return asyncio.sleep(0)
+        queue = FragmentQueue(ctx, link)
 
         match post["type"]:
             case "image":
-                asset = "image"
-                images = body["images"]
-                num_images = len(images)
-                if max_pages:
-                    images = images[:max_pages]
-                for image in images:
-                    content, file = await self.save_fanbox(
-                        image["originalUrl"],
-                        image["thumbnailUrl"],
-                        headers,
-                        filesize_limit,
+                for image in body["images"]:
+                    queue.push_fallback(
+                        image["originalUrl"], image["thumbnailUrl"], headers
                     )
-                    await ctx.send(content, file=file)
-                text = body.get("text")
+                if text := body.get("text", "").strip():
+                    queue.push_text(f">>> {text}")
             case "file":
-                asset = "file"
-                files = body["files"]
-                num_images = len(files)
-                if max_pages:
-                    files = files[:max_pages]
-                for file_info in files:
+                for file_info in body["files"]:
                     url = file_info["url"]
-                    if file_info["size"] > filesize_limit:
-                        content = url
-                        file = None
-                    else:
-                        filename = file_info["name"] + "." + file_info["extension"]
-                        img, _ = await self.save(url, headers=headers)
-                        content = None
-                        file = File(img, filename)
-                    await ctx.send(content, file=file)
-                text = body.get("text")
+                    filename = file_info["name"] + "." + file_info["extension"]
+                    queue.push_file(url, filename=filename)
+                if text := body.get("text", "").strip():
+                    queue.push_text(f">>> {text}")
             case "article":
-                asset = None
                 blocks = body["blocks"]
                 image_map = body["imageMap"]
                 file_map = body["fileMap"]
@@ -1765,86 +1733,24 @@ class Crosspost(Cog):
                     return False
 
                 for block in blocks:
-                    block_type = block["type"]
-                    if block_type == "p":
-                        text = f"{text}\n{block['text']}"
-                    else:
-                        if (
-                            do_text
-                            and text
-                            and not (max_pages and num_images > max_pages)
-                        ):
-                            await send_text()
-                        file = None
-                        content = None
-                        match block_type:
-                            case "image":
-                                num_images += 1
-                                if max_pages and num_images > max_pages:
-                                    continue
-                                image = image_map[block["imageId"]]
-                                content, file = await self.save_fanbox(
-                                    image["originalUrl"],
-                                    image["thumbnailUrl"],
-                                    headers,
-                                    filesize_limit,
-                                )
-                            case "file":
-                                num_images += 1
-                                if max_pages and num_images > max_pages:
-                                    continue
-                                file_info = file_map[block["fileId"]]
-                                url = file_info["url"]
-                                if file_info["size"] > filesize_limit:
-                                    content = url
-                                    file = None
-                                else:
-                                    filename = (
-                                        f"{file_info['name']}.{file_info['extension']}"
-                                    )
-                                    img, _ = await self.save(url, headers=headers)
-                                    content = None
-                                    file = File(img, filename)
-                        if content or file:
-                            await ctx.send(content, file=file)
+                    match block["type"]:
+                        case "p":
+                            if text := block.get("text", "").strip():
+                                queue.push_text(f"> {text}")
+                        case "image":
+                            image = image_map[block["imageId"]]
+                            queue.push_fallback(
+                                image["originalUrl"],
+                                image["thumbnailUrl"],
+                                headers,
+                            )
+                        case "file":
+                            queue.push_file(file_map[block["fileId"]]["url"])
             case other:
                 await ctx.send(f"Unrecognized post type {other}! This is a bug.")
                 return False
 
-        pages_remaining = max_pages and num_images - max_pages
-
-        if pages_remaining > 0:
-            s = "s" if pages_remaining > 1 else ""
-            match asset:
-                case None:
-                    asset = f"file{s}/image{s}"
-                case other:
-                    asset = f"{other}{s}"
-            message = f"{pages_remaining} more {asset} at <{link}>"
-            await ctx.send(message)
-        elif do_text and text:
-            await send_text()
-
-        return True
-
-    async def save_fanbox(
-        self,
-        original_url: str,
-        thumbnail_url: str,
-        headers: dict[str, str],
-        filesize_limit: int,
-    ) -> tuple[str | None, File]:
-        content = None
-        try:
-            img, _ = await self.save(original_url, headers=headers)
-        except ResponseError as e:
-            if e.code == 413:
-                img, _ = await self.save(thumbnail_url, headers=headers)
-                content = "Full size too large, standard resolution used."
-            else:
-                raise e from None
-        file = File(img, original_url.rpartition("/")[-1])
-        return content, file
+        return await queue.resolve(ctx)
 
     async def display_lofter_images(self, ctx: CrosspostContext, link: str) -> bool:
         async with self.get(link, use_default_headers=False) as resp:
