@@ -2003,15 +2003,14 @@ class Crosspost(Cog):
         mime = img.get("data-mime").partition("/")[2]
         filename = f"{post}.{mime}"
 
-        msg = await self.send(ctx, url, filename=filename, use_default_headers=False)
-        if too_large(msg):
-            await ctx.send(url)
-            return False
+        queue = FragmentQueue(ctx, link)
+
+        queue.push_file(url, filename=filename)
 
         if source := root.xpath(PAHEAL_SOURCE_SELECTOR):
-            await ctx.send(source[0].get("href"), suppress_embeds=True)
+            queue.push_text(source[0].get("href"), force=True)
 
-        return True
+        return await queue.resolve(ctx)
 
     async def display_furaffinity_images(
         self, ctx: CrosspostContext, sub_id: str
