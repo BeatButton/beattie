@@ -1595,36 +1595,14 @@ class Crosspost(Cog):
             images = data["images"]
         else:
             images = [data]
-        urls = (image["link"] for image in images)
 
-        max_pages = await self.get_max_pages(ctx)
-        num_pages = len(images)
+        post_link = f"https://imgur.com/a/{album_id}"
+        queue = FragmentQueue(ctx, post_link)
 
-        if max_pages == 0:
-            max_pages = num_pages
+        for image in images:
+            queue.push_image(image["link"])
 
-        async def helper(link, n=1):
-            try:
-                await self.send(
-                    ctx, link, headers=self.imgur_headers, use_default_headers=False
-                )
-            except ResponseError as e:
-                if e.code == 400 and n <= 10:
-                    await asyncio.sleep(n)
-                    await helper(link, n + 1)
-                else:
-                    raise e
-
-        for img_url, _ in zip(urls, range(max_pages)):
-            await helper(img_url)
-
-        remaining = num_pages - max_pages
-
-        if remaining > 0:
-            s = "s" if remaining > 1 else ""
-            message = f"{remaining} more image{s} at <https://imgur.com/a/{album_id}>"
-            await ctx.send(message)
-        return True
+        return await queue.resolve(ctx)
 
     async def display_gelbooru_images(self, ctx: CrosspostContext, link: str) -> bool:
         assert ctx.guild is not None
