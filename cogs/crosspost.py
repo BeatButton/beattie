@@ -2087,34 +2087,20 @@ class Crosspost(Cog):
 
         images.reverse()
 
-        max_pages = await self.get_max_pages(ctx)
-        num_images = len(images)
-        if max_pages == 0:
-            max_pages = num_images
-
-        pages_remaining = num_images - max_pages
-        images = images[:max_pages]
-
         headers = {"Referer": link}
+
+        queue = FragmentQueue(ctx, link)
 
         for image in images:
             url = image.get("content").replace("_small.png", ".png")
-            msg = await self.send(ctx, url, headers=headers)
-            if too_large(msg):
-                await ctx.send(url)
+            queue.push_file(url, headers=headers)
 
-        if await self.should_post_text(ctx):
-            title = html_unescape(root.xpath(OG_TITLE)[0].get("content"))
-            desc = html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content"))
+        if title := html_unescape(root.xpath(OG_TITLE)[0].get("content")):
+            queue.push_text(f"**{title}**")
+        if desc := html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content")):
+            queue.push_text(f">>> {desc}")
 
-            await ctx.send(f"**{title}**\n>>> {desc}", suppress_embeds=True)
-
-        if pages_remaining > 0:
-            s = "s" if pages_remaining > 1 else ""
-            message = f"{pages_remaining} more image{s} at <{link}>"
-            await ctx.send(message)
-
-        return True
+        return await queue.resolve(ctx)
 
     async def display_yt_community_images(
         self, ctx: CrosspostContext, post_id: str
