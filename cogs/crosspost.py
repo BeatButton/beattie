@@ -231,7 +231,7 @@ class FileFragment(Fragment):
     headers: dict[str, str] | None
     use_default_headers: bool
     filename: str
-    img: BytesIO | None
+    file_bytes: bytes
     dl_task: asyncio.Task | None
     postprocess: PP | None
     pp_extra: Any
@@ -268,7 +268,7 @@ class FileFragment(Fragment):
                 filename = f"{filename.removesuffix(ext)}{sub}"
         self.filename = filename
 
-        self.img = None
+        self.file_bytes = b""
         self.dl_task = None
 
     def save(self) -> Awaitable[None]:
@@ -277,7 +277,7 @@ class FileFragment(Fragment):
         return self.dl_task
 
     async def _save(self):
-        img, filename = await self.cog.save(
+        file_bytes, filename = await self.cog.save(
             *self.urls,
             headers=self.headers,
             use_default_headers=self.use_default_headers,
@@ -287,12 +287,12 @@ class FileFragment(Fragment):
             self.filename = filename
 
         if self.postprocess is not None:
-            img = await self.postprocess(self, img, self.pp_extra)
+            file_bytes = await self.postprocess(self, file_bytes, self.pp_extra)
 
-        self.img = img
+        self.file_bytes = file_bytes
 
 
-PP = Callable[[FileFragment, BytesIO, Any], Awaitable[BytesIO]]
+PP = Callable[[FileFragment, bytes, Any], Awaitable[bytes]]
 
 
 class FallbackFragment(Fragment):
@@ -363,13 +363,16 @@ class TextFragment(Fragment):
 
 class FragmentQueue:
     cog: Crosspost
+    link: str
     fragments: list[Fragment]
+    resolved: asyncio.Event
 
     def __init__(self, ctx: CrosspostContext, link: str):
         assert ctx.command is not None
         self.link = link
         self.cog = ctx.command.cog
         self.fragments = []
+        self.resolved = asyncio.Event()
 
     def push_file(
         self,
@@ -409,7 +412,16 @@ class FragmentQueue:
     def push_text(self, text: str, force: bool = False):
         self.fragments.append(TextFragment(text, force))
 
+    def clear(self):
+        self.fragments.clear()
+
     async def resolve(self, ctx: CrosspostContext) -> bool:
+        self.resolved.set()
+        return await self.perform(ctx)
+
+    async def perform(self, ctx: CrosspostContext) -> bool:
+        await self.resolved.wait()
+
         if not self.fragments:
             return False
 
@@ -469,10 +481,10 @@ class FragmentQueue:
                 if do_text and text and not (max_pages and num_files > max_pages):
                     await send_text()
                 await frag.save()
-                img = frag.img
-                if img is None:
-                    raise RuntimeError("frag.save failed to set img")
-                size = len(img.getbuffer())
+                file_bytes = frag.file_bytes
+                if not file_bytes:
+                    raise RuntimeError("frag.save failed to set file_bytes")
+                size = len(file_bytes)
                 if size > limit:
                     await send_files()
                     await ctx.send(frag.urls[0])
@@ -480,8 +492,7 @@ class FragmentQueue:
                 if batch_size + size > limit or len(file_batch) == 10:
                     await send_files()
                 batch_size += size
-                img.seek(0)
-                file_batch.append(File(img, frag.filename))
+                file_batch.append(File(BytesIO(file_bytes), frag.filename))
 
         if file_batch:
             await send_files()
@@ -499,7 +510,7 @@ class FragmentQueue:
         return True
 
 
-async def ffmpeg_gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
+async def ffmpeg_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
     proc = await asyncio.create_subprocess_exec(
         "ffmpeg",
         "-i",
@@ -519,10 +530,10 @@ async def ffmpeg_gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
     except asyncio.TimeoutError:
         return img
     else:
-        return BytesIO(stdout)
+        return stdout
 
 
-async def magick_gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
+async def magick_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
     proc = await asyncio.create_subprocess_exec(
         "magick",
         "convert",
@@ -537,10 +548,10 @@ async def magick_gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
     except asyncio.TimeoutError:
         return img
     else:
-        return BytesIO(stdout)
+        return stdout
 
 
-async def ugoira_pp(frag: FileFragment, img: BytesIO, illust_id: str) -> BytesIO:
+async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:
     url = "https://app-api.pixiv.net/v1/ugoira/metadata"
     params = {"illust_id": illust_id}
     headers = frag.headers
@@ -562,7 +573,7 @@ async def ugoira_pp(frag: FileFragment, img: BytesIO, illust_id: str) -> BytesIO
     zip_bytes, _ = await frag.cog.save(
         zip_url, headers=headers, use_default_headers=False
     )
-    zfp = ZipFile(zip_bytes)
+    zfp = ZipFile(BytesIO(zip_bytes))
 
     with TemporaryDirectory() as td:
         tempdir = Path(td)
@@ -605,9 +616,7 @@ async def ugoira_pp(frag: FileFragment, img: BytesIO, illust_id: str) -> BytesIO
         stdout = await try_wait_for(proc, timeout=120)
 
     frag.filename = f"{illust_id}.gif"
-    img = BytesIO(stdout)
-    img.seek(0)
-    return img
+    return stdout
 
 
 class Settings:
@@ -923,6 +932,11 @@ class CrosspostContext(BContext):
         return msg
 
 
+async def kill_timer(cog: Crosspost, key: tuple[str, ...], timeout: int = 300) -> None:
+    await asyncio.sleep(timeout)
+    cog.recent_queues.pop(key, None)
+
+
 class Crosspost(Cog):
     """Crossposts images from tweets and other social media"""
 
@@ -950,6 +964,7 @@ class Crosspost(Cog):
     twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
 
     ongoing_tasks: dict[int, asyncio.Task]
+    recent_queues: dict[tuple[str, ...], tuple[FragmentQueue, asyncio.Task]]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -966,6 +981,11 @@ class Crosspost(Cog):
         else:
             self.ongoing_tasks = {}
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
+        if (recent_queues := bot.extra.get("crosspost_recent_queues")) is not None:
+            self.recent_queues = recent_queues
+        else:
+            self.recent_queues = {}
+            bot.extra["crosspost_recent_queues"] = self.recent_queues
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger("beattie.crosspost")
 
@@ -1076,7 +1096,7 @@ class Crosspost(Cog):
         *img_urls: str,
         use_default_headers: bool = True,
         headers: dict[str, str] = None,
-    ) -> tuple[BytesIO, str | None]:
+    ) -> tuple[bytes, str | None]:
         headers = headers or {}
         img = BytesIO()
         filename = None
@@ -1089,7 +1109,7 @@ class Crosspost(Cog):
                 img.write(chunk)
 
         img.seek(0)
-        return img, filename
+        return img.getvalue(), filename
 
     async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
         content = remove_spoilers(ctx.message.content)
@@ -1108,10 +1128,25 @@ class Crosspost(Cog):
                 try:
                     if isinstance(args, str):
                         args = [args]
-                    args = map(str.strip, args)
-                    if await func(self, ctx, *args) and do_suppress:
+                    args = tuple(map(str.strip, args))
+                    key = (site, *args)
+                    if hit := self.recent_queues.get(key):
+                        self.logger.info(f"cache hit on {site} with args {args}")
+                        queue, timer = hit
+                        timer.cancel()
+                        self.recent_queues[key] = queue, asyncio.Task(asyncio.sleep(0))
+                        coro = queue.perform(ctx)
+                    else:
+                        queue = FragmentQueue(ctx, args[0])
+                        self.recent_queues[key] = queue, asyncio.Task(asyncio.sleep(0))
+                        coro = queue.resolve(ctx)
+                        await func(self, ctx, queue, *args)
+
+                    if await coro and do_suppress:
                         await squash_unfindable(ctx.message.edit(suppress=True))
                         do_suppress = False
+
+                    self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
                 except ResponseError as e:
                     if e.code == 404:
                         await ctx.send("Post not found.")
@@ -1197,33 +1232,6 @@ class Crosspost(Cog):
         if messages_deleted:
             await self.db.del_sent_messages(message_id)
 
-    async def send(
-        self,
-        ctx: CrosspostContext,
-        link: str,
-        *,
-        filename: str = None,
-        headers: dict[str, str] = None,
-        use_default_headers: bool = True,
-    ) -> Message:
-        img, disp_filename = await self.save(
-            link, headers=headers, use_default_headers=use_default_headers
-        )
-        if filename is None:
-            filename = disp_filename
-        if filename is None:
-            filename = re.findall(r"[\w. -]+\.[\w. -]+", link)[-1]
-        if filename is None:
-            raise RuntimeError(f"could not parse filename from URL: {link}")
-        for ext, sub in [
-            ("jfif", "jpeg"),
-            ("pnj", "png"),
-        ]:
-            if filename.endswith(f".{ext}"):
-                filename = f"{filename.removesuffix(ext)}{sub}"
-        file = File(img, filename)
-        return await ctx.send(file=file)
-
     async def get_max_pages(self, ctx: BContext) -> int:
         settings = await self.db.get_effective_settings(ctx.message)
         max_pages = settings.max_pages
@@ -1236,8 +1244,8 @@ class Crosspost(Cog):
         return bool(settings.text)
 
     async def display_twitter_images(
-        self, ctx: CrosspostContext, tweet_id: str
-    ) -> bool:
+        self, ctx: CrosspostContext, queue: FragmentQueue, tweet_id: str
+    ):
         guild = ctx.guild
         assert guild is not None
         self.logger.info(
@@ -1288,8 +1296,7 @@ class Crosspost(Cog):
         if not media:
             return False
 
-        post_link = f"https://twitter.com/i/status/{tweet_id}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://twitter.com/i/status/{tweet_id}"
 
         url: str
         for medium in media:
@@ -1319,9 +1326,9 @@ class Crosspost(Cog):
             text = html_unescape(text)
             queue.push_text(f">>> {text}")
 
-        return await queue.resolve(ctx)
-
-    async def display_pixiv_images(self, ctx: CrosspostContext, illust_id: str) -> bool:
+    async def display_pixiv_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, illust_id: str
+    ):
         guild = ctx.guild
         assert guild is not None
         self.logger.info(
@@ -1348,8 +1355,7 @@ class Crosspost(Cog):
             "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
         }
 
-        post_link = f"https://www.pixiv.net/en/artworks/{illust_id}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://www.pixiv.net/en/artworks/{illust_id}"
 
         if single := res["meta_single_page"]:
             url = single["original_image_url"]
@@ -1371,9 +1377,9 @@ class Crosspost(Cog):
 
         queue.push_text(f"**{res['title']}**")
 
-        return await queue.resolve(ctx)
-
-    async def display_hiccears_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_hiccears_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"hiccears: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -1382,8 +1388,6 @@ class Crosspost(Cog):
         async with self.get(link, headers=self.hiccears_headers) as resp:
             self.update_hiccears_cookies(resp)
             root = html.document_fromstring(await resp.read(), self.parser)
-
-        queue = FragmentQueue(ctx, link)
 
         if link.endswith("preview"):
             queue.push_file(
@@ -1428,8 +1432,6 @@ class Crosspost(Cog):
             if description:
                 queue.push_text(f">>> {description}")
 
-        return await queue.resolve(ctx)
-
     def update_hiccears_cookies(self, resp: aiohttp.ClientResponse):
         if sess := resp.cookies.get("hiccears"):
             self.bot.logger.info("Refreshing hiccears cookies from response")
@@ -1450,8 +1452,8 @@ class Crosspost(Cog):
                 toml.dump(logins, fp)
 
     async def display_tumblr_images(
-        self, ctx: CrosspostContext, blog: str, post: str
-    ) -> bool:
+        self, ctx: CrosspostContext, queue: FragmentQueue, blog: str, post: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {blog}/{post}"
@@ -1479,8 +1481,7 @@ class Crosspost(Cog):
         if not any(block["type"] in ("image", "video") for block in blocks):
             return False
 
-        post_link = f"https://{blog}.tumblr.com/post/{post}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://{blog}.tumblr.com/post/{post}"
 
         for block in blocks:
             match block["type"]:
@@ -1499,11 +1500,14 @@ class Crosspost(Cog):
                 case "video":
                     queue.push_file(block["url"])
 
-        return await queue.resolve(ctx)
-
     async def display_mastodon_images(
-        self, ctx: CrosspostContext, link: str, site: str, post_id: str
-    ) -> bool:
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        link: str,
+        site: str,
+        post_id: str,
+    ):
         info = self.tldextract(link)
         if f"{info.domain}.{info.suffix}" in GLOB_SITE_EXCLUDE:
             return False
@@ -1531,7 +1535,7 @@ class Crosspost(Cog):
             return False
 
         real_url = post["url"]
-        queue = FragmentQueue(ctx, real_url)
+        queue.link = real_url
         if real_url.casefold() != link.casefold():
             queue.push_text(real_url)
 
@@ -1562,9 +1566,9 @@ class Crosspost(Cog):
             )
             queue.push_text(f">>> {text}")
 
-        return await queue.resolve(ctx)
-
-    async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
+    async def display_inkbunny_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"inkbunny: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {sub_id}"
@@ -1582,8 +1586,7 @@ class Crosspost(Cog):
 
         sub = response["submissions"][0]
 
-        post_link = f"https://inkbunny.net/s/{sub_id}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://inkbunny.net/s/{sub_id}"
 
         for file in sub["files"]:
             url = file["file_url_full"]
@@ -1595,11 +1598,13 @@ class Crosspost(Cog):
         if description:
             queue.push_text(f">>> {description}")
 
-        return await queue.resolve(ctx)
-
     async def display_imgur_images(
-        self, ctx: CrosspostContext, fragment: str | None, album_id: str
-    ) -> bool:
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        fragment: str | None,
+        album_id: str,
+    ):
         assert ctx.guild is not None
         is_album = bool(fragment)
         self.logger.info(
@@ -1621,15 +1626,14 @@ class Crosspost(Cog):
         else:
             images = [data]
 
-        post_link = f"https://imgur.com/a/{album_id}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://imgur.com/a/{album_id}"
 
         for image in images:
             queue.push_file(image["link"])
 
-        return await queue.resolve(ctx)
-
-    async def display_gelbooru_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_gelbooru_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"gelbooru: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -1639,8 +1643,6 @@ class Crosspost(Cog):
         post = await self.booru_helper(link, GELBOORU_API_URL, params)
         if post is None:
             return False
-
-        queue = FragmentQueue(ctx, link)
 
         queue.push_file(post["file_url"])
 
@@ -1660,9 +1662,9 @@ class Crosspost(Cog):
         if source := post.get("source"):
             queue.push_text(html_unescape(source), force=True)
 
-        return await queue.resolve(ctx)
-
-    async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_r34_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"r34: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -1672,11 +1674,8 @@ class Crosspost(Cog):
         post = await self.booru_helper(link, R34_API_URL, params)
         if post is None:
             return False
-        queue = FragmentQueue(ctx, link)
-        queue.push_file(post["file_url"])
         if source := post.get("source"):
             queue.push_text(html_unescape(source), force=True)
-        return await queue.resolve(ctx)
 
     async def booru_helper(
         self, link: str, api_url: str, params: dict[str, str]
@@ -1700,7 +1699,9 @@ class Crosspost(Cog):
         post = data[0]
         return post
 
-    async def display_fanbox_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_fanbox_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         *_, post_id = link.rpartition("/")
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
         headers = {**self.fanbox_headers, "Referer": link}
@@ -1720,8 +1721,6 @@ class Crosspost(Cog):
         self.logger.info(
             f"fanbox: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
-
-        queue = FragmentQueue(ctx, link)
 
         match post["type"]:
             case "image":
@@ -1764,9 +1763,9 @@ class Crosspost(Cog):
                 await ctx.send(f"Unrecognized post type {other}! This is a bug.")
                 return False
 
-        return await queue.resolve(ctx)
-
-    async def display_lofter_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_lofter_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
@@ -1780,17 +1779,15 @@ class Crosspost(Cog):
             f"lofter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        queue = FragmentQueue(ctx, link)
-
         queue.push_file(img.get("src"))
 
         if elems := root.xpath(LOFTER_TEXT_SELECTOR):
             text = elems[0].text_content()
             queue.push_text(f">>> {text}")
 
-        return await queue.resolve(ctx)
-
-    async def display_misskey_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_misskey_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         if (match := MISSKEY_URL_GROUPS.match(link)) is None:
             return False
 
@@ -1816,8 +1813,6 @@ class Crosspost(Cog):
         if not (files := data["files"]):
             return False
 
-        queue = FragmentQueue(ctx, link)
-
         for file in files:
             url = file["url"]
             filename = None
@@ -1832,9 +1827,9 @@ class Crosspost(Cog):
         if text := data["text"]:
             queue.push_text(f">>> {text}")
 
-        return await queue.resolve(ctx)
-
-    async def display_poipiku_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_poipiku_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"poipiku: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -1851,8 +1846,6 @@ class Crosspost(Cog):
 
         img = root.xpath(".//img[contains(@class, 'IllustItemThumbImg')]")[0]
         src: str = img.get("src")
-
-        queue = FragmentQueue(ctx, link)
 
         if "/img/" not in src:
             src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
@@ -1887,15 +1880,13 @@ class Crosspost(Cog):
 
         frag = data["html"]
         if not frag:
-            return await queue.resolve(ctx)
+            return
 
         if frag == "You need to sign in.":
             await ctx.send("Post requires authentication.")
-            return await queue.resolve(ctx)
 
         if frag == "Error occurred.":
             await ctx.send("Poipiku reported a generic error.")
-            return await queue.resolve(ctx)
 
         if frag == "Password is incorrect.":
 
@@ -1930,7 +1921,6 @@ class Crosspost(Cog):
                         "Poipiku password timeout expired.", delete_after=delete_after
                     )
                     await clean()
-                    return await queue.resolve(ctx)
 
                 to_clean.append(reply)
 
@@ -1965,11 +1955,9 @@ class Crosspost(Cog):
             src = f"https:{src}"
             queue.push_file(src, headers=refer)
 
-        return await queue.resolve(ctx)
-
     async def display_bsky_images(
-        self, ctx: CrosspostContext, repo: str, rkey: str
-    ) -> bool:
+        self, ctx: CrosspostContext, queue: FragmentQueue, repo: str, rkey: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"bsky: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {repo}/{rkey}"
@@ -1986,8 +1974,7 @@ class Crosspost(Cog):
 
         did = data["uri"].removeprefix("at://").partition("/")[0]
 
-        post_link = f"https://bsky.app/profile/{repo}/post/{rkey}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://bsky.app/profile/{repo}/post/{rkey}"
 
         for image in images:
             image = image["image"]
@@ -1999,9 +1986,9 @@ class Crosspost(Cog):
         if text := post["text"]:
             queue.push_text(f">>> {text}")
 
-        return await queue.resolve(ctx)
-
-    async def display_paheal_images(self, ctx: CrosspostContext, post: str) -> bool:
+    async def display_paheal_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, post: str
+    ):
         link = f"https://rule34.paheal.net/post/view/{post}"
 
         assert ctx.guild is not None
@@ -2016,19 +2003,14 @@ class Crosspost(Cog):
         url = img.get("src")
         mime = img.get("data-mime").partition("/")[2]
         filename = f"{post}.{mime}"
-
-        queue = FragmentQueue(ctx, link)
-
         queue.push_file(url, filename=filename)
 
         if source := root.xpath(PAHEAL_SOURCE_SELECTOR):
             queue.push_text(source[0].get("href"), force=True)
 
-        return await queue.resolve(ctx)
-
     async def display_furaffinity_images(
-        self, ctx: CrosspostContext, sub_id: str
-    ) -> bool:
+        self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"furaffinity: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {sub_id}"
@@ -2040,8 +2022,6 @@ class Crosspost(Cog):
         ) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
-        queue = FragmentQueue(ctx, link)
-
         url = root.xpath(OG_IMAGE)[0].get("content")
         queue.push_file(url)
 
@@ -2050,9 +2030,9 @@ class Crosspost(Cog):
         queue.push_text(f"**{title}**")
         queue.push_text(f">>> {desc}")
 
-        return await queue.resolve(ctx)
-
-    async def display_ygal_images(self, ctx: CrosspostContext, gal_id: str) -> bool:
+    async def display_ygal_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str
+    ):
         assert ctx.guild is not None
 
         self.logger.info(
@@ -2070,8 +2050,6 @@ class Crosspost(Cog):
         m = YGAL_FULLSIZE_EXPR.match(img.get("onclick"))
         assert m is not None
         link = m["link"]
-
-        queue = FragmentQueue(ctx, link)
         queue.push_file(link, headers={"Referer": link})
 
         comment = html.tostring(root.xpath(YGAL_TEXT_SELECTOR)[0], encoding=str)
@@ -2085,9 +2063,9 @@ class Crosspost(Cog):
         if comment := translate_markdown(comment).strip():
             queue.push_text(f">>> {comment}")
 
-        return await queue.resolve(ctx)
-
-    async def display_pillowfort_images(self, ctx: CrosspostContext, link: str) -> bool:
+    async def display_pillowfort_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"pillowfort: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
@@ -2102,9 +2080,6 @@ class Crosspost(Cog):
         images.reverse()
 
         headers = {"Referer": link}
-
-        queue = FragmentQueue(ctx, link)
-
         for image in images:
             url = image.get("content").replace("_small.png", ".png")
             queue.push_file(url, headers=headers)
@@ -2114,11 +2089,9 @@ class Crosspost(Cog):
         if desc := html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content")):
             queue.push_text(f">>> {desc}")
 
-        return await queue.resolve(ctx)
-
     async def display_yt_community_images(
-        self, ctx: CrosspostContext, post_id: str
-    ) -> bool:
+        self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"yt_community: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {post_id}"
@@ -2147,9 +2120,6 @@ class Crosspost(Cog):
 
         if not images:
             images = [attachment]
-
-        queue = FragmentQueue(ctx, link)
-
         for image in images:
             if not (renderer := image.get("backstageImageRenderer")):
                 continue
@@ -2175,9 +2145,9 @@ class Crosspost(Cog):
             text = "".join(frag.get("text", "") for frag in frags)
             queue.push_text(f">>> {text}")
 
-        return await queue.resolve(ctx)
-
-    async def display_e621_images(self, ctx: CrosspostContext, post_id: str) -> bool:
+    async def display_e621_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str
+    ):
         assert ctx.guild is not None
         self.logger.info(
             f"e621: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {post_id}"
@@ -2196,8 +2166,7 @@ class Crosspost(Cog):
         except IndexError:
             raise ResponseError(404, api_url)
 
-        post_link = f"https://e621.net/posts/{post_id}"
-        queue = FragmentQueue(ctx, post_link)
+        queue.link = f"https://e621.net/posts/{post_id}"
 
         queue.push_file(post["file"]["url"])
 
@@ -2206,8 +2175,6 @@ class Crosspost(Cog):
 
         if sources := post.get("sources"):
             queue.push_text(sources[-1], force=True)
-
-        return await queue.resolve(ctx)
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
@@ -2493,7 +2460,7 @@ HANDLER_DICT: dict[
     str,
     tuple[
         re.Pattern,
-        Callable[[Crosspost, CrosspostContext, str], Awaitable[bool]],
+        Callable[[Crosspost, CrosspostContext, FragmentQueue, str], Awaitable[None]],
     ],
 ] = {
     site: (expr, getattr(Crosspost, f"display_{site}_images"))
