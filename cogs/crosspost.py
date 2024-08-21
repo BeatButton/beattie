@@ -1833,16 +1833,17 @@ class Crosspost(Cog):
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
             return False
 
-        embedded = False
         refer = {"Referer": link}
 
         img = root.xpath(".//img[contains(@class, 'IllustItemThumbImg')]")[0]
         src: str = img.get("src")
+
+        queue = FragmentQueue(ctx, link)
+
         if "/img/" not in src:
             src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
             src = f"https:{src}"
-            await self.send(ctx, src, use_default_headers=False, headers=refer)
-            embedded = True
+            queue.push_file(src, headers=refer)
 
         user, post = match.groups()
 
@@ -1872,15 +1873,15 @@ class Crosspost(Cog):
 
         frag = data["html"]
         if not frag:
-            return embedded
+            return await queue.resolve(ctx)
 
         if frag == "You need to sign in.":
             await ctx.send("Post requires authentication.")
-            return embedded
+            return await queue.resolve(ctx)
 
         if frag == "Error occurred.":
             await ctx.send("Poipiku reported a generic error.")
-            return embedded
+            return await queue.resolve(ctx)
 
         if frag == "Password is incorrect.":
 
@@ -1915,7 +1916,7 @@ class Crosspost(Cog):
                         "Poipiku password timeout expired.", delete_after=delete_after
                     )
                     await clean()
-                    return embedded
+                    return await queue.resolve(ctx)
 
                 to_clean.append(reply)
 
@@ -1948,10 +1949,9 @@ class Crosspost(Cog):
             src = img.get("src")
             src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
             src = f"https:{src}"
-            await self.send(ctx, src, use_default_headers=False, headers=refer)
-            embedded = True
+            queue.push_file(src, headers=refer)
 
-        return embedded
+        return await queue.resolve(ctx)
 
     async def display_bsky_images(
         self, ctx: CrosspostContext, repo: str, rkey: str
