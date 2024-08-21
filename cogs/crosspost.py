@@ -1507,13 +1507,10 @@ class Crosspost(Cog):
         if not (images := post.get("media_attachments")):
             return False
 
-        settings = await self.db.get_effective_settings(ctx.message)
-
-        all_embedded = True
-
         real_url = post["url"]
+        queue = FragmentQueue(ctx, real_url)
         if real_url.casefold() != link.casefold():
-            await ctx.send(f"<{real_url}>")
+            queue.push_text(real_url)
 
         for image in images:
             urls = [url for url in [image["remote_url"], image["url"]] if url]
@@ -1522,67 +1519,25 @@ class Crosspost(Cog):
                 if not urlparse.urlparse(url).netloc:
                     netloc = urlparse.urlparse(str(resp.url)).netloc
                     urls[idx] = f"https://{netloc}/{url.lstrip('/')}"
-
             if image.get("type") == "gifv":
-                async with self.get(*urls, method="HEAD") as img_resp:
-                    gif_url = f"{img_resp.url}"
-
-                proc = await asyncio.create_subprocess_exec(
-                    "ffmpeg",
-                    "-i",
-                    gif_url,
-                    "-i",
-                    gif_url,
-                    "-filter_complex",
-                    "[0:v]palettegen[p];[1:v][p]paletteuse",
-                    "-f",
-                    "gif",
-                    "pipe:1",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                )
-
-                try:
-                    stdout = await try_wait_for(proc)
-                except asyncio.TimeoutError:
-                    await ctx.send("Gif took too long to process.")
-                    async with self.get(*urls, method="HEAD") as resp:
-                        msg = await self.send(ctx, str(resp.url))
-                        if all_embedded and too_large(msg):
-                            all_embedded = False
-                    continue
-
-                img = BytesIO(stdout)
-
                 filename = (
                     f"{str(resp.url).rpartition('/')[2].removesuffix('.mp4')}.gif"
                 )
-                file = File(img, filename)
-                msg = await ctx.send(file=file)
-                if too_large(msg):
-                    await ctx.send(gif_url)
+                queue.push_image(*urls, filename=filename, postprocess=gif_pp)
             else:
-                async with self.get(*urls, method="HEAD") as resp:
-                    msg = await self.send(ctx, str(resp.url))
-                    if too_large(msg):
-                        await ctx.send(url)
+                queue.push_image(*urls)
 
-        if (
-            all_embedded
-            and await self.should_post_text(ctx)
-            and (content := post["content"])
-        ):
-            content_warning = ""
+        if content := post["content"]:
             if cw := post.get("spoiler_text"):
-                content_warning = f"{cw}\n"
+                queue.push_text(cw)
 
             fragments = html.fragments_fromstring(content, parser=self.parser)
-            text = f"{content_warning}>>> " + "\n".join(
+            text = "\n".join(
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
-            await ctx.send(text, suppress_embeds=True)
+            queue.push_text(f">>> {text}")
 
-        return all_embedded
+        return await queue.resolve(ctx)
 
     async def display_inkbunny_images(self, ctx: CrosspostContext, sub_id: str) -> bool:
         assert ctx.guild is not None
