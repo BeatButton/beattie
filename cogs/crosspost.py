@@ -2204,15 +2204,18 @@ class Crosspost(Cog):
         except IndexError:
             raise ResponseError(404, api_url)
 
-        await self.send(ctx, post["file"]["url"])
+        post_link = f"https://e621.net/posts/{post_id}"
+        queue = FragmentQueue(ctx, post_link)
 
-        if (text := post.get("description")) and await self.should_post_text(ctx):
-            await ctx.send(f">>> {text}")
+        queue.push_file(post["file"]["url"])
+
+        if (text := post.get("description")):
+            queue.push_text(f">>> {text}")
 
         if sources := post.get("sources"):
-            await ctx.send(sources[-1], suppress_embeds=True)
+            queue.push_text(sources[-1], force=True)
 
-        return True
+        return await queue.resolve(ctx)
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
