@@ -111,6 +111,11 @@ class Remind(Cog):
                         REFERENCES public.reminder(id) ON DELETE CASCADE,
                     rrule text NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS public.timezone (
+                    user_id bigint NOT NULL PRIMARY KEY,
+                    timezone text NOT NULL
+                );
                 """
             )
             self.queue = [
