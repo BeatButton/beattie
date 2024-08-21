@@ -1554,7 +1554,9 @@ class Crosspost(Cog):
             if cw := post.get("spoiler_text"):
                 queue.push_text(cw)
 
-            fragments = html.fragments_fromstring(content, parser=self.parser)
+            fragments = html.fragments_fromstring(
+                re.sub(r"<br ?/?>", "\n", content), parser=self.parser
+            )
             text = "\n".join(
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
