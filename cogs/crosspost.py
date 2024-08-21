@@ -437,7 +437,7 @@ class FragmentQueue:
         for frag in to_dl:
             frag.save()
 
-        async def senf_files():
+        async def send_files():
             nonlocal batch_size
             if file_batch:
                 await ctx.send(files=file_batch)
@@ -457,7 +457,7 @@ class FragmentQueue:
         for frag in fragments:
             if isinstance(frag, TextFragment):
                 if frag.force:
-                    await senf_files()
+                    await send_files()
                     await ctx.send(frag.content, suppress_embeds=True)
                 else:
                     text = f"{text}\n{frag}"
@@ -474,17 +474,17 @@ class FragmentQueue:
                     raise RuntimeError("frag.save failed to set img")
                 size = len(img.getbuffer())
                 if size > limit:
-                    await senf_files()
+                    await send_files()
                     await ctx.send(frag.urls[0])
                     continue
                 if batch_size + size > limit or len(file_batch) == 10:
-                    await senf_files()
+                    await send_files()
                 batch_size += size
                 img.seek(0)
                 file_batch.append(File(img, frag.filename))
 
         if file_batch:
-            await senf_files()
+            await send_files()
 
         if do_text and text:
             await send_text()
