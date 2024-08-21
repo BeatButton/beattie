@@ -1802,48 +1802,23 @@ class Crosspost(Cog):
         if not (files := data["files"]):
             return False
 
+        queue = FragmentQueue(ctx, link)
+
         for file in files:
             url = file["url"]
+            filename = None
+            pp = None
             base, _, ext = url.rpartition("/")[-1].rpartition("?")[0].rpartition(".")
             if ext == "apng":
-                proc = await asyncio.create_subprocess_exec(
-                    "ffmpeg",
-                    "-i",
-                    url,
-                    "-i",
-                    url,
-                    "-filter_complex",
-                    "[0:v]palettegen[p];[1:v][p]paletteuse",
-                    "-f",
-                    "gif",
-                    "pipe:1",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                )
-
-                try:
-                    stdout = await try_wait_for(proc)
-                except asyncio.TimeoutError:
-                    await ctx.send("Gif took too long to process.")
-                    await self.send(ctx, url)
-                    continue
-
-                img = BytesIO(stdout)
-
                 filename = f"{base}.gif"
-                file = File(img, filename)
-                msg = await ctx.send(file=file)
-                if too_large(msg):
-                    msg = await self.send(ctx, url)
-            else:
-                msg = await self.send(ctx, url)
-                if too_large(msg):
-                    await ctx.send(url)
+                pp = gif_pp
 
-        if await self.should_post_text(ctx) and (text := data["text"]):
-            await ctx.send(f">>> {text}", suppress_embeds=True)
+            queue.push_file(url, filename=filename, postprocess=pp)
 
-        return True
+        if text := data["text"]:
+            queue.push_text(f">>> {text}")
+
+        return await queue.resolve(ctx)
 
     async def display_poipiku_images(self, ctx: CrosspostContext, link: str) -> bool:
         assert ctx.guild is not None
