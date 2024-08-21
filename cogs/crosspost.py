@@ -1766,14 +1766,15 @@ class Crosspost(Cog):
             f"lofter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
         )
 
-        await self.send(ctx, img.get("src"), use_default_headers=False)
+        queue = FragmentQueue(ctx, link)
 
-        if await self.should_post_text(ctx):
-            if elems := root.xpath(LOFTER_TEXT_SELECTOR):
-                text = elems[0].text_content()
-                await ctx.send(f">>> {text}", suppress_embeds=True)
+        queue.push_file(img.get("src"))
 
-        return True
+        if elems := root.xpath(LOFTER_TEXT_SELECTOR):
+            text = elems[0].text_content()
+            queue.push_text(f">>> {text}")
+
+        return await queue.resolve(ctx)
 
     async def display_misskey_images(self, ctx: CrosspostContext, link: str) -> bool:
         if (match := MISSKEY_URL_GROUPS.match(link)) is None:
