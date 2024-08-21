@@ -1134,11 +1134,15 @@ class Crosspost(Cog):
                         self.logger.info(f"cache hit on {site} with args {args}")
                         queue, timer = hit
                         timer.cancel()
-                        self.recent_queues[key] = queue, asyncio.Task(asyncio.sleep(0))
+                        self.recent_queues[key] = queue, asyncio.Task(
+                            kill_timer(self, key)
+                        )
                         coro = queue.perform(ctx)
                     else:
                         queue = FragmentQueue(ctx, args[0])
-                        self.recent_queues[key] = queue, asyncio.Task(asyncio.sleep(0))
+                        self.recent_queues[key] = queue, asyncio.Task(
+                            kill_timer(self, key)
+                        )
                         coro = queue.resolve(ctx)
                         await func(self, ctx, queue, *args)
 
