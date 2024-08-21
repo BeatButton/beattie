@@ -1656,10 +1656,11 @@ class Crosspost(Cog):
         post = await self.booru_helper(link, R34_API_URL, params)
         if post is None:
             return False
-        await self.send(ctx, post["file_url"])
+        queue = FragmentQueue(ctx, link)
+        queue.push_image(post["file_url"])
         if source := post.get("source"):
-            await ctx.send(html_unescape(source), suppress_embeds=True)
-        return True
+            queue.push_text(html_unescape(source), force=True)
+        return await queue.resolve(ctx)
 
     async def booru_helper(
         self, link: str, api_url: str, params: dict[str, str]
