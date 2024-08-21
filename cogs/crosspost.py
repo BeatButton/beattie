@@ -235,6 +235,7 @@ class FileFragment(Fragment):
     dl_task: asyncio.Task | None
     postprocess: PP | None
     pp_extra: Any
+    lock_filename: bool
 
     def __init__(
         self,
@@ -245,6 +246,7 @@ class FileFragment(Fragment):
         use_default_headers: bool = False,
         postprocess: PP = None,
         pp_extra: Any = None,
+        lock_filename: bool = False,
     ):
         self.cog = cog
         self.urls = urls
@@ -252,6 +254,7 @@ class FileFragment(Fragment):
         self.pp_extra = pp_extra
         self.headers = headers
         self.use_default_headers = use_default_headers
+        self.lock_filename = lock_filename
 
         if filename is None:
             filename = re.findall(r"[\w. -]+\.[\w. -]+", urls[0])[-1]
@@ -280,7 +283,7 @@ class FileFragment(Fragment):
             use_default_headers=self.use_default_headers,
         )
 
-        if filename is not None:
+        if not self.lock_filename and filename is not None:
             self.filename = filename
 
         if self.postprocess is not None:
@@ -384,6 +387,7 @@ class FragmentQueue:
                 postprocess=postprocess,
                 pp_extra=pp_extra,
                 headers=headers,
+                lock_filename=filename is not None,
             )
         )
 
@@ -495,7 +499,7 @@ class FragmentQueue:
         return True
 
 
-async def gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
+async def ffmpeg_gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
     proc = await asyncio.create_subprocess_exec(
         "ffmpeg",
         "-i",
@@ -510,6 +514,24 @@ async def gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
     )
+    try:
+        stdout = await try_wait_for(proc)
+    except asyncio.TimeoutError:
+        return img
+    else:
+        return BytesIO(stdout)
+
+
+async def magick_gif_pp(frag: FileFragment, img: BytesIO, _) -> BytesIO:
+    proc = await asyncio.create_subprocess_exec(
+        "magick",
+        "convert",
+        frag.urls[0],
+        "gif:-",
+        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+    )
+
     try:
         stdout = await try_wait_for(proc)
     except asyncio.TimeoutError:
@@ -1299,7 +1321,7 @@ class Crosspost(Cog):
                 case "gif":
                     base = url.rpartition("/")[-1].rpartition(".")[0]
                     filename = f"{base}.gif"
-                    queue.push_file(url, filename=filename, postprocess=gif_pp)
+                    queue.push_file(url, filename=filename, postprocess=ffmpeg_gif_pp)
                 case "video":
                     queue.push_file(url)
 
@@ -1534,7 +1556,7 @@ class Crosspost(Cog):
                 filename = (
                     f"{str(resp.url).rpartition('/')[2].removesuffix('.mp4')}.gif"
                 )
-                queue.push_file(*urls, filename=filename, postprocess=gif_pp)
+                queue.push_file(*urls, filename=filename, postprocess=ffmpeg_gif_pp)
             else:
                 queue.push_file(*urls)
 
@@ -1811,7 +1833,7 @@ class Crosspost(Cog):
             base, _, ext = url.rpartition("/")[-1].rpartition("?")[0].rpartition(".")
             if ext == "apng":
                 filename = f"{base}.gif"
-                pp = gif_pp
+                pp = ffmpeg_gif_pp
 
             queue.push_file(url, filename=filename, postprocess=pp)
 
@@ -2134,7 +2156,8 @@ class Crosspost(Cog):
         if not images:
             images = [attachment]
 
-        posted = False
+        queue = FragmentQueue(ctx, link)
+
         for image in images:
             if not (renderer := image.get("backstageImageRenderer")):
                 continue
@@ -2147,42 +2170,20 @@ class Crosspost(Cog):
                 if (disp := resp.content_disposition) and (name := disp.filename):
                     ext = name.rpartition(".")[-1]
 
+            pp = None
             ext = ext or "jpeg"
 
             if ext == "webp":
-                proc = await asyncio.create_subprocess_exec(
-                    "magick",
-                    "convert",
-                    img,
-                    "gif:-",
-                    stderr=subprocess.DEVNULL,
-                    stdout=subprocess.PIPE,
-                )
-                filename = f"{post_id}.gif"
+                pp = magick_gif_pp
+                ext = "gif"
 
-                try:
-                    stdout = await try_wait_for(proc)
-                except asyncio.TimeoutError:
-                    await ctx.send("Gif took too long to process.")
-                    await self.send(ctx, img, filename=f"{post_id}.{ext}")
-                else:
-                    gif = BytesIO(stdout)
-                    gif.seek(0)
-                    file = File(gif, filename)
-                    await ctx.send(file=file)
-            else:
-                await self.send(ctx, img, filename=f"{post_id}.{ext}")
-            posted = True
+            queue.push_file(img, filename=f"{post_id}.{ext}", postprocess=pp)
 
-        if (
-            posted
-            and await self.should_post_text(ctx)
-            and (frags := post["contentText"].get("runs"))
-        ):
+        if frags := post["contentText"].get("runs"):
             text = "".join(frag.get("text", "") for frag in frags)
-            await ctx.send(f">>> {text}", suppress_embeds=True)
+            queue.push_text(f">>> {text}")
 
-        return posted
+        return await queue.resolve(ctx)
 
     async def display_e621_images(self, ctx: CrosspostContext, post_id: str) -> bool:
         assert ctx.guild is not None
