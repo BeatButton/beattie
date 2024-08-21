@@ -611,23 +611,20 @@ async def ugoira_pp(frag: FileFragment, img: BytesIO, illust_id: str) -> BytesIO
 
 
 class Settings:
-    __slots__ = ("auto", "max_pages", "cleanup", "text")
+    __slots__ = ("auto", "max_pages", "text")
 
     auto: bool | None
     max_pages: int | None
-    cleanup: bool | None
     text: bool | None
 
     def __init__(
         self,
         auto: bool = None,
         max_pages: int = None,
-        cleanup: bool = None,
         text: bool = None,
     ):
         self.auto = auto
         self.max_pages = max_pages
-        self.cleanup = cleanup
         self.text = text
 
     def __str__(self):
@@ -672,7 +669,6 @@ class Database:
                     channel_id bigint NOT NULL,
                     auto boolean,
                     max_pages integer,
-                    cleanup boolean,
                     text boolean,
                     PRIMARY KEY(guild_id, channel_id)
                 );
@@ -1099,7 +1095,8 @@ class Crosspost(Cog):
         content = remove_spoilers(ctx.message.content)
         guild = ctx.guild
         assert guild is not None
-        do_suppress = await self.should_cleanup(ctx.message, guild.me)
+        assert isinstance(ctx.me, discord.Member)
+        do_suppress = ctx.channel.permissions_for(ctx.me).manage_messages
         if force:
             blacklist = set()
         else:
@@ -1166,7 +1163,8 @@ class Crosspost(Cog):
 
         assert message.guild is not None
         if not (
-            message.embeds and await self.should_cleanup(message, message.guild.me)
+            message.embeds
+            and message.channel.permissions_for(message.guild.me).manage_messages
         ):
             return
 
@@ -1232,14 +1230,6 @@ class Crosspost(Cog):
         if max_pages is None:
             max_pages = 4
         return max_pages
-
-    async def should_cleanup(self, message: Message, me: discord.Member) -> bool:
-        if not message.channel.permissions_for(me).manage_messages:
-            return False
-
-        settings = await self.db.get_effective_settings(message)
-
-        return bool(settings.cleanup)
 
     async def should_post_text(self, ctx: BContext) -> bool:
         settings = await self.db.get_effective_settings(ctx.message)
@@ -1915,14 +1905,14 @@ class Crosspost(Cog):
                 )
 
             async def clean():
-                if do_clean:
+                if can_clean:
                     for msg in to_clean:
                         await msg.delete()
 
             assert isinstance(ctx.me, discord.Member)
-            do_clean = await self.should_cleanup(ctx.message, ctx.me)
+            can_clean = ctx.channel.permissions_for(ctx.me).manage_messages
 
-            delete_after = 10 if do_clean else None
+            delete_after = 10 if can_clean else None
 
             msg = await ctx.reply(
                 "Post requires a password. Reply to this message with the password.",
@@ -2209,7 +2199,7 @@ class Crosspost(Cog):
 
         queue.push_file(post["file"]["url"])
 
-        if (text := post.get("description")):
+        if text := post.get("description"):
             queue.push_text(f">>> {text}")
 
         if sources := post.get("sources"):
@@ -2274,24 +2264,16 @@ applying it to the guild as a whole."""
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")
 
-    @crosspost.command(aliases=["suppress"])
+    @crosspost.command(aliases=["suppress"], hidden=True)
     async def cleanup(
         self,
         ctx: BContext,
         enabled: bool,
         *,
-        target: ConfigTarget = None,
+        _: str = "",
     ):
         """Toggle automatic embed removal."""
-        guild = ctx.guild
-        assert guild is not None
-        settings = Settings(cleanup=enabled)
-        await self.db.set_settings(guild.id, target.id if target else 0, settings)
-        fmt = "en" if enabled else "dis"
-        message = f"Cleaning up embeds {fmt}abled"
-        if target is not None:
-            message = f"{message} in {target.mention}"
-        await ctx.send(f"{message}.")
+        await ctx.send("Setting crosspost cleanup state is no longer supported.")
 
     @crosspost.command(aliases=["context"])
     async def text(
