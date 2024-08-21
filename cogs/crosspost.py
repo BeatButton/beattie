@@ -1456,57 +1456,27 @@ class Crosspost(Cog):
         if not any(block["type"] in ("image", "video") for block in blocks):
             return False
 
-        max_pages = await self.get_max_pages(ctx)
-        num_images = 0
-        do_text = await self.should_post_text(ctx)
-        text = ""
-
-        def send_text():
-            nonlocal text
-            send = text.strip()
-            text = ""
-            if send:
-                return ctx.send(f">>> {send}", suppress_embeds=True)
-            else:
-                return asyncio.sleep(0)
+        post_link = f"https://{blog}.tumblr.com/post/{post}"
+        queue = FragmentQueue(ctx, post_link)
 
         for block in blocks:
-            block_type = block["type"]
-            if block_type == "text":
-                text = f"{text}\n{block['text']}"
-            else:
-                if do_text and text:
-                    await send_text()
-                match block_type:
-                    case "image":
-                        num_images += 1
-                        if max_pages and num_images > max_pages:
-                            continue
-                        url = block["hd"]
-                        if url.endswith(".gifv"):
-                            async with self.get(
-                                url, headers={"Range": "bytes=0-2"}
-                            ) as resp:
-                                start = await resp.read()
-                            if start.startswith(b"GIF"):
-                                url = url[:-1]
-                        await self.send(ctx, url)
-                    case "video":
-                        num_images += 1
-                        if max_pages and num_images > max_pages:
-                            continue
-                        await self.send(ctx, block["url"])
+            match block["type"]:
+                case "text":
+                    queue.push_text(f">>> {block['text']}")
+                case "image":
+                    url = block["hd"]
+                    if url.endswith(".gifv"):
+                        async with self.get(
+                            url, headers={"Range": "bytes=0-2"}
+                        ) as resp:
+                            start = await resp.read()
+                        if start.startswith(b"GIF"):
+                            url = url[:-1]
+                    queue.push_image(url)
+                case "video":
+                    queue.push_image(block["url"])
 
-        pages_remaining = max_pages and num_images - max_pages
-        if do_text and text and not pages_remaining:
-            await send_text()
-
-        if pages_remaining > 0:
-            s = "s" if pages_remaining > 1 else ""
-            link = f"https://{blog}.tumblr.com/post/{post}"
-            message = f"{pages_remaining} more image{s} at <{link}>"
-            await ctx.send(message)
-        return True
+        return await queue.resolve(ctx)
 
     async def display_mastodon_images(
         self, ctx: CrosspostContext, link: str, site: str, post_id: str
