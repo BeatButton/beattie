@@ -349,8 +349,13 @@ class PixivFragment(Fragment):
         return frag
 
 
-class TextFragment(Fragment, str):
-    pass
+class TextFragment(Fragment):
+    def __init__(self, content: str, force: bool):
+        self.content = content
+        self.force = force
+
+    def __str__(self) -> str:
+        return self.content
 
 
 class FragmentQueue:
@@ -397,8 +402,8 @@ class FragmentQueue:
             )
         )
 
-    def push_text(self, text: str):
-        self.fragments.append(TextFragment(text))
+    def push_text(self, text: str, force: bool = False):
+        self.fragments.append(TextFragment(text, force))
 
     async def resolve(self, ctx: CrosspostContext) -> bool:
         if not self.fragments:
@@ -446,8 +451,12 @@ class FragmentQueue:
 
         num_files = 0
         for frag in fragments:
-            if isinstance(frag, str):
-                text = f"{text}\n{frag}"
+            if isinstance(frag, TextFragment):
+                if frag.force:
+                    await send_images()
+                    await ctx.send(frag.content, suppress_embeds=True)
+                else:
+                    text = f"{text}\n{frag}"
             else:
                 num_files += 1
                 if max_pages and num_files > max_pages:
@@ -1615,27 +1624,27 @@ class Crosspost(Cog):
         if post is None:
             return False
 
-        text = None
-        if await self.should_post_text(ctx):
-            params["s"] = "note"
-            del params["json"]
-            params["post_id"] = params.pop("id")
-            async with self.get(GELBOORU_API_URL, params=params) as resp:
-                root = etree.fromstring(await resp.read(), self.xml_parser)
+        queue = FragmentQueue(ctx, link)
 
-            notes = list(root)
-            if notes:
-                notes.sort(key=lambda n: int(n.get("y")))
-                text = "\n\n".join(n.get("body") for n in notes)
-                text = translate_markdown(text)
-                text = f">>> {text}"
+        queue.push_image(post["file_url"])
 
-        await self.send(ctx, post["file_url"])
-        if text:
-            await ctx.send(text, suppress_embeds=True)
+        params["s"] = "note"
+        del params["json"]
+        params["post_id"] = params.pop("id")
+        async with self.get(GELBOORU_API_URL, params=params) as resp:
+            root = etree.fromstring(await resp.read(), self.xml_parser)
+
+        notes = list(root)
+        if notes:
+            notes.sort(key=lambda n: int(n.get("y")))
+            text = "\n\n".join(n.get("body") for n in notes)
+            text = translate_markdown(text)
+            queue.push_text(f">>> {text}")
+
         if source := post.get("source"):
-            await ctx.send(html_unescape(source), suppress_embeds=True)
-        return True
+            queue.push_text(html_unescape(source), force=True)
+
+        return await queue.resolve(ctx)
 
     async def display_r34_images(self, ctx: CrosspostContext, link: str) -> bool:
         assert ctx.guild is not None
