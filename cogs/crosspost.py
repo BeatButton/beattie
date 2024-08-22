@@ -161,6 +161,8 @@ YGAL_FULLSIZE_EXPR = re.compile(r"""popup\((['"])(?P<link>[^\1]*?)\1""")
 YGAL_IMG_SELECTOR = "//img[@id='idPreviewImage']"
 YGAL_TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'commentData')]"
 
+PILLOWFORT_URL_EXPR = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
+
 YT_COMMUNITY_URL_EXPR = re.compile(
     r"https?://(?:www\.)?youtube\.com/(?:post/|channel/[^/]+/community\?lb=)([\w-]+)"
 )
@@ -168,7 +170,6 @@ YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
 
 E621_URL_EXPR = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)")
 
-PILLOWFORT_URL_EXPR = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
 
 HANDLER_EXPR: list[tuple[str, re.Pattern]] = [
     (name.removesuffix("_URL_EXPR").lower(), expr)
