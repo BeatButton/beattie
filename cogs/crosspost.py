@@ -1132,11 +1132,11 @@ class Crosspost(Cog):
                 ms, mt = m.span()
                 spoiler = any(ms < st and ss < mt for ss, st in sspans)
                 args = m.groups()
+                if not args:
+                    args = (m.string,)
+                args = tuple(map(str.strip, args))
+                key = (site, *args)
                 try:
-                    if isinstance(args, str):
-                        args = [args]
-                    args = tuple(map(str.strip, args))
-                    key = (site, *args)
                     if hit := self.recent_queues.get(key):
                         self.logger.info(
                             f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
