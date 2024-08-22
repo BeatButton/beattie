@@ -8,7 +8,6 @@ from .type_hints import Comparable
 T = TypeVar("T")
 U = TypeVar("U", bound=Comparable)
 
-SPOILER_EXPR = re.compile(r"\|\|.*?\|\|", flags=re.DOTALL)
 LINK_EXPR = re.compile(
     r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)"
 )
@@ -39,8 +38,21 @@ def reverse_insort_by_key(
     seq.insert(lo, val)
 
 
-def remove_spoilers(content: str) -> str:
-    return SPOILER_EXPR.sub("", content)
+def spoiler_spans(text: str) -> list[tuple[int, int]]:
+    """Returns indices substrings in spoilers (inclusive left, exclusive right)"""
+    spans = []
+    start = 0
+    while True:
+        try:
+            left = text.index("||", start) + 2
+            right = text.index("||", left)
+        except ValueError:
+            break
+        else:
+            start = right + 2
+            spans.append((left, right))
+
+    return spans
 
 
 # fmt: off

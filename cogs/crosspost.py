@@ -43,7 +43,7 @@ from context import BContext
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
-from utils.etc import display_bytes, remove_spoilers, translate_markdown
+from utils.etc import display_bytes, spoiler_spans, translate_markdown
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
@@ -415,11 +415,11 @@ class FragmentQueue:
     def clear(self):
         self.fragments.clear()
 
-    async def resolve(self, ctx: CrosspostContext) -> bool:
+    async def resolve(self, ctx: CrosspostContext, spoiler: bool) -> bool:
         self.resolved.set()
-        return await self.perform(ctx)
+        return await self.perform(ctx, spoiler)
 
-    async def perform(self, ctx: CrosspostContext) -> bool:
+    async def perform(self, ctx: CrosspostContext, spoiler: bool) -> bool:
         await self.resolved.wait()
 
         if not self.fragments:
@@ -461,6 +461,8 @@ class FragmentQueue:
             send = text.strip()
             text = ""
             if send:
+                if spoiler:
+                    send = f"||{send}||"
                 return ctx.send(send, suppress_embeds=True)
             else:
                 return asyncio.sleep(0)
@@ -492,7 +494,9 @@ class FragmentQueue:
                 if batch_size + size > limit or len(file_batch) == 10:
                     await send_files()
                 batch_size += size
-                file_batch.append(File(BytesIO(file_bytes), frag.filename))
+                file_batch.append(
+                    File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
+                )
 
         if file_batch:
             await send_files()
@@ -1112,7 +1116,7 @@ class Crosspost(Cog):
         return img.getvalue(), filename
 
     async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
-        content = remove_spoilers(ctx.message.content)
+        sspans = spoiler_spans(ctx.message.content)
         guild = ctx.guild
         assert guild is not None
         assert isinstance(ctx.me, discord.Member)
@@ -1124,7 +1128,10 @@ class Crosspost(Cog):
         for site, (expr, func) in HANDLER_DICT.items():
             if site in blacklist:
                 continue
-            for args in expr.findall(content):
+            for m in expr.finditer(ctx.message.content):
+                ms, mt = m.span()
+                spoiler = any(ms < st and ss < mt for ss, st in sspans)
+                args = m.groups()
                 try:
                     if isinstance(args, str):
                         args = [args]
@@ -1140,13 +1147,13 @@ class Crosspost(Cog):
                         self.recent_queues[key] = queue, asyncio.Task(
                             kill_timer(self, key)
                         )
-                        coro = queue.perform(ctx)
+                        coro = queue.perform(ctx, spoiler)
                     else:
-                        queue = FragmentQueue(ctx, args[0])
+                        queue = FragmentQueue(ctx, m.string)
                         self.recent_queues[key] = queue, asyncio.Task(
                             kill_timer(self, key)
                         )
-                        coro = queue.resolve(ctx)
+                        coro = queue.resolve(ctx, spoiler)
                         await func(self, ctx, queue, *args)
 
                     if await coro and do_suppress:
@@ -2457,9 +2464,7 @@ applying it to the guild as a whole."""
 
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = ""):
-        """Ignore links in the following message.
-
-        You can also use ||spoiler tags|| to achieve the same thing."""
+        """Ignore links in the following message."""
         pass
 
 
