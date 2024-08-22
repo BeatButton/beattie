@@ -1688,6 +1688,7 @@ class Crosspost(Cog):
         post = await self.booru_helper(link, R34_API_URL, params)
         if post is None:
             return False
+        queue.push_file(post["file_url"])
         if source := post.get("source"):
             queue.push_text(html_unescape(source), force=True)
 
