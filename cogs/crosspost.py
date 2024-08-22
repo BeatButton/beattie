@@ -1131,7 +1131,10 @@ class Crosspost(Cog):
                     args = tuple(map(str.strip, args))
                     key = (site, *args)
                     if hit := self.recent_queues.get(key):
-                        self.logger.info(f"cache hit on {site} with args {args}")
+                        self.logger.info(
+                            f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+                            f"{site} {args}"
+                        )
                         queue, timer = hit
                         timer.cancel()
                         self.recent_queues[key] = queue, asyncio.Task(
