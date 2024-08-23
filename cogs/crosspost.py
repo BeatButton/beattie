@@ -481,50 +481,54 @@ class FragmentQueue:
                 await ctx.send(send, suppress_embeds=True)
 
         num_files = 0
-        for frag in fragments:
-            if isinstance(frag, TextFragment):
-                if frag.force:
-                    await send_files()
-                    await ctx.send(frag.content, suppress_embeds=True)
-                else:
-                    text = f"{text}\n{frag}"
-            elif isinstance(frag, EmbedFragment):
+        try:
+            for frag in fragments:
+                match frag:
+                    case TextFragment():
+                        if frag.force:
+                            await send_files()
+                            await ctx.send(frag.content, suppress_embeds=True)
+                        else:
+                            text = f"{text}\n{frag}"
+                    case EmbedFragment():
+                        await send_files()
+                        if do_text:
+                            await send_text()
+                        await ctx.send(embed=frag.embed)
+                    case FileFragment():
+                        num_files += 1
+                        if max_pages and num_files > max_pages:
+                            continue
+                        if do_text and not (max_pages and num_files > max_pages):
+                            await send_text()
+                        await frag.save()
+                        file_bytes = frag.file_bytes
+                        if not file_bytes:
+                            raise RuntimeError("frag.save failed to set file_bytes")
+                        size = len(file_bytes)
+                        if size > limit:
+                            await send_files()
+                            await ctx.send(frag.urls[0])
+                            continue
+                        if batch_size + size > limit or len(file_batch) == 10:
+                            await send_files()
+                        batch_size += size
+                        file_batch.append(
+                            File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
+                        )
+                    case FallbackFragment():
+                        if num_files != max_pages:
+                            raise RuntimeError("hit a FallbackFragment with pages left")
+                    case _:
+                        raise RuntimeError(
+                            f"unexpected Fragment subtype {type(frag).__name__}"
+                        )
+        finally:
+            if file_batch:
                 await send_files()
-                await send_text()
-                await ctx.send(embed=frag.embed)
-            elif isinstance(frag, FileFragment):
-                num_files += 1
-                if max_pages and num_files > max_pages:
-                    continue
-                if do_text and text and not (max_pages and num_files > max_pages):
-                    await send_text()
-                await frag.save()
-                file_bytes = frag.file_bytes
-                if not file_bytes:
-                    raise RuntimeError("frag.save failed to set file_bytes")
-                size = len(file_bytes)
-                if size > limit:
-                    await send_files()
-                    await ctx.send(frag.urls[0])
-                    continue
-                if batch_size + size > limit or len(file_batch) == 10:
-                    await send_files()
-                batch_size += size
-                file_batch.append(
-                    File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
-                )
-            elif isinstance(frag, FallbackFragment) and num_files == max_pages:
-                pass
-            else:
-                await send_files()
-                await send_text()
-                raise RuntimeError(f"unexpected Fragment subtype {type(frag).__name__}")
 
-        if file_batch:
-            await send_files()
-
-        if do_text and text:
-            await send_text()
+            if do_text:
+                await send_text()
 
         pages_remaining = max_pages and num_files - max_pages
 
