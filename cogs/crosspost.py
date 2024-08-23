@@ -24,7 +24,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import CategoryChannel, File, Message, PartialMessageable, Thread
+from discord import CategoryChannel, Embed, File, Message, PartialMessageable, Thread
 from discord.ext import commands
 from discord.ext.commands import (
     BadArgument,
@@ -170,6 +170,7 @@ YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
 
 E621_URL_EXPR = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)")
 
+EXHENTAI_URL_EXPR = re.compile(r"https?://e[x-]hentai\.org/g/(\d+)/(\w+)")
 
 HANDLER_EXPR: list[tuple[str, re.Pattern]] = [
     (name.removesuffix("_URL_EXPR").lower(), expr)
@@ -353,6 +354,13 @@ class FallbackFragment(Fragment):
         return frag
 
 
+class EmbedFragment(Fragment):
+    embed: Embed
+
+    def __init__(self, embed: Embed):
+        self.embed = embed
+
+
 class TextFragment(Fragment):
     content: str
     force: bool
@@ -412,6 +420,9 @@ class FragmentQueue:
                 headers,
             )
         )
+
+    def push_embed(self, embed: Embed):
+        self.fragments.append(EmbedFragment(embed))
 
     def push_text(self, text: str, force: bool = False):
         self.fragments.append(TextFragment(text, force))
@@ -477,6 +488,10 @@ class FragmentQueue:
                     await ctx.send(frag.content, suppress_embeds=True)
                 else:
                     text = f"{text}\n{frag}"
+            elif isinstance(frag, EmbedFragment):
+                await send_files()
+                await send_text()
+                await ctx.send(embed=frag.embed)
             elif isinstance(frag, FileFragment):
                 num_files += 1
                 if max_pages and num_files > max_pages:
@@ -2199,6 +2214,50 @@ class Crosspost(Cog):
 
         if sources := post.get("sources"):
             queue.push_text(sources[-1], force=True)
+
+    async def display_exhentai_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str, token: str
+    ):
+        assert ctx.guild is not None
+        self.logger.info(
+            f"exhentai: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+            f"{gal_id}/{token}"
+        )
+
+        body = {"method": "gdata", "gidlist": [[int(gal_id), token]], "namespace": 1}
+
+        api_url = "https://api.e-hentai.org/api.php"
+        async with ctx.bot.get(
+            api_url,
+            method="POST",
+            data=json.dumps(body),
+            headers={"Content-Type": "application/json"},
+        ) as resp:
+            content = await resp.read()
+            with open("exhentai.json", "wb") as fp:
+                fp.write(content)
+            data = json.loads(content)
+
+        data = data["gmetadata"][0]
+
+        tag: str
+        tags: dict[str, list[str]] = {}
+        for tag in data["tags"]:
+            namespace, _, tag = tag.partition(":")
+            tags.setdefault(namespace, []).append(tag)
+
+        taglist = "\n".join(f"{ns}: {', '.join(ts)}" for ns, ts in tags.items())
+
+        embed = (
+            Embed(title=data["title"], url=queue.link)
+            .set_image(url=data["thumb"])
+            .add_field(name="Category", value=data["category"])
+            .add_field(name="Rating", value=data["rating"])
+            .add_field(name="Uploader", value=data["uploader"])
+            .add_field(name="Tags", value=taglist)
+        )
+
+        queue.push_embed(embed)
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
