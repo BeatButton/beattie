@@ -513,12 +513,12 @@ class FragmentQueue:
                 file_batch.append(
                     File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
                 )
+            elif isinstance(frag, FallbackFragment) and num_files == max_pages:
+                pass
             else:
                 await send_files()
                 await send_text()
-                raise RuntimeError(
-                    f"unrecognized Fragment subtype {type(frag).__name__}"
-                )
+                raise RuntimeError(f"unexpected Fragment subtype {type(frag).__name__}")
 
         if file_batch:
             await send_files()
