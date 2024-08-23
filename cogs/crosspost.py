@@ -539,6 +539,7 @@ class FragmentQueue:
                                 if spoiler:
                                     url = f"||{url}||"
                                 await ctx.send(url)
+                                embedded = True
                             else:
                                 await ctx.send("File too large to upload.")
                             continue
