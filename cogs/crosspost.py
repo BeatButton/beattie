@@ -1132,15 +1132,17 @@ class Crosspost(Cog):
             blacklist = set()
         else:
             blacklist = await self.db.get_blacklist(guild.id)
+        content = ctx.message.content
         for site, (expr, func) in HANDLER_DICT.items():
             if site in blacklist:
                 continue
-            for m in expr.finditer(ctx.message.content):
+            for m in expr.finditer(content):
                 ms, mt = m.span()
                 spoiler = any(ms < st and ss < mt for ss, st in sspans)
                 args = m.groups()
+                link = content[ms:mt]
                 if not args:
-                    args = (m.string,)
+                    args = (link,)
                 args = tuple(map(str.strip, args))
                 key = (site, *args)
                 try:
@@ -1156,7 +1158,7 @@ class Crosspost(Cog):
                         )
                         coro = queue.perform(ctx, spoiler)
                     else:
-                        queue = FragmentQueue(ctx, m.string)
+                        queue = FragmentQueue(ctx, link)
                         self.recent_queues[key] = queue, asyncio.Task(
                             kill_timer(self, key)
                         )
