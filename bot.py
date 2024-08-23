@@ -42,7 +42,7 @@ class Shared:
         self,
         prefixes: tuple[str, ...],
         pool: asyncpg.Pool,
-        debug: bool = False,
+        debug: bool,
     ):
         with open("config/config.toml") as file:
             data = toml.load(file)
