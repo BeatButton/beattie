@@ -521,8 +521,9 @@ class FragmentQueue:
                             File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
                         )
                     case FallbackFragment():
-                        if num_files != max_pages:
+                        if num_files < max_pages:
                             raise RuntimeError("hit a FallbackFragment with pages left")
+                        num_files += 1
                     case _:
                         raise RuntimeError(
                             f"unexpected Fragment subtype {type(frag).__name__}"
