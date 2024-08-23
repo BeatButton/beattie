@@ -509,7 +509,10 @@ class FragmentQueue:
                         size = len(file_bytes)
                         if size > limit:
                             await send_files()
-                            await ctx.send(frag.urls[0])
+                            url = frag.urls[0]
+                            if spoiler:
+                                url = f"||{url}||"
+                            await ctx.send(url)
                             continue
                         if len(file_batch) == 10:
                             await send_files()
