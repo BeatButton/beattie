@@ -464,9 +464,12 @@ class FragmentQueue:
         for frag in to_dl:
             frag.save()
 
+        embedded = False
+
         async def send_files():
             nonlocal batch_size
             if file_batch:
+                embedded = True
                 await ctx.send(files=file_batch)
                 file_batch.clear()
                 batch_size = 0
@@ -537,7 +540,7 @@ class FragmentQueue:
             message = f"{pages_remaining} more item{s} at {self.link}"
             await ctx.send(message, suppress_embeds=True)
 
-        return True
+        return embedded
 
 
 async def ffmpeg_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
