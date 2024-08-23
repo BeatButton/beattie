@@ -468,6 +468,7 @@ class FragmentQueue:
 
         async def send_files():
             nonlocal batch_size
+            nonlocal embedded
             if file_batch:
                 embedded = True
                 await ctx.send(files=file_batch)
