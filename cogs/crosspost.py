@@ -354,6 +354,9 @@ class FallbackFragment(Fragment):
 
 
 class TextFragment(Fragment):
+    content: str
+    force: bool
+
     def __init__(self, content: str, force: bool):
         self.content = content
         self.force = force
@@ -433,11 +436,11 @@ class FragmentQueue:
         limit = guild.filesize_limit
         do_text = await self.cog.should_post_text(ctx)
         text = ""
-        file_batch = []
+        file_batch: list[File] = []
         batch_size = 0
         max_pages = await self.cog.get_max_pages(ctx)
 
-        to_dl = []
+        to_dl: list[FileFragment] = []
 
         for idx, frag in enumerate(fragments):
             if isinstance(frag, FallbackFragment):
@@ -457,16 +460,14 @@ class FragmentQueue:
                 file_batch.clear()
                 batch_size = 0
 
-        def send_text():
+        async def send_text():
             nonlocal text
             send = text.strip()
             text = ""
             if send:
                 if spoiler:
                     send = f"||{send}||"
-                return ctx.send(send, suppress_embeds=True)
-            else:
-                return asyncio.sleep(0)
+                await ctx.send(send, suppress_embeds=True)
 
         num_files = 0
         for frag in fragments:
@@ -476,11 +477,10 @@ class FragmentQueue:
                     await ctx.send(frag.content, suppress_embeds=True)
                 else:
                     text = f"{text}\n{frag}"
-            else:
+            elif isinstance(frag, FileFragment):
                 num_files += 1
                 if max_pages and num_files > max_pages:
                     continue
-                assert isinstance(frag, FileFragment)
                 if do_text and text and not (max_pages and num_files > max_pages):
                     await send_text()
                 await frag.save()
@@ -497,6 +497,12 @@ class FragmentQueue:
                 batch_size += size
                 file_batch.append(
                     File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
+                )
+            else:
+                await send_files()
+                await send_text()
+                raise RuntimeError(
+                    f"unrecognized Fragment subtype {type(frag).__name__}"
                 )
 
         if file_batch:
