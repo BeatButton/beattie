@@ -1305,21 +1305,21 @@ class Crosspost(Cog):
                 if self.twitter_method == "fxtwitter":
                     tweet = tweet["tweet"]
             except (json.JSONDecodeError, KeyError):
-                await ctx.send(f"Invalid response from API (code {status})")
+                queue.push_text(f"Invalid response from API (code {status})")
                 return False
 
         match status:
             case 200:
                 pass
             case 404:
-                await ctx.send(
+                queue.push_text(
                     "Failed to fetch tweet. It may have been deleted, "
                     "or be from a private or suspended account."
                 )
                 return False
             case 500:
                 if self.twitter_method == "vxtwitter":
-                    await ctx.send(tweet.get("error", "Unspecified error."))
+                    queue.push_text(tweet.get("error", "Unspecified error."))
                     return False
                 raise ResponseError(500, api_link)
             case other:
@@ -1382,7 +1382,7 @@ class Crosspost(Cog):
         try:
             res = res["illust"]
         except KeyError:
-            await ctx.send(
+            queue.push_text(
                 "This feature works sometimes, but isn't working right now!"
                 f"\nDebug info:\n{res.get('error')}"
             )
@@ -1510,7 +1510,7 @@ class Crosspost(Cog):
         data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition('}')[0]}}}")
 
         if (post_content := data["params"]["content"]) is None:
-            await ctx.send("Post inaccessible. It may require authentication.")
+            queue.push_text("Post inaccessible. It may require authentication.")
             return False
 
         blocks: list[dict[str, str]]
@@ -1799,7 +1799,7 @@ class Crosspost(Cog):
                         case "file":
                             queue.push_file(file_map[block["fileId"]]["url"])
             case other:
-                await ctx.send(f"Unrecognized post type {other}! This is a bug.")
+                queue.push_text(f"Unrecognized post type {other}! This is a bug.")
                 return False
 
     async def display_lofter_images(
@@ -1922,10 +1922,12 @@ class Crosspost(Cog):
             return
 
         if frag == "You need to sign in.":
-            await ctx.send("Post requires authentication.")
+            queue.push_text("Post requires authentication.")
+            return
 
         if frag == "Error occurred.":
-            await ctx.send("Poipiku reported a generic error.")
+            queue.push_text("Poipiku reported a generic error.")
+            return
 
         if frag == "Password is incorrect.":
 
@@ -2061,7 +2063,12 @@ class Crosspost(Cog):
         ) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
-        url = root.xpath(OG_IMAGE)[0].get("content")
+        try:
+            url = root.xpath(OG_IMAGE)[0].get("content")
+        except IndexError:
+            queue.push_text("No images found. Post may be login-restricted.")
+            return
+
         queue.push_file(url)
 
         title = root.xpath(OG_TITLE)[0].get("content")
