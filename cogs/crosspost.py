@@ -1184,10 +1184,11 @@ class Crosspost(Cog):
                 args = tuple(map(str.strip, args))
                 key = (site, *args)
                 if queue := self.queue_cache.get(key):
-                    self.logger.info(
-                        f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
-                        f"{site} {args}"
-                    )
+                    if queue.fragments:
+                        self.logger.info(
+                            f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+                            f"{site} {args}"
+                        )
                     coro = queue.perform(ctx, spoiler)
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
