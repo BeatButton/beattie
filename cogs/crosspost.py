@@ -448,7 +448,6 @@ class FragmentQueue:
         do_text = await self.cog.should_post_text(ctx)
         text = ""
         file_batch: list[File] = []
-        batch_size = 0
         max_pages = await self.cog.get_max_pages(ctx)
 
         to_dl: list[FileFragment] = []
@@ -467,13 +466,11 @@ class FragmentQueue:
         embedded = False
 
         async def send_files():
-            nonlocal batch_size
             nonlocal embedded
             if file_batch:
                 embedded = True
                 await ctx.send(files=file_batch)
                 file_batch.clear()
-                batch_size = 0
 
         async def send_text():
             nonlocal text
@@ -514,9 +511,8 @@ class FragmentQueue:
                             await send_files()
                             await ctx.send(frag.urls[0])
                             continue
-                        if batch_size + size > limit or len(file_batch) == 10:
+                        if len(file_batch) == 10:
                             await send_files()
-                        batch_size += size
                         file_batch.append(
                             File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
                         )
