@@ -1160,38 +1160,39 @@ class Crosspost(Cog):
                     args = (link,)
                 args = tuple(map(str.strip, args))
                 key = (site, *args)
-                try:
-                    if hit := self.recent_queues.get(key):
-                        self.logger.info(
-                            f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
-                            f"{site} {args}"
-                        )
-                        queue, timer = hit
-                        timer.cancel()
-                        self.recent_queues[key] = queue, asyncio.Task(
-                            kill_timer(self, key)
-                        )
-                        coro = queue.perform(ctx, spoiler)
-                    else:
-                        queue = FragmentQueue(ctx, link)
-                        self.recent_queues[key] = queue, asyncio.Task(
-                            kill_timer(self, key)
-                        )
-                        coro = queue.resolve(ctx, spoiler)
-                        await func(self, ctx, queue, *args)
-
-                    if await coro and do_suppress:
-                        await squash_unfindable(ctx.message.edit(suppress=True))
-                        do_suppress = False
-
+                if hit := self.recent_queues.get(key):
+                    self.logger.info(
+                        f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+                        f"{site} {args}"
+                    )
+                    queue, timer = hit
+                    timer.cancel()
                     self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
-                except ResponseError as e:
-                    if e.code == 404:
-                        await ctx.send("Post not found.")
-                    else:
+                    coro = queue.perform(ctx, spoiler)
+                else:
+                    queue = FragmentQueue(ctx, link)
+                    self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
+                    try:
+                        await func(self, ctx, queue, *args)
+                    except ResponseError as e:
+                        self.recent_queues.pop(key, None)
+                        if e.code == 404:
+                            await ctx.send("Post not found.")
+                        else:
+                            await ctx.bot.handle_error(ctx, e)
+                        return
+                    except Exception as e:
+                        self.recent_queues.pop(key, None)
                         await ctx.bot.handle_error(ctx, e)
-                except Exception as e:
-                    await ctx.bot.handle_error(ctx, e)
+                        return
+                    else:
+                        coro = queue.resolve(ctx, spoiler)
+
+                if await coro and do_suppress:
+                    await squash_unfindable(ctx.message.edit(suppress=True))
+                    do_suppress = False
+
+                self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
 
     @Cog.listener()
     async def on_message(self, message: Message):
