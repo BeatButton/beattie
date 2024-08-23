@@ -137,7 +137,7 @@ class Remind(Cog):
         others = self.bot.shared.bot_ids - {user.id}
         if any(m.id in others for m in guild.members):
             return
-        async with self.bot.pool.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute(
                 "UPDATE reminder SET bot_id = $1 WHERE guild_id = $2;",
                 user.id,

@@ -32,19 +32,18 @@ dsn = f"postgresql://beattie:{password}@localhost/beattie"
 async def main():
     pool = await asyncpg.create_pool(dsn)
     assert pool is not None
-    bots: list[BeattieBot] = [
-        BeattieBot(tuple(prefixes), pool=pool, debug=debug) for _ in tokens
-    ]
-    async with MultiAsyncWith(bots) as bots:
+    shared = Shared(prefixes=prefixes, pool=pool)
+    await shared.async_init()
+    bots: list[BeattieBot] = [BeattieBot(shared) for _ in tokens]
+    async with MultiAsyncWith(bots) as bots, asyncio.TaskGroup() as tg:
         bots_tokens = list(zip(bots, tokens))
-        bot_ids: set[int] = set()
-        shared = Shared(bot_ids)
+        shared.bot_ids = set()
+        shared.bots = list()
         for bot in bots:
             bot.shared = shared
-        for bot, token in bots_tokens[:-1]:
-            asyncio.create_task(bot.start(token))
-        bot, token = bots_tokens[-1]
-        await bot.start(token)
+            shared.bots.append(bot)
+        for bot, token in bots_tokens:
+            tg.create_task(bot.start(token))
 
 
 asyncio.run(main())

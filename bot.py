@@ -8,7 +8,6 @@ import sys
 import tarfile
 import traceback
 from asyncio import Task
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
@@ -30,24 +29,13 @@ from utils.aioutils import do_every
 C = TypeVar("C", bound=Context)
 
 
-@dataclass
 class Shared:
     bot_ids: set[int]
-
-
-class BeattieBot(Bot):
-    """A very cute robot boy"""
-
-    command_ignore = (commands.CommandNotFound, commands.CheckFailure)
-    general_ignore = (ConnectionResetError,)
-
+    bots: list[BeattieBot]
     archive_task: Task[Any] | None
-    http: HTTPClient
+    logger: logging.Logger
     session: aiohttp.ClientSession
     pool: asyncpg.Pool
-    logger: logging.Logger
-    shared: Shared
-
     extra: dict[str, Any]
 
     def __init__(
@@ -56,27 +44,10 @@ class BeattieBot(Bot):
         pool: asyncpg.Pool,
         debug: bool = False,
     ):
-        async def prefix_func(bot: BeattieBot, message: Message) -> Iterable[str]:
-            prefix = prefixes
-            if guild := message.guild:
-                guild_conf = await bot.config.get_guild(guild.id)
-                if guild_pre := guild_conf.get("prefix"):
-                    prefix = prefix + (guild_pre,)
-            return when_mentioned_or(*prefix)(self, message)
-
-        super().__init__(
-            prefix_func,
-            activity=Game(name=f"{prefixes[0]}help"),
-            case_insensitive=True,
-            help_command=BHelp(),
-            intents=Intents.all(),
-            allowed_mentions=AllowedMentions.none(),
-            log_handler=None,
-        )
-
         with open("config/config.toml") as file:
             data = toml.load(file)
 
+        self.prefixes = prefixes
         self.loglevel = data.get("loglevel", logging.WARNING)
         self.debug = debug
         self.pool = pool
@@ -90,28 +61,33 @@ class BeattieBot(Bot):
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
         self.new_logger()
 
-    async def setup_hook(self):
+    async def async_init(self):
         self.session = aiohttp.ClientSession()
         await self.config.async_init()
-        extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
-        extensions.append("jishaku")
-        for extension in extensions:
-            try:
-                await self.load_extension(extension)
-            except Exception as e:
-                print(
-                    "Failed to load extension",
-                    extension,
-                    file=sys.stderr,
-                )
-                traceback.print_exception(type(e), e, e.__traceback__)
+
+    async def prefix_func(self, bot: BeattieBot, message: Message) -> Iterable[str]:
+        prefix = self.prefixes
+        if guild := message.guild:
+            guild_conf = await bot.shared.config.get_guild(guild.id)
+            if guild_pre := guild_conf.get("prefix"):
+                prefix = prefix + (guild_pre,)
+        return when_mentioned_or(*prefix)(bot, message)
 
     async def close(self):
-        await self.session.close()
-        await self.pool.close()
-        if self.archive_task is not None:
-            self.archive_task.cancel()
-        await super().close()
+        if close := getattr(self, "_close", None):
+            await close
+            return
+
+        async def _close():
+            await self.session.close()
+            await self.pool.close()
+            if self.archive_task is not None:
+                self.archive_task.cancel()
+            for bot in self.bots:
+                await bot.close()
+
+        self._close = asyncio.create_task(_close())
+        await self._close
 
     def swap_logs(self, new: bool = True) -> Awaitable[None]:
         if new:
@@ -151,6 +127,55 @@ class BeattieBot(Bot):
                 tar.add(name)
                 os.unlink(name)
                 log.unlink()
+
+
+class BeattieBot(Bot):
+    """A very cute robot boy"""
+
+    command_ignore = (commands.CommandNotFound, commands.CheckFailure)
+    general_ignore = (ConnectionResetError,)
+
+    http: HTTPClient
+    shared: Shared
+
+    def __init__(
+        self,
+        shared: Shared,
+    ):
+        self.shared = shared
+        self.logger = shared.logger
+        self.pool = shared.pool
+        self.config = shared.config
+        self.session = shared.session
+        self.extra = shared.extra
+
+        super().__init__(
+            shared.prefix_func,
+            activity=Game(name=f"{shared.prefixes[0]}help"),
+            case_insensitive=True,
+            help_command=BHelp(),
+            intents=Intents.all(),
+            allowed_mentions=AllowedMentions.none(),
+            log_handler=None,
+        )
+
+    async def setup_hook(self):
+        extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
+        extensions.append("jishaku")
+        for extension in extensions:
+            try:
+                await self.load_extension(extension)
+            except Exception as e:
+                print(
+                    "Failed to load extension",
+                    extension,
+                    file=sys.stderr,
+                )
+                traceback.print_exception(type(e), e, e.__traceback__)
+
+    async def close(self):
+        await super().close()
+        await self.shared.close()
 
     async def handle_error(self, ctx: Context, e: Exception):
         if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):

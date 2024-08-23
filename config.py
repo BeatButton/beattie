@@ -3,13 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping
 
 if TYPE_CHECKING:
-    from bot import BeattieBot
+    from bot import Shared
 
 
 class Config:
-    def __init__(self, bot: BeattieBot):
-        self.pool = bot.pool
-        self.bot = bot
+    def __init__(self, shared: Shared):
+        self.pool = shared.pool
         self._cache: dict[int, dict[str, Any]] = {}
 
     async def async_init(self):
