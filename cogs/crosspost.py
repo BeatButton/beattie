@@ -500,7 +500,7 @@ class FragmentQueue:
                         num_files += 1
                         if max_pages and num_files > max_pages:
                             continue
-                        if do_text and not (max_pages and num_files > max_pages):
+                        if do_text:
                             await send_text()
                         await frag.save()
                         file_bytes = frag.file_bytes
