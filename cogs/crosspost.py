@@ -17,6 +17,7 @@ from io import BytesIO
 from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
+from sys import getsizeof
 from tempfile import TemporaryDirectory
 from typing import Any, Literal, Mapping, Self
 from zipfile import ZipFile
@@ -43,7 +44,7 @@ from context import BContext
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
-from utils.etc import display_bytes, spoiler_spans, translate_markdown
+from utils.etc import display_bytes, spoiler_spans, translate_markdown, GB
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
@@ -181,6 +182,8 @@ HANDLER_EXPR: list[tuple[str, re.Pattern]] = [
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
+QUEUE_CACHE_SIZE: int = 2 * GB
+
 ConfigTarget = GuildMessageable | CategoryChannel
 
 
@@ -224,7 +227,11 @@ class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
 
 
 class Fragment:
-    pass
+    def __sizeof__(self) -> int:
+        return super().__sizeof__() + sum(
+            getsizeof(getattr(self, name))
+            for name in getattr(self, "__annotations__", {})
+        )
 
 
 class FileFragment(Fragment):
@@ -378,6 +385,7 @@ class FragmentQueue:
     link: str
     fragments: list[Fragment]
     resolved: asyncio.Event
+    last_used: float  # timestamp
 
     def __init__(self, ctx: CrosspostContext, link: str):
         assert ctx.command is not None
@@ -385,6 +393,17 @@ class FragmentQueue:
         self.cog = ctx.command.cog
         self.fragments = []
         self.resolved = asyncio.Event()
+        self.last_used = datetime.now().timestamp()
+
+    def __sizeof__(self) -> int:
+        return (
+            super().__sizeof__()
+            + getsizeof(self.cog)
+            + getsizeof(self.link)
+            + getsizeof(self.resolved)
+            + getsizeof(self.last_used)
+            + sum(map(getsizeof, self.fragments))
+        )
 
     def push_file(
         self,
@@ -435,6 +454,7 @@ class FragmentQueue:
         return await self.perform(ctx, spoiler)
 
     async def perform(self, ctx: CrosspostContext, spoiler: bool) -> bool:
+        self.last_used = datetime.now().timestamp()
         await self.resolved.wait()
 
         if not self.fragments:
@@ -966,11 +986,6 @@ class CrosspostContext(BContext):
         return msg
 
 
-async def kill_timer(cog: Crosspost, key: tuple[str, ...], timeout: int = 300) -> None:
-    await asyncio.sleep(timeout)
-    cog.recent_queues.pop(key, None)
-
-
 class Crosspost(Cog):
     """Crossposts images from tweets and other social media"""
 
@@ -998,7 +1013,7 @@ class Crosspost(Cog):
     twitter_method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
 
     ongoing_tasks: dict[int, asyncio.Task]
-    recent_queues: dict[tuple[str, ...], tuple[FragmentQueue, asyncio.Task]]
+    queue_cache: dict[tuple[str, ...], FragmentQueue]
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -1015,11 +1030,11 @@ class Crosspost(Cog):
         else:
             self.ongoing_tasks = {}
             bot.extra["crosspost_ongoing_tasks"] = self.ongoing_tasks
-        if (recent_queues := bot.extra.get("crosspost_recent_queues")) is not None:
-            self.recent_queues = recent_queues
+        if (queue_cache := bot.extra.get("crosspost_queue_cache")) is not None:
+            self.queue_cache = queue_cache
         else:
-            self.recent_queues = {}
-            bot.extra["crosspost_recent_queues"] = self.recent_queues
+            self.queue_cache = {}
+            bot.extra["crosspost_queue_cache"] = self.queue_cache
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger("beattie.crosspost")
 
@@ -1168,29 +1183,25 @@ class Crosspost(Cog):
                     args = (link,)
                 args = tuple(map(str.strip, args))
                 key = (site, *args)
-                if hit := self.recent_queues.get(key):
+                if queue := self.queue_cache.get(key):
                     self.logger.info(
                         f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
                         f"{site} {args}"
                     )
-                    queue, timer = hit
-                    timer.cancel()
-                    self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
                     coro = queue.perform(ctx, spoiler)
                 else:
-                    queue = FragmentQueue(ctx, link)
-                    self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
+                    self.queue_cache[key] = queue = FragmentQueue(ctx, link)
                     try:
                         await func(self, ctx, queue, *args)
                     except ResponseError as e:
-                        self.recent_queues.pop(key, None)
+                        self.queue_cache.pop(key, None)
                         if e.code == 404:
                             await ctx.send("Post not found.")
                         else:
                             await ctx.bot.handle_error(ctx, e)
                         return
                     except Exception as e:
-                        self.recent_queues.pop(key, None)
+                        self.queue_cache.pop(key, None)
                         await ctx.bot.handle_error(ctx, e)
                         return
                     else:
@@ -1200,7 +1211,21 @@ class Crosspost(Cog):
                     await squash_unfindable(ctx.message.edit(suppress=True))
                     do_suppress = False
 
-                self.recent_queues[key] = queue, asyncio.Task(kill_timer(self, key))
+                self.evict_cache()
+
+    def evict_cache(self):
+        size = sum(map(getsizeof, self.queue_cache.values()))
+        if size <= QUEUE_CACHE_SIZE:
+            return
+
+        queues = sorted(
+            self.queue_cache.items(), key=lambda kv: kv[1].last_used, reverse=True
+        )
+
+        while queues and size > QUEUE_CACHE_SIZE:
+            key, queue = queues.pop()
+            size -= getsizeof(queue)
+            self.queue_cache.pop(key, None)
 
     @Cog.listener()
     async def on_message(self, message: Message):
