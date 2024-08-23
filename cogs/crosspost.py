@@ -77,6 +77,7 @@ GLOB_SITE_EXCLUDE = {
 }
 
 OG_IMAGE = ".//meta[@property='og:image']"
+OG_VIDEO = ".//meta[@property='og:video']"
 OG_TITLE = ".//meta[@property='og:title']"
 OG_DESCRIPTION = ".//meta[@property='og:description']"
 
@@ -172,6 +173,8 @@ YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
 E621_URL_EXPR = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)")
 
 EXHENTAI_URL_EXPR = re.compile(r"https?://e[x-]hentai\.org/g/(\d+)/(\w+)")
+
+TIKTOK_URL_EXPR = re.compile(r"https?://(?:www\.)(?:vx)?tiktok\.com/@\w+/video/\d+")
 
 HANDLER_EXPR: list[tuple[str, re.Pattern]] = [
     (name.removesuffix("_URL_EXPR").lower(), expr)
@@ -2325,6 +2328,37 @@ class Crosspost(Cog):
         )
 
         queue.push_embed(embed)
+
+    async def display_tiktok_images(
+        self, ctx: CrosspostContext, queue: FragmentQueue, link: str
+    ):
+        assert ctx.guild is not None
+        self.logger.info(
+            f"tiktok: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+        )
+
+        if "vxtiktok.com" not in link:
+            link = link.replace("tiktok.com", "vxtiktok.com")
+
+        async with self.get(
+            link,
+            error_for_status=False,
+            allow_redirects=False,
+            use_default_headers=False,
+            headers={"User-Agent": "test"},
+        ) as resp:
+            root = html.document_fromstring(await resp.read(), self.parser)
+
+        try:
+            url = root.xpath(OG_VIDEO)[0].get("content")
+        except IndexError:
+            queue.push_text("No video found. Post may be login-restricted.", force=True)
+            return
+
+        queue.push_file(url)
+
+        desc = root.xpath(OG_DESCRIPTION)[0].get("content")
+        queue.push_text(f">>> {desc}")
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
