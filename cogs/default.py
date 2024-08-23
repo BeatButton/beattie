@@ -87,7 +87,7 @@ class Default(Cog):
         """Get the invite for the bot."""
         url = (
             "<https://discordapp.com/oauth2/authorize?"
-            "client_id=1256058921240760371&scope=bot>"
+            "client_id=1276638257962024990&scope=bot>"
         )
         await ctx.send(url.format(ctx.me.id))
 
