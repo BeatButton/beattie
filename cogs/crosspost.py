@@ -2352,7 +2352,7 @@ class Crosspost(Cog):
         try:
             url = root.xpath(OG_VIDEO)[0].get("content")
         except IndexError:
-            queue.push_text("No video found. Post may be login-restricted.", force=True)
+            queue.push_text("No video found.", force=True)
             return
 
         queue.push_file(url)
