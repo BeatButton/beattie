@@ -75,19 +75,19 @@ class Shared:
 
     async def close(self):
         if close := getattr(self, "_close", None):
-            await close
+            await close.wait()
             return
 
-        async def _close():
-            await self.session.close()
-            await self.pool.close()
-            if self.archive_task is not None:
-                self.archive_task.cancel()
-            for bot in self.bots:
-                await bot.close()
+        self._close = asyncio.Event()
 
-        self._close = asyncio.create_task(_close())
-        await self._close
+        await self.session.close()
+        await self.pool.close()
+        if self.archive_task is not None:
+            self.archive_task.cancel()
+        for bot in self.bots:
+            asyncio.create_task(bot.close())
+
+        self._close.set()
 
     def swap_logs(self, new: bool = True) -> Awaitable[None]:
         if new:
