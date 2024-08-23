@@ -245,6 +245,7 @@ class FileFragment(Fragment):
     postprocess: PP | None
     pp_extra: Any
     lock_filename: bool
+    can_link: bool
 
     def __init__(
         self,
@@ -256,6 +257,7 @@ class FileFragment(Fragment):
         postprocess: PP = None,
         pp_extra: Any = None,
         lock_filename: bool = False,
+        can_link: bool = True,
     ):
         self.cog = cog
         self.urls = urls
@@ -264,6 +266,7 @@ class FileFragment(Fragment):
         self.headers = headers
         self.use_default_headers = use_default_headers
         self.lock_filename = lock_filename
+        self.can_link = can_link
 
         if filename is None:
             filename = re.findall(r"[\w. -]+\.[\w. -]+", urls[0])[-1]
@@ -411,6 +414,7 @@ class FragmentQueue:
         filename: str = None,
         postprocess: PP = None,
         pp_extra: Any = None,
+        can_link: bool = True,
         headers: dict[str, str] = None,
     ):
         self.fragments.append(
@@ -422,6 +426,7 @@ class FragmentQueue:
                 pp_extra=pp_extra,
                 headers=headers,
                 lock_filename=filename is not None,
+                can_link=can_link,
             )
         )
 
@@ -529,10 +534,13 @@ class FragmentQueue:
                         size = len(file_bytes)
                         if size > limit:
                             await send_files()
-                            url = frag.urls[0]
-                            if spoiler:
-                                url = f"||{url}||"
-                            await ctx.send(url)
+                            if frag.can_link:
+                                url = frag.urls[0]
+                                if spoiler:
+                                    url = f"||{url}||"
+                                await ctx.send(url)
+                            else:
+                                await ctx.send("File too large to upload.")
                             continue
                         if len(file_batch) == 10:
                             await send_files()
@@ -1441,7 +1449,11 @@ class Crosspost(Cog):
 
             if "ugoira" in url:
                 queue.push_file(
-                    url, postprocess=ugoira_pp, headers=headers, pp_extra=illust_id
+                    url,
+                    postprocess=ugoira_pp,
+                    headers=headers,
+                    pp_extra=illust_id,
+                    can_link=False,
                 )
             else:
                 queue.push_fallback(url, res["image_urls"]["large"], headers=headers)
