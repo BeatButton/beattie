@@ -548,7 +548,9 @@ class FragmentQueue:
                                 await ctx.send(url)
                                 embedded = True
                             else:
-                                await ctx.send("File too large to upload.")
+                                await ctx.send(
+                                    f"File too large to upload ({display_bytes(size)})."
+                                )
                             continue
                         if len(file_batch) == 10:
                             await send_files()
