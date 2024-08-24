@@ -11,8 +11,8 @@ def do_every(
 ) -> asyncio.Task:
     async def task():
         while True:
-            await asyncio.sleep(seconds)
             await coro(*args, **kwargs)
+            await asyncio.sleep(seconds)
 
     return asyncio.create_task(task())
 
