@@ -37,6 +37,7 @@ class Shared:
     session: aiohttp.ClientSession
     pool: asyncpg.Pool
     extra: dict[str, Any]
+    uptime: datetime
 
     def __init__(
         self,
@@ -148,6 +149,7 @@ class BeattieBot(Bot):
         self.config = shared.config
         self.session = shared.session
         self.extra = shared.extra
+        self.uptime = shared.uptime
 
         super().__init__(
             shared.prefix_func,
