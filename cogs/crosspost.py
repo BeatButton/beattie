@@ -180,7 +180,9 @@ E621_URL_EXPR = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)"
 
 EXHENTAI_URL_EXPR = re.compile(r"https?://e[x-]hentai\.org/g/(\d+)/(\w+)")
 
-TIKTOK_URL_EXPR = re.compile(r"https?://(?:www\.)(?:vx)?tiktok\.com/@\w+/video/\d+")
+TIKTOK_URL_EXPR = re.compile(
+    r"https?://(?:www\.)(?:vx)?tiktok\.com/(?:@\w+/video/\d|t/\w+)+"
+)
 
 HANDLER_EXPR: list[tuple[str, re.Pattern]] = [
     (name.removesuffix("_URL_EXPR").lower(), expr)
