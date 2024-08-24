@@ -1204,6 +1204,9 @@ class Crosspost(Cog):
                     coro = queue.perform(ctx, spoiler)
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
+                    self.logger.info(
+                        f"{site}: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+                    )
                     try:
                         await func(self, ctx, queue, *args)
                     except ResponseError as e:
@@ -1331,13 +1334,6 @@ class Crosspost(Cog):
     async def display_twitter_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, tweet_id: str
     ):
-        guild = ctx.guild
-        assert guild is not None
-        self.logger.info(
-            f"twitter ({self.twitter_method}): "
-            f"{guild.id}/{ctx.channel.id}/{ctx.message.id}: {tweet_id}"
-        )
-
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
         api_link = f"https://api.{self.twitter_method}.com/status/{tweet_id}"
 
@@ -1419,12 +1415,6 @@ class Crosspost(Cog):
     async def display_pixiv_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, illust_id: str
     ):
-        guild = ctx.guild
-        assert guild is not None
-        self.logger.info(
-            f"pixiv: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {illust_id}"
-        )
-
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with self.get(
@@ -1475,11 +1465,6 @@ class Crosspost(Cog):
     async def display_hiccears_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, link: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"hiccears: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         async with self.get(link, headers=self.hiccears_headers) as resp:
             self.update_hiccears_cookies(resp)
             root = html.document_fromstring(await resp.read(), self.parser)
@@ -1549,11 +1534,6 @@ class Crosspost(Cog):
     async def display_tumblr_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, blog: str, post: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"tumblr: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {blog}/{post}"
-        )
-
         link = f"https://tumbex.com/{blog}.tumblr/post/{post}"
 
         async with self.get(link) as resp:
@@ -1622,12 +1602,6 @@ class Crosspost(Cog):
                 post = await resp.json()
         except (ResponseError, aiohttp.ClientError):
             return False
-
-        assert ctx.guild is not None
-        self.logger.info(
-            f"mastodon: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         if not (images := post.get("media_attachments")):
             return False
 
@@ -1666,11 +1640,6 @@ class Crosspost(Cog):
     async def display_inkbunny_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"inkbunny: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {sub_id}"
-        )
-
         url = INKBUNNY_API_FMT.format("submissions")
         params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
         post_text = await self.should_post_text(ctx)
@@ -1702,13 +1671,7 @@ class Crosspost(Cog):
         fragment: str | None,
         album_id: str,
     ):
-        assert ctx.guild is not None
         is_album = bool(fragment)
-        self.logger.info(
-            f"imgur: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: "
-            f"{album_id} album={is_album}"
-        )
-
         target = "album" if is_album else "image"
 
         async with self.get(
@@ -1731,11 +1694,6 @@ class Crosspost(Cog):
     async def display_gelbooru_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, link: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"gelbooru: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         params = {**BOORU_API_PARAMS, **self.gelbooru_params}
         post = await self.booru_helper(link, GELBOORU_API_URL, params)
         if post is None:
@@ -1762,11 +1720,6 @@ class Crosspost(Cog):
     async def display_r34_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, link: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"r34: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         params = {**BOORU_API_PARAMS}
         post = await self.booru_helper(link, R34_API_URL, params)
         if post is None:
@@ -1813,12 +1766,6 @@ class Crosspost(Cog):
         body = post["body"]
         if body is None:
             return False
-
-        guild = ctx.guild
-        assert guild is not None
-        self.logger.info(
-            f"fanbox: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
 
         match post["type"]:
             case "image":
@@ -1873,12 +1820,6 @@ class Crosspost(Cog):
             img = elems[0]
         else:
             return False
-
-        assert ctx.guild is not None
-        self.logger.info(
-            f"lofter: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         queue.push_file(img.get("src"))
 
         if elems := root.xpath(LOFTER_TEXT_SELECTOR):
@@ -1890,12 +1831,6 @@ class Crosspost(Cog):
     ):
         if (match := MISSKEY_URL_GROUPS.match(link)) is None:
             return False
-
-        assert ctx.guild is not None
-        self.logger.info(
-            f"misskey: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         site, post = match.groups()
 
         url = f"https://{site}/api/notes/show"
@@ -1930,11 +1865,6 @@ class Crosspost(Cog):
     async def display_poipiku_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, link: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"poipiku: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
@@ -2060,11 +1990,6 @@ class Crosspost(Cog):
     async def display_bsky_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, repo: str, rkey: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"bsky: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {repo}/{rkey}"
-        )
-
         xrpc_url = BSKY_XRPC_FMT.format(repo, rkey)
         async with self.get(xrpc_url, use_default_headers=False) as resp:
             data = await resp.json()
@@ -2092,12 +2017,6 @@ class Crosspost(Cog):
         self, ctx: CrosspostContext, queue: FragmentQueue, post: str
     ):
         link = f"https://rule34.paheal.net/post/view/{post}"
-
-        assert ctx.guild is not None
-        self.logger.info(
-            f"paheal: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         async with self.get(link, use_default_headers=False) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
@@ -2113,11 +2032,6 @@ class Crosspost(Cog):
     async def display_furaffinity_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"furaffinity: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {sub_id}"
-        )
-
         link = f"https://www.fxraffinity.net/view/{sub_id}?full"
         async with self.get(
             link, error_for_status=False, allow_redirects=False
@@ -2142,11 +2056,6 @@ class Crosspost(Cog):
     async def display_ygal_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str
     ):
-        assert ctx.guild is not None
-
-        self.logger.info(
-            f"ygal: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {gal_id}"
-        )
 
         link = f"https://old.y-gallery.net/view/{gal_id}/"
 
@@ -2175,11 +2084,6 @@ class Crosspost(Cog):
     async def display_pillowfort_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, link: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"pillowfort: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         async with self.get(link) as resp:
             root = html.document_fromstring(await resp.read(), self.parser)
 
@@ -2201,11 +2105,6 @@ class Crosspost(Cog):
     async def display_yt_community_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"yt_community: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {post_id}"
-        )
-
         link = f"https://youtube.com/post/{post_id}"
 
         async with self.get(link) as resp:
@@ -2257,10 +2156,6 @@ class Crosspost(Cog):
     async def display_e621_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"e621: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {post_id}"
-        )
         params = {"tags": f"id:{post_id}"}
         if self.e621_key:
             auth_slug = b64encode(f"{self.e621_user}:{self.e621_key}".encode()).decode()
@@ -2288,12 +2183,6 @@ class Crosspost(Cog):
     async def display_exhentai_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str, token: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"exhentai: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: "
-            f"{gal_id}/{token}"
-        )
-
         body = {"method": "gdata", "gidlist": [[int(gal_id), token]], "namespace": 1}
 
         api_url = "https://api.e-hentai.org/api.php"
@@ -2332,11 +2221,6 @@ class Crosspost(Cog):
     async def display_tiktok_images(
         self, ctx: CrosspostContext, queue: FragmentQueue, link: str
     ):
-        assert ctx.guild is not None
-        self.logger.info(
-            f"tiktok: {ctx.guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-        )
-
         if "vxtiktok.com" not in link:
             link = link.replace("tiktok.com", "vxtiktok.com")
 
