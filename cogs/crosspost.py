@@ -25,7 +25,7 @@ from zipfile import ZipFile
 import aiohttp
 import discord
 import toml
-from discord import CategoryChannel, Embed, File, Message, PartialMessageable, Thread
+from discord import CategoryChannel, Embed, File, Message, Thread
 from discord.ext import commands
 from discord.ext.commands import (
     BadArgument,
@@ -44,7 +44,13 @@ from context import BContext
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
-from utils.etc import display_bytes, spoiler_spans, translate_markdown, GB
+from utils.etc import (
+    GB,
+    display_bytes,
+    get_size_limit,
+    spoiler_spans,
+    translate_markdown,
+)
 from utils.exceptions import ResponseError
 from utils.type_hints import GuildMessageable
 
@@ -344,9 +350,7 @@ class FallbackFragment(Fragment):
             ) as resp:
                 self.preferred_len = resp.content_length
 
-        guild = ctx.guild
-        assert guild is not None
-        if self.preferred_len is not None and guild.filesize_limit > self.preferred_len:
+        if self.preferred_len is not None and get_size_limit(ctx) > self.preferred_len:
 
             if (frag := self.preferred_frag) is None:
                 frag = self.preferred_frag = FileFragment(
@@ -470,9 +474,7 @@ class FragmentQueue:
 
         fragments = self.fragments[:]
 
-        guild = ctx.guild
-        assert guild is not None
-        limit = guild.filesize_limit
+        limit = get_size_limit(ctx)
         do_text = await self.cog.should_post_text(ctx)
         text = ""
         file_batch: list[File] = []
@@ -792,18 +794,29 @@ class Database:
             self.cog.logger.exception("Exception in message cache expiry task")
 
     async def get_effective_settings(self, message: Message) -> Settings:
-        guild = message.guild
-        assert guild is not None
         channel = message.channel
 
-        guild_id = guild.id
-        out = await self._get_settings(guild_id, 0)
+        out = Settings()
 
-        if category := getattr(channel, "category", None):
-            out = out.apply(await self._get_settings(guild_id, category.id))
-        if isinstance(channel, Thread):
-            out = out.apply(await self._get_settings(guild_id, channel.parent_id))
+        if guild := message.guild:
+            guild_id = guild.id
+            out = out.apply(await self._get_settings(guild_id, 0))
+            if category := getattr(channel, "category", None):
+                out = out.apply(await self._get_settings(guild_id, category.id))
+            if isinstance(channel, Thread):
+                out = out.apply(await self._get_settings(guild_id, channel.parent_id))
+        else:
+            guild_id = 0
+
         out = out.apply(await self._get_settings(guild_id, channel.id))
+
+        if guild is None:
+            if out.auto is None:
+                out.auto = True
+            if out.max_pages is None:
+                out.max_pages = 0
+            if out.text is None:
+                out.text = True
 
         if override := self.overrides.get(message.id):
             out = out.apply(override)
@@ -980,10 +993,8 @@ class CrosspostContext(BContext):
         if file:
             fp = file.fp
             assert isinstance(fp, BytesIO)
-            guild = self.guild
-            assert guild is not None
             size = len(fp.getbuffer())
-            if size >= guild.filesize_limit:
+            if size >= get_size_limit(self):
                 content = f"Image too large to upload ({display_bytes(size)})."
                 file = None
 
@@ -1083,9 +1094,6 @@ class Crosspost(Cog):
 
         await self.db.async_init()
 
-    def cog_check(self, ctx: BContext) -> bool:
-        return ctx.guild is not None
-
     async def pixiv_login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
@@ -1173,16 +1181,22 @@ class Crosspost(Cog):
         return img.getvalue(), filename
 
     async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
-        sspans = spoiler_spans(ctx.message.content)
-        guild = ctx.guild
-        assert guild is not None
-        assert isinstance(ctx.me, discord.Member)
-        do_suppress = ctx.channel.permissions_for(ctx.me).manage_messages
-        if force:
+
+        if guild := ctx.guild:
+            assert isinstance(ctx.me, discord.Member)
+            do_suppress = ctx.channel.permissions_for(ctx.me).manage_messages
+            guild_id = guild.id
+        else:
+            do_suppress = False
+            guild_id = 0
+
+        if force or guild is None:
             blacklist = set()
         else:
-            blacklist = await self.db.get_blacklist(guild.id)
+            blacklist = await self.db.get_blacklist(guild_id)
+
         content = ctx.message.content
+        sspans = spoiler_spans(content)
         for site, (expr, func) in HANDLER_DICT.items():
             if site in blacklist:
                 continue
@@ -1198,14 +1212,14 @@ class Crosspost(Cog):
                 if queue := self.queue_cache.get(key):
                     if queue.fragments:
                         self.logger.info(
-                            f"cache hit: {guild.id}/{ctx.channel.id}/{ctx.message.id}: "
+                            f"cache hit: {guild_id}/{ctx.channel.id}/{ctx.message.id}: "
                             f"{site} {args}"
                         )
                     coro = queue.perform(ctx, spoiler)
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
                     self.logger.info(
-                        f"{site}: {guild.id}/{ctx.channel.id}/{ctx.message.id}: {link}"
+                        f"{site}: {guild_id}/{ctx.channel.id}/{ctx.message.id}: {link}"
                     )
                     try:
                         await func(self, ctx, queue, *args)
@@ -1245,16 +1259,11 @@ class Crosspost(Cog):
 
     @Cog.listener()
     async def on_message(self, message: Message):
-        if (guild := message.guild) is None or message.author.bot:
+        if message.author.bot:
             return
-        channel = message.channel
-        me = guild.me
+        guild = message.guild
 
-        if isinstance(channel, PartialMessageable):
-            channel = await self.bot.fetch_channel(channel.id)
-            assert not isinstance(channel, discord.abc.PrivateChannel)
-
-        if not channel.permissions_for(me).send_messages:
+        if guild and not message.channel.permissions_for(guild.me).send_messages:
             return
         if not (await self.db.get_effective_settings(message)).auto:
             return
@@ -1268,6 +1277,9 @@ class Crosspost(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
+        if (guild := message.guild) is None:
+            return
+
         if not (sent_messages := self.db._message_cache.get(message.id)):
             return
 
@@ -1283,11 +1295,8 @@ class Crosspost(Cog):
                     break
         else:
             return
-
-        assert message.guild is not None
         if not (
-            message.embeds
-            and message.channel.permissions_for(message.guild.me).manage_messages
+            message.embeds and message.channel.permissions_for(guild.me).manage_messages
         ):
             return
 
@@ -2272,10 +2281,18 @@ applying it to the guild as a whole."""
         target: ConfigTarget = None,
     ):
         """Enable or disable automatic crossposting."""
-        guild = ctx.guild
-        assert guild is not None
+        if guild := ctx.guild:
+            guild_id = guild.id
+            target_id = target.id if target else 0
+        else:
+            guild_id = 0
+            if target is not None:
+                await ctx.send("No targets allowed in DM.")
+                return
+            target_id = ctx.channel.id
+
         settings = Settings(auto=enabled)
-        await self.db.set_settings(guild.id, target.id if target else 0, settings)
+        await self.db.set_settings(guild_id, target_id, settings)
         fmt = "en" if enabled else "dis"
         message = f"Crossposting images {fmt}abled"
         if target is not None:
@@ -2298,10 +2315,17 @@ applying it to the guild as a whole."""
         """Set the maximum number of images to send.
 
         Set to 0 for no limit."""
-        guild = ctx.guild
-        assert guild is not None
+        if guild := ctx.guild:
+            guild_id = guild.id
+            target_id = target.id if target else 0
+        else:
+            guild_id = 0
+            if target is not None:
+                await ctx.send("No targets allowed in DM.")
+                return
+            target_id = ctx.channel.id
         settings = Settings(max_pages=max_pages)
-        await self.db.set_settings(guild.id, target.id if target else 0, settings)
+        await self.db.set_settings(guild_id, target_id, settings)
         message = f"Max crosspost pages set to {max_pages}"
         if target is not None:
             message = f"{message} in {target.mention}"
@@ -2327,10 +2351,17 @@ applying it to the guild as a whole."""
         target: ConfigTarget = None,
     ):
         """Toggle crossposting of text context."""
-        guild = ctx.guild
-        assert guild is not None
+        if guild := ctx.guild:
+            guild_id = guild.id
+            target_id = target.id if target else 0
+        else:
+            guild_id = 0
+            if target is not None:
+                await ctx.send("No targets allowed in DM.")
+                return
+            target_id = ctx.channel.id
         settings = Settings(text=enabled)
-        await self.db.set_settings(guild.id, target.id if target else 0, settings)
+        await self.db.set_settings(guild_id, target_id, settings)
         fmt = "en" if enabled else "dis"
         message = f"Crossposting text context {fmt}abled"
         if target is not None:
@@ -2343,16 +2374,19 @@ applying it to the guild as a whole."""
 
         If no channel is specified, will clear all crosspost settings for the server."""
         if target is None:
-            guild = ctx.guild
-            assert guild is not None
-            await self.db.clear_settings_all(guild.id)
-            where = "this server"
+            if guild := ctx.guild:
+                await self.db.clear_settings_all(guild.id)
+                where = "this server"
+            else:
+                await self.db.clear_settings(0, ctx.channel.id)
+                where = "this DM"
         else:
             await self.db.clear_settings(target.guild.id, target.id)
             where = str(target)
         await ctx.send(f"Crosspost settings overrides cleared for {where}.")
 
     @crosspost.group(invoke_without_command=True)
+    @commands.check(lambda ctx: ctx.guild is not None)
     async def blacklist(self, ctx: BContext, site: str = ""):
         """Manage site blacklist for this server.
 
@@ -2429,38 +2463,40 @@ applying it to the guild as a whole."""
         """Get info on crosspost settings.
 
         If no channel is specified, will get info for the current channel."""
-        if target is None:
-            assert isinstance(ctx.channel, ConfigTarget)
-            target = ctx.channel
+        if guild := ctx.guild:
+            if target is None:
+                assert isinstance(ctx.channel, ConfigTarget)
+                target = ctx.channel
+            guild_id = guild.id
 
-        guild = ctx.guild
-        assert guild is not None
+            guild_conf = await self.db._get_settings(guild_id, 0)
+            final_conf = Settings()
+            final_conf = final_conf.apply(guild_conf)
+            msg = f"{guild.name}: {str(guild_conf) or '(none)'}"
 
-        guild_id = guild.id
+            category = getattr(target, "category", None)
+            if category is None and isinstance(target, CategoryChannel):
+                category = target
+            if category is not None:
+                cat_conf = await self.db._get_settings(guild_id, category.id)
+                final_conf = final_conf.apply(cat_conf)
+                msg = f"{msg}\n{category.name}: {str(cat_conf) or '(none)'}"
 
-        guild_conf = await self.db._get_settings(guild_id, 0)
-        final_conf = Settings()
-        final_conf = final_conf.apply(guild_conf)
-        msg = f"{guild.name}: {str(guild_conf) or '(none)'}"
+            if target is not category:
+                if isinstance(target, Thread):
+                    parent = await guild.fetch_channel(target.parent_id)
+                    assert isinstance(parent, ConfigTarget)
+                    target = parent
+                chan_conf = await self.db._get_settings(guild_id, target.id)
+                final_conf = final_conf.apply(chan_conf)
+                msg = f"{msg}\n{target.name}: {str(chan_conf) or '(none)'}"
 
-        category = getattr(target, "category", None)
-        if category is None and isinstance(target, CategoryChannel):
-            category = target
-        if category is not None:
-            cat_conf = await self.db._get_settings(guild_id, category.id)
-            final_conf = final_conf.apply(cat_conf)
-            msg = f"{msg}\n{category.name}: {str(cat_conf) or '(none)'}"
-
-        if target is not category:
-            if isinstance(target, Thread):
-                parent = await guild.fetch_channel(target.parent_id)
-                assert isinstance(parent, ConfigTarget)
-                target = parent
-            chan_conf = await self.db._get_settings(guild_id, target.id)
-            final_conf = final_conf.apply(chan_conf)
-            msg = f"{msg}\n{target.name}: {str(chan_conf) or '(none)'}"
-
-        msg = f"{msg}\nEffective: {str(final_conf) or '(none)'}"
+            msg = f"{msg}\nEffective: {str(final_conf) or '(none)'}"
+        elif target is not None:
+            msg = "No targets allowed in DM."
+        else:
+            conf = await self.db._get_settings(0, ctx.channel.id)
+            msg = f"DM settings: {str(conf) or '(none)'}"
         await ctx.send(msg)
 
     async def subcommand_error(self, ctx: BContext, e: Exception):

@@ -3,6 +3,8 @@ from datetime import timedelta
 from typing import Callable, MutableSequence, TypeVar
 from zoneinfo import ZoneInfo
 
+from discord.ext.commands import Context
+
 from .type_hints import Comparable
 
 T = TypeVar("T")
@@ -112,3 +114,10 @@ def translate_markdown(text: str) -> str:
         text = expr.sub(mkd, text)
     text = re.sub(r"<br ?/?>", "\n", text)
     return text
+
+
+def get_size_limit(ctx: Context) -> int:
+    if guild := ctx.guild:
+        return guild.filesize_limit
+    else:
+        return 25 * MB
