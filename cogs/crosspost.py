@@ -683,10 +683,13 @@ async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
         )
-        stdout = await try_wait_for(proc, timeout=120)
-
-    frag.filename = f"{illust_id}.gif"
-    return stdout
+        try:
+            stdout = await try_wait_for(proc)
+        except asyncio.TimeoutError:
+            return img
+        else:
+            frag.filename = f"{illust_id}.gif"
+            return stdout
 
 
 class Settings:
