@@ -981,23 +981,6 @@ class CrosspostContext(BContext):
     cog: Crosspost
 
     async def send(self, content: str = None, **kwargs: Any) -> Message:
-        task = asyncio.create_task(
-            self._send(
-                content,
-                **kwargs,
-            )
-        )
-        try:
-            return await asyncio.shield(task)
-        except asyncio.CancelledError as e:
-            await asyncio.wait_for(task, timeout=None)
-            raise e from None
-
-    async def _send(
-        self,
-        content: str = None,
-        **kwargs: Any,
-    ) -> Message:
         msg = await super().send(
             content,
             **kwargs,
