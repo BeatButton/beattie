@@ -757,6 +757,9 @@ class Database:
                     invoking_message bigint NOT NULL
                 );
 
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS crosspost_idx_invoking
+                ON crosspostmessage (invoking_message);
+
                 CREATE TABLE IF NOT EXISTS public.crosspostblacklist (
                     guild_id bigint NOT NULL,
                     site text NOT NULL,
