@@ -2342,7 +2342,6 @@ class Crosspost(Cog):
 
         async with self.get(
             link,
-            error_for_status=False,
             allow_redirects=False,
             use_default_headers=False,
             headers={"User-Agent": "test"},
@@ -2353,6 +2352,13 @@ class Crosspost(Cog):
             url = root.xpath(OG_VIDEO)[0].get("content")
         except IndexError:
             queue.push_text("No video found.", force=True)
+            return
+
+        try:
+            async with self.get(url, method="HEAD", use_default_headers=False) as resp:
+                pass
+        except ResponseError as e:
+            queue.push_text(f"Proxy server returned error {e.code}.")
             return
 
         queue.push_file(url)
