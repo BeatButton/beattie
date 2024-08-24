@@ -2174,7 +2174,9 @@ class Crosspost(Cog):
         else:
             headers = {}
         api_url = "https://e621.net/posts.json"
-        async with ctx.bot.get(api_url, params=params, headers=headers) as resp:
+        async with self.get(
+            api_url, params=params, headers=headers, use_default_headers=False
+        ) as resp:
             data = await resp.json()
         try:
             post = data["posts"][0]
@@ -2197,11 +2199,12 @@ class Crosspost(Cog):
         body = {"method": "gdata", "gidlist": [[int(gal_id), token]], "namespace": 1}
 
         api_url = "https://api.e-hentai.org/api.php"
-        async with ctx.bot.get(
+        async with self.get(
             api_url,
             method="POST",
             data=json.dumps(body),
             headers={"Content-Type": "application/json"},
+            use_default_headers=False,
         ) as resp:
             content = await resp.read()
             with open("exhentai.json", "wb") as fp:
