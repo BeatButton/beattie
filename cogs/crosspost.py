@@ -996,21 +996,10 @@ class CrosspostContext(BContext):
     async def _send(
         self,
         content: str = None,
-        *,
-        file: File = None,
         **kwargs: Any,
     ) -> Message:
-        if file:
-            fp = file.fp
-            assert isinstance(fp, BytesIO)
-            size = len(fp.getbuffer())
-            if size >= get_size_limit(self):
-                content = f"Image too large to upload ({display_bytes(size)})."
-                file = None
-
         msg = await super().send(
             content,
-            file=file,
             **kwargs,
         )
 
