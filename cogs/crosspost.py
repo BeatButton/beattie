@@ -1650,10 +1650,12 @@ class Crosspost(Cog):
         self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str
     ):
         url = INKBUNNY_API_FMT.format("submissions")
-        params = {"sid": self.inkbunny_sid, "submission_ids": sub_id}
-        post_text = await self.should_post_text(ctx)
-        if post_text:
-            params["show_description"] = "yes"
+        params = {
+            "sid": self.inkbunny_sid,
+            "submission_ids": sub_id,
+            "show_description": "yes",
+        }
+
         async with self.get(
             url, method="POST", use_default_headers=False, params=params
         ) as resp:
