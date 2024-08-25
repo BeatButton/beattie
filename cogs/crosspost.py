@@ -44,6 +44,7 @@ from context import BContext
 from utils.aioutils import squash_unfindable
 from utils.checks import is_owner_or
 from utils.contextmanagers import get
+from utils.converters import RangesConverter
 from utils.etc import (
     GB,
     display_bytes,
@@ -233,7 +234,9 @@ class Site(Converter):
 
 
 class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
-    pages: int | None
+    pages: int | list[tuple[int, int]] | None = commands.flag(
+        converter=int | RangesConverter | None
+    )
     text: bool | None
 
 
@@ -463,26 +466,49 @@ class FragmentQueue:
     def clear(self):
         self.fragments.clear()
 
-    async def resolve(self, ctx: CrosspostContext, spoiler: bool) -> bool:
+    async def resolve(
+        self,
+        ctx: CrosspostContext,
+        *,
+        spoiler: bool,
+        ranges: list[tuple[int, int]] | None,
+    ) -> bool:
         self.resolved.set()
-        return await self.perform(ctx, spoiler)
+        return await self.perform(ctx, spoiler=spoiler, ranges=ranges)
 
-    async def perform(self, ctx: CrosspostContext, spoiler: bool) -> bool:
+    async def perform(
+        self,
+        ctx: CrosspostContext,
+        *,
+        spoiler: bool,
+        ranges: list[tuple[int, int]] | None,
+    ) -> bool:
         self.last_used = datetime.now().timestamp()
         await self.resolved.wait()
 
         if not self.fragments:
             return False
 
-        fragments = self.fragments[:]
-
+        to_dl: list[FileFragment] = []
         limit = get_size_limit(ctx)
-        do_text = await self.cog.should_post_text(ctx)
         text = ""
         file_batch: list[File] = []
-        max_pages = await self.cog.get_max_pages(ctx)
 
-        to_dl: list[FileFragment] = []
+        if ranges:
+            do_text = False
+            max_pages = 0
+            frags = [
+                frag
+                for frag in self.fragments
+                if isinstance(frag, (FileFragment, FallbackFragment))
+            ]
+            fragments = [
+                frag for start, end in ranges for frag in frags[start - 1 : end]
+            ]
+        else:
+            fragments = self.fragments[:]
+            do_text = await self.cog.should_post_text(ctx)
+            max_pages = await self.cog.get_max_pages(ctx)
 
         for idx, frag in enumerate(fragments):
             if isinstance(frag, FallbackFragment):
@@ -1162,8 +1188,13 @@ class Crosspost(Cog):
         img.seek(0)
         return img.getvalue(), filename
 
-    async def process_links(self, ctx: CrosspostContext, *, force: bool = False):
-
+    async def process_links(
+        self,
+        ctx: CrosspostContext,
+        *,
+        force: bool = False,
+        ranges: list[tuple[int, int]] = None,
+    ):
         if guild := ctx.guild:
             assert isinstance(ctx.me, discord.Member)
             do_suppress = ctx.channel.permissions_for(ctx.me).manage_messages
@@ -1197,7 +1228,7 @@ class Crosspost(Cog):
                             f"cache hit: {guild_id}/{ctx.channel.id}/{ctx.message.id}: "
                             f"{site} {args}"
                         )
-                    coro = queue.perform(ctx, spoiler)
+                    coro = queue.perform(ctx, spoiler=spoiler, ranges=ranges)
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
                     self.logger.info(
@@ -1217,7 +1248,7 @@ class Crosspost(Cog):
                         await ctx.bot.handle_error(ctx, e)
                         return
                     else:
-                        coro = queue.resolve(ctx, spoiler)
+                        coro = queue.resolve(ctx, spoiler=spoiler, ranges=ranges)
 
                 if await coro and do_suppress:
                     await squash_unfindable(ctx.message.edit(suppress=True))
@@ -2511,9 +2542,15 @@ applying it to the guild as a whole."""
     for subcommand in blacklist.walk_commands():
         subcommand.on_error = blacklist_error
 
-    async def _post(self, ctx: CrosspostContext, *, force=False):
+    async def _post(
+        self,
+        ctx: CrosspostContext,
+        *,
+        force=False,
+        ranges: list[tuple[int, int]] = None,
+    ):
         message = ctx.message
-        task = asyncio.create_task(self.process_links(ctx, force=force))
+        task = asyncio.create_task(self.process_links(ctx, force=force, ranges=ranges))
         self.ongoing_tasks[message.id] = task
         try:
             await asyncio.wait_for(task, None)
@@ -2537,9 +2574,16 @@ applying it to the guild as a whole."""
                 pages = flag.pages
             if flag.text is not None:
                 text = flag.text
-        self.db.overrides[ctx.message.id] = Settings(max_pages=pages, text=text)
+
+        override = Settings(text=text)
+        ranges = None
+        if isinstance(pages, int):
+            override.max_pages = pages
+        else:
+            ranges = pages
+        self.db.overrides[ctx.message.id] = override
         try:
-            await self._post(new_ctx, force=True)
+            await self._post(new_ctx, force=True, ranges=ranges)
         finally:
             del self.db.overrides[ctx.message.id]
 

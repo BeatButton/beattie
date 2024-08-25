@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Collection
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -66,3 +67,21 @@ class SuitConverter(Converter):
             raise BadArgument("Not a suit", ", ".join(bad_suits))
 
         return suits
+
+
+RANGE_EXPR = re.compile(r"^(?:(?:\d+(?:-\d+)?),?)+$")
+
+
+class RangesConverter(Converter):
+    async def convert(self, ctx: BContext, argument: str) -> list[tuple[int, int]]:
+        if not RANGE_EXPR.match(argument):
+            raise BadArgument("Failed to parse ranges.")
+
+        out = []
+        for part in argument.split(","):
+            if not part:
+                continue
+            start, _, end = part.partition("-")
+            out.append((int(start), int(end or start)))
+
+        return out
