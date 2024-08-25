@@ -1259,10 +1259,12 @@ class Crosspost(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
-        if (guild := message.guild) is None:
-            return
-
-        if not (sent_messages := self.db._message_cache.get(message.id)):
+        if not (
+            message.embeds
+            and (sent_messages := self.db._message_cache.get(message.id))
+            and (guild := message.guild)
+            and message.channel.permissions_for(guild.me).manage_messages
+        ):
             return
 
         for message_id in sent_messages:
@@ -1273,13 +1275,9 @@ class Crosspost(Cog):
             except discord.Forbidden:
                 return
             else:
-                if msg.embeds:
+                if msg.embeds or msg.attachments:
                     break
         else:
-            return
-        if not (
-            message.embeds and message.channel.permissions_for(guild.me).manage_messages
-        ):
             return
 
         await message.edit(suppress=True)
