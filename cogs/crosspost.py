@@ -2517,7 +2517,7 @@ applying it to the guild as a whole."""
         queues = self.queue_cache.values()
         memory = sum(map(getsizeof, queues))
         length = sum(len(queue.fragments) > 0 for queue in queues)
-        if stamp := max((queue.last_used for queue in queues), default=None):
+        if stamp := min((queue.last_used for queue in queues), default=None):
             oldest = format_dt(datetime.fromtimestamp(stamp), style="R")
         else:
             oldest = "(none)"
