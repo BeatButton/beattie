@@ -35,7 +35,7 @@ from discord.ext.commands import (
     Converter,
     FlagConverter,
 )
-from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
+from discord.utils import format_dt, sleep_until, snowflake_time, time_snowflake, utcnow
 from lxml import etree, html
 from tldextract.tldextract import TLDExtract
 
@@ -2514,6 +2514,25 @@ applying it to the guild as a whole."""
             conf = await self.db._get_settings(0, ctx.channel.id)
             msg = f"DM settings: {str(conf) or '(none)'}"
         await ctx.send(msg)
+
+    @crosspost.command()
+    async def stats(self, ctx: BContext):
+        queues = self.queue_cache.values()
+        memory = sum(map(getsizeof, queues))
+        length = sum(len(queue.fragments) > 0 for queue in queues)
+        if stamp := max((queue.last_used for queue in queues), default=None):
+            oldest = format_dt(datetime.fromtimestamp(stamp), style="R")
+        else:
+            oldest = "(none)"
+
+        embed = (
+            discord.Embed()
+            .add_field(name="Memory Used", value=display_bytes(memory))
+            .add_field(name="Posts Cached", value=f"{length}")
+            .add_field(name="Oldest Post", value=str(oldest))
+        )
+
+        await ctx.send(embed=embed)
 
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
