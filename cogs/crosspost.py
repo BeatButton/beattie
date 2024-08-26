@@ -1222,18 +1222,13 @@ class Crosspost(Cog):
                     args = (link,)
                 args = tuple(map(str.strip, args))
                 key = (site, *args)
+                logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
                 if queue := self.queue_cache.get(key):
                     if queue.fragments:
-                        self.logger.info(
-                            f"cache hit: {guild_id}/{ctx.channel.id}/{ctx.message.id}: "
-                            f"{site} {args}"
-                        )
+                        self.logger.info(f"cache hit: {logloc}: {site} {args}")
                     coro = queue.perform(ctx, spoiler=spoiler, ranges=ranges)
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
-                    self.logger.info(
-                        f"{site}: {guild_id}/{ctx.channel.id}/{ctx.message.id}: {link}"
-                    )
                     try:
                         await func(self, ctx, queue, *args)
                     except ResponseError as e:
@@ -1248,6 +1243,8 @@ class Crosspost(Cog):
                         await ctx.bot.handle_error(ctx, e)
                         return
                     else:
+                        if queue.fragments:
+                            self.logger.info(f"{site}: {logloc}: {link}")
                         coro = queue.resolve(ctx, spoiler=spoiler, ranges=ranges)
 
                 if await coro and do_suppress:
