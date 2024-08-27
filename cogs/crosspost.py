@@ -9,7 +9,7 @@ import urllib.parse as urlparse
 from asyncio import subprocess
 from base64 import b64encode
 from collections import deque
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import datetime, timedelta
 from hashlib import md5
 from html import unescape as html_unescape
@@ -19,7 +19,7 @@ from operator import itemgetter
 from pathlib import Path
 from sys import getsizeof
 from tempfile import TemporaryDirectory
-from typing import Any, Literal, Mapping, Self
+from typing import Any, Literal, Self
 from zipfile import ZipFile
 
 import aiohttp
