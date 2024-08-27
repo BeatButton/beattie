@@ -1341,7 +1341,7 @@ class Crosspost(Cog):
         settings = await self.db.get_effective_settings(ctx.message)
         max_pages = settings.max_pages
         if max_pages is None:
-            max_pages = 4
+            max_pages = 10
         return max_pages
 
     async def should_post_text(self, ctx: BContext) -> bool:
