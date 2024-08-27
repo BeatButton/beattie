@@ -1330,7 +1330,7 @@ class Crosspost(Cog):
             await delete_messages(messages)
             messages_deleted = True
         if task:
-            await asyncio.wait([task])
+            await task
             if messages:
                 await delete_messages(messages)
                 messages_deleted = True
