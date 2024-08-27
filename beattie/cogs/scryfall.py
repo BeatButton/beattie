@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from discord import Color, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from bot import BeattieBot
-from context import BContext
-from utils.contextmanagers import get
-from utils.exceptions import ResponseError
-from utils.paginator import Paginator
+from beattie.utils.contextmanagers import get
+from beattie.utils.exceptions import ResponseError
+from beattie.utils.paginator import Paginator
+
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 API = "https://api.scryfall.com"
 DELAY = timedelta(milliseconds=100)

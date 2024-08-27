@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import random
 import re
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from bot import BeattieBot
-from context import BContext
-from utils.exceptions import ResponseError
+from beattie.utils.exceptions import ResponseError
+
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 
 class XkcdData(TypedDict):

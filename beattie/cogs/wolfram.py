@@ -1,12 +1,15 @@
-from typing import Mapping
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Mapping
 
 import toml
 from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
 
-from bot import BeattieBot
-from context import BContext
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 
 class Wolfram(Cog):

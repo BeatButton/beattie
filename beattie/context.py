@@ -10,7 +10,7 @@ from discord import File, Message
 from discord.ext import commands
 
 if TYPE_CHECKING:
-    from bot import BeattieBot
+    from beattie.bot import BeattieBot
 
 
 class BContext(commands.Context):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 from base64 import b64encode
 from collections import defaultdict
@@ -11,11 +13,11 @@ from discord.ext import commands
 from discord.ext.commands import Cog
 from lxml import etree
 
-from bot import BeattieBot
-from context import BContext
 
 if TYPE_CHECKING:
     from discord.abc import MessageableChannel
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 
 class NSFW(Cog):

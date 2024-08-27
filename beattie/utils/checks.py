@@ -6,7 +6,7 @@ from discord import Member
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from utils.type_hints import GuildMessageable
+from beattie.utils.type_hints import GuildMessageable
 
 T = TypeVar("T")
 

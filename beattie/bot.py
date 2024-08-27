@@ -20,11 +20,11 @@ from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 from discord.http import HTTPClient
 
-from config import Config
-from context import BContext
-from help import BHelp
-from utils import contextmanagers, exceptions
-from utils.aioutils import do_every
+from beattie.config import Config
+from beattie.context import BContext
+from beattie.help import BHelp
+from beattie.utils import contextmanagers, exceptions
+from beattie.utils.aioutils import do_every
 
 C = TypeVar("C", bound=Context)
 
@@ -162,11 +162,12 @@ class BeattieBot(Bot):
         )
 
     async def setup_hook(self):
-        extensions = [f"cogs.{f.stem}" for f in Path("cogs").glob("*.py")]
+        cogs = Path(__file__).parent / "cogs"
+        extensions = [f"beattie.cogs.{f.stem}" for f in cogs.glob("*.py")]
         extensions.append("jishaku")
         for extension in extensions:
             try:
-                await self.load_extension(extension)
+                await self.load_extension(extension, package="cogs")
             except Exception as e:
                 print(
                     "Failed to load extension",

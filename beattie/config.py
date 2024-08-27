@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping
 
 if TYPE_CHECKING:
-    from bot import Shared
+    from beattie.bot import Shared
 
 
 class Config:

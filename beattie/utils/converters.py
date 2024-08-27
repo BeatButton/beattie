@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from discord.ext.commands import BadArgument, Converter
 from recurrent import RecurringEvent
 
-from context import BContext
-from utils.etc import UTC
+from beattie.context import BContext
+from beattie.utils.etc import UTC
 
 GMT_TRANS = str.maketrans("+-", "-+")
 MINOR = frozenset(("cups", "swords", "wands", "pentacles"))

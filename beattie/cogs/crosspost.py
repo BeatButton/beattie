@@ -19,7 +19,7 @@ from operator import itemgetter
 from pathlib import Path
 from sys import getsizeof
 from tempfile import TemporaryDirectory
-from typing import Any, Literal, Self
+from typing import TYPE_CHECKING, Any, Literal, Self
 from zipfile import ZipFile
 
 import aiohttp
@@ -39,21 +39,23 @@ from discord.utils import format_dt, sleep_until, snowflake_time, time_snowflake
 from lxml import etree, html
 from tldextract.tldextract import TLDExtract
 
-from bot import BeattieBot
-from context import BContext
-from utils.aioutils import squash_unfindable
-from utils.checks import is_owner_or
-from utils.contextmanagers import get
-from utils.converters import RangesConverter
-from utils.etc import (
+from beattie.context import BContext
+from beattie.utils.aioutils import squash_unfindable
+from beattie.utils.checks import is_owner_or
+from beattie.utils.contextmanagers import get
+from beattie.utils.converters import RangesConverter
+from beattie.utils.etc import (
     GB,
     display_bytes,
     get_size_limit,
     spoiler_spans,
     translate_markdown,
 )
-from utils.exceptions import ResponseError
-from utils.type_hints import GuildMessageable
+from beattie.utils.exceptions import ResponseError
+from beattie.utils.type_hints import GuildMessageable
+
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
 
 GLOB_SITE_EXCLUDE = {
     "tenor.com",

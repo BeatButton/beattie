@@ -1,19 +1,23 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import random
 import re
 from concurrent import futures
 from itertools import islice
-from typing import Collection
+from typing import TYPE_CHECKING, Collection
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from bot import BeattieBot
-from context import BContext
-from utils.converters import SUITS, SuitConverter
-from utils.genesys import die_names, genesysroller
+from beattie.utils.converters import SUITS, SuitConverter
+from beattie.utils.genesys import die_names, genesysroller
+
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 RollArg = tuple[int, int, int, int, int, int]
 L2 = list[int]

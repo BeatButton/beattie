@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import datetime
+from typing import TYPE_CHECKING
 
 import discord
 import psutil
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from bot import BeattieBot
-from context import BContext
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 
 class Stats(Cog):

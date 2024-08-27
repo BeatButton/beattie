@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 from discord import File, Member, User
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from bot import BeattieBot
-from context import BContext
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 
 class Default(Cog):

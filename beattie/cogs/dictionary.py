@@ -1,11 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import discord
 from asyncjisho import Jisho
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from bot import BeattieBot
-from context import BContext
-from utils.paginator import Paginator
+from beattie.utils.paginator import Paginator
+
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 
 class Dictionary(Cog):

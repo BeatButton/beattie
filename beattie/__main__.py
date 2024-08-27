@@ -6,8 +6,8 @@ import sys
 import asyncpg
 import toml
 
-from bot import BeattieBot, Shared
-from utils.contextmanagers import MultiAsyncWith
+from beattie.bot import BeattieBot, Shared
+from beattie.utils.contextmanagers import MultiAsyncWith
 
 if platform.system() != "Windows":
     import uvloop

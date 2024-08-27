@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from datetime import datetime, timedelta
 from operator import attrgetter
-from typing import Any, Mapping, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Mapping, Self, TypeVar
 from zoneinfo import ZoneInfo
 
 import discord
@@ -13,13 +15,15 @@ from discord.ext.commands import Cog
 from discord.utils import format_dt
 from recurrent.event_parser import RecurringEvent
 
-from bot import BeattieBot
-from context import BContext
-from utils.aioutils import squash_unfindable
-from utils.checks import is_owner_or
-from utils.converters import TimeConverter, TimezoneConverter
-from utils.etc import UTC, display_timedelta, reverse_insort_by_key
-from utils.type_hints import GuildMessageable
+from beattie.utils.aioutils import squash_unfindable
+from beattie.utils.checks import is_owner_or
+from beattie.utils.converters import TimeConverter, TimezoneConverter
+from beattie.utils.etc import UTC, display_timedelta, reverse_insort_by_key
+from beattie.utils.type_hints import GuildMessageable
+
+if TYPE_CHECKING:
+    from beattie.bot import BeattieBot
+    from beattie.context import BContext
 
 MINIMUM_RECURRING_DELTA = timedelta(minutes=10)
 
