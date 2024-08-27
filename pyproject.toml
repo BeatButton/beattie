@@ -1,2 +1,3 @@
 [tool.pyright]
+typeCheckingMode = "basic"
 strictParameterNoneValue = false
