@@ -243,29 +243,28 @@ class Crosspost(Cog):
 
         await message.edit(suppress=True)
 
+    async def delete_messages(self, channel_id: int, messages: list[int]):
+        for message_id in messages:
+            try:
+                await self.bot.http.delete_message(channel_id, message_id)
+            except discord.NotFound:
+                pass
+            except discord.Forbidden:
+                return
+
     @Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        async def delete_messages(messages: list[int]):
-            channel_id = payload.channel_id
-            for message_id in messages:
-                try:
-                    await self.bot.http.delete_message(channel_id, message_id)
-                except discord.NotFound:
-                    pass
-                except discord.Forbidden:
-                    return
-
         message_id = payload.message_id
         messages_deleted = False
         if task := self.ongoing_tasks.get(message_id):
             task.cancel()
         if messages := await self.db.get_sent_messages(message_id):
-            await delete_messages(messages)
+            await self.delete_messages(payload.channel_id, messages)
             messages_deleted = True
         if task:
             await task
             if messages:
-                await delete_messages(messages)
+                await self.delete_messages(payload.channel_id, messages)
                 messages_deleted = True
         if messages_deleted:
             await self.db.del_sent_messages(message_id)
