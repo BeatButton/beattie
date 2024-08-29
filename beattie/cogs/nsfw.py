@@ -47,12 +47,12 @@ class NSFW(Cog):
         self.get = bot.get
         self.log = bot.logger.debug
         self.parser = etree.HTMLParser()
-        with open("config/logins.toml") as fp:
-            data = toml.load(fp)
-        if e621 := data.get("e621"):
-            self.e621_key = e621["api_key"]
-            self.e621_user = e621["user"]
-        else:
+        try:
+            with open("config/crosspost/e621.toml") as fp:
+                data = toml.load(fp)
+            self.e621_key = data["api_key"]
+            self.e621_user = data["user"]
+        except FileNotFoundError:
             self.e621_key = ""
             self.e621_user = ""
 

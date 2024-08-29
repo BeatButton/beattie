@@ -164,6 +164,7 @@ class BeattieBot(Bot):
     async def setup_hook(self):
         cogs = Path(__file__).parent / "cogs"
         extensions = [f"beattie.cogs.{f.stem}" for f in cogs.glob("*.py")]
+        extensions.append("beattie.cogs.crosspost")
         extensions.append("jishaku")
         for extension in extensions:
             try:
