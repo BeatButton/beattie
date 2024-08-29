@@ -88,7 +88,7 @@ class Remind(Cog):
         self.queue: list[Reminder] = []
         self.pool = bot.pool
         self.bot = bot
-        self.logger = logging.getLogger("beattie.remind")
+        self.logger = logging.getLogger(__name__)
 
     def cog_check(self, ctx: BContext) -> bool:
         return ctx.guild is not None

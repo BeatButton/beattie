@@ -32,7 +32,7 @@ class Scryfall(Cog):
         self.bot = bot
         self.lock = asyncio.Lock()
         self.last_request = datetime.now() - DELAY
-        self.logger = logging.getLogger("beattie.scryfall")
+        self.logger = logging.getLogger(__name__)
 
     async def request(self, endpoint: str, **kwargs: Any) -> get:
         async with self.lock:

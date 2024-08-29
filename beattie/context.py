@@ -59,7 +59,7 @@ class BContext(commands.Context):
                 **kwargs,
             )
         except ClientOSError:
-            logging.getLogger("beattie.core").exception(
+            logging.getLogger(__name__).exception(
                 "Ignoring ClientOSError in BContext.send"
             )
             return await self.send(content, **kwargs)
