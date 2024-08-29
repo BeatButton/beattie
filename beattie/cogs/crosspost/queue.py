@@ -182,7 +182,11 @@ class FragmentQueue:
                         await send_files()
                         if do_text:
                             await send_text()
-                        await ctx.send(embed=frag.embed)
+                        embed = frag.embed
+                        if spoiler:
+                            embed = embed.copy()
+                            embed.set_image(url=None)
+                        await ctx.send(embed=embed)
                     case FileFragment():
                         num_files += 1
                         if max_pages and num_files > max_pages:
