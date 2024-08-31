@@ -98,4 +98,4 @@ config/
 /discord*.log
 /discord*.log.xz
 **/.mypy_cache
-/cogs/secret.py
+/beattie/cogs/secret.py
