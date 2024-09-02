@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 import discord
 from dateutil import rrule
-from discord import AllowedMentions, Embed
+from discord import AllowedMentions, DMChannel, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
 from discord.utils import format_dt
@@ -89,9 +89,6 @@ class Remind(Cog):
         self.pool = bot.pool
         self.bot = bot
         self.logger = logging.getLogger(__name__)
-
-    def cog_check(self, ctx: BContext) -> bool:
-        return ctx.guild is not None
 
     async def cog_load(self):
         async with self.pool.acquire() as conn:
@@ -211,7 +208,10 @@ class Remind(Cog):
     @remind.command(name="list")
     async def list_reminders(self, ctx: BContext):
         """List all reminders active for you in this server."""
-        assert ctx.guild is not None
+        if guild := ctx.guild:
+            guild_id = guild.id
+        else:
+            guild_id = ctx.channel.id
         tz = (await self.get_user_timezone(ctx.author.id)) or UTC
         async with self.pool.acquire() as conn:
             rows = [
@@ -223,7 +223,7 @@ class Remind(Cog):
                     ORDER BY id DESC
                     """,
                     ctx.author.id,
-                    ctx.guild.id,
+                    guild_id,
                 )
             ]
         if rows:
@@ -267,6 +267,7 @@ class Remind(Cog):
         await ctx.send("Reminder deleted.")
 
     @remind.command(name="channel")
+    @commands.check(lambda ctx: ctx.guild is not None)
     @is_owner_or(manage_guild=True)
     async def set_channel(self, ctx: BContext, channel: GuildMessageable = None):
         """Set the channel reminders will appear in. Invoke with no input to reset."""
@@ -287,9 +288,12 @@ class Remind(Cog):
         topic: str | None,
         tz: ZoneInfo,
     ) -> datetime | None:
-        assert ctx.guild is not None
-
         now = datetime.now(tz)
+
+        if guild := ctx.guild:
+            guild_id = guild.id
+        else:
+            guild_id = ctx.channel.id
 
         rrule_str = None
         if isinstance(argument, RecurringEvent):
@@ -328,7 +332,7 @@ class Remind(Cog):
                 RETURNING *
                 """,
                 user.id,
-                ctx.guild.id,
+                guild_id,
                 ctx.channel.id,
                 ctx.message.id,
                 ctx.author.id,
@@ -363,34 +367,35 @@ class Remind(Cog):
     async def send_reminder(self, reminder: Reminder):
         self.logger.info(f"handling reminder {reminder}")
         recurring = None
-        guild_id: int = reminder.guild_id
-        user_id: int = reminder.user_id
-        channel_id: int = reminder.channel_id
-        if (
-            (
-                guild := self.bot.get_guild(guild_id)
-                or await squash_unfindable(self.bot.fetch_guild(guild_id))
-            )
-            is not None
-            and (
-                member := guild.get_member(user_id)
-                or await squash_unfindable(guild.fetch_member(user_id))
-            )
-            is not None
-            and (
-                channel := guild.get_channel_or_thread(
-                    (
-                        reminder_channel_id := (
-                            await self.bot.config.get_guild(guild.id)
-                        ).get("reminder_channel")
-                        or channel_id
-                    )
-                )
-                or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
-            )
-            is not None
-        ):
-            assert isinstance(channel, GuildMessageable)
+        guild_id = reminder.guild_id
+        user_id = reminder.user_id
+        channel_id = reminder.channel_id
+        reminder_channel_id = channel_id
+        guild = None
+
+        if guild_id == channel_id:
+            guild_id = None
+            channel = await squash_unfindable(self.bot.fetch_channel(channel_id))
+            assert isinstance(channel, DMChannel)
+            recipient = channel.recipient
+            assert recipient is not None
+        elif guild := await squash_unfindable(self.bot.fetch_guild(guild_id)):
+            recipient = await squash_unfindable(guild.fetch_member(user_id))
+
+            if recipient:
+                reminder_channel_id = (await self.bot.config.get_guild(guild.id)).get(
+                    "reminder_channel"
+                ) or channel_id
+
+                channel = guild.get_channel_or_thread(
+                    reminder_channel_id
+                ) or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
+
+        else:
+            channel = None
+
+        if channel and recipient:
+            assert isinstance(channel, (GuildMessageable, DMChannel))
             async with self.pool.acquire() as conn:
                 recurring = await conn.fetchrow(
                     "SELECT * FROM recurring WHERE id = $1", reminder.id
@@ -412,18 +417,21 @@ class Remind(Cog):
                     reference = await squash_unfindable(
                         channel.fetch_message(message_id)
                     ) and discord.MessageReference(
-                        message_id=reminder.message_id,
-                        channel_id=reminder.channel_id,
-                        guild_id=reminder.guild_id,
+                        message_id=message_id,
+                        channel_id=channel_id,
+                        guild_id=guild_id,
                     )
                 if reference is None:
-                    message = f"{member.mention}\n{message}"
+                    message = f"{recipient.mention}\n{message}"
 
-            if channel.permissions_for(member).mention_everyone:
+            if (
+                isinstance(recipient, discord.User)
+                or channel.permissions_for(recipient).mention_everyone
+            ):
                 allowed_mentions = AllowedMentions.all()
             else:
                 allowed_mentions = AllowedMentions.none().merge(
-                    AllowedMentions(replied_user=True, users=[member])
+                    AllowedMentions(replied_user=True, users=[recipient])
                 )
 
             kwargs = {"allowed_mentions": allowed_mentions, "reference": reference}
@@ -432,10 +440,12 @@ class Remind(Cog):
             except discord.Forbidden:
                 pass
             except Exception:
-                message = (
-                    "An error occured in sending a reminder to "
-                    f"{channel.guild.name}#{channel.name}"
-                )
+                if guild:
+                    assert isinstance(channel, GuildMessageable)
+                    chan = f"{guild.name}#{channel.name}"
+                else:
+                    chan = f"DM with {recipient.name}"
+                message = f"An error occured in sending a reminder to {chan}"
                 self.logger.exception(message)
             self.logger.info(f"reminder {reminder.id} was sent")
             if recurring is not None:
