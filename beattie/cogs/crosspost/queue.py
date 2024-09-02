@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any
 
 from discord import Embed, File
+from discord.utils import format_dt
+import discord
 
 from beattie.utils.etc import display_bytes, get_size_limit
 
@@ -100,16 +102,23 @@ class FragmentQueue:
         ctx: CrosspostContext,
         *,
         spoiler: bool,
+        force: bool,
         ranges: list[tuple[int, int]] | None,
     ) -> bool:
         self.resolved.set()
-        return await self.perform(ctx, spoiler=spoiler, ranges=ranges)
+        return await self.perform(
+            ctx,
+            spoiler=spoiler,
+            force=force,
+            ranges=ranges,
+        )
 
     async def perform(
         self,
         ctx: CrosspostContext,
         *,
         spoiler: bool,
+        force: bool,
         ranges: list[tuple[int, int]] | None,
     ) -> bool:
         self.last_used = datetime.now().timestamp()
@@ -146,6 +155,37 @@ class FragmentQueue:
                 to_dl.append(frag)
             if max_pages and len(to_dl) >= max_pages:
                 break
+
+        if not force and len(to_dl) >= 50:
+
+            def check(r: discord.Reaction, u: discord.User):
+                return (
+                    u == ctx.author
+                    and r.message == msg
+                    and (r.emoji == "❌" or r.emoji == "⭕")
+                )
+
+            timeout = 60
+            dt = format_dt(datetime.now() + timedelta(seconds=timeout), style="R")
+            msg = await ctx.reply(
+                f"This post has {len(to_dl)} items. Are you sure? React {dt}.",
+                mention_author=True,
+            )
+            for emoji in "⭕❌":
+                asyncio.create_task(msg.add_reaction(emoji))
+
+            try:
+                reaction, _ = await ctx.bot.wait_for(
+                    "reaction_add", check=check, timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                emoji = "❌"
+            else:
+                emoji = reaction.emoji
+
+            await msg.delete()
+            if emoji == "❌":
+                return False
 
         for frag in to_dl:
             frag.save()

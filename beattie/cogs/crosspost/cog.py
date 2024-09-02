@@ -159,7 +159,12 @@ class Crosspost(Cog):
                 if queue := self.queue_cache.get(key):
                     if queue.fragments:
                         self.logger.info(f"cache hit: {logloc}: {name} {args}")
-                    coro = queue.perform(ctx, spoiler=spoiler, ranges=ranges)
+                    coro = queue.perform(
+                        ctx,
+                        spoiler=spoiler,
+                        force=force,
+                        ranges=ranges,
+                    )
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
                     try:
@@ -178,7 +183,12 @@ class Crosspost(Cog):
                     else:
                         if queue.fragments:
                             self.logger.info(f"{name}: {logloc}: {link}")
-                        coro = queue.resolve(ctx, spoiler=spoiler, ranges=ranges)
+                        coro = queue.resolve(
+                            ctx,
+                            spoiler=spoiler,
+                            force=force,
+                            ranges=ranges,
+                        )
 
                 if await coro and do_suppress:
                     await squash_unfindable(ctx.message.edit(suppress=True))
