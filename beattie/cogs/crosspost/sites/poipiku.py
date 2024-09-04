@@ -8,10 +8,12 @@ from typing import TYPE_CHECKING
 from lxml import html
 
 import discord
+from yarl import URL
 
 from .site import Site
 
 if TYPE_CHECKING:
+    from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
@@ -22,6 +24,12 @@ POIPIKU_URL_GROUPS = re.compile(r"https?://poipiku\.com/(\d+)/(\d+)\.html")
 class Poipiku(Site):
     name = "poipiku"
     pattern = re.compile(r"https?://poipiku\.com/\d+/\d+\.html")
+
+    def __init__(self, cog: Crosspost):
+        super().__init__(cog)
+        cog.bot.session.cookie_jar.update_cookies(
+            {"POIPIKU_CONTENTS_VIEW_MODE": "1"}, URL("https://poipiku.com")
+        )
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
         async with self.cog.get(link, use_default_headers=False) as resp:
