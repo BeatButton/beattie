@@ -138,6 +138,10 @@ class Poipiku(Site):
                     await clean()
                     break
 
+        if frag == "Error occurred.":
+            queue.push_text("Poipiku reported a generic error.", force=True)
+            return
+
         root = html.document_fromstring(frag, self.cog.parser)
 
         for img in root.xpath(".//img"):
