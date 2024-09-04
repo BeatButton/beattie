@@ -101,8 +101,10 @@ class Poipiku(Site):
                     for msg in to_clean:
                         await msg.delete()
 
-            assert isinstance(ctx.me, discord.Member)
-            can_clean = ctx.channel.permissions_for(ctx.me).manage_messages
+            if isinstance(ctx.me, discord.Member):
+                can_clean = ctx.channel.permissions_for(ctx.me).manage_messages
+            else:
+                can_clean = False
 
             delete_after = 10 if can_clean else None
 
