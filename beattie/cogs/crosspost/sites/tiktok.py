@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class Tiktok(Site):
     name = "tiktok"
     pattern = re.compile(
-        r"https?://(?:www\.)(?:vx)?tiktok\.com/(?:@\w+/video/\d|t/\w+)+"
+        r"https?://(?:www\.)(?:vx)?tiktok\.com/(?:@[\w\.]+/video/\d+|t/\w+)+"
     )
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
