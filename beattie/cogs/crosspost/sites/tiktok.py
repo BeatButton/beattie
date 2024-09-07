@@ -47,7 +47,10 @@ class Tiktok(Site):
             queue.push_text(f"Proxy server returned error {e.code}.")
             return
 
-        queue.push_file(url)
+        video_id = url.rpartition("/")[2]
+        filename = f"{video_id}.mp4"
+
+        queue.push_file(url, filename=filename)
 
         desc = root.xpath(OG_DESCRIPTION)[0].get("content")
         queue.push_text(f">>> {desc}")
