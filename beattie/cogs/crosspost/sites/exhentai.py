@@ -30,8 +30,7 @@ class Exhentai(Site):
             headers={"Content-Type": "application/json"},
             use_default_headers=False,
         ) as resp:
-            content = await resp.read()
-            data = json.loads(content)
+            data = await resp.json()
 
         data = data["gmetadata"][0]
 
