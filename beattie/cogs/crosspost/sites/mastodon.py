@@ -52,7 +52,7 @@ API_FMT = "https://{}/api/v1/statuses/{}"
 
 class Mastodon(Site):
     name = "mastodon"
-    pattern = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:>|$|\s)")
+    pattern = re.compile(r"(https?://([^\s/]+)/(?:.+/)+([\w-]+))(?:[\s>/]|$)")
 
     auth: dict[str, dict[str, str]]
 
