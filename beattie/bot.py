@@ -58,6 +58,11 @@ class Shared:
         if debug:
             self.loglevel = logging.DEBUG
             self.archive_task = None
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setFormatter(
+                logging.Formatter("%(levelname)s:%(name)s: %(message)s")
+            )
+            logging.getLogger("beattie").addHandler(handler)
         else:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
         self.new_logger()
