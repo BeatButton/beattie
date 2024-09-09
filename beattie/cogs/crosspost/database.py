@@ -283,9 +283,14 @@ class Settings:
         self.text = text
 
     def __str__(self):
-        return ", ".join(
-            f"{k}={v}" for k in self.__slots__ if (v := getattr(self, k)) is not None
-        )
+        if self:
+            return ", ".join(
+                f"{k}={v}"
+                for k in self.__slots__
+                if (v := getattr(self, k)) is not None
+            )
+        else:
+            return "(none)"
 
     def apply(self, other: Settings) -> Settings:
         """Returns a Settings with own values overwritten by non-None values of other"""
@@ -302,3 +307,6 @@ class Settings:
     @classmethod
     def from_record(cls, row: Mapping[str, Any]) -> Self:
         return cls(*(row[attr] for attr in cls.__slots__))
+
+    def __bool__(self):
+        return any(getattr(self, k) is not None for k in self.__slots__)

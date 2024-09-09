@@ -36,9 +36,29 @@ if TYPE_CHECKING:
     from beattie.context import BContext
 
 
-QUEUE_CACHE_SIZE: int = 1 * GB
+QUEUE_CACHE_SIZE: int = 0 * GB
 
 ConfigTarget = GuildMessageable | CategoryChannel
+
+
+def merge_flags(*flags: PostFlags) -> tuple[Settings, list[tuple[int, int]] | None]:
+    pages = None
+    text = None
+
+    for flag in flags:
+        if flag.pages is not None:
+            pages = flag.pages
+        if flag.text is not None:
+            text = flag.text
+
+    override = Settings(text=text)
+    ranges = None
+    if isinstance(pages, int):
+        override.max_pages = pages
+    else:
+        ranges = pages
+
+    return override, ranges
 
 
 class Crosspost(Cog):
@@ -490,20 +510,22 @@ applying it to the guild as a whole."""
         await ctx.send("\n".join([list_msg, "Sites you could blacklist:", left_msg]))
 
     @crosspost.command()
-    async def info(self, ctx: BContext, *, target: ConfigTarget = None):
-        """Get info on crosspost settings.
+    async def info(self, ctx: BContext, *flags: PostFlags, _: str | None):
+        """Get info on crosspost settings for the current channel.
 
-        If no channel is specified, will get info for the current channel."""
+        You can specify overrides using the same syntax as `post`"""
+        override, ranges = merge_flags(*flags)
+
+        final_conf = Settings()
+
         if guild := ctx.guild:
-            if target is None:
-                assert isinstance(ctx.channel, ConfigTarget)
-                target = ctx.channel
+            target = ctx.channel
+            assert isinstance(target, ConfigTarget)
             guild_id = guild.id
 
             guild_conf = await self.db._get_settings(guild_id, 0)
-            final_conf = Settings()
             final_conf = final_conf.apply(guild_conf)
-            msg = f"{guild.name}: {str(guild_conf) or '(none)'}"
+            msg = f"{guild.name}: {guild_conf}"
 
             category = getattr(target, "category", None)
             if category is None and isinstance(target, CategoryChannel):
@@ -511,7 +533,7 @@ applying it to the guild as a whole."""
             if category is not None:
                 cat_conf = await self.db._get_settings(guild_id, category.id)
                 final_conf = final_conf.apply(cat_conf)
-                msg = f"{msg}\n{category.name}: {str(cat_conf) or '(none)'}"
+                msg = f"{msg}\n{category.name}: {cat_conf}"
 
             if target is not category:
                 if isinstance(target, Thread):
@@ -520,14 +542,18 @@ applying it to the guild as a whole."""
                     target = parent
                 chan_conf = await self.db._get_settings(guild_id, target.id)
                 final_conf = final_conf.apply(chan_conf)
-                msg = f"{msg}\n{target.name}: {str(chan_conf) or '(none)'}"
-
-            msg = f"{msg}\nEffective: {str(final_conf) or '(none)'}"
-        elif target is not None:
-            msg = "No targets allowed in DM."
+                msg = f"{msg}\n{target.name}: {chan_conf}"
         else:
-            conf = await self.db._get_settings(0, ctx.channel.id)
-            msg = f"DM settings: {str(conf) or '(none)'}"
+            dm_conf = await self.db._get_settings(0, ctx.channel.id)
+            final_conf = final_conf.apply(dm_conf)
+            msg = f"DM settings: {dm_conf}"
+
+        if override:
+            final_conf = final_conf.apply(override)
+            msg = f"{msg}\nOverride: {override}"
+
+        msg = f"{msg}\nEffective: {final_conf}"
+
         await ctx.send(msg)
 
     @crosspost.command()
@@ -615,20 +641,7 @@ applying it to the guild as a whole."""
 
         Put text=true or pages=X after post to change settings for this message only."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        pages = None
-        text = None
-        for flag in flags:
-            if flag.pages is not None:
-                pages = flag.pages
-            if flag.text is not None:
-                text = flag.text
-
-        override = Settings(text=text)
-        ranges = None
-        if isinstance(pages, int):
-            override.max_pages = pages
-        else:
-            ranges = pages
+        override, ranges = merge_flags(*flags)
         self.db.overrides[ctx.message.id] = override
         try:
             await self._post(new_ctx, force=True, ranges=ranges)
