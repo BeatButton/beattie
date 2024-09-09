@@ -549,6 +549,20 @@ applying it to the guild as a whole."""
 
         await ctx.send(embed=embed)
 
+    @crosspost.command()
+    @commands.is_owner()
+    async def evict(
+        self,
+        ctx: BContext,
+        site: str | None = commands.param(converter=SiteConverter | None),
+    ):
+        count = 0
+        for key in list(self.queue_cache.keys()):
+            if site is None or key[0] == site:
+                count += 1
+                self.queue_cache.pop(key, None)
+        await ctx.send(f"Evicted {count}.")
+
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
             inner = e.errors[0]
