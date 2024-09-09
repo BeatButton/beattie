@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import urllib.parse as urlparse
 from typing import TYPE_CHECKING
@@ -58,6 +59,7 @@ class Mastodon(Site):
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
+        self.logger = logging.getLogger(__name__)
         with open("config/crosspost/mastodon.toml") as fp:
             self.auth = toml.load(fp)
 
@@ -70,7 +72,8 @@ class Mastodon(Site):
         post_id: str,
     ):
         info = self.cog.tldextract(link)
-        if f"{info.domain}.{info.suffix}" in GLOB_SITE_EXCLUDE:
+        domain = f"{info.domain}.{info.suffix}"
+        if domain in GLOB_SITE_EXCLUDE:
             return False
 
         if auth := self.auth.get(site):
@@ -85,6 +88,7 @@ class Mastodon(Site):
             ) as resp:
                 post = await resp.json()
         except (ResponseError, aiohttp.ClientError):
+            self.logger.info(f"not a mastodon instance: {domain}")
             return False
         if not (images := post.get("media_attachments")):
             return False
