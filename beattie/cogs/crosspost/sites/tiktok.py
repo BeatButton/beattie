@@ -24,13 +24,17 @@ class Tiktok(Site):
         if "vxtiktok.com" not in link:
             link = link.replace("tiktok.com", "vxtiktok.com")
 
-        async with self.cog.get(
-            link,
-            allow_redirects=False,
-            use_default_headers=False,
-            headers={"User-Agent": "test"},
-        ) as resp:
-            root = html.document_fromstring(await resp.read(), self.cog.parser)
+        try:
+            async with self.cog.get(
+                link,
+                allow_redirects=False,
+                use_default_headers=False,
+                headers={"User-Agent": "test"},
+            ) as resp:
+                root = html.document_fromstring(await resp.read(), self.cog.parser)
+        except ResponseError as e:
+            queue.push_text(f"Proxy server returned error {e.code}.", force=True)
+            return
 
         try:
             url = root.xpath(OG_VIDEO)[0].get("content")
@@ -44,7 +48,7 @@ class Tiktok(Site):
             ) as resp:
                 pass
         except ResponseError as e:
-            queue.push_text(f"Proxy server returned error {e.code}.")
+            queue.push_text(f"Proxy server returned error {e.code}.", force=True)
             return
 
         video_id = url.rpartition("/")[2]
