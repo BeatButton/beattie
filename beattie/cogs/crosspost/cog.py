@@ -187,6 +187,7 @@ class Crosspost(Cog):
                     )
                 else:
                     self.queue_cache[key] = queue = FragmentQueue(ctx, link)
+                    self.logger.debug(f"began {name}: {logloc}: {link}")
                     try:
                         await site.handler(ctx, queue, *args)
                     except ResponseError as e:
