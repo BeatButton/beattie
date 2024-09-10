@@ -46,6 +46,9 @@ GLOB_SITE_EXCLUDE = {
     "x.com",
     "fixupx.com",
     "fixvx.com",
+    "bsky.app",
+    "threads.net",
+    "xcancel.net",
 }
 
 API_FMT = "https://{}/api/v1/statuses/{}"
