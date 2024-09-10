@@ -20,37 +20,6 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
-GLOB_SITE_EXCLUDE = {
-    "tenor.com",
-    "giphy.com",
-    "pixiv.net",
-    "twitter.com",
-    "fxtwitter.com",
-    "vxtwitter.com",
-    "sxtwitter.com",
-    "zztwitter.com",
-    "twxtter.com",
-    "twittervx.com",
-    "inkbunny.net",
-    "imgur.com",
-    "tumblr.com",
-    "rule34.xxx",
-    "hiccears.com",
-    "gelbooru.com",
-    "fanbox.cc",
-    "discord.gg",
-    "youtu.be",
-    "youtube.com",
-    "itch.io",
-    "crepu.net",
-    "x.com",
-    "fixupx.com",
-    "fixvx.com",
-    "bsky.app",
-    "threads.net",
-    "xcancel.net",
-}
-
 API_FMT = "https://{}/api/v1/statuses/{}"
 
 
@@ -127,3 +96,35 @@ class Mastodon(Site):
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
             queue.push_text(f">>> {text}")
+
+
+GLOB_SITE_EXCLUDE = {
+    "tenor.com",
+    "giphy.com",
+    "pixiv.net",
+    "twitter.com",
+    "fxtwitter.com",
+    "vxtwitter.com",
+    "sxtwitter.com",
+    "zztwitter.com",
+    "twxtter.com",
+    "twittervx.com",
+    "inkbunny.net",
+    "imgur.com",
+    "tumblr.com",
+    "rule34.xxx",
+    "hiccears.com",
+    "gelbooru.com",
+    "fanbox.cc",
+    "discord.gg",
+    "youtu.be",
+    "youtube.com",
+    "itch.io",
+    "crepu.net",
+    "x.com",
+    "fixupx.com",
+    "fixvx.com",
+    "bsky.app",
+    "threads.net",
+    "xcancel.net",
+}
