@@ -148,8 +148,7 @@ class Crosspost(Cog):
         ranges: list[tuple[int, int]] = None,
     ):
         if guild := ctx.guild:
-            assert isinstance(ctx.me, discord.Member)
-            do_suppress = ctx.channel.permissions_for(ctx.me).manage_messages
+            do_suppress = ctx.channel.permissions_for(guild.me).manage_messages
             guild_id = guild.id
         else:
             do_suppress = False

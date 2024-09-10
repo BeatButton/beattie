@@ -28,15 +28,10 @@ class Manage(Cog):
         blacklist = guild_conf.get("cog_blacklist") or ""
         return f"{cog}," not in blacklist
 
-    async def bot_check_once(self, ctx: BContext) -> bool:
-        guild = ctx.guild
-        if guild is None:
+    def bot_check_once(self, ctx: BContext) -> bool:
+        if (guild := ctx.guild) is None:
             return True
-        me = ctx.me
-        channel = ctx.channel
-        assert isinstance(me, Member)
-        assert isinstance(channel, GuildMessageable)
-        return channel.permissions_for(me).send_messages
+        return ctx.channel.permissions_for(guild.me).send_messages
 
     async def cog_check(self, ctx: BContext) -> bool:
         if ctx.guild is None:
