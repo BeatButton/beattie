@@ -35,8 +35,11 @@ class YTCommunity(Site):
 
         data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition(';')[0]}")
 
-        # jesus christ
-        tab = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][0]
+        try:
+            tab = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][0]
+        except KeyError:
+            queue.push_text("This post is not visible in browser.", force=True)
+            return
         section = tab["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]
         item = section["itemSectionRenderer"]["contents"][0]
         post = item["backstagePostThreadRenderer"]["post"]["backstagePostRenderer"]
