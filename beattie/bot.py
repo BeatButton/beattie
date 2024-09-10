@@ -149,7 +149,7 @@ class BeattieBot(Bot):
         shared: Shared,
     ):
         self.shared = shared
-        self.logger = shared.logger
+        self.logger = logging.getLogger(__name__)
         self.pool = shared.pool
         self.config = shared.config
         self.session = shared.session
