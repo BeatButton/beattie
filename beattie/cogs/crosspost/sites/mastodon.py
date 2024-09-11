@@ -145,4 +145,5 @@ GLOB_SITE_EXCLUDE = {
     "youtu.be",
     "youtube.com",
     "zztwitter.com",
+    "nhentai.net",
 }

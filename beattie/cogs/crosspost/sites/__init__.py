@@ -26,6 +26,7 @@ from .yt_community import YTCommunity
 from .e621 import E621
 from .exhentai import Exhentai
 from .tiktok import Tiktok
+from .nhentai import Nhentai
 
 SITES: list[Type[Site]] = [
     Twitter,
@@ -50,4 +51,5 @@ SITES: list[Type[Site]] = [
     E621,
     Exhentai,
     Tiktok,
+    Nhentai,
 ]
