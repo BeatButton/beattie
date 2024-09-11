@@ -548,11 +548,18 @@ applying it to the guild as a whole."""
             final_conf = final_conf.apply(dm_conf)
             msg = f"DM settings: {dm_conf}"
 
+        settings = await self.db.get_effective_settings(ctx.message)
         if override:
             final_conf = final_conf.apply(override)
             msg = f"{msg}\nOverride: {override}"
+            settings = settings.apply(override)
 
-        msg = f"{msg}\nEffective: {final_conf}"
+        msg = f"{msg}\nEffective: {settings}"
+        if settings != final_conf:
+            msg = (
+                f"{msg}\nCalculated: {final_conf}\n"
+                "**Caculated differs from actual effective**! This is a bug!"
+            )
 
         await ctx.send(msg)
 

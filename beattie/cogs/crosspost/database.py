@@ -282,7 +282,7 @@ class Settings:
         self.max_pages = max_pages
         self.text = text
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self:
             return ", ".join(
                 f"{k}={v}"
@@ -291,6 +291,11 @@ class Settings:
             )
         else:
             return "(none)"
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Settings):
+            return NotImplemented
+        return all(getattr(self, k) == getattr(other, k) for k in self.__slots__)
 
     def apply(self, other: Settings) -> Settings:
         """Returns a Settings with own values overwritten by non-None values of other"""
