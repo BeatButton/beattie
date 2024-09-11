@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from typing import TYPE_CHECKING
 
@@ -72,7 +73,7 @@ class Poipiku(Site):
             headers=headers,
             data=body,
         ) as resp:
-            data = await resp.json()
+            data = json.loads(await resp.read())
 
         frag = data["html"]
         if not frag:
@@ -133,7 +134,7 @@ class Poipiku(Site):
                     headers=headers,
                     data=body,
                 ) as resp:
-                    data = await resp.json()
+                    data = json.loads(await resp.read())
 
                 frag = data["html"]
 
