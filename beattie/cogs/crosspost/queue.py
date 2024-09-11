@@ -160,7 +160,7 @@ class FragmentQueue:
             if max_pages and len(to_dl) >= max_pages:
                 break
 
-        if not force and len(to_dl) >= 50:
+        if not force and len(to_dl) >= 25:
 
             def check(r: discord.Reaction, u: discord.User):
                 return (
@@ -172,7 +172,9 @@ class FragmentQueue:
             timeout = 60
             dt = format_dt(datetime.now() + timedelta(seconds=timeout), style="R")
             msg = await ctx.reply(
-                f"This post has {len(to_dl)} items. Are you sure? React {dt}.",
+                f"This post has {len(to_dl)} items. Are you sure? React {dt}."
+                "\n-# You can post specific pages with a command like "
+                "`b>post pages=1-3,5,7,12-16`",
                 mention_author=True,
             )
             for emoji in "⭕❌":
