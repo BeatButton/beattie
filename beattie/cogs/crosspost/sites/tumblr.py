@@ -55,7 +55,7 @@ class Tumblr(Site):
         for block in blocks:
             match block["type"]:
                 case "text":
-                    queue.push_text(f">>> {block['text']}")
+                    queue.push_text(f">>> {block['text']}", interlaced=True)
                 case "image":
                     url = block["hd"]
                     if url.endswith(".gifv"):

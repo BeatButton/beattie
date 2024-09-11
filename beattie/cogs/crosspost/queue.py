@@ -91,8 +91,8 @@ class FragmentQueue:
     def push_embed(self, embed: Embed):
         self.fragments.append(EmbedFragment(embed))
 
-    def push_text(self, text: str, force: bool = False):
-        self.fragments.append(TextFragment(text, force))
+    def push_text(self, text: str, force: bool = False, interlaced: bool = False):
+        self.fragments.append(TextFragment(text, force, interlaced))
 
     def clear(self):
         self.fragments.clear()
@@ -133,7 +133,6 @@ class FragmentQueue:
         file_batch: list[File] = []
 
         if ranges:
-            do_text = False
             max_pages = 0
             frags = [
                 frag
@@ -142,11 +141,16 @@ class FragmentQueue:
             ]
             fragments = [
                 frag for start, end in ranges for frag in frags[start - 1 : end]
+            ] + [
+                frag
+                for frag in self.fragments
+                if isinstance(frag, TextFragment)
+                and (frag.force or not frag.interlaced)
             ]
         else:
             fragments = self.fragments[:]
-            do_text = await self.cog.should_post_text(ctx)
             max_pages = await self.cog.get_max_pages(ctx)
+        do_text = await self.cog.should_post_text(ctx)
 
         for idx, frag in enumerate(fragments):
             if isinstance(frag, FallbackFragment):

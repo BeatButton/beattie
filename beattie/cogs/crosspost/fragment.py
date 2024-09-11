@@ -159,10 +159,12 @@ class EmbedFragment(Fragment):
 class TextFragment(Fragment):
     content: str
     force: bool
+    interlaced: bool
 
-    def __init__(self, content: str, force: bool):
+    def __init__(self, content: str, force: bool, interlaced: bool):
         self.content = content
         self.force = force
+        self.interlaced = interlaced
 
     def __str__(self) -> str:
         return self.content
