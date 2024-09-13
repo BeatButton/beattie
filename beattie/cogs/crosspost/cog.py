@@ -70,6 +70,7 @@ class Crosspost(Cog):
 
     ongoing_tasks: dict[int, asyncio.Task]
     queue_cache: dict[tuple[str, ...], FragmentQueue]
+    cache_lock: asyncio.Lock
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -94,6 +95,7 @@ class Crosspost(Cog):
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger(__name__)
         self.sites = [cls(self) for cls in SITES]
+        self.cache_lock = asyncio.Lock()
 
     async def cog_load(self):
         self.session = aiohttp.ClientSession()
@@ -220,7 +222,14 @@ class Crosspost(Cog):
                 await squash_unfindable(ctx.message.edit(suppress=True))
                 do_suppress = False
 
-            self.evict_cache()
+        asyncio.create_task(self.try_evict())
+
+    async def try_evict(self):
+        if self.cache_lock.locked():
+            return
+
+        async with self.cache_lock:
+            await asyncio.to_thread(self.evict_cache)
 
     def evict_cache(self):
         size = sum(map(getsizeof, self.queue_cache.values()))
