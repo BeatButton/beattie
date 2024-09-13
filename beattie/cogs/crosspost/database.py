@@ -158,13 +158,13 @@ class Database:
             )
 
     async def clear_settings(self, guild_id: int, channel_id: int):
-        self._settings_cache.pop((guild_id, channel_id), None)
         async with self.pool.acquire() as conn:
             await conn.execute(
                 "DELETE FROM crosspost WHERE guild_id = $1 AND channel_id = $2",
                 guild_id,
                 channel_id,
             )
+        self._settings_cache.pop((guild_id, channel_id), None)
 
     async def clear_settings_all(self, guild_id: int):
         async with self.pool.acquire() as conn:
