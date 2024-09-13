@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from html import unescape as html_unescape
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 
 from beattie.utils.exceptions import ResponseError
@@ -28,6 +28,13 @@ class Twitter(Site):
     )
 
     method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
+
+    def get_media(self, tweet: dict[str, Any]) -> list[dict[str, str]] | None:
+        match self.method:
+            case "fxtwitter":
+                return tweet.get("media", {}).get("all")
+            case "vxtwitter":
+                return tweet.get("media_extended")
 
     async def handler(
         self,
@@ -74,11 +81,10 @@ class Twitter(Site):
             case other:
                 raise ResponseError(other, api_link)
 
-        match self.method:
-            case "fxtwitter":
-                media = tweet.get("media", {}).get("all")
-            case "vxtwitter":
-                media = tweet.get("media_extended")
+        if not (media := self.get_media(tweet)):
+            qkey = {"fxtwitter": "quote", "vxtwitter": "qrt"}[self.method]
+            if quote := tweet.get(qkey):
+                media = self.get_media(quote)
 
         if not media:
             return
