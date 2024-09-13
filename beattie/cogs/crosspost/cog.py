@@ -161,60 +161,66 @@ class Crosspost(Cog):
 
         content = ctx.message.content
         sspans = spoiler_spans(content)
-        for site in self.sites:
+        matches = [
+            (m, site)
+            for site in self.sites
+            if site.name not in blacklist
+            for m in site.pattern.finditer(content)
+        ]
+
+        matches.sort(key=lambda el: el[0].span()[0])
+
+        for m, site in matches:
             name = site.name
-            if name in blacklist:
-                continue
-            for m in site.pattern.finditer(content):
-                ms, mt = m.span()
-                spoiler = any(ms < st and ss < mt for ss, st in sspans)
-                args = m.groups()
-                link = content[ms:mt]
-                if not args:
-                    args = (link,)
-                args = tuple(map(str.strip, args))
-                key = (name, *args)
-                logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
-                if queue := self.queue_cache.get(key):
+            ms, mt = m.span()
+            spoiler = any(ms < st and ss < mt for ss, st in sspans)
+            args = m.groups()
+            link = content[ms:mt]
+            if not args:
+                args = (link,)
+            args = tuple(map(str.strip, args))
+            key = (name, *args)
+            logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
+            if queue := self.queue_cache.get(key):
+                if queue.fragments:
+                    self.logger.info(f"cache hit: {logloc}: {name} {args}")
+                coro = queue.perform(
+                    ctx,
+                    spoiler=spoiler,
+                    force=force,
+                    ranges=ranges,
+                )
+            else:
+                self.queue_cache[key] = queue = FragmentQueue(ctx, link)
+                self.logger.debug(f"began {name}: {logloc}: {link}")
+                try:
+                    await site.handler(ctx, queue, *args)
+                except ResponseError as e:
+                    self.queue_cache.pop(key, None)
+                    if e.code == 404:
+                        await ctx.send("Post not found.")
+                    else:
+                        await ctx.bot.handle_error(ctx, e)
+                    return
+                except Exception as e:
+                    self.queue_cache.pop(key, None)
+                    await ctx.bot.handle_error(ctx, e)
+                    return
+                else:
                     if queue.fragments:
-                        self.logger.info(f"cache hit: {logloc}: {name} {args}")
-                    coro = queue.perform(
+                        self.logger.info(f"{name}: {logloc}: {link}")
+                    coro = queue.resolve(
                         ctx,
                         spoiler=spoiler,
                         force=force,
                         ranges=ranges,
                     )
-                else:
-                    self.queue_cache[key] = queue = FragmentQueue(ctx, link)
-                    self.logger.debug(f"began {name}: {logloc}: {link}")
-                    try:
-                        await site.handler(ctx, queue, *args)
-                    except ResponseError as e:
-                        self.queue_cache.pop(key, None)
-                        if e.code == 404:
-                            await ctx.send("Post not found.")
-                        else:
-                            await ctx.bot.handle_error(ctx, e)
-                        return
-                    except Exception as e:
-                        self.queue_cache.pop(key, None)
-                        await ctx.bot.handle_error(ctx, e)
-                        return
-                    else:
-                        if queue.fragments:
-                            self.logger.info(f"{name}: {logloc}: {link}")
-                        coro = queue.resolve(
-                            ctx,
-                            spoiler=spoiler,
-                            force=force,
-                            ranges=ranges,
-                        )
 
-                if await coro and do_suppress:
-                    await squash_unfindable(ctx.message.edit(suppress=True))
-                    do_suppress = False
+            if await coro and do_suppress:
+                await squash_unfindable(ctx.message.edit(suppress=True))
+                do_suppress = False
 
-                self.evict_cache()
+            self.evict_cache()
 
     def evict_cache(self):
         size = sum(map(getsizeof, self.queue_cache.values()))
