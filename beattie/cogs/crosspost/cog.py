@@ -162,7 +162,6 @@ class Crosspost(Cog):
             blacklist = await self.db.get_blacklist(guild_id)
 
         content = ctx.message.content
-        sspans = spoiler_spans(content)
         matches = [
             (m, site)
             for site in self.sites
@@ -170,7 +169,15 @@ class Crosspost(Cog):
             for m in site.pattern.finditer(content)
         ]
 
+        if not matches:
+            return
+
+        logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
+        settings = await self.db.get_effective_settings(ctx.message)
+        self.logger.info(f"process links: {logloc}: {settings}")
+
         matches.sort(key=lambda el: el[0].span()[0])
+        sspans = spoiler_spans(content)
 
         for m, site in matches:
             name = site.name
@@ -182,7 +189,6 @@ class Crosspost(Cog):
                 args = (link,)
             args = tuple(map(str.strip, args))
             key = (name, *args)
-            logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
             if queue := self.queue_cache.get(key):
                 if queue.fragments:
                     self.logger.info(f"cache hit: {logloc}: {name} {args}")
