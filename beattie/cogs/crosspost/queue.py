@@ -23,6 +23,7 @@ from .fragment import (
 if TYPE_CHECKING:
     from .cog import Crosspost
     from .context import CrosspostContext
+    from .database import Settings
     from .postprocess import PP
 
 
@@ -104,6 +105,7 @@ class FragmentQueue:
         spoiler: bool,
         force: bool,
         ranges: list[tuple[int, int]] | None,
+        settings: Settings,
     ) -> bool:
         self.resolved.set()
         return await self.perform(
@@ -111,6 +113,7 @@ class FragmentQueue:
             spoiler=spoiler,
             force=force,
             ranges=ranges,
+            settings=settings,
         )
 
     async def perform(
@@ -120,6 +123,7 @@ class FragmentQueue:
         spoiler: bool,
         force: bool,
         ranges: list[tuple[int, int]] | None,
+        settings: Settings,
     ) -> bool:
         self.last_used = datetime.now().timestamp()
         await self.resolved.wait()
@@ -149,8 +153,8 @@ class FragmentQueue:
             ]
         else:
             fragments = self.fragments[:]
-            max_pages = await self.cog.get_max_pages(ctx)
-        do_text = await self.cog.should_post_text(ctx)
+            max_pages = settings.max_pages_or_default()
+        do_text = settings.text
 
         for idx, frag in enumerate(fragments):
             if isinstance(frag, FallbackFragment):

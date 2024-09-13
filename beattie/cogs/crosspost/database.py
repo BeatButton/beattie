@@ -309,6 +309,13 @@ class Settings:
     def asdict(self) -> dict[str, Any]:
         return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
 
+    def max_pages_or_default(self) -> int:
+        match self.max_pages:
+            case None:
+                return 10
+            case n:
+                return n
+
     @classmethod
     def from_record(cls, row: Mapping[str, Any]) -> Self:
         return cls(*(row[attr] for attr in cls.__slots__))

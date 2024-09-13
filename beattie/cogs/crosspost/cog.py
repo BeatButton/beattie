@@ -197,6 +197,7 @@ class Crosspost(Cog):
                     spoiler=spoiler,
                     force=force,
                     ranges=ranges,
+                    settings=settings,
                 )
             else:
                 self.queue_cache[key] = queue = FragmentQueue(ctx, link)
@@ -222,6 +223,7 @@ class Crosspost(Cog):
                         spoiler=spoiler,
                         force=force,
                         ranges=ranges,
+                        settings=settings,
                     )
 
             if await coro and do_suppress:
@@ -319,17 +321,6 @@ class Crosspost(Cog):
                 messages_deleted = True
         if messages_deleted:
             await self.db.del_sent_messages(message_id)
-
-    async def get_max_pages(self, ctx: BContext) -> int:
-        settings = await self.db.get_effective_settings(ctx.message)
-        max_pages = settings.max_pages
-        if max_pages is None:
-            max_pages = 10
-        return max_pages
-
-    async def should_post_text(self, ctx: BContext) -> bool:
-        settings = await self.db.get_effective_settings(ctx.message)
-        return bool(settings.text)
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
