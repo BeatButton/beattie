@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import re
+import toml
 from typing import TYPE_CHECKING
 
+import requests
 from lxml import html
 
 import discord
@@ -15,6 +16,7 @@ from .site import Site
 if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
+    from ..fragment import FileFragment
     from ..queue import FragmentQueue
 
 
@@ -25,15 +27,21 @@ class Poipiku(Site):
     name = "poipiku"
     pattern = re.compile(r"https?://poipiku\.com/\d+/\d+\.html")
 
+    headers: dict[str, str]
+
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
-        cog.bot.session.cookie_jar.update_cookies(
-            {"POIPIKU_CONTENTS_VIEW_MODE": "1"}, URL("https://poipiku.com")
-        )
+        with open("config/headers.toml") as fp:
+            headers = toml.load(fp)
+        self.session = requests.Session()
+        self.session.cookies.set("POIPIKU_CONTENTS_VIEW_MODE", "1")
+
+        for k, v in headers.items():
+            self.session.headers[k] = v
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        async with self.cog.get(link, use_default_headers=False) as resp:
-            root = html.document_fromstring(await resp.read(), self.cog.parser)
+        resp = await asyncio.to_thread(self.session.get, link)
+        root = html.document_fromstring(resp.content, self.cog.parser)
 
         link = str(resp.url)
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
@@ -47,7 +55,7 @@ class Poipiku(Site):
         if "/img/" not in src:
             src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
             src = f"https:{src}"
-            queue.push_file(src, headers=refer)
+            self.push_file(queue, src, link)
 
         user, post = match.groups()
 
@@ -66,14 +74,13 @@ class Poipiku(Site):
             "TWF": "-1",
         }
 
-        async with self.cog.get(
+        resp = await asyncio.to_thread(
+            self.session.post,
             "https://poipiku.com/f/ShowAppendFileF.jsp",
-            method="POST",
-            use_default_headers=False,
             headers=headers,
             data=body,
-        ) as resp:
-            data = json.loads(await resp.read())
+        )
+        data = resp.json()
 
         frag = data["html"]
         if not frag:
@@ -127,14 +134,13 @@ class Poipiku(Site):
 
                 body["PAS"] = reply.content
 
-                async with self.cog.get(
+                resp = await asyncio.to_thread(
+                    self.session.post,
                     "https://poipiku.com/f/ShowAppendFileF.jsp",
-                    method="POST",
-                    use_default_headers=False,
                     headers=headers,
                     data=body,
-                ) as resp:
-                    data = json.loads(await resp.read())
+                )
+                data = resp.json()
 
                 frag = data["html"]
 
@@ -158,4 +164,14 @@ class Poipiku(Site):
             src = img.get("src")
             src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
             src = f"https:{src}"
-            queue.push_file(src, headers=refer)
+            self.push_file(queue, src, link)
+
+    def push_file(self, queue: FragmentQueue, link: str, referer: str):
+        frag = queue.push_file(link)
+        frag.dl_task = asyncio.create_task(self.save(frag, referer))
+
+    async def save(self, frag: FileFragment, referer: str):
+        resp = await asyncio.to_thread(
+            self.session.get, frag.urls[0], headers={"Referer": referer}
+        )
+        frag.file_bytes = resp.content
