@@ -187,7 +187,7 @@ class Crosspost(Cog):
             link = content[ms:mt]
             if not args:
                 args = (link,)
-            args = tuple(map(str.strip, args))
+            args = tuple(map(lambda a: a and a.strip(), args))
             key = (name, *args)
             if queue := self.queue_cache.get(key):
                 if queue.fragments:
