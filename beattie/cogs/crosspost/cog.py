@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
 import logging
+from datetime import datetime
 from io import BytesIO
+from itertools import groupby
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any
 
@@ -28,7 +29,7 @@ from beattie.utils.contextmanagers import get
 from .converters import PostFlags, Site as SiteConverter
 from .context import CrosspostContext
 from .database import Database, Settings
-from .queue import FragmentQueue
+from .queue import FragmentQueue, Postable, QueueKwargs
 from .sites import SITES, Site
 
 if TYPE_CHECKING:
@@ -59,6 +60,18 @@ def merge_flags(*flags: PostFlags) -> tuple[Settings, list[tuple[int, int]] | No
         ranges = pages
 
     return override, ranges
+
+
+def item_priority(item: Postable):
+    match item:
+        case tuple():
+            return 0
+        case discord.Embed():
+            return 1
+        case str():
+            return 2
+        case _:
+            return 3
 
 
 class Crosspost(Cog):
@@ -179,10 +192,19 @@ class Crosspost(Cog):
         matches.sort(key=lambda el: el[0].span()[0])
         sspans = spoiler_spans(content)
 
+        queues: list[tuple[FragmentQueue, QueueKwargs]] = []
+        tasks: list[asyncio.Task] = []
+
         for m, site in matches:
             name = site.name
             ms, mt = m.span()
             spoiler = any(ms < st and ss < mt for ss, st in sspans)
+            kwargs = QueueKwargs(
+                spoiler=spoiler,
+                force=force,
+                ranges=ranges,
+                settings=settings,
+            )
             args = m.groups()
             link = content[ms:mt]
             if not args:
@@ -192,41 +214,52 @@ class Crosspost(Cog):
             if queue := self.queue_cache.get(key):
                 if queue.fragments:
                     self.logger.info(f"cache hit: {logloc}: {name} {args}")
-                coro = queue.perform(
-                    ctx,
-                    spoiler=spoiler,
-                    force=force,
-                    ranges=ranges,
-                    settings=settings,
-                )
+                queues.append((queue, kwargs))
             else:
-                self.queue_cache[key] = queue = FragmentQueue(ctx, link)
                 self.logger.debug(f"began {name}: {logloc}: {link}")
+                self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
                 try:
-                    await site.handler(ctx, queue, *args)
+                    tasks.append(queue.handle(ctx, *args))
                 except ResponseError as e:
                     self.queue_cache.pop(key, None)
                     if e.code == 404:
                         await ctx.send("Post not found.")
                     else:
                         await ctx.bot.handle_error(ctx, e)
-                    return
+                    continue
                 except Exception as e:
                     self.queue_cache.pop(key, None)
                     await ctx.bot.handle_error(ctx, e)
-                    return
+                    continue
                 else:
                     if queue.fragments:
                         self.logger.info(f"{name}: {logloc}: {link}")
-                    coro = queue.resolve(
-                        ctx,
-                        spoiler=spoiler,
-                        force=force,
-                        ranges=ranges,
-                        settings=settings,
-                    )
+                    queues.append((queue, kwargs))
 
-            if await coro and do_suppress:
+        if tasks:
+            await asyncio.wait(tasks)
+
+        for _, batch in groupby(
+            filter(lambda p: p[0].fragments, queues),
+            lambda p: (p[0].site, p[0].author or object()),
+        ):
+            items = []
+            for queue, kwargs in batch:
+                items.extend(
+                    await queue.produce(
+                        ctx,
+                        spoiler=kwargs["spoiler"],
+                        ranges=kwargs["ranges"],
+                        settings=kwargs["settings"],
+                    )
+                )
+
+            items.sort(key=item_priority)
+
+            embedded = await FragmentQueue.present(
+                ctx, items=items, force=kwargs["force"]
+            )
+            if embedded and do_suppress:
                 await squash_unfindable(ctx.message.edit(suppress=True))
                 do_suppress = False
 

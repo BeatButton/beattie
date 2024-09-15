@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime, timedelta
 from io import BytesIO
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Awaitable, TypedDict
 
 from discord import Embed, File
 from discord.utils import format_dt
@@ -25,21 +25,40 @@ if TYPE_CHECKING:
     from .context import CrosspostContext
     from .database import Settings
     from .postprocess import PP
+    from .sites import Site
+
+
+class QueueKwargs(TypedDict):
+    spoiler: bool
+    force: bool
+    ranges: list[tuple[int, int]] | None
+    settings: Settings
+
+
+Postable = (
+    str | discord.Embed | tuple[FileFragment | FallbackFragment, bool]
+)  # spoiler toggle
 
 
 class FragmentQueue:
     cog: Crosspost
+    site: Site
     link: str
+    author: str | None
     fragments: list[Fragment]
     resolved: asyncio.Event
+    handle_task: asyncio.Task | None
     last_used: float  # timestamp
 
-    def __init__(self, ctx: CrosspostContext, link: str):
+    def __init__(self, ctx: CrosspostContext, site: Site, link: str):
         assert ctx.command is not None
+        self.site = site
         self.link = link
+        self.author = None
         self.cog = ctx.command.cog
         self.fragments = []
         self.resolved = asyncio.Event()
+        self.handle_task = None
         self.last_used = datetime.now().timestamp()
 
     def __sizeof__(self) -> int:
@@ -51,6 +70,12 @@ class FragmentQueue:
             + getsizeof(self.last_used)
             + sum(map(getsizeof, self.fragments))
         )
+
+    def handle(self, ctx: CrosspostContext, *args: str) -> asyncio.Task[None]:
+        if self.handle_task is None:
+            self.handle_task = asyncio.create_task(self.site.handler(ctx, self, *args))
+
+        return self.handle_task
 
     def push_file(
         self,
@@ -110,24 +135,6 @@ class FragmentQueue:
     def clear(self):
         self.fragments.clear()
 
-    async def resolve(
-        self,
-        ctx: CrosspostContext,
-        *,
-        spoiler: bool,
-        force: bool,
-        ranges: list[tuple[int, int]] | None,
-        settings: Settings,
-    ) -> bool:
-        self.resolved.set()
-        return await self.perform(
-            ctx,
-            spoiler=spoiler,
-            force=force,
-            ranges=ranges,
-            settings=settings,
-        )
-
     async def perform(
         self,
         ctx: CrosspostContext,
@@ -137,16 +144,34 @@ class FragmentQueue:
         ranges: list[tuple[int, int]] | None,
         settings: Settings,
     ) -> bool:
+        items = await self.produce(
+            ctx,
+            spoiler=spoiler,
+            ranges=ranges,
+            settings=settings,
+        )
+        return await self.present(
+            ctx,
+            items=items,
+            force=force,
+        )
+
+    async def produce(
+        self,
+        ctx: CrosspostContext,
+        *,
+        spoiler: bool,
+        ranges: list[tuple[int, int]] | None,
+        settings: Settings,
+    ) -> list[Postable]:
         self.last_used = datetime.now().timestamp()
-        await self.resolved.wait()
+        await self.handle(ctx)
+        items: list[Postable] = []
 
         if not self.fragments:
-            return False
+            return items
 
-        to_dl: list[FileFragment] = []
-        limit = get_size_limit(ctx)
         text = ""
-        file_batch: list[File] = []
 
         if ranges:
             max_pages = 0
@@ -168,13 +193,73 @@ class FragmentQueue:
             max_pages = settings.max_pages_or_default()
         do_text = settings.text
 
-        for idx, frag in enumerate(fragments):
-            if isinstance(frag, FallbackFragment):
-                fragments[idx] = frag = await frag.to_file(ctx)
-            if isinstance(frag, FileFragment):
-                to_dl.append(frag)
-            if max_pages and len(to_dl) >= max_pages:
-                break
+        def queue_text():
+            nonlocal text
+            send = text.strip()
+            text = ""
+            if send:
+                if spoiler:
+                    send = f"||{send}||"
+                items.append(send)
+
+        num_files = 0
+
+        for frag in fragments:
+            match frag:
+                case TextFragment():
+                    if frag.force:
+                        queue_text()
+                        items.append(frag.content)
+                    else:
+                        text = f"{text}\n{frag.content}"
+                case EmbedFragment():
+                    if do_text:
+                        queue_text()
+                    embed = frag.embed
+                    if spoiler:
+                        embed = embed.copy()
+                        embed.set_image(url=None)
+                    items.append(embed)
+                case FileFragment() | FallbackFragment():
+                    num_files += 1
+                    if max_pages != 0 and num_files > max_pages:
+                        continue
+                    if do_text:
+                        queue_text()
+                    items.append((frag, spoiler))
+                case _:
+                    raise RuntimeError(
+                        f"unexpected Fragment subtype {type(frag).__name__}"
+                    )
+
+        queue_text()
+
+        pages_remaining = 0 if max_pages == 0 else num_files - max_pages
+
+        if pages_remaining > 0:
+            s = "s" if pages_remaining > 1 else ""
+            message = f"{pages_remaining} more item{s} at {self.link}"
+            items.append(message)
+
+        return items
+
+    @classmethod
+    async def present(
+        cls,
+        ctx: CrosspostContext,
+        *,
+        items: list[Postable],
+        force: bool,
+    ) -> bool:
+        to_dl: list[FileFragment] = []
+        for idx, item in enumerate(items):
+            if isinstance(item, tuple):
+                frag, spoiler = item
+                if isinstance(frag, FallbackFragment):
+                    frag = await frag.to_file(ctx)
+                    items[idx] = frag, spoiler
+                if isinstance(frag, FileFragment):
+                    to_dl.append(frag)
 
         if not force and len(to_dl) >= 25:
 
@@ -209,10 +294,13 @@ class FragmentQueue:
             if emoji == "❌":
                 return False
 
-        for frag in to_dl:
-            frag.save()
+        for item in to_dl:
+            item.save()
 
         embedded = False
+
+        file_batch: list[File] = []
+        limit = get_size_limit(ctx)
 
         async def send_files():
             nonlocal embedded
@@ -221,40 +309,18 @@ class FragmentQueue:
                 await ctx.send(files=file_batch)
                 file_batch.clear()
 
-        async def send_text():
-            nonlocal text
-            send = text.strip()
-            text = ""
-            if send:
-                if spoiler:
-                    send = f"||{send}||"
-                await ctx.send(send, suppress_embeds=True)
-
-        num_files = 0
         try:
-            for frag in fragments:
-                match frag:
-                    case TextFragment():
-                        if frag.force:
-                            await send_files()
-                            await ctx.send(frag.content, suppress_embeds=True)
-                        else:
-                            text = f"{text}\n{frag}"
-                    case EmbedFragment():
+            for item in items:
+                match item:
+                    case str():
                         await send_files()
-                        if do_text:
-                            await send_text()
-                        embed = frag.embed
-                        if spoiler:
-                            embed = embed.copy()
-                            embed.set_image(url=None)
-                        await ctx.send(embed=embed)
-                    case FileFragment():
-                        num_files += 1
-                        if max_pages and num_files > max_pages:
-                            continue
-                        if do_text:
-                            await send_text()
+                        await ctx.send(item, suppress_embeds=True)
+                    case discord.Embed():
+                        await send_files()
+                        await ctx.send(embed=item)
+                    case (frag, spoiler):
+                        if isinstance(frag, FallbackFragment):
+                            frag = await frag.to_file(ctx)
                         await frag.save()
                         file_bytes = frag.file_bytes
                         if not file_bytes:
@@ -278,26 +344,11 @@ class FragmentQueue:
                         file_batch.append(
                             File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
                         )
-                    case FallbackFragment():
-                        if num_files < max_pages:
-                            raise RuntimeError("hit a FallbackFragment with pages left")
-                        num_files += 1
                     case _:
                         raise RuntimeError(
-                            f"unexpected Fragment subtype {type(frag).__name__}"
+                            f"unexpected item of type {type(item).__name__}"
                         )
         finally:
-            if file_batch:
-                await send_files()
-
-            if do_text:
-                await send_text()
-
-        pages_remaining = max_pages and num_files - max_pages
-
-        if pages_remaining > 0:
-            s = "s" if pages_remaining > 1 else ""
-            message = f"{pages_remaining} more item{s} at {self.link}"
-            await ctx.send(message, suppress_embeds=True)
+            await send_files()
 
         return embedded
