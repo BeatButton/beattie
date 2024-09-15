@@ -152,6 +152,7 @@ GLOB_SITE_EXCLUDE = {
     "x.com",
     "xcancel.com",
     "xcancel.net",
+    "y-gallery.net",
     "youtu.be",
     "youtube.com",
     "zztwitter.com",
