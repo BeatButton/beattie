@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class Fanbox(Site):
     name = "fanbox"
-    pattern = re.compile(r"https?://(?:[\w-]+.)?fanbox\.cc(?:/.+)*?/posts/\d+")
+    pattern = re.compile(r"https?://(?:[\w-]+.)?fanbox\.cc(?:/\S+)*?/posts/\d+")
 
     headers: dict[str, str] = {
         "Accept": "application/json, text/plain, */*",
