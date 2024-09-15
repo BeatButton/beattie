@@ -60,40 +60,52 @@ class FragmentQueue:
         pp_extra: Any = None,
         can_link: bool = True,
         headers: dict[str, str] = None,
-    ):
-        self.fragments.append(
-            FileFragment(
-                self.cog,
-                *urls,
-                filename=filename,
-                postprocess=postprocess,
-                pp_extra=pp_extra,
-                headers=headers,
-                lock_filename=filename is not None,
-                can_link=can_link,
-            )
+    ) -> FileFragment:
+        frag = FileFragment(
+            self.cog,
+            *urls,
+            filename=filename,
+            postprocess=postprocess,
+            pp_extra=pp_extra,
+            headers=headers,
+            lock_filename=filename is not None,
+            can_link=can_link,
         )
+        self.fragments.append(frag)
+        return frag
 
     def push_fallback(
         self,
         preferred_url: str,
         fallback_url: str,
         headers: dict[str, str],
-    ):
-        self.fragments.append(
-            FallbackFragment(
-                self.cog,
-                preferred_url,
-                fallback_url,
-                headers,
-            )
+    ) -> FallbackFragment:
+        frag = FallbackFragment(
+            self.cog,
+            preferred_url,
+            fallback_url,
+            headers,
         )
+        self.fragments.append(frag)
+        return frag
 
-    def push_embed(self, embed: Embed):
-        self.fragments.append(EmbedFragment(embed))
+    def push_embed(
+        self,
+        embed: Embed,
+    ) -> EmbedFragment:
+        frag = EmbedFragment(embed)
+        self.fragments.append(frag)
+        return frag
 
-    def push_text(self, text: str, force: bool = False, interlaced: bool = False):
-        self.fragments.append(TextFragment(text, force, interlaced))
+    def push_text(
+        self,
+        text: str,
+        force: bool = False,
+        interlaced: bool = False,
+    ) -> TextFragment:
+        frag = TextFragment(text, force, interlaced)
+        self.fragments.append(frag)
+        return frag
 
     def clear(self):
         self.fragments.clear()
