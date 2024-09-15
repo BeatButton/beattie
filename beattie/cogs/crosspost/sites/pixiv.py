@@ -144,3 +144,5 @@ class Pixiv(Site):
                 )
 
         queue.push_text(f"**{res['title']}**")
+        if caption := res.get("caption"):
+            queue.push_text(f">>> {caption}")
