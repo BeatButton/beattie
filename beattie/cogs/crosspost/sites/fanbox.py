@@ -38,6 +38,8 @@ class Fanbox(Site):
         if body is None:
             return False
 
+        queue.author = post["creatorId"]
+
         match post["type"]:
             case "image":
                 for image in body["images"]:

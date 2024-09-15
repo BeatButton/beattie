@@ -52,6 +52,7 @@ class Inkbunny(Site):
 
         sub = response["submissions"][0]
 
+        queue.author = sub["user_id"]
         queue.link = f"https://inkbunny.net/s/{sub_id}"
 
         for file in sub["files"]:

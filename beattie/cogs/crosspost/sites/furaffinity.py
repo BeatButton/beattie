@@ -13,6 +13,9 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
+AUTHOR_PATTERN = re.compile(r"furaffinity\.net/art/(\w+)/")
+
+
 class FurAffinity(Site):
     name = "furaffinity"
     pattern = re.compile(r"https?://(?:www\.)?(?:[fv]x)?f[ux]raffinity\.net/view/(\d+)")
@@ -31,6 +34,9 @@ class FurAffinity(Site):
                 "No images found. Post may be login-restricted.", force=True
             )
             return
+
+        if m := AUTHOR_PATTERN.search(url):
+            queue.author = m.group(1)
 
         queue.push_file(url)
 

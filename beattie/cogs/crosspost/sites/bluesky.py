@@ -34,6 +34,7 @@ class Bluesky(Site):
 
         did = data["uri"].removeprefix("at://").partition("/")[0]
 
+        queue.author = repo
         queue.link = f"https://bsky.app/profile/{repo}/post/{rkey}"
 
         for image in images:

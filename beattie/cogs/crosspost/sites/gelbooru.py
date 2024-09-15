@@ -38,6 +38,17 @@ class Gelbooru(Site):
         if post is None:
             return False
 
+        tag_params = {
+            **API_PARAMS,
+            **self.gelbooru_params,
+            "s": "tag",
+            "names": post["tags"],
+        }
+        async with self.cog.get(GELBOORU_API_URL, params=tag_params) as resp:
+            tags = (await resp.json())["tag"]
+
+        queue.author = " ".join(sorted(tag["name"] for tag in tags if tag["type"] == 1))
+
         queue.push_file(post["file_url"])
 
         params["s"] = "note"

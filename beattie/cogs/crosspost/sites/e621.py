@@ -52,6 +52,8 @@ class E621(Site):
         except IndexError:
             raise ResponseError(404, api_url)
 
+        queue.author = " ".join(sorted(post["tags"]["artist"]))
+
         queue.link = f"https://e621.net/posts/{post_id}"
 
         queue.push_file(post["file"]["url"])

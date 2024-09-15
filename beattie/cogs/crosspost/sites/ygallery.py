@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 FULLSIZE_EXPR = re.compile(r"""popup\((['"])(?P<link>[^\1]*?)\1""")
 IMG_SELECTOR = "//img[@id='idPreviewImage']"
 TEXT_SELECTOR = "//div[@id='artist-comment']//div[contains(@class, 'commentData')]"
+AUTHOR_SELECTOR = "//div[contains(@class, 'subheader')]/span/a"
 
 
 class YGallery(Site):
@@ -40,6 +41,8 @@ class YGallery(Site):
             link, use_default_headers=False, headers=self.headers
         ) as resp:
             root = html.document_fromstring(await resp.read(), self.cog.parser)
+
+        queue.author = root.xpath(AUTHOR_SELECTOR)[0].text_content().strip()
 
         img = root.xpath(IMG_SELECTOR)[0]
         m = FULLSIZE_EXPR.match(img.get("onclick"))

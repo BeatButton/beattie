@@ -51,6 +51,7 @@ class Tumblr(Site):
             return False
 
         queue.link = f"https://{blog}.tumblr.com/post/{post}"
+        queue.author = data["params"]["id"]
 
         for block in blocks:
             match block["type"]:

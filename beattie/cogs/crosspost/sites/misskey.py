@@ -38,6 +38,8 @@ class Misskey(Site):
         if not (files := data["files"]):
             return False
 
+        queue.author = data["user"]["id"]
+
         for file in files:
             url = file["url"]
             filename = None

@@ -59,6 +59,8 @@ class Poipiku(Site):
 
         user, post = match.groups()
 
+        queue.author = user
+
         headers = {
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "X-Requested-With": "XMLHttpRequest",

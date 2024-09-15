@@ -49,6 +49,7 @@ class Imgur(Site):
         else:
             images = [data]
 
+        queue.author = str(data["account_id"])
         queue.link = f"https://imgur.com/a/{album_id}"
 
         for image in images:

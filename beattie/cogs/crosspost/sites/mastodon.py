@@ -65,6 +65,8 @@ class Mastodon(Site):
         if not (images := post.get("media_attachments")):
             return False
 
+        queue.author = post["account"]["url"]
+
         real_url = post["url"]
         queue.link = real_url
         if real_url.casefold() != link.casefold():

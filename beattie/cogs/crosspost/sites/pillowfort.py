@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
+AUTHOR_SELECTOR = "//div[contains(@class, 'username')]"
+
+
 class Pillowfort(Site):
     name = "pillowfort"
     pattern = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
@@ -24,6 +27,8 @@ class Pillowfort(Site):
 
         if not (images := root.xpath(OG_IMAGE)):
             return False
+
+        queue.author = root.xpath(AUTHOR_SELECTOR)[0].text_content().strip()
 
         images.reverse()
 

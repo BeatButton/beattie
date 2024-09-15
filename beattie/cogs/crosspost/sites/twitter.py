@@ -91,6 +91,12 @@ class Twitter(Site):
 
         queue.link = f"https://twitter.com/i/status/{tweet_id}"
 
+        match self.method:
+            case "fxtwitter":
+                queue.author = tweet["author"]["id"]
+            case "vxtwitter":
+                queue.author = tweet["user_name"]
+
         url: str
         for medium in media:
             url = medium["url"]

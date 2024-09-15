@@ -112,6 +112,8 @@ class Pixiv(Site):
             )
             return
 
+        queue.author = res["user"]["id"]
+
         headers = {
             **self.headers,
             "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",

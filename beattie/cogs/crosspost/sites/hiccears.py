@@ -24,6 +24,7 @@ IMG_SELECTOR = ".//a[contains(@href, 'imgs')]"
 THUMB_SELECTOR = ".//a[contains(@class, 'photo-preview')]"
 TEXT_SELECTOR = ".//div[contains(@class, 'widget-box-content')]"
 TITLE_SELECTOR = ".//h2[contains(@class, 'section-title')]"
+AUTHOR_SELECTOR = ".//p[contains(@class, 'section-pretitle')]"
 NEXT_SELECTOR = ".//a[contains(@class, 'right')]"
 
 
@@ -48,6 +49,9 @@ class Hiccears(Site):
         async with self.cog.get(link, headers=self.headers) as resp:
             self.update_hiccears_cookies(resp)
             root = html.document_fromstring(await resp.read(), self.cog.parser)
+
+        if author := root.xpath(AUTHOR_SELECTOR):
+            queue.author = author[0].text_content().strip()
 
         if link.endswith("preview"):
             queue.push_file(
