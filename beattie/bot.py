@@ -186,7 +186,7 @@ class BeattieBot(Bot):
         await super().close()
         await self.shared.close()
 
-    async def handle_error(self, ctx: Context, e: Exception):
+    async def handle_error(self, ctx: Context, e: BaseException):
         if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):
             e = e.original
         if isinstance(e, commands.MissingRequiredArgument):

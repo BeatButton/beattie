@@ -243,7 +243,13 @@ class Crosspost(Cog):
                     queues.append((queue, kwargs))
 
         if tasks:
-            await asyncio.wait(tasks)
+            done, _ = await asyncio.wait(tasks)
+        else:
+            done = []
+
+        for task in done:
+            if e := task.exception():
+                await ctx.bot.handle_error(ctx, e)
 
         for _, batch in groupby(
             filter(lambda p: p[0].fragments, queues),
