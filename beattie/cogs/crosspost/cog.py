@@ -211,11 +211,17 @@ class Crosspost(Cog):
                 args = (link,)
             args = tuple(map(lambda a: a and a.strip(), args))
             key = (name, *args)
+            queue = None
             if queue := self.queue_cache.get(key):
+                if task := queue.handle_task:
+                    if task.done() and task.exception():
+                        queue = None
+                        self.queue_cache.pop(key, None)
+            if queue:
                 if queue.fragments:
                     self.logger.info(f"cache hit: {logloc}: {name} {args}")
                 queues.append((queue, kwargs))
-            else:
+            if not queue:
                 self.logger.debug(f"began {name}: {logloc}: {link}")
                 self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
                 try:
