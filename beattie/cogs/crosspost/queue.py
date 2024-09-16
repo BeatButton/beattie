@@ -191,16 +191,22 @@ class FragmentQueue:
         else:
             fragments = self.fragments[:]
             max_pages = settings.max_pages_or_default()
-        do_text = settings.text
 
-        def queue_text():
-            nonlocal text
-            send = text.strip()
-            text = ""
-            if send:
-                if spoiler:
-                    send = f"||{send}||"
-                items.append(send)
+        if settings.text:
+
+            def queue_text():
+                nonlocal text
+                send = text.strip()
+                text = ""
+                if send:
+                    if spoiler:
+                        send = f"||{send}||"
+                    items.append(send)
+
+        else:
+
+            def queue_text():
+                pass
 
         num_files = 0
 
@@ -213,8 +219,7 @@ class FragmentQueue:
                     else:
                         text = f"{text}\n{frag.content}"
                 case EmbedFragment():
-                    if do_text:
-                        queue_text()
+                    queue_text()
                     embed = frag.embed
                     if spoiler:
                         embed = embed.copy()
@@ -224,8 +229,7 @@ class FragmentQueue:
                     num_files += 1
                     if max_pages != 0 and num_files > max_pages:
                         continue
-                    if do_text:
-                        queue_text()
+                    queue_text()
                     items.append((frag, spoiler))
                 case _:
                     raise RuntimeError(
