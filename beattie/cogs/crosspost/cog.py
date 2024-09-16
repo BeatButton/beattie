@@ -256,7 +256,7 @@ class Crosspost(Cog):
             lambda p: (p[0].site, p[0].author or object()),
         ):
             items = []
-            for queue, kwargs in batch:
+            for count, (queue, kwargs) in enumerate(batch, 1):
                 items.extend(
                     await queue.produce(
                         ctx,
@@ -266,7 +266,8 @@ class Crosspost(Cog):
                     )
                 )
 
-            items.sort(key=item_priority)
+            if count > 1:
+                items.sort(key=item_priority)
 
             embedded = await FragmentQueue.present(
                 ctx, items=items, force=kwargs["force"]
