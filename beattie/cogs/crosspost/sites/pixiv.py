@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 import logging
 import toml
 
+from lxml import html
+
 from .site import Site
 from ..postprocess import ugoira_pp
 
@@ -145,4 +147,6 @@ class Pixiv(Site):
 
         queue.push_text(f"**{res['title']}**")
         if caption := res.get("caption"):
-            queue.push_text(f">>> {caption}")
+            root = html.document_fromstring(caption, self.cog.parser)
+            text = root.text_content()
+            queue.push_text(f">>> {text}")
