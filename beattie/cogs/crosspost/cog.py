@@ -221,7 +221,7 @@ class Crosspost(Cog):
                 if queue.fragments:
                     self.logger.info(f"cache hit: {logloc}: {name} {args}")
                 queues.append((queue, kwargs))
-            if not queue:
+            else:
                 self.logger.debug(f"began {name}: {logloc}: {link}")
                 self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
                 try:
