@@ -129,10 +129,9 @@ class FallbackFragment(Fragment):
                 self.preferred_len = resp.content_length
 
         if self.preferred_len is not None and get_size_limit(ctx) > self.preferred_len:
-
             if (frag := self.preferred_frag) is None:
                 frag = self.preferred_frag = FileFragment(
-                    ctx.cog,
+                    self.cog,
                     self.preferred_url,
                     headers=self.headers,
                     use_default_headers=False,
@@ -140,7 +139,7 @@ class FallbackFragment(Fragment):
         else:
             if (frag := self.fallback_frag) is None:
                 frag = self.fallback_frag = FileFragment(
-                    ctx.cog,
+                    self.cog,
                     self.fallback_url,
                     headers=self.headers,
                     use_default_headers=False,
