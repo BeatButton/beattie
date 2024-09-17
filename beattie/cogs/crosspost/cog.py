@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from beattie.context import BContext
 
 
-QUEUE_CACHE_SIZE: int = 1 * GB
+QUEUE_CACHE_SIZE: int = 2 * GB
 
 ConfigTarget = GuildMessageable | CategoryChannel
 
