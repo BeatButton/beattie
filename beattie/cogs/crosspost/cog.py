@@ -105,13 +105,20 @@ class Crosspost(Cog):
         else:
             self.queue_cache = {}
             bot.extra["crosspost_queue_cache"] = self.queue_cache
+        if (session := bot.extra.get("crosspost_session")) is not None:
+            self.session = session
+        else:
+            self.session = None
+
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger(__name__)
         self.sites = [cls(self) for cls in SITES]
         self.cache_lock = asyncio.Lock()
 
     async def cog_load(self):
-        self.session = aiohttp.ClientSession()
+        if self.session is None:
+            self.session = aiohttp.ClientSession()
+            self.bot.extra["crosspost_session"] = self.session
 
         await self.db.async_init()
 
@@ -119,7 +126,6 @@ class Crosspost(Cog):
             await site.load()
 
     async def cog_unload(self):
-        await self.session.close()
         for site in self.sites:
             await site.unload()
 
