@@ -258,7 +258,7 @@ class Crosspost(Cog):
 
         for _, batch in groupby(
             filter(lambda p: p[0].fragments, queues),
-            lambda p: (p[0].site, p[0].author or object()),
+            lambda p: (p[0].site.name, p[0].author or object()),
         ):
             items = []
             for count, (queue, kwargs) in enumerate(batch, 1):
