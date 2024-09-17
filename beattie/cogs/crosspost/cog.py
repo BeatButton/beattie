@@ -624,7 +624,7 @@ applying it to the guild as a whole."""
     @crosspost.command()
     async def stats(self, ctx: BContext):
         queues = self.queue_cache.values()
-        memory = sum(map(getsizeof, queues))
+        memory = await asyncio.to_thread(sum, map(getsizeof, queues))
         length = sum(len(queue.fragments) > 0 for queue in queues)
         if stamp := min((queue.last_used for queue in queues), default=None):
             oldest = format_dt(datetime.fromtimestamp(stamp), style="R")
