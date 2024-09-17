@@ -84,6 +84,7 @@ class Crosspost(Cog):
     ongoing_tasks: dict[int, asyncio.Task]
     queue_cache: dict[tuple[str, ...], FragmentQueue]
     cache_lock: asyncio.Lock
+    session: aiohttp.ClientSession
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -107,8 +108,6 @@ class Crosspost(Cog):
             bot.extra["crosspost_queue_cache"] = self.queue_cache
         if (session := bot.extra.get("crosspost_session")) is not None:
             self.session = session
-        else:
-            self.session = None
 
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger(__name__)
@@ -116,7 +115,7 @@ class Crosspost(Cog):
         self.cache_lock = asyncio.Lock()
 
     async def cog_load(self):
-        if self.session is None:
+        if not hasattr(self, "session"):
             self.session = aiohttp.ClientSession()
             self.bot.extra["crosspost_session"] = self.session
 
