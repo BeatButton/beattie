@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import asyncio
-import re
 from datetime import datetime
 from hashlib import md5
 from typing import TYPE_CHECKING
+import asyncio
 import logging
+import re
+from discord.ext.commands import Cooldown
 import toml
 
 from lxml import html
@@ -31,6 +32,7 @@ class Pixiv(Site):
         "App-Version": "5.0.145",
         "User-Agent": "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)",
     }
+    cooldown = Cooldown(10, 60)
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)

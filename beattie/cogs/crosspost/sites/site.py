@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+
+from discord.ext.commands import Cooldown
 
 if TYPE_CHECKING:
     from ..cog import Crosspost
@@ -14,6 +16,7 @@ class Site(ABC):
     cog: Crosspost
     name: str
     pattern: re.Pattern[str]
+    cooldown: Cooldown | None = None
 
     def __init__(self, cog: Crosspost):
         self.cog = cog

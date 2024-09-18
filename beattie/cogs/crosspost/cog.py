@@ -226,20 +226,27 @@ class Crosspost(Cog):
             if queue:
                 if queue.fragments:
                     self.logger.info(f"cache hit: {logloc}: {name} {args}")
+                if task := queue.handle_task:
+                    now = datetime.now().timestamp()
+                    wait_until = queue.wait_until
+                    if now < wait_until and (timeout := wait_until - now) > 5:
+                        dt = format_dt(datetime.fromtimestamp(wait_until), style="R")
+                        await ctx.send(
+                            f"{queue.site.name} ratelimit hit, resuming {dt}.",
+                            delete_after=timeout,
+                        )
+                        tasks.append(task)
+
                 queues.append((queue, kwargs))
             else:
                 self.logger.debug(f"began {name}: {logloc}: {link}")
                 self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
-                tasks.append(queue.handle(ctx, *args))
+                tasks.append(asyncio.Task(queue.handle(ctx, *args)))
                 queues.append((queue, kwargs))
                 new.add(queue)
 
-        if tasks:
-            done, _ = await asyncio.wait(tasks)
-        else:
-            done = []
-
-        for task in done:
+        for task in tasks:
+            await task
             if e := task.exception():
                 self.queue_cache.pop(key, None)
                 if isinstance(e, ResponseError) and e.code == 404:

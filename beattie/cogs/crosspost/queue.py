@@ -46,9 +46,9 @@ class FragmentQueue:
     link: str
     author: str | None
     fragments: list[Fragment]
-    resolved: asyncio.Event
-    handle_task: asyncio.Task[Self] | None
-    last_used: float  # timestamp
+    handle_task: asyncio.Task | None
+    last_used: float  # timestamps
+    wait_until: float
 
     def __init__(self, ctx: CrosspostContext, site: Site, link: str):
         assert ctx.command is not None
@@ -57,29 +57,46 @@ class FragmentQueue:
         self.author = None
         self.cog = ctx.command.cog
         self.fragments = []
-        self.resolved = asyncio.Event()
+        self.wakeup = asyncio.Event()
         self.handle_task = None
-        self.last_used = datetime.now().timestamp()
+        now = datetime.now().timestamp()
+        self.last_used = now
+        self.wait_until = now
 
     def __sizeof__(self) -> int:
         return (
             super().__sizeof__()
-            + getsizeof(self.cog)
             + getsizeof(self.link)
-            + getsizeof(self.resolved)
+            + getsizeof(self.author)
+            + getsizeof(self.handle_task)
             + getsizeof(self.last_used)
+            + getsizeof(self.wait_until)
             + sum(map(getsizeof, self.fragments))
         )
 
-    async def _handle(self, ctx: CrosspostContext, *args: str) -> Self:
-        await self.site.handler(ctx, self, *args)
-        return self
+    async def _handle(self, ctx: CrosspostContext, *args: str):
+        cooldown = self.site.cooldown
+        if cooldown and (timeout := cooldown.update_rate_limit()):
+            self.cog.logger.info(
+                f"{self.site.name} ratelimit hit, sleeping for {timeout:.2f} seconds"
+            )
+            wait_until = datetime.now() + timedelta(seconds=timeout)
+            dt = format_dt(wait_until, style="R")
+            self.wait_until = wait_until.timestamp()
+            await ctx.send(
+                f"Global {self.site.name} ratelimit hit, resuming {dt}.",
+                delete_after=timeout,
+            )
+            await asyncio.sleep(timeout)
 
-    def handle(self, ctx: CrosspostContext, *args: str) -> asyncio.Task[Self]:
+        await self.site.handler(ctx, self, *args)
+
+    async def handle(self, ctx: CrosspostContext, *args: str) -> Self:
         if self.handle_task is None:
             self.handle_task = asyncio.create_task(self._handle(ctx, *args))
 
-        return self.handle_task
+        await self.handle_task
+        return self
 
     def push_file(
         self,
