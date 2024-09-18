@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime, timedelta
 from io import BytesIO
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any, Awaitable, TypedDict
+from typing import TYPE_CHECKING, Any, Self, TypedDict
 
 from discord import Embed, File
 from discord.utils import format_dt
@@ -47,7 +47,7 @@ class FragmentQueue:
     author: str | None
     fragments: list[Fragment]
     resolved: asyncio.Event
-    handle_task: asyncio.Task | None
+    handle_task: asyncio.Task[Self] | None
     last_used: float  # timestamp
 
     def __init__(self, ctx: CrosspostContext, site: Site, link: str):
@@ -71,9 +71,13 @@ class FragmentQueue:
             + sum(map(getsizeof, self.fragments))
         )
 
-    def handle(self, ctx: CrosspostContext, *args: str) -> asyncio.Task[None]:
+    async def _handle(self, ctx: CrosspostContext, *args: str) -> Self:
+        await self.site.handler(ctx, self, *args)
+        return self
+
+    def handle(self, ctx: CrosspostContext, *args: str) -> asyncio.Task[Self]:
         if self.handle_task is None:
-            self.handle_task = asyncio.create_task(self.site.handler(ctx, self, *args))
+            self.handle_task = asyncio.create_task(self._handle(ctx, *args))
 
         return self.handle_task
 

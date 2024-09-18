@@ -198,6 +198,7 @@ class Crosspost(Cog):
         sspans = spoiler_spans(content)
 
         queues: list[tuple[FragmentQueue, QueueKwargs]] = []
+        new: set[FragmentQueue] = set()
         tasks: list[asyncio.Task] = []
 
         for m, site in matches:
@@ -229,23 +230,9 @@ class Crosspost(Cog):
             else:
                 self.logger.debug(f"began {name}: {logloc}: {link}")
                 self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
-                try:
-                    tasks.append(queue.handle(ctx, *args))
-                except ResponseError as e:
-                    self.queue_cache.pop(key, None)
-                    if e.code == 404:
-                        await ctx.send("Post not found.")
-                    else:
-                        await ctx.bot.handle_error(ctx, e)
-                    continue
-                except Exception as e:
-                    self.queue_cache.pop(key, None)
-                    await ctx.bot.handle_error(ctx, e)
-                    continue
-                else:
-                    if queue.fragments:
-                        self.logger.info(f"{name}: {logloc}: {link}")
-                    queues.append((queue, kwargs))
+                tasks.append(queue.handle(ctx, *args))
+                queues.append((queue, kwargs))
+                new.add(queue)
 
         if tasks:
             done, _ = await asyncio.wait(tasks)
@@ -254,7 +241,14 @@ class Crosspost(Cog):
 
         for task in done:
             if e := task.exception():
+                self.queue_cache.pop(key, None)
+                if isinstance(e, ResponseError) and e.code == 404:
+                    await ctx.send("Post not found.")
                 await ctx.bot.handle_error(ctx, e)
+            else:
+                queue = task.result()
+                if queue in new and queue.fragments:
+                    self.logger.info(f"{name}: {logloc}: {link}")
 
         for _, batch in groupby(
             filter(lambda p: p[0].fragments, queues),
