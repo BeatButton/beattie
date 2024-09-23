@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import toml
 
+from beattie.utils.etc import translate_bbcode
 from .site import Site
 
 if TYPE_CHECKING:
@@ -63,4 +64,5 @@ class Inkbunny(Site):
         description = sub["description"].strip()
         queue.push_text(f"**{title}**")
         if description:
+            description = translate_bbcode(description)
             queue.push_text(f">>> {description}")

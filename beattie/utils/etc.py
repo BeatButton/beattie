@@ -108,11 +108,31 @@ MD_TRANS = [
     for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]
 ]
 
+BB_TRANS = [
+    (re.compile(rf"\[/?{tag}\]"), mkd)
+    for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]
+]
+
+BB_NOOP = [re.compile(rf"\[/?{tag}[^\]]*\]") for tag in ["color", "center", "t"]]
+
+BB_STRIP = [re.compile(rf"\[{tag}[^\]]*\].*\[/{tag}\]") for tag in ["hugethumb"]]
+
+BB_URL = re.compile(r"\[url=(.+)\](.+)\[/url\]")
+
 
 def translate_markdown(text: str) -> str:
     for expr, mkd in MD_TRANS:
         text = expr.sub(mkd, text)
     text = re.sub(r"<br ?/?>", "\n", text)
+    return text
+
+
+def translate_bbcode(text: str) -> str:
+    for expr, mkd in BB_TRANS:
+        text = expr.sub(mkd, text)
+    for expr in [*BB_NOOP, *BB_STRIP]:
+        text = expr.sub("", text)
+    text = BB_URL.sub(r"[\2](\1)", text)
     return text
 
 
