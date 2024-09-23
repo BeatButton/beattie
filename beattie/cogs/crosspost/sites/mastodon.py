@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 import urllib.parse as urlparse
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 
 
 API_FMT = "https://{}/api/v1/statuses/{}"
+CONFIG = "config/crosspost/mastodon.toml"
 
 
 class Mastodon(Site):
@@ -32,8 +34,53 @@ class Mastodon(Site):
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
         self.logger = logging.getLogger(__name__)
-        with open("config/crosspost/mastodon.toml") as fp:
-            self.auth = toml.load(fp)
+        with open(CONFIG) as fp:
+            data = toml.load(fp)
+
+        self.whitelist = set(data.pop("whitelist", []))
+        self.blacklist = set(data.pop("blacklist", []))
+        self.auth = data
+
+    async def sniff(self, domain: str) -> bool:
+        async with self.cog.get(
+            f"https://{domain}/.well-known/nodeinfo",
+            use_default_headers=False,
+        ) as resp:
+            data = await resp.json()
+
+        link = data["links"][0]["href"]
+
+        async with self.cog.get(link, use_default_headers=False) as resp:
+            data = await resp.json()
+
+        return "activitypub" in data["protocols"]
+
+    async def determine(self, domain: str) -> bool:
+        try:
+            supports = await self.sniff(domain)
+        except (ResponseError, json.JSONDecodeError, IndexError):
+            supports = False
+        if supports:
+            self.logger.info(f"detected {domain} as activitypub")
+            try:
+                self.blacklist.remove(domain)
+            except KeyError:
+                pass
+            self.whitelist.add(domain)
+        else:
+            self.logger.info(f"failed to detect {domain} as activitypub")
+            try:
+                self.whitelist.remove(domain)
+            except KeyError:
+                pass
+            self.blacklist.add(domain)
+
+        data = {**self.auth, "whitelist": self.whitelist, "blacklist": self.blacklist}
+
+        with open(CONFIG, "w") as fp:
+            toml.dump(data, fp)
+
+        return supports
 
     async def handler(
         self,
@@ -45,8 +92,11 @@ class Mastodon(Site):
     ):
         info = self.cog.tldextract(link)
         domain = f"{info.domain}.{info.suffix}"
-        if domain in GLOB_SITE_EXCLUDE:
+        if domain in self.blacklist:
             return False
+        if domain not in self.whitelist:
+            if not await self.determine(domain):
+                return False
 
         if auth := self.auth.get(site):
             headers = {"Authorization": f"Bearer {auth['token']}"}
@@ -98,62 +148,3 @@ class Mastodon(Site):
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
             queue.push_text(f">>> {text}")
-
-
-GLOB_SITE_EXCLUDE = {
-    "aiptcomics.com",
-    "archiveofourown.org",
-    "bad-dragon.com",
-    "booth.pm",
-    "bsky.app",
-    "crepu.net",
-    "deadline.com",
-    "derpicdn.net",
-    "discord.com",
-    "discord.gg",
-    "discordapp.com",
-    "discordapp.net",
-    "e621.net",
-    "exhentai.org",
-    "fanbox.cc",
-    "fixupx.com",
-    "fixvx.com",
-    "forbes.com",
-    "furaffinity.net",
-    "fxtwitter.com",
-    "gelbooru.com",
-    "giphy.com",
-    "hailuoai.com",
-    "hiccears.com",
-    "hollywoodreporter.com",
-    "imgur.com",
-    "inkbunny.net",
-    "instagram.com",
-    "itch.io",
-    "iwastesomuchtime.com",
-    "misskey.io",
-    "nhentai.net",
-    "nifty.org",
-    "penny-arcade.com",
-    "pixiv.net",
-    "pomf.tv",
-    "reddit.com",
-    "rule34.xxx",
-    "steampowered.com",
-    "sxtwitter.com",
-    "tenor.com",
-    "threads.net",
-    "tumblr.com",
-    "twitter.com",
-    "twittervx.com",
-    "twxtter.com",
-    "variety.com",
-    "vxtwitter.com",
-    "x.com",
-    "xcancel.com",
-    "xcancel.net",
-    "y-gallery.net",
-    "youtu.be",
-    "youtube.com",
-    "zztwitter.com",
-}
