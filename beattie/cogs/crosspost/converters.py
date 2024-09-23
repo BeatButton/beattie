@@ -18,7 +18,6 @@ class Site(Converter):
         command = ctx.command
         assert command is not None
         cog = command.cog
-        assert isinstance(cog, Crosspost)
         if not any(site.name == argument for site in cog.sites):
             raise BadArgument
         return argument

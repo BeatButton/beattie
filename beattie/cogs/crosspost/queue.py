@@ -199,15 +199,15 @@ class FragmentQueue:
             frags = [
                 frag
                 for frag in self.fragments
-                if isinstance(frag, (FileFragment, FallbackFragment))
+                if frag.__class__.__name__ in ("FileFragment", "FallbackFragment")
             ]
             fragments = [
                 frag for start, end in ranges for frag in frags[start - 1 : end]
             ] + [
                 frag
                 for frag in self.fragments
-                if isinstance(frag, TextFragment)
-                and (frag.force or not frag.interlaced)
+                if frag.__class__.__name__ == "TextFragment"
+                and (frag.force or not frag.interlaced)  # type: ignore
             ]
         else:
             fragments = self.fragments[:]
@@ -279,11 +279,12 @@ class FragmentQueue:
         to_dl: list[FileFragment] = []
         for idx, item in enumerate(items):
             if isinstance(item, tuple):
-                frag, spoiler = item
-                if isinstance(frag, FallbackFragment):
-                    frag = await frag.to_file(ctx)
+                frag, spoiler = item   # type: ignore
+                if frag.__class__.__name__ == "FallbackFragment":
+                    fall_frag: FallbackFragment = frag  # type: ignore
+                    frag = await fall_frag.to_file(ctx)
                     items[idx] = frag, spoiler
-                if isinstance(frag, FileFragment):
+                if frag.__class__.__name__ == "FileFragment":
                     to_dl.append(frag)
 
         if not force and len(to_dl) >= 25:
@@ -343,9 +344,10 @@ class FragmentQueue:
                     case discord.Embed():
                         await send_files()
                         await ctx.send(embed=item)
-                    case (frag, spoiler):
-                        if isinstance(frag, FallbackFragment):
-                            frag = await frag.to_file(ctx)
+                    case (frag, spoiler):  # type: ignore
+                        if to_file := getattr(frag, "to_file", None):
+                            frag = await to_file(ctx)
+                        frag: FileFragment  # type: ignore
                         await frag.save()
                         file_bytes = frag.file_bytes
                         if not file_bytes:
