@@ -191,55 +191,55 @@ class Crosspost(Cog):
 
             link = step.group(0)
 
+            matches = []
             for site in self.sites:
                 if site in blacklist:
                     continue
                 if m := site.pattern.match(link):
-                    break
-            else:
-                continue
+                    matches.append((m, site))
 
-            name = site.name
-            ms, mt = step.span()
-            spoiler = any(ms < st and ss < mt for ss, st in sspans)
-            kwargs = QueueKwargs(
-                spoiler=spoiler,
-                force=force,
-                ranges=ranges,
-                settings=settings,
-            )
-            args = m.groups()
-            if not args:
-                args = (link,)
-            args = tuple(map(lambda a: a and a.strip(), args))
-            key = (name, *args)
-            queue = None
-            if queue := self.queue_cache.get(key):
-                if task := queue.handle_task:
-                    if task.done() and task.exception():
-                        queue = None
-                        self.queue_cache.pop(key, None)
-            if queue:
-                if queue.fragments:
-                    self.logger.info(f"cache hit: {logloc}: {name} {args}")
-                if task := queue.handle_task:
-                    now = datetime.now().timestamp()
-                    wait_until = queue.wait_until
-                    if now < wait_until and (timeout := wait_until - now) > 5:
-                        dt = format_dt(datetime.fromtimestamp(wait_until), style="R")
-                        await ctx.send(
-                            f"{queue.site.name} ratelimit hit, resuming {dt}.",
-                            delete_after=timeout,
-                        )
-                        tasks.append(task)
+            for m, site in matches:
+                name = site.name
+                ms, mt = step.span()
+                spoiler = any(ms < st and ss < mt for ss, st in sspans)
+                kwargs = QueueKwargs(
+                    spoiler=spoiler,
+                    force=force,
+                    ranges=ranges,
+                    settings=settings,
+                )
+                args = m.groups()
+                if not args:
+                    args = (link,)
+                args = tuple(map(lambda a: a and a.strip(), args))
+                key = (name, *args)
+                queue = None
+                if queue := self.queue_cache.get(key):
+                    if task := queue.handle_task:
+                        if task.done() and task.exception():
+                            queue = None
+                            self.queue_cache.pop(key, None)
+                if queue:
+                    if queue.fragments:
+                        self.logger.info(f"cache hit: {logloc}: {name} {args}")
+                    if task := queue.handle_task:
+                        now = datetime.now().timestamp()
+                        wait_until = queue.wait_until
+                        if now < wait_until and (timeout := wait_until - now) > 5:
+                            dt = format_dt(datetime.fromtimestamp(wait_until), style="R")
+                            await ctx.send(
+                                f"{queue.site.name} ratelimit hit, resuming {dt}.",
+                                delete_after=timeout,
+                            )
+                            tasks.append(task)
 
-                queues.append((queue, kwargs))
-            else:
-                self.logger.debug(f"began {name}: {logloc}: {link}")
-                self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
-                tasks.append(asyncio.Task(queue.handle(ctx, *args)))
-                queues.append((queue, kwargs))
-                new.add(queue)
+                    queues.append((queue, kwargs))
+                else:
+                    self.logger.debug(f"began {name}: {logloc}: {link}")
+                    self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
+                    tasks.append(asyncio.Task(queue.handle(ctx, *args)))
+                    queues.append((queue, kwargs))
+                    new.add(queue)
 
         for task in tasks:
             await task
