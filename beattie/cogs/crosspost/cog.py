@@ -191,7 +191,7 @@ class Crosspost(Cog):
 
             link = step.group(0)
 
-            matches = []
+            matches: list[tuple[re.Match[str], Site]] = []
             for site in self.sites:
                 if site in blacklist:
                     continue
