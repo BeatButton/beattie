@@ -42,25 +42,6 @@ QUEUE_CACHE_SIZE: int = 2 * GB
 ConfigTarget = GuildMessageable | CategoryChannel
 
 
-def merge_flags(*flags: PostFlags) -> tuple[Settings, list[tuple[int, int]] | None]:
-    pages = None
-    text = None
-
-    for flag in flags:
-        if flag.pages is not None:
-            pages = flag.pages
-        if flag.text is not None:
-            text = flag.text
-
-    override = Settings(text=text)
-    ranges = None
-    if isinstance(pages, int):
-        override.max_pages = pages
-    else:
-        ranges = pages
-
-    return override, ranges
-
 
 def item_priority(item: Postable):
     match item:
@@ -578,8 +559,6 @@ applying it to the guild as a whole."""
         """Get info on crosspost settings for the current channel.
 
         You can specify overrides using the same syntax as `post`"""
-        override, ranges = merge_flags(*flags)
-
         final_conf = Settings()
 
         if guild := ctx.guild:
@@ -613,10 +592,6 @@ applying it to the guild as a whole."""
             msg = f"DM settings: {dm_conf}"
 
         settings = await self.db.get_effective_settings(ctx.message)
-        if override:
-            final_conf = final_conf.apply(override)
-            msg = f"{msg}\nOverride: {override}"
-            settings = settings.apply(override)
 
         msg = f"{msg}\nEffective: {settings}"
         if settings != final_conf:
@@ -712,12 +687,7 @@ applying it to the guild as a whole."""
 
         Put text=true or pages=X after post to change settings for this message only."""
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        override, ranges = merge_flags(*flags)
-        self.db.overrides[ctx.message.id] = override
-        try:
-            await self._post(new_ctx, force=True, ranges=ranges)
-        finally:
-            del self.db.overrides[ctx.message.id]
+        await self._post(new_ctx, steps=steps, force=True)
 
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = ""):

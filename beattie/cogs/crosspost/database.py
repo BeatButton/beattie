@@ -30,7 +30,6 @@ class Database:
         self._blacklist_cache: dict[int, set[str]] = {}
         self._expiry_deque: deque[int] = deque()
         self._message_cache: dict[int, list[int]] = {}
-        self.overrides: dict[int, Settings] = {}
 
     async def async_init(self):
         async with self.pool.acquire() as conn:
@@ -115,9 +114,6 @@ class Database:
                 out.max_pages = 0
             if out.text is None:
                 out.text = True
-
-        if override := self.overrides.get(message.id):
-            out = out.apply(override)
 
         return out
 
