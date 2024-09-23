@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
+import re
 from datetime import datetime
 from io import BytesIO
 from itertools import groupby
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import aiohttp
 import toml
@@ -37,10 +39,10 @@ if TYPE_CHECKING:
     from beattie.context import BContext
 
 
-QUEUE_CACHE_SIZE: int = 2 * GB
-
 ConfigTarget = GuildMessageable | CategoryChannel
 
+QUEUE_CACHE_SIZE: int = 2 * GB
+URL_EXPR = re.compile(r"https?://[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[@!$&'()*+,;=.\]]+")
 
 
 def item_priority(item: Postable):
@@ -144,10 +146,13 @@ class Crosspost(Cog):
     async def process_links(
         self,
         ctx: CrosspostContext,
-        *,
+        steps: Iterable[re.Match | PostFlags],
         force: bool = False,
-        ranges: list[tuple[int, int]] = None,
     ):
+        steps = list(steps)
+        if not any(isinstance(step, re.Match) for step in steps):
+            return
+
         if guild := ctx.guild:
             do_suppress = ctx.channel.permissions_for(guild.me).manage_messages
             guild_id = guild.id
@@ -160,31 +165,42 @@ class Crosspost(Cog):
         else:
             blacklist = await self.db.get_blacklist(guild_id)
 
-        content = ctx.message.content
-        matches = [
-            (m, site)
-            for site in self.sites
-            if site.name not in blacklist
-            for m in site.pattern.finditer(content)
-        ]
-
-        if not matches:
-            return
-
         logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
         settings = await self.db.get_effective_settings(ctx.message)
         self.logger.info(f"process links: {logloc}: {settings}")
 
-        matches.sort(key=lambda el: el[0].span()[0])
+        content = ctx.message.content
         sspans = spoiler_spans(content)
 
         queues: list[tuple[FragmentQueue, QueueKwargs]] = []
         new: set[FragmentQueue] = set()
         tasks: list[asyncio.Task] = []
 
-        for m, site in matches:
+        ranges = None
+        for step in steps:
+            if isinstance(step, PostFlags):
+                settings = copy.copy(settings)
+                match step.pages:
+                    case int(p):
+                        settings.max_pages = p
+                    case list(r):
+                        ranges = r
+                if step.text is not None:
+                    settings.text = step.text
+                continue
+
+            link = step.group(0)
+
+            for site in self.sites:
+                if site in blacklist:
+                    continue
+                if m := site.pattern.match(link):
+                    break
+            else:
+                continue
+
             name = site.name
-            ms, mt = m.span()
+            ms, mt = step.span()
             spoiler = any(ms < st and ss < mt for ss, st in sspans)
             kwargs = QueueKwargs(
                 spoiler=spoiler,
@@ -193,7 +209,6 @@ class Crosspost(Cog):
                 settings=settings,
             )
             args = m.groups()
-            link = content[ms:mt]
             if not args:
                 args = (link,)
             args = tuple(map(lambda a: a and a.strip(), args))
@@ -302,7 +317,7 @@ class Crosspost(Cog):
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.prefix is None:
             ctx.command = self.post
-            await self._post(ctx)
+            await self._post(ctx, steps=URL_EXPR.finditer(ctx.message.content))
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
@@ -666,11 +681,11 @@ applying it to the guild as a whole."""
         self,
         ctx: CrosspostContext,
         *,
+        steps: Iterable[re.Match[str] | PostFlags],
         force=False,
-        ranges: list[tuple[int, int]] = None,
     ):
         message = ctx.message
-        task = asyncio.create_task(self.process_links(ctx, force=force, ranges=ranges))
+        task = asyncio.create_task(self.process_links(ctx, steps=steps, force=force))
         self.ongoing_tasks[message.id] = task
         try:
             await asyncio.wait_for(task, None)
@@ -682,10 +697,22 @@ applying it to the guild as a whole."""
             del self.ongoing_tasks[message.id]
 
     @commands.command()
-    async def post(self, ctx: BContext, *flags: PostFlags, _: str | None):
+    async def post(self, ctx: BContext, *args: str):
         """Embed images in the given links regardless of the auto setting.
 
         Put text=true or pages=X after post to change settings for this message only."""
+        matches = list(URL_EXPR.finditer(ctx.message.content))
+        steps = []
+        for arg in args:
+            flag = await PostFlags().convert(ctx, arg)
+            if flag.pages is not None or flag.text is not None:
+                steps.append(flag)
+            else:
+                for match in matches:
+                    if match.group(0) in arg:
+                        steps.append(match)
+                        break
+
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self._post(new_ctx, steps=steps, force=True)
 
