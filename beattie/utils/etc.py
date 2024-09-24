@@ -113,7 +113,15 @@ BB_TRANS = [
     for tag, mkd in [("i", "*"), ("b", "**"), ("u", "__"), ("s", "~~")]
 ]
 
-BB_NOOP = [re.compile(rf"\[/?{tag}[^\]]*\]") for tag in ["color", "center", "t"]]
+BB_NOOP = [
+    re.compile(rf"\[/?{tag}[^\]]*\]")
+    for tag in [
+        "color",
+        "center",
+        "t",
+        "section",
+    ]
+]
 
 BB_STRIP = [re.compile(rf"\[{tag}[^\]]*\].*\[/{tag}\]") for tag in ["hugethumb"]]
 
