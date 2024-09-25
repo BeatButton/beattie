@@ -37,6 +37,7 @@ async def ffmpeg_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
     except asyncio.TimeoutError:
         return img
     else:
+        frag.filename = f"{frag.filename.rpartition(".")[0]}.gif"
         return stdout
 
 

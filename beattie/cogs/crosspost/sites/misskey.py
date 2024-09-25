@@ -42,14 +42,12 @@ class Misskey(Site):
 
         for file in files:
             url = file["url"]
-            filename = None
             pp = None
-            base, _, ext = url.rpartition("/")[-1].rpartition("?")[0].rpartition(".")
+            ext = url.rpartition("/")[-1].rpartition("?")[0].rpartition(".")[-1]
             if ext == "apng":
-                filename = f"{base}.gif"
                 pp = ffmpeg_gif_pp
 
-            queue.push_file(url, filename=filename, postprocess=pp)
+            queue.push_file(url, postprocess=pp)
 
         if text := data["text"]:
             queue.push_text(f">>> {text}")

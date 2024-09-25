@@ -130,10 +130,7 @@ class Mastodon(Site):
                     netloc = urlparse.urlparse(str(resp.url)).netloc
                     urls[idx] = f"https://{netloc}/{url.lstrip('/')}"
             if image.get("type") == "gifv":
-                filename = (
-                    f"{str(resp.url).rpartition('/')[2].removesuffix('.mp4')}.gif"
-                )
-                queue.push_file(*urls, filename=filename, postprocess=ffmpeg_gif_pp)
+                queue.push_file(*urls, postprocess=ffmpeg_gif_pp)
             else:
                 queue.push_file(*urls)
 
