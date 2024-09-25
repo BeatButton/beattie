@@ -52,9 +52,12 @@ async def ffmpeg_mp4_pp(frag: FileFragment, img: bytes, _) -> bytes:
             "libx264",
             "-c:a",
             "aac",
-            "-f", "mp4", fp.name, "-y",
+            "-f",
+            "mp4",
+            fp.name,
+            "-y",
             stdout=subprocess.PIPE,
-            #stderr=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         try:
             await try_wait_for(proc)
