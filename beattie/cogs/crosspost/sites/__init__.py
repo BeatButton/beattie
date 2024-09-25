@@ -27,6 +27,7 @@ from .e621 import E621
 from .exhentai import Exhentai
 from .tiktok import Tiktok
 from .nhentai import Nhentai
+from .itaku import Itaku
 
 SITES: list[Type[Site]] = [
     Twitter,
@@ -52,4 +53,5 @@ SITES: list[Type[Site]] = [
     Exhentai,
     Tiktok,
     Nhentai,
+    Itaku,
 ]
