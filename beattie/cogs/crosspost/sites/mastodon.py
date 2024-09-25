@@ -58,7 +58,12 @@ class Mastodon(Site):
     async def determine(self, domain: str) -> bool:
         try:
             supports = await self.sniff(domain)
-        except (ResponseError, json.JSONDecodeError, IndexError):
+        except (
+            ResponseError,
+            json.JSONDecodeError,
+            IndexError,
+            aiohttp.ContentTypeError,
+        ):
             supports = False
         if supports:
             self.logger.info(f"detected {domain} as activitypub")
