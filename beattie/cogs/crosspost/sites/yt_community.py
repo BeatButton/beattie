@@ -61,7 +61,7 @@ class YTCommunity(Site):
             ext = None
             async with self.cog.get(img, method="HEAD") as resp:
                 if (disp := resp.content_disposition) and (name := disp.filename):
-                    ext = name.rpartition(".")[-1]
+                    ext = name.rpartition(".")[2]
 
             pp = None
             ext = ext or "jpeg"

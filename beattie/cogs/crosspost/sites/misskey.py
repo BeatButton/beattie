@@ -43,7 +43,7 @@ class Misskey(Site):
         for file in files:
             url = file["url"]
             pp = None
-            ext = url.rpartition("/")[-1].rpartition("?")[0].rpartition(".")[-1]
+            ext = url.rpartition("/")[2].rpartition("?")[0].rpartition(".")[2]
             if ext == "apng":
                 pp = ffmpeg_gif_pp
 

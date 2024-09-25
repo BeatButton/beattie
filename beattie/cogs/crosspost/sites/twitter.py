@@ -115,7 +115,7 @@ class Twitter(Site):
                             raise e
                     queue.push_file(url)
                 case "gif":
-                    base = url.rpartition("/")[-1].rpartition(".")[0]
+                    base = url.rpartition("/")[2].rpartition(".")[0]
                     filename = f"{base}.gif"
                     queue.push_file(url, filename=filename, postprocess=ffmpeg_gif_pp)
                 case "video":
