@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from .site import Site
+from ..postprocess import ffmpeg_mp4_pp
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext
@@ -29,13 +30,23 @@ class Bluesky(Site):
 
         post = data["value"]
 
-        if not (images := post.get("embed", {}).get("images")):
+        embed = post.get("embed", {})
+        images = embed.get("images", [])
+        video = embed.get("video")
+
+        if not (images or video):
             return False
 
         did = data["uri"].removeprefix("at://").partition("/")[0]
 
         queue.author = repo
         queue.link = f"https://bsky.app/profile/{repo}/post/{rkey}"
+
+        if video:
+            video_id = video["ref"]["$link"]
+            url = f"https://video.bsky.app/watch/{did}/{video_id}/playlist.m3u8"
+            filename = f"{video_id}.m3u8"
+            queue.push_file(url, filename=filename, postprocess=ffmpeg_mp4_pp)
 
         for image in images:
             image = image["image"]

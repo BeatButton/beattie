@@ -5,7 +5,7 @@ import re
 from asyncio import subprocess
 from io import BytesIO
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 from zipfile import ZipFile
 
@@ -39,6 +39,31 @@ async def ffmpeg_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
     else:
         frag.filename = f"{frag.filename.rpartition(".")[0]}.gif"
         return stdout
+
+
+async def ffmpeg_mp4_pp(frag: FileFragment, img: bytes, _) -> bytes:
+    with NamedTemporaryFile() as fp:
+        fp.name
+        proc = await asyncio.create_subprocess_exec(
+            "ffmpeg",
+            "-i",
+            frag.urls[0],
+            "-c:v",
+            "libx264",
+            "-c:a",
+            "aac",
+            "-f", "mp4", fp.name, "-y",
+            stdout=subprocess.PIPE,
+            #stderr=subprocess.DEVNULL,
+        )
+        try:
+            await try_wait_for(proc)
+        except asyncio.TimeoutError:
+            return img
+        else:
+            frag.filename = f"{frag.filename.rpartition(".")[0]}.mp4"
+            fp.seek(0)
+            return fp.read()
 
 
 async def magick_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
