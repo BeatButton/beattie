@@ -279,7 +279,7 @@ class FragmentQueue:
         to_dl: list[FileFragment] = []
         for idx, item in enumerate(items):
             if isinstance(item, tuple):
-                frag, spoiler = item   # type: ignore
+                frag, spoiler = item  # type: ignore
                 if frag.__class__.__name__ == "FallbackFragment":
                     fall_frag: FallbackFragment = frag  # type: ignore
                     frag = await fall_frag.to_file(ctx)

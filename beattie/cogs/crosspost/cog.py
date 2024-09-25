@@ -226,7 +226,9 @@ class Crosspost(Cog):
                         now = datetime.now().timestamp()
                         wait_until = queue.wait_until
                         if now < wait_until and (timeout := wait_until - now) > 5:
-                            dt = format_dt(datetime.fromtimestamp(wait_until), style="R")
+                            dt = format_dt(
+                                datetime.fromtimestamp(wait_until), style="R"
+                            )
                             await ctx.send(
                                 f"{queue.site.name} ratelimit hit, resuming {dt}.",
                                 delete_after=timeout,
