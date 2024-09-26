@@ -34,6 +34,10 @@ class Poipiku(Site):
         with open("config/headers.toml") as fp:
             headers = toml.load(fp)
         self.session = requests.Session()
+        with open("config/crosspost/poipiku.toml") as fp:
+            data = toml.load(fp)
+            for key, value in data.items():
+                self.session.cookies.set(key, value)
         self.session.cookies.set("POIPIKU_CONTENTS_VIEW_MODE", "1")
 
         for k, v in headers.items():
