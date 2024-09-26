@@ -36,7 +36,7 @@ class Itaku(Site):
 
         if url is None:
             return False
-        
+
         queue.push_file(url)
 
         if title := html_unescape(root.xpath(OG_TITLE)[0].get("content")):
