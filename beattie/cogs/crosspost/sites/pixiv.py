@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 class Pixiv(Site):
     name = "pixiv"
     pattern = re.compile(
-        r"https?://(?:www\.)?pixiv\.net/(?:(?:en/)?artworks/|"
+        r"https?://(?:www\.)?ph?ixiv\.net/(?:(?:en/)?artworks/|"
         r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=|i/)(\d+)"
     )
     headers: dict[str, str] = {
