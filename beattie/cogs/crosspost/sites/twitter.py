@@ -43,7 +43,7 @@ class Twitter(Site):
         tweet_id: str,
     ):
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
-        api_link = f"https://api.{self.method}.com/status/{tweet_id}"
+        api_link = f"https://api.{self.method}.com/status/{tweet_id}/en"
 
         async with self.cog.get(
             api_link,
@@ -121,6 +121,16 @@ class Twitter(Site):
                 case "video":
                     queue.push_file(url)
 
-        if text := TEXT_TRIM.sub("", tweet["text"]):
+        if trans := tweet.get("translation"):
+            text = trans["text"]
+            translated = True
+        else:
+            text = tweet["text"]
+            translated = False
+
+        if text := TEXT_TRIM.sub("", text):
             text = html_unescape(text)
-            queue.push_text(f">>> {text}")
+            text = "\n".join(f"> {line}" for line in text.splitlines())
+            if translated:
+                text = f"{text}\n(translated from {trans['source_lang_en']})"
+            queue.push_text(text)
