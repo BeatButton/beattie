@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 from lxml import html
 
@@ -16,12 +16,29 @@ if TYPE_CHECKING:
 TUMBLR_SCRIPT_SELECTOR = ".//script[contains(text(),'window.launcher')]"
 
 
+class Block(TypedDict):
+    type: str
+    text: str
+    hd: str
+    media: NotRequired[dict[str, str]]
+
+
 class Tumblr(Site):
     name = "tumblr"
     pattern = re.compile(
         r"https?://(?:(?:www\.)?tumb(?:lr|ex)\.com/)?"
         r"([\w-]+)(?:/|\.tumblr(?:\.com)?/post/)(\d+)"
     )
+
+    @staticmethod
+    def embeddable(block: Block) -> bool:
+        match block["type"]:
+            case "image":
+                return True
+            case "video":
+                return "media" in block
+            case _:
+                return False
 
     async def handler(
         self, ctx: CrosspostContext, queue: FragmentQueue, blog: str, post: str
@@ -44,10 +61,10 @@ class Tumblr(Site):
             )
             return False
 
-        blocks: list[dict[str, str]]
+        blocks: list[Block]
         blocks = post_content["posts"][0]["blocks"][0]["content"]
 
-        if not any(block["type"] in ("image", "video") for block in blocks):
+        if not any(map(self.embeddable, blocks)):
             return False
 
         queue.link = f"https://{blog}.tumblr.com/post/{post}"
@@ -69,4 +86,5 @@ class Tumblr(Site):
                             url = url[:-1]
                     queue.push_file(url)
                 case "video":
-                    queue.push_file(block["url"])
+                    if media := block.get("media"):
+                        queue.push_file(media["url"])
