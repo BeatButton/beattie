@@ -121,16 +121,20 @@ class Twitter(Site):
                 case "video":
                     queue.push_file(url)
 
-        if trans := tweet.get("translation"):
-            text = trans["text"]
-            translated = True
-        else:
-            text = tweet["text"]
-            translated = False
+        pre = "> "
+        if trans := TEXT_TRIM.sub("", tweet.get("translation", {}).get("text", "")):
+            trans = html_unescape(trans)
+            lines = trans.splitlines()
+            while lines and not lines[-1].strip():
+                lines.pop()
+            if lines:
+                queue.push_text("\n".join(f"> {line}" for line in lines))
+            pre = "> -# "
 
-        if text := TEXT_TRIM.sub("", text):
+        if text := TEXT_TRIM.sub("", tweet["text"]):
             text = html_unescape(text)
-            text = "\n".join(f"> {line}" for line in text.splitlines())
-            if translated:
-                text = f"{text}\n(translated from {trans['source_lang_en']})"
-            queue.push_text(text)
+            lines = text.splitlines()
+            while lines and not lines[-1].strip():
+                lines.pop()
+            if lines:
+                queue.push_text("\n".join(f"{pre}{line}" for line in lines))
