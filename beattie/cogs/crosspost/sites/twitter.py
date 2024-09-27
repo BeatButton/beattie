@@ -121,20 +121,26 @@ class Twitter(Site):
                 case "video":
                     queue.push_file(url)
 
-        pre = "> "
+        trans_lines = []
         if trans := TEXT_TRIM.sub("", tweet.get("translation", {}).get("text", "")):
             trans = html_unescape(trans)
-            lines = trans.splitlines()
-            while lines and not lines[-1].strip():
-                lines.pop()
-            if lines:
-                queue.push_text("\n".join(f"> {line}" for line in lines))
-            pre = "> -# "
+            trans_lines = trans.splitlines()
+            while trans_lines and not trans_lines[-1].strip():
+                trans_lines.pop()
 
         if text := TEXT_TRIM.sub("", tweet["text"]):
             text = html_unescape(text)
-            lines = text.splitlines()
-            while lines and not lines[-1].strip():
+            lines = [line.strip() for line in text.splitlines()]
+            while lines and not lines[-1]:
                 lines.pop()
             if lines:
-                queue.push_text("\n".join(f"{pre}{line}" for line in lines))
+                pre = "-# " if trans_lines else ""
+                queue.push_text(
+                    "\n".join(
+                        f"> {pre}{line}" if line else f"> {line}" for line in lines
+                    )
+                )
+
+        if trans_lines:
+            queue.push_text("> -# <:trans:1289284212372934737>")
+            queue.push_text("\n".join(f"> {line}" for line in trans_lines))
