@@ -253,7 +253,7 @@ class Crosspost(Cog):
             else:
                 queue = task.result()
                 if queue in new and queue.fragments:
-                    self.logger.info(f"{name}: {logloc}: {link}")
+                    self.logger.info(f"{queue.site.name}: {logloc}: {link}")
 
         for _, batch in groupby(
             filter(lambda p: p[0].fragments, queues),
