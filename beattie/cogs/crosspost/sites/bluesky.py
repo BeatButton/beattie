@@ -31,7 +31,8 @@ class Bluesky(Site):
         post = data["value"]
 
         embed = post.get("embed", {})
-        images = embed.get("images", [])
+        media = embed.get("media", embed)
+        images = media.get("images", [])
         video = embed.get("video")
 
         if not (images or video):
