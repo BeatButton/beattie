@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 
 class Fanbox(Site):
     name = "fanbox"
-    pattern = re.compile(r"https?://(?:[\w-]+.)?fanbox\.cc(?:/\S+)*?/posts/\d+")
+    pattern = re.compile(
+        r"https://(?:(?:www\.)?fanbox\.cc/@)?([\w-]+)(?:\.fanbox\.cc)?/posts/(\d+)"
+    )
 
     headers: dict[str, str] = {
         "Accept": "application/json, text/plain, */*",
@@ -23,10 +25,12 @@ class Fanbox(Site):
         "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     }
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        *_, post_id = link.rpartition("/")
+    async def handler(
+        self, ctx: CrosspostContext, queue: FragmentQueue, user: str, post_id: str
+    ):
+        queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
-        headers = {**self.headers, "Referer": link}
+        headers = {**self.headers, "Referer": queue.link}
         async with (
             aiohttp.ClientSession() as sess,
             self.cog.get(url, headers=headers, session=sess) as resp,
