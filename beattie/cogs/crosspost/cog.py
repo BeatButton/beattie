@@ -195,7 +195,7 @@ class Crosspost(Cog):
             for site in self.sites:
                 if site in blacklist:
                     continue
-                if m := site.pattern.match(link):
+                if m := site.pattern.search(link):
                     matches.append((m, site))
 
             for m, site in matches:
