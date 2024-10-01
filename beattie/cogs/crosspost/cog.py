@@ -531,7 +531,7 @@ applying it to the guild as a whole."""
 
     @blacklist.command(name="remove", aliases=["del", "rm"])
     async def blacklist_remove(
-        self, ctx: BContext, site: str = commands.param(converter=Site)
+        self, ctx: BContext, site: str = commands.param(converter=SiteConverter)
     ):
         """Remove a site from the blacklist."""
         guild = ctx.guild
