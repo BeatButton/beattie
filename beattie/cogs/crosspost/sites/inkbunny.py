@@ -62,7 +62,7 @@ class Inkbunny(Site):
 
         title = sub["title"]
         description = sub["description"].strip()
-        queue.push_text(f"**{title}**")
+        queue.push_text(title, bold=True)
         if description:
             description = translate_bbcode(description)
-            queue.push_text(f">>> {description}")
+            queue.push_text(description, quote=True)

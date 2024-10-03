@@ -34,4 +34,4 @@ class Lofter(Site):
 
         if elems := root.xpath(LOFTER_TEXT_SELECTOR):
             text = elems[0].text_content()
-            queue.push_text(f">>> {text}")
+            queue.push_text(text, quote=True)

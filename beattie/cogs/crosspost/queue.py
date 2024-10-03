@@ -36,7 +36,7 @@ class QueueKwargs(TypedDict):
 
 
 Postable = (
-    str | discord.Embed | tuple[FileFragment | FallbackFragment, bool]
+    EmbedFragment | TextFragment | FileFragment | FallbackFragment
 )  # spoiler toggle
 
 
@@ -148,9 +148,31 @@ class FragmentQueue:
         text: str,
         force: bool = False,
         interlaced: bool = False,
+        bold: bool = False,
+        italic: bool = False,
+        quote: bool = False,
     ) -> TextFragment:
-        frag = TextFragment(text, force, interlaced)
-        self.fragments.append(frag)
+        if (
+            self.fragments
+            and isinstance((frag := self.fragments[-1]), TextFragment)
+            and frag.force == force
+            and frag.interlaced == interlaced
+            and frag.bold == bold
+            and frag.italic == italic
+            and frag.quote == quote
+        ):
+            frag.content = f"{frag.content}\n{text}"
+        else:
+            frag = TextFragment(
+                self.cog,
+                text,
+                force,
+                interlaced,
+                bold,
+                italic,
+                quote,
+            )
+            self.fragments.append(frag)
         return frag
 
     def clear(self):
@@ -174,6 +196,7 @@ class FragmentQueue:
         return await self.present(
             ctx,
             items=items,
+            settings=settings,
             force=force,
         )
 
@@ -184,15 +207,13 @@ class FragmentQueue:
         spoiler: bool,
         ranges: list[tuple[int, int]] | None,
         settings: Settings,
-    ) -> list[Postable]:
+    ) -> list[tuple[Postable, bool]]:
         self.last_used = datetime.now().timestamp()
         await self.handle(ctx)
-        items: list[Postable] = []
+        items: list[tuple[Postable, bool]] = []
 
         if not self.fragments:
             return items
-
-        text = ""
 
         if ranges:
             max_pages = 0
@@ -213,58 +234,35 @@ class FragmentQueue:
             fragments = self.fragments[:]
             max_pages = settings.max_pages_or_default()
 
-        if settings.text:
-
-            def queue_text():
-                nonlocal text
-                send = text.strip()
-                text = ""
-                if send:
-                    if spoiler:
-                        send = f"||{send}||"
-                    items.append(send)
-
-        else:
-
-            def queue_text():
-                pass
-
         num_files = 0
 
         for frag in fragments:
             match frag:
                 case TextFragment():
-                    if frag.force:
-                        queue_text()
-                        items.append(frag.content)
-                    else:
-                        text = f"{text}\n{frag.content}"
+                    items.append((frag, spoiler))
                 case EmbedFragment():
-                    queue_text()
-                    embed = frag.embed
-                    if spoiler:
-                        embed = embed.copy()
-                        embed.set_image(url=None)
-                    items.append(embed)
+                    items.append((frag, spoiler))
                 case FileFragment() | FallbackFragment():
                     num_files += 1
                     if max_pages != 0 and num_files > max_pages:
                         continue
-                    queue_text()
                     items.append((frag, spoiler))
                 case _:
                     raise RuntimeError(
                         f"unexpected Fragment subtype {type(frag).__name__}"
                     )
 
-        queue_text()
-
         pages_remaining = 0 if max_pages == 0 else num_files - max_pages
 
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
-            message = f"{pages_remaining} more item{s} at {self.link}"
-            items.append(message)
+            frag = TextFragment(
+                self.cog,
+                f"{pages_remaining} more item{s} at {self.link}",
+                force=True,
+                interlaced=False,
+            )
+            items.append((frag, spoiler))
 
         return items
 
@@ -273,19 +271,21 @@ class FragmentQueue:
         cls,
         ctx: CrosspostContext,
         *,
-        items: list[Postable],
+        items: list[tuple[Postable, bool]],
+        settings: Settings,
         force: bool,
     ) -> bool:
         to_dl: list[FileFragment] = []
-        for idx, item in enumerate(items):
-            if isinstance(item, tuple):
-                frag, spoiler = item  # type: ignore
-                if frag.__class__.__name__ == "FallbackFragment":
-                    fall_frag: FallbackFragment = frag  # type: ignore
-                    frag = await fall_frag.to_file(ctx)
-                    items[idx] = frag, spoiler
-                if frag.__class__.__name__ == "FileFragment":
-                    to_dl.append(frag)
+        to_trans: list[TextFragment] = []
+        for idx, (item, spoiler) in enumerate(items):
+            if item.__class__.__name__ == "FallbackFragment":
+                fall_frag: FallbackFragment = item  # type: ignore
+                item = await fall_frag.to_file(ctx)
+                items[idx] = item, spoiler
+            if item.__class__.__name__ == "FileFragment":
+                to_dl.append(item)  # type: ignore
+            if item.__class__.__name__ == "TextFragment":
+                to_trans.append(item)  # type: ignore
 
         if not force and len(to_dl) >= 25:
 
@@ -323,6 +323,11 @@ class FragmentQueue:
         for item in to_dl:
             item.save()
 
+        lang = settings.language_or_default()
+
+        for item in to_trans:
+            item.translate(lang)
+
         embedded = False
 
         file_batch: list[File] = []
@@ -336,18 +341,22 @@ class FragmentQueue:
                 file_batch.clear()
 
         try:
-            for item in items:
-                match item:
-                    case str():
+            for item, spoiler in items:
+                match item.__class__.__name__:
+                    case "TextFragment":
                         await send_files()
-                        await ctx.send(item, suppress_embeds=True)
-                    case discord.Embed():
+                        tfrag: TextFragment = item  # type: ignore
+                        await ctx.send(
+                            await tfrag.translate(lang), suppress_embeds=True
+                        )
+                    case "EmbedFragment":
                         await send_files()
-                        await ctx.send(embed=item)
-                    case (frag, spoiler):  # type: ignore
+                        efrag: EmbedFragment = item  # type: ignore
+                        await ctx.send(embed=efrag.embed)
+                    case "FileFragment":
+                        frag: FileFragment = item  # type: ignore
                         if to_file := getattr(frag, "to_file", None):
                             frag = await to_file(ctx)
-                        frag: FileFragment  # type: ignore
                         await frag.save()
                         file_bytes = frag.file_bytes
                         if not file_bytes:

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from discord import Embed
 
 from beattie.utils.etc import get_size_limit
+from .translator import Language, DONT
 
 if TYPE_CHECKING:
     from .cog import Crosspost
@@ -156,14 +157,74 @@ class EmbedFragment(Fragment):
 
 
 class TextFragment(Fragment):
-    content: str
-    force: bool
-    interlaced: bool
+    translations: dict[tuple[str, str], str]
+    dt_task: asyncio.Task | None
+    trans_tasks: dict[Language, asyncio.Task]
 
-    def __init__(self, content: str, force: bool, interlaced: bool):
+    def __init__(
+        self,
+        cog: Crosspost,
+        content: str,
+        force: bool = False,
+        interlaced: bool = False,
+        bold: bool = False,
+        italic: bool = False,
+        quote: bool = False,
+    ):
+        self.cog = cog
         self.content = content
         self.force = force
         self.interlaced = interlaced
+        self.bold = bold
+        self.italic = italic
+        self.quote = quote
+        self.dt_task = None
+        self.trans_tasks = {}
 
     def __str__(self) -> str:
         return self.content
+
+    def format(self, text: str = None) -> str:
+        if text is None:
+            text = self.content
+        if self.bold:
+            text = f"**{text}**"
+        if self.italic:
+            text = f"*{text}*"
+        if self.quote:
+            text = "\n".join(f"> {line}" for line in text.splitlines())
+
+        return text
+
+    def detect(self) -> Awaitable[Language]:
+        if self.dt_task is None:
+            self.dt_task = asyncio.Task(self.cog.translator.detect(self.content))
+        return self.dt_task
+
+    async def _translate(self, target: Language) -> str:
+        if target == DONT:
+            return self.format()
+
+        source = await self.detect()
+        if source == DONT or target == source:
+            return self.format()
+
+        trans = await self.cog.translator.translate(
+            self.content,
+            source.code,
+            target.code,
+        )
+
+        if not trans.strip() or self.content == trans:
+            return self.format()
+
+        content = "\n".join(
+            f"-# {line}" if line.strip() else "" for line in self.content.splitlines()
+        )
+        return self.format(f"{content}\n-# <:trans:1289284212372934737>\n{trans}")
+
+    def translate(self, target: Language) -> Awaitable[str]:
+        if (task := self.trans_tasks.get(target)) is None:
+            self.trans_tasks[target] = task = asyncio.Task(self._translate(target))
+
+        return task

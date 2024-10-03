@@ -28,11 +28,12 @@ from beattie.utils.exceptions import ResponseError
 from beattie.utils.type_hints import GuildMessageable
 from beattie.utils.contextmanagers import get
 
-from .converters import PostFlags, Site as SiteConverter
+from .converters import PostFlags, Site as SiteConverter, LanguageConverter
 from .context import CrosspostContext
 from .database import Database, Settings
 from .queue import FragmentQueue, Postable, QueueKwargs
 from .sites import SITES, Site
+from .translator import Translator, Language, DONT
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot
@@ -91,6 +92,12 @@ class Crosspost(Cog):
             bot.extra["crosspost_queue_cache"] = self.queue_cache
         if (session := bot.extra.get("crosspost_session")) is not None:
             self.session = session
+
+        with open("config/libretranslate.toml") as fp:
+            lt_data = toml.load(fp)
+        self.translator = Translator(
+            self, lt_data["api_url"], lt_data.get("api_key", "")
+        )
 
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger(__name__)
@@ -274,7 +281,7 @@ class Crosspost(Cog):
                 items.sort(key=item_priority)
 
             embedded = await FragmentQueue.present(
-                ctx, items=items, force=kwargs["force"]
+                ctx, items=items, force=kwargs["force"], settings=settings
             )
             if embedded and do_suppress:
                 await squash_unfindable(ctx.message.edit(suppress=True))
@@ -477,6 +484,37 @@ applying it to the guild as a whole."""
         await self.db.set_settings(guild_id, target_id, settings)
         fmt = "en" if enabled else "dis"
         message = f"Crossposting text context {fmt}abled"
+        if target is not None:
+            message = f"{message} in {target.mention}"
+        await ctx.send(f"{message}.")
+
+    @crosspost.command(aliases=["lang", "translate"])
+    async def language(
+        self,
+        ctx: BContext,
+        language: Language = commands.param(converter=LanguageConverter),
+        *,
+        target: ConfigTarget = None,
+    ):
+        """Configure translation.
+        
+        Specify true/yes/on to translate text into English, false/no/off not to \
+translate text, or a language name or code to translate text into that language."""
+        if guild := ctx.guild:
+            guild_id = guild.id
+            target_id = target.id if target else 0
+        else:
+            guild_id = 0
+            if target is not None:
+                await ctx.send("No targets allowed in DM.")
+                return
+            target_id = ctx.channel.id
+        settings = Settings(language=language)
+        await self.db.set_settings(guild_id, target_id, settings)
+        if language == DONT:
+            message = "Translation disabled"
+        else:
+            message = f"Will translate to {language.name}"
         if target is not None:
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")

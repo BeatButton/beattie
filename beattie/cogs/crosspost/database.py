@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Self
 
 from discord import Message, Thread
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
+from .translator import Language, ENGLISH
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot
@@ -41,6 +42,7 @@ class Database:
                     auto boolean,
                     max_pages integer,
                     text boolean,
+                    language char(2),
                     PRIMARY KEY(guild_id, channel_id)
                 );
 
@@ -130,6 +132,9 @@ class Database:
             if config is None:
                 res = Settings()
             else:
+                config = {**config}
+                if lang := config["language"]:
+                    config["language"] = (await self.cog.translator.languages())[lang]
                 res = Settings.from_record(config)
             self._settings_cache[(guild_id, channel_id)] = res
             return res
@@ -139,6 +144,8 @@ class Database:
             settings = cached.apply(settings)
         self._settings_cache[(guild_id, channel_id)] = settings
         kwargs = settings.asdict()
+        if lang := kwargs.get("language"):
+            kwargs["language"] = lang.code
         cols = ",".join(kwargs)
         params = ",".join(f"${i}" for i, _ in enumerate(kwargs, 1))
         update = ",".join(f"{col}=EXCLUDED.{col}" for col in kwargs)
@@ -262,21 +269,24 @@ class Database:
 
 
 class Settings:
-    __slots__ = ("auto", "max_pages", "text")
+    __slots__ = ("auto", "max_pages", "text", "language")
 
     auto: bool | None
     max_pages: int | None
     text: bool | None
+    language: Language | None
 
     def __init__(
         self,
         auto: bool = None,
         max_pages: int = None,
         text: bool = None,
+        language: Language = None,
     ):
         self.auto = auto
         self.max_pages = max_pages
         self.text = text
+        self.language = language
 
     def __str__(self) -> str:
         if self:
@@ -311,6 +321,13 @@ class Settings:
                 return 10
             case n:
                 return n
+
+    def language_or_default(self) -> Language:
+        match self.language:
+            case None:
+                return ENGLISH
+            case lang:
+                return lang
 
     @classmethod
     def from_record(cls, row: Mapping[str, Any]) -> Self:

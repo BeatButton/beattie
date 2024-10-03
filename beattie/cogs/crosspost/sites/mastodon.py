@@ -149,4 +149,4 @@ class Mastodon(Site):
             text = "\n".join(
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
-            queue.push_text(f">>> {text}")
+            queue.push_text(text, quote=True)

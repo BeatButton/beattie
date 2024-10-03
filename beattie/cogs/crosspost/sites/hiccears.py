@@ -89,13 +89,13 @@ class Hiccears(Site):
                     break
 
         if title := root.xpath(TITLE_SELECTOR):
-            queue.push_text(f"**{title[0].text}**")
+            queue.push_text(title[0].text, bold=True)
         if elem := root.xpath(TEXT_SELECTOR):
             description = elem[0].text_content().strip()
             description = description.removeprefix("Description")
             description = re.sub(r"\r?\n\t+", "", description)
             if description:
-                queue.push_text(f">>> {description}")
+                queue.push_text(description, quote=True)
 
     def update_hiccears_cookies(self, resp: aiohttp.ClientResponse):
         if sess := resp.cookies.get("hiccears"):

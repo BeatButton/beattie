@@ -42,6 +42,6 @@ class Itaku(Site):
         if title := html_unescape(root.xpath(OG_TITLE)[0].get("content")):
             title, _, author = title.rpartition(" - ")
             queue.author = author.split(" ")[1]
-            queue.push_text(f"**{title}**")
+            queue.push_text(title, bold=True)
         if desc := html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content")):
-            queue.push_text(f">>> {desc}")
+            queue.push_text(desc, quote=True)
