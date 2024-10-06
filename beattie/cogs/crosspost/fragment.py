@@ -157,7 +157,12 @@ class EmbedFragment(Fragment):
 
 
 class TextFragment(Fragment):
-    translations: dict[tuple[str, str], str]
+    content: str
+    force: bool
+    interlaced: bool
+    bold: bool
+    italic: bool
+    quote: bool
     dt_task: asyncio.Task | None
     trans_tasks: dict[Language, asyncio.Task]
 
