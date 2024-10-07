@@ -73,7 +73,7 @@ class Reminder:
 
     def __repr__(self) -> str:
         slots = ", ".join(f"{slot}={getattr(self, slot)!r}" for slot in self.__slots__)
-        return f"{self.__class__.__name__}({slots})"
+        return f"{type(self).__name__}({slots})"
 
     def asdict(self) -> dict[str, Any]:
         return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}

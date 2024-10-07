@@ -226,14 +226,14 @@ class FragmentQueue:
             frags = [
                 frag
                 for frag in self.fragments
-                if frag.__class__.__name__ in ("FileFragment", "FallbackFragment")
+                if type(frag).__name__ in ("FileFragment", "FallbackFragment")
             ]
             fragments = [
                 frag for start, end in ranges for frag in frags[start - 1 : end]
             ] + [
                 frag
                 for frag in self.fragments
-                if frag.__class__.__name__ == "TextFragment"
+                if type(frag).__name__ == "TextFragment"
                 and (frag.force or not frag.interlaced)  # type: ignore
             ]
         else:
@@ -285,13 +285,13 @@ class FragmentQueue:
         to_dl: list[FileFragment] = []
         to_trans: list[TextFragment] = []
         for idx, (item, spoiler) in enumerate(items):
-            if item.__class__.__name__ == "FallbackFragment":
+            if type(item).__name__ == "FallbackFragment":
                 fall_frag: FallbackFragment = item  # type: ignore
                 item = await fall_frag.to_file(ctx)
                 items[idx] = item, spoiler
-            if item.__class__.__name__ == "FileFragment":
+            if type(item).__name__ == "FileFragment":
                 to_dl.append(item)  # type: ignore
-            if item.__class__.__name__ == "TextFragment":
+            if type(item).__name__ == "TextFragment":
                 tfrag: TextFragment = item  # type: ignore
                 if not tfrag.skip_translate:
                     to_trans.append(tfrag)
@@ -379,7 +379,7 @@ class FragmentQueue:
 
         try:
             for item, spoiler in items:
-                match item.__class__.__name__:
+                match type(item).__name__:
                     case "TextFragment":
                         tfrag: TextFragment = item  # type: ignore
                         if tfrag.force:

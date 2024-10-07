@@ -299,7 +299,7 @@ class Settings:
             return "(none)"
 
     def __eq__(self, other: Any) -> bool:
-        if not other.__class__.__name__ == "Settings":
+        if not type(other).__name__ == "Settings":
             return NotImplemented
         return all(getattr(self, k) == getattr(other, k) for k in self.__slots__)
 
