@@ -347,14 +347,7 @@ class FragmentQueue:
 
         async def send_text():
             original = [frag.format() for frag in text_fragments]
-            translated = []
-            for frag in text_fragments:
-                if (trans := await frag.translate(lang)) is not None and (
-                    trans := trans.strip()
-                ):
-                    translated.append(trans)
-                else:
-                    translated.append(None)
+            translated = [await frag.translate(lang) for frag in text_fragments]
 
             if any(translated):
                 diminished = "\n".join(
