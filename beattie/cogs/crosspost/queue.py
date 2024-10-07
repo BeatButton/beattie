@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import datetime, timedelta
 from io import BytesIO
 from sys import getsizeof
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
     from .database import Settings
     from .postprocess import PP
     from .sites import Site
+
+QUOTE_EXPR = re.compile(r"(> )?(.+)")
 
 
 class QueueKwargs(TypedDict):
@@ -239,7 +242,8 @@ class FragmentQueue:
         for frag in fragments:
             match frag:
                 case TextFragment():
-                    items.append((frag, spoiler))
+                    if settings.text or frag.force:
+                        items.append((frag, spoiler))
                 case EmbedFragment():
                     items.append((frag, spoiler))
                 case FileFragment() | FallbackFragment():
@@ -332,6 +336,7 @@ class FragmentQueue:
 
         file_batch: list[File] = []
         limit = get_size_limit(ctx)
+        text_fragments: list[TextFragment] = []
 
         async def send_files():
             nonlocal embedded
@@ -340,20 +345,54 @@ class FragmentQueue:
                 await ctx.send(files=file_batch)
                 file_batch.clear()
 
+        async def send_text():
+            original = [frag.format() for frag in text_fragments]
+            translated = []
+            for frag in text_fragments:
+                if (trans := await frag.translate(lang)) is not None and (
+                    trans := trans.strip()
+                ):
+                    translated.append(trans)
+                else:
+                    translated.append(None)
+
+            if any(translated):
+                diminished = "\n".join(
+                    QUOTE_EXPR.sub(r"\1-# \2", line) for line in original
+                )
+                content = "\n".join(
+                    trans or orig for orig, trans in zip(original, translated)
+                )
+                quote = "> " if text_fragments[-1].quote else ""
+                text = (
+                    f"{diminished}\n{quote}-# <:trans:1289284212372934737>\n{content}"
+                )
+            else:
+                text = "\n".join(original)
+
+            if text:
+                if spoiler:
+                    text = f"||{text}||"
+
+                await ctx.send(text, suppress_embeds=True)
+
         try:
             for item, spoiler in items:
                 match item.__class__.__name__:
                     case "TextFragment":
-                        await send_files()
                         tfrag: TextFragment = item  # type: ignore
-                        await ctx.send(
-                            await tfrag.translate(lang), suppress_embeds=True
-                        )
+                        if tfrag.force:
+                            await send_files()
+                            await ctx.send(tfrag.content, suppress_embeds=True)
+                        else:
+                            text_fragments.append(tfrag)
                     case "EmbedFragment":
                         await send_files()
+                        await send_text()
                         efrag: EmbedFragment = item  # type: ignore
                         await ctx.send(embed=efrag.embed)
                     case "FileFragment":
+                        await send_text()
                         frag: FileFragment = item  # type: ignore
                         if to_file := getattr(frag, "to_file", None):
                             frag = await to_file(ctx)
@@ -386,5 +425,6 @@ class FragmentQueue:
                         )
         finally:
             await send_files()
+            await send_text()
 
         return embedded

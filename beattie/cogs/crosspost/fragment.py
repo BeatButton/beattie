@@ -206,13 +206,13 @@ class TextFragment(Fragment):
             self.dt_task = asyncio.Task(self.cog.translator.detect(self.content))
         return self.dt_task
 
-    async def _translate(self, target: Language) -> str:
+    async def _translate(self, target: Language) -> str | None:
         if target == DONT:
-            return self.format()
+            return None
 
         source = await self.detect()
         if source == DONT or target == source:
-            return self.format()
+            return None
 
         trans = await self.cog.translator.translate(
             self.content,
@@ -221,14 +221,11 @@ class TextFragment(Fragment):
         )
 
         if not trans.strip() or self.content == trans:
-            return self.format()
+            return None
 
-        content = "\n".join(
-            f"-# {line}" if line.strip() else "" for line in self.content.splitlines()
-        )
-        return self.format(f"{content}\n-# <:trans:1289284212372934737>\n{trans}")
+        return self.format(trans)
 
-    def translate(self, target: Language) -> Awaitable[str]:
+    def translate(self, target: Language) -> Awaitable[str | None]:
         if (task := self.trans_tasks.get(target)) is None:
             self.trans_tasks[target] = task = asyncio.Task(self._translate(target))
 
