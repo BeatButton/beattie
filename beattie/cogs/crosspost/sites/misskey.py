@@ -50,4 +50,4 @@ class Misskey(Site):
             queue.push_file(url, postprocess=pp)
 
         if text := data["text"]:
-            queue.push_text(text, quote=True)
+            queue.push_text(text)

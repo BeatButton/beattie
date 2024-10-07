@@ -151,7 +151,7 @@ class FragmentQueue:
         skip_translate: bool = None,
         bold: bool = False,
         italic: bool = False,
-        quote: bool = False,
+        quote: bool = True,
         diminished: bool = False,
     ) -> TextFragment:
         if (

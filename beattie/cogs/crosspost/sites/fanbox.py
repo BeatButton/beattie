@@ -51,14 +51,14 @@ class Fanbox(Site):
                         image["originalUrl"], image["thumbnailUrl"], headers
                     )
                 if text := body.get("text", "").strip():
-                    queue.push_text(text, quote=True, interlaced=True)
+                    queue.push_text(text, interlaced=True)
             case "file":
                 for file_info in body["files"]:
                     url = file_info["url"]
                     filename = file_info["name"] + "." + file_info["extension"]
                     queue.push_file(url, filename=filename)
                 if text := body.get("text", "").strip():
-                    queue.push_text(text, quote=True, interlaced=True)
+                    queue.push_text(text, interlaced=True)
             case "article":
                 blocks = body["blocks"]
                 image_map = body["imageMap"]
@@ -71,7 +71,7 @@ class Fanbox(Site):
                     match block["type"]:
                         case "p":
                             if text := block.get("text", "").strip():
-                                queue.push_text(text, quote=True, interlaced=True)
+                                queue.push_text(text, interlaced=True)
                         case "image":
                             image = image_map[block["imageId"]]
                             queue.push_fallback(

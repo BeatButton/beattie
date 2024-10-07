@@ -62,7 +62,7 @@ class Gelbooru(Site):
             notes.sort(key=lambda n: int(n.get("y")))
             text = "\n\n".join(n.get("body") for n in notes)
             text = translate_markdown(text)
-            queue.push_text(text, quote=True)
+            queue.push_text(text)
 
         if source := post.get("source"):
             queue.push_text(html_unescape(source), force=True)

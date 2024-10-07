@@ -74,4 +74,4 @@ class YTCommunity(Site):
 
         if frags := post["contentText"].get("runs"):
             text = "".join(frag.get("text", "") for frag in frags)
-            queue.push_text(text, quote=True)
+            queue.push_text(text)

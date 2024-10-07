@@ -59,7 +59,7 @@ class E621(Site):
         queue.push_file(post["file"]["url"])
 
         if text := post.get("description"):
-            queue.push_text(text, quote=True)
+            queue.push_text(text)
 
         if sources := post.get("sources"):
             queue.push_text(sources[-1], force=True)

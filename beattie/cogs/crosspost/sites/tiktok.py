@@ -57,4 +57,4 @@ class Tiktok(Site):
         queue.push_file(url, filename=filename)
 
         desc = root.xpath(OG_DESCRIPTION)[0].get("content")
-        queue.push_text(desc, quote=True)
+        queue.push_text(desc)

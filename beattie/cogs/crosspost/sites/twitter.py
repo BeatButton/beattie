@@ -123,4 +123,4 @@ class Twitter(Site):
 
         if text := TEXT_TRIM.sub("", tweet["text"]):
             text = html_unescape(text)
-            queue.push_text(text, quote=True)
+            queue.push_text(text)

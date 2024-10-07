@@ -53,10 +53,10 @@ class YGallery(Site):
         comment = html.tostring(root.xpath(TEXT_SELECTOR)[0], encoding=str)
         assert isinstance(comment, str)
         if title := img.get("alt"):
-            queue.push_text(title, bold=True, quote=True)
+            queue.push_text(title, bold=True)
         comment = comment.strip()
         comment = comment.removeprefix('<div class="commentData">')
         comment = comment.removesuffix("</div>")
         comment = re.sub(r" ?<img[^>]*> ?", "", comment)
         if comment := translate_markdown(comment).strip():
-            queue.push_text(comment, quote=True)
+            queue.push_text(comment)

@@ -57,4 +57,4 @@ class Bluesky(Site):
             queue.push_file(url, filename=filename)
 
         if text := post["text"]:
-            queue.push_text(text, quote=True)
+            queue.push_text(text)

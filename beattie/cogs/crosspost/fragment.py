@@ -177,7 +177,7 @@ class TextFragment(Fragment):
         skip_translate: bool = None,
         bold: bool = False,
         italic: bool = False,
-        quote: bool = False,
+        quote: bool = True,
         diminished: bool = False,
     ):
         self.cog = cog
