@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from .postprocess import PP
     from .sites import Site
 
-QUOTE_EXPR = re.compile(r"(> )?(.+)")
+QUOTE_EXPR = re.compile(r"(> )?(?:-# )*(.+)")
 
 
 class QueueKwargs(TypedDict):
@@ -155,6 +155,7 @@ class FragmentQueue:
         bold: bool = False,
         italic: bool = False,
         quote: bool = False,
+        diminished: bool = False,
     ) -> TextFragment:
         if (
             self.fragments
@@ -165,6 +166,7 @@ class FragmentQueue:
             and frag.bold == bold
             and frag.italic == italic
             and frag.quote == quote
+            and frag.diminished == diminished
         ):
             frag.content = f"{frag.content}\n{text}"
         else:
@@ -177,6 +179,7 @@ class FragmentQueue:
                 bold,
                 italic,
                 quote,
+                diminished,
             )
             self.fragments.append(frag)
         return frag

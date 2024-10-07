@@ -164,6 +164,7 @@ class TextFragment(Fragment):
     bold: bool
     italic: bool
     quote: bool
+    diminished: bool
     dt_task: asyncio.Task | None
     trans_tasks: dict[Language, asyncio.Task]
 
@@ -177,6 +178,7 @@ class TextFragment(Fragment):
         bold: bool = False,
         italic: bool = False,
         quote: bool = False,
+        diminished: bool = False,
     ):
         self.cog = cog
         self.content = content
@@ -189,6 +191,7 @@ class TextFragment(Fragment):
         self.bold = bold
         self.italic = italic
         self.quote = quote
+        self.diminished = diminished
         self.dt_task = None
         self.trans_tasks = {}
 
@@ -202,6 +205,8 @@ class TextFragment(Fragment):
             text = f"**{text}**"
         if self.italic:
             text = f"*{text}*"
+        if self.diminished:
+            text = "\n".join(f"-# {line}" for line in text.splitlines())
         if self.quote:
             text = "\n".join(f"> {line}" for line in text.splitlines())
 

@@ -141,7 +141,7 @@ class Mastodon(Site):
 
         if content := post["content"]:
             if cw := post.get("spoiler_text"):
-                queue.push_text(cw, skip_translate=True)
+                queue.push_text(cw, skip_translate=True, quote=True, diminished=True)
 
             fragments = html.fragments_fromstring(
                 re.sub(r"<br ?/?>", "\n", content), parser=self.cog.parser
