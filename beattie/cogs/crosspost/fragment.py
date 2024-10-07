@@ -222,7 +222,10 @@ class TextFragment(Fragment):
         if italic:
             text = f"*{text}*"
         if diminished:
-            text = "\n".join(f"-# {line}" for line in text.splitlines())
+            text = "\n".join(
+                f"-# {line}" if line.strip() else "\N{ZERO WIDTH SPACE}"
+                for line in text.splitlines()
+            )
         if quote:
             text = "\n".join(f"> {line}" for line in text.splitlines())
 
