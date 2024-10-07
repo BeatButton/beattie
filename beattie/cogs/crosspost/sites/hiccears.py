@@ -89,7 +89,7 @@ class Hiccears(Site):
                     break
 
         if title := root.xpath(TITLE_SELECTOR):
-            queue.push_text(title[0].text, bold=True)
+            queue.push_text(title[0].text, bold=True, quote=True)
         if elem := root.xpath(TEXT_SELECTOR):
             description = elem[0].text_content().strip()
             description = description.removeprefix("Description")

@@ -40,4 +40,4 @@ class Nhentai(Site):
             else:
                 queue.push_text(f"Unrecognized image type {page_t}", force=True)
 
-        queue.push_text(data["title"]["english"], bold=True)
+        queue.push_text(data["title"]["english"], bold=True, quote=True)

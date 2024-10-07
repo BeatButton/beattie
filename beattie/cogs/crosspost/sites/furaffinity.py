@@ -42,5 +42,5 @@ class FurAffinity(Site):
 
         title = root.xpath(OG_TITLE)[0].get("content")
         desc = root.xpath(OG_DESCRIPTION)[0].get("content")
-        queue.push_text(title, bold=True)
+        queue.push_text(title, bold=True, quote=True)
         queue.push_text(desc, quote=True)

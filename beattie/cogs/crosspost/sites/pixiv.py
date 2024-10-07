@@ -147,7 +147,7 @@ class Pixiv(Site):
                     headers=headers,
                 )
 
-        queue.push_text(res["title"], bold=True)
+        queue.push_text(res["title"], bold=True, quote=True)
         if caption := res.get("caption"):
             caption = re.sub(r"<br ?/?>", "\n", caption)
             root = html.document_fromstring(caption, self.cog.parser)

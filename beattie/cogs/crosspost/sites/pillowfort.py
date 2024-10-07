@@ -38,6 +38,6 @@ class Pillowfort(Site):
             queue.push_file(url, headers=headers)
 
         if title := html_unescape(root.xpath(OG_TITLE)[0].get("content")):
-            queue.push_text(title, bold=True)
+            queue.push_text(title, bold=True, quote=True)
         if desc := html_unescape(root.xpath(OG_DESCRIPTION)[0].get("content")):
             queue.push_text(desc, quote=True)
