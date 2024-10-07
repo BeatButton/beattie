@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from datetime import datetime, timedelta
 from io import BytesIO
 from sys import getsizeof
@@ -27,8 +26,6 @@ if TYPE_CHECKING:
     from .database import Settings
     from .postprocess import PP
     from .sites import Site
-
-QUOTE_EXPR = re.compile(r"(> )?(?:-# )*(.+)")
 
 
 class QueueKwargs(TypedDict):
@@ -354,7 +351,6 @@ class FragmentQueue:
                 file_batch.clear()
 
         async def send_text():
-            original = [frag.format() for frag in text_fragments]
             translated = [
                 await frag.translate(lang) if not frag.skip_translate else None
                 for frag in text_fragments
@@ -362,17 +358,18 @@ class FragmentQueue:
 
             if any(translated):
                 diminished = "\n".join(
-                    QUOTE_EXPR.sub(r"\1-# \2", line) for line in original
+                    line.format(diminished=True) for line in text_fragments
                 )
                 content = "\n".join(
-                    trans or orig for orig, trans in zip(original, translated)
+                    trans or orig.format()
+                    for orig, trans in zip(text_fragments, translated)
                 )
                 quote = "> " if text_fragments[-1].quote else ""
                 text = (
                     f"{diminished}\n{quote}-# <:trans:1289284212372934737>\n{content}"
                 )
             else:
-                text = "\n".join(original)
+                text = "\n".join(frag.format() for frag in text_fragments)
 
             if text:
                 if spoiler:

@@ -198,16 +198,32 @@ class TextFragment(Fragment):
     def __str__(self) -> str:
         return self.content
 
-    def format(self, text: str = None) -> str:
+    def format(
+        self,
+        text: str = None,
+        bold: bool = None,
+        italic: bool = None,
+        diminished: bool = None,
+        quote: bool = None,
+    ) -> str:
         if text is None:
             text = self.content
-        if self.bold:
+        if bold is None:
+            bold = self.bold
+        if italic is None:
+            italic = self.italic
+        if diminished is None:
+            diminished = self.diminished
+        if quote is None:
+            quote = self.quote
+
+        if bold:
             text = f"**{text}**"
-        if self.italic:
+        if italic:
             text = f"*{text}*"
-        if self.diminished:
+        if diminished:
             text = "\n".join(f"-# {line}" for line in text.splitlines())
-        if self.quote:
+        if quote:
             text = "\n".join(f"> {line}" for line in text.splitlines())
 
         return text
