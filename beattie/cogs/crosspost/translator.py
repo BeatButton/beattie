@@ -52,9 +52,13 @@ class Translator:
         async with self.cog.session.post(f"{self.api_url}/detect", data=body) as resp:
             data = await resp.json()
 
+        for lang in data:
+            if lang["language"] in ("ja", "zh"):
+                lang["confidence"] += 20
+
         lang = max(data, key=lambda el: el["confidence"])
 
-        if lang["confidence"] < 40:
+        if lang["confidence"] < 60:
             return DONT
 
         langs = await self.languages()
