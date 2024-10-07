@@ -46,12 +46,12 @@ QUEUE_CACHE_SIZE: int = 2 * GB
 
 
 def item_priority(item: Postable):
-    match item:
-        case tuple():
+    match type(item).__name__:
+        case "FileFragment" | "FallbackFragment":
             return 0
-        case discord.Embed():
+        case "EmbedFragment":
             return 1
-        case str():
+        case "TextFragment":
             return 2
         case _:
             return 3
@@ -265,7 +265,7 @@ class Crosspost(Cog):
             filter(lambda p: p[0].fragments, queues),
             lambda p: (p[0].site.name, p[0].author or object()),
         ):
-            items = []
+            items: list[tuple[Postable, bool]] = []
             for count, (queue, kwargs) in enumerate(batch, 1):
                 items.extend(
                     await queue.produce(
@@ -277,7 +277,7 @@ class Crosspost(Cog):
                 )
 
             if count > 1:
-                items.sort(key=item_priority)
+                items.sort(key=lambda tup: item_priority(tup[0]))
 
             embedded = await FragmentQueue.present(
                 ctx, items=items, force=kwargs["force"], settings=settings
