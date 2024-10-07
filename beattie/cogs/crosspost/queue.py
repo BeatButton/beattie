@@ -151,6 +151,7 @@ class FragmentQueue:
         text: str,
         force: bool = False,
         interlaced: bool = False,
+        skip_translate: bool = None,
         bold: bool = False,
         italic: bool = False,
         quote: bool = False,
@@ -160,6 +161,7 @@ class FragmentQueue:
             and isinstance((frag := self.fragments[-1]), TextFragment)
             and frag.force == force
             and frag.interlaced == interlaced
+            and frag.skip_translate == skip_translate
             and frag.bold == bold
             and frag.italic == italic
             and frag.quote == quote
@@ -171,6 +173,7 @@ class FragmentQueue:
                 text,
                 force,
                 interlaced,
+                skip_translate,
                 bold,
                 italic,
                 quote,
@@ -289,7 +292,9 @@ class FragmentQueue:
             if item.__class__.__name__ == "FileFragment":
                 to_dl.append(item)  # type: ignore
             if item.__class__.__name__ == "TextFragment":
-                to_trans.append(item)  # type: ignore
+                tfrag: TextFragment = item  # type: ignore
+                if not tfrag.skip_translate:
+                    to_trans.append(tfrag)
 
         if not force and len(to_dl) >= 25:
 
@@ -347,7 +352,10 @@ class FragmentQueue:
 
         async def send_text():
             original = [frag.format() for frag in text_fragments]
-            translated = [await frag.translate(lang) for frag in text_fragments]
+            translated = [
+                await frag.translate(lang) if not frag.skip_translate else None
+                for frag in text_fragments
+            ]
 
             if any(translated):
                 diminished = "\n".join(

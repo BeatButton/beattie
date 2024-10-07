@@ -159,6 +159,7 @@ class EmbedFragment(Fragment):
 class TextFragment(Fragment):
     content: str
     force: bool
+    skip_translate: bool
     interlaced: bool
     bold: bool
     italic: bool
@@ -172,6 +173,7 @@ class TextFragment(Fragment):
         content: str,
         force: bool = False,
         interlaced: bool = False,
+        skip_translate: bool = None,
         bold: bool = False,
         italic: bool = False,
         quote: bool = False,
@@ -179,6 +181,10 @@ class TextFragment(Fragment):
         self.cog = cog
         self.content = content
         self.force = force
+        if skip_translate is not None:
+            self.skip_translate = skip_translate
+        else:
+            self.skip_translate = force
         self.interlaced = interlaced
         self.bold = bold
         self.italic = italic
