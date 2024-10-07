@@ -127,6 +127,8 @@ BB_STRIP = [re.compile(rf"\[{tag}[^\]]*\].*\[/{tag}\]") for tag in ["hugethumb"]
 
 BB_URL = re.compile(r"\[url=(.+)\](.+)\[/url\]")
 
+URL_EXPR = re.compile(r"https?://[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[@!$&'()*+,;=.\]]+")
+
 
 def translate_markdown(text: str) -> str:
     for expr, mkd in MD_TRANS:

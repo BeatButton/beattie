@@ -23,7 +23,7 @@ from discord.utils import format_dt
 
 from beattie.utils.aioutils import squash_unfindable
 from beattie.utils.checks import is_owner_or
-from beattie.utils.etc import GB, display_bytes, spoiler_spans
+from beattie.utils.etc import GB, URL_EXPR, display_bytes, spoiler_spans
 from beattie.utils.exceptions import ResponseError
 from beattie.utils.type_hints import GuildMessageable
 from beattie.utils.contextmanagers import get
@@ -43,7 +43,6 @@ if TYPE_CHECKING:
 ConfigTarget = GuildMessageable | CategoryChannel
 
 QUEUE_CACHE_SIZE: int = 2 * GB
-URL_EXPR = re.compile(r"https?://[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[@!$&'()*+,;=.\]]+")
 
 
 def item_priority(item: Postable):

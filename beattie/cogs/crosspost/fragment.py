@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from discord import Embed
 
-from beattie.utils.etc import get_size_limit
+from beattie.utils.etc import URL_EXPR, get_size_limit
 from .translator import Language, DONT
 
 if TYPE_CHECKING:
@@ -241,13 +241,17 @@ class TextFragment(Fragment):
         if source == DONT or target == source:
             return None
 
-        trans = await self.cog.translator.translate(
-            self.content,
-            source.code,
-            target.code,
-        )
+        content = URL_EXPR.sub("", self.content).strip()
 
-        if not trans.strip() or self.content == trans:
+        trans = (
+            await self.cog.translator.translate(
+                content,
+                source.code,
+                target.code,
+            )
+        ).strip()
+
+        if not trans or content == trans:
             return None
 
         return self.format(trans)
