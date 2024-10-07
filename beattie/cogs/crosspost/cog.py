@@ -92,11 +92,14 @@ class Crosspost(Cog):
         if (session := bot.extra.get("crosspost_session")) is not None:
             self.session = session
 
-        with open("config/libretranslate.toml") as fp:
-            lt_data = toml.load(fp)
-        self.translator = Translator(
-            self, lt_data["api_url"], lt_data.get("api_key", "")
-        )
+        try:
+            with open("config/libretranslate.toml") as fp:
+                lt_data = toml.load(fp)
+            self.translator = Translator(
+                self, lt_data["api_url"], lt_data.get("api_key", "")
+            )
+        except FileNotFoundError:
+            self.translator = None
 
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger(__name__)

@@ -165,7 +165,7 @@ class TextFragment(Fragment):
     italic: bool
     quote: bool
     diminished: bool
-    dt_task: asyncio.Task | None
+    dt_task: asyncio.Task[Language] | None
     trans_tasks: dict[Language, asyncio.Task]
 
     def __init__(
@@ -233,10 +233,16 @@ class TextFragment(Fragment):
 
     def detect(self) -> Awaitable[Language]:
         if self.dt_task is None:
-            self.dt_task = asyncio.Task(self.cog.translator.detect(self.content))
+            if translator := self.cog.translator:
+                self.dt_task = asyncio.Task(translator.detect(self.content))
+            else:
+                self.dt_task = asyncio.Task(asyncio.sleep(0, DONT))
         return self.dt_task
 
     async def _translate(self, target: Language) -> str | None:
+        if (translator := self.cog.translator) is None:
+            return None
+
         if target == DONT:
             return None
 
@@ -247,7 +253,7 @@ class TextFragment(Fragment):
         content = URL_EXPR.sub("", self.content).strip()
 
         trans = (
-            await self.cog.translator.translate(
+            await translator.translate(
                 content,
                 source.code,
                 target.code,

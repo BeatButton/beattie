@@ -133,8 +133,8 @@ class Database:
                 res = Settings()
             else:
                 config = {**config}
-                if lang := config["language"]:
-                    config["language"] = (await self.cog.translator.languages())[lang]
+                if (lang := config["language"]) and (translator := self.cog.translator):
+                    config["language"] = (await translator.languages())[lang]
                 res = Settings.from_record(config)
             self._settings_cache[(guild_id, channel_id)] = res
             return res

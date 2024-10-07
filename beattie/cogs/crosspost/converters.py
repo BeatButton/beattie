@@ -29,7 +29,10 @@ class Site(Converter):
 class LanguageConverter(Converter):
     async def convert(self, ctx: BContext, argument: str) -> Language:
         cog: Crosspost = ctx.bot.get_cog("Crosspost")  # type: ignore
-        langs = await cog.translator.languages()
+        if (translator := cog.translator) is None:
+            raise BadArgument("no translator available")
+
+        langs = await translator.languages()
 
         try:
             on = _convert_to_bool(argument)
