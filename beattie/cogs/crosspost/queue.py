@@ -341,7 +341,6 @@ class FragmentQueue:
 
         file_batch: list[File] = []
         limit = get_size_limit(ctx)
-        text_fragments: list[TextFragment] = []
 
         async def send_files():
             nonlocal embedded
@@ -350,26 +349,16 @@ class FragmentQueue:
                 await ctx.send(files=file_batch)
                 file_batch.clear()
 
-        async def send_text():
-            translated = [
-                await frag.translate(lang) if not frag.skip_translate else None
-                for frag in text_fragments
-            ]
-
-            if any(translated):
-                diminished = "\n".join(
-                    line.format(diminished=True) for line in text_fragments
-                )
-                content = "\n".join(
-                    trans or orig.format()
-                    for orig, trans in zip(text_fragments, translated)
-                )
-                quote = "> " if text_fragments[-1].quote else ""
+        async def send_text(frag: TextFragment):
+            if not frag.skip_translate and (translated := await frag.translate(lang)):
+                diminished = frag.format(diminished=True)
+                content = frag.format(translated)
+                quote = "> " if frag.quote else ""
                 text = (
                     f"{diminished}\n{quote}-# <:trans:1289284212372934737>\n{content}"
                 )
             else:
-                text = "\n".join(frag.format() for frag in text_fragments)
+                text = frag.format()
 
             if text:
                 if spoiler:
@@ -382,18 +371,16 @@ class FragmentQueue:
                 match type(item).__name__:
                     case "TextFragment":
                         tfrag: TextFragment = item  # type: ignore
+                        await send_files()
                         if tfrag.force:
-                            await send_files()
                             await ctx.send(tfrag.content, suppress_embeds=True)
                         else:
-                            text_fragments.append(tfrag)
+                            await send_text(tfrag)
                     case "EmbedFragment":
                         await send_files()
-                        await send_text()
                         efrag: EmbedFragment = item  # type: ignore
                         await ctx.send(embed=efrag.embed)
                     case "FileFragment":
-                        await send_text()
                         frag: FileFragment = item  # type: ignore
                         if to_file := getattr(frag, "to_file", None):
                             frag = await to_file(ctx)
@@ -426,6 +413,5 @@ class FragmentQueue:
                         )
         finally:
             await send_files()
-            await send_text()
 
         return embedded
