@@ -39,6 +39,8 @@ class Nhentai(Site):
                     ext = "jpg"
                 case "p":
                     ext = "png"
+                case "g":
+                    ext = "gif"
 
             if ext:
                 queue.push_file(f"https://i.nhentai.net/galleries/{media_id}/{i}.{ext}")
