@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta
 from io import BytesIO
+from itertools import groupby
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any, Self, TypedDict
 
@@ -341,6 +342,7 @@ class FragmentQueue:
 
         file_batch: list[File] = []
         limit = get_size_limit(ctx)
+        text_fragments: list[TextFragment] = []
 
         async def send_files():
             nonlocal embedded
@@ -349,38 +351,51 @@ class FragmentQueue:
                 await ctx.send(files=file_batch)
                 file_batch.clear()
 
-        async def send_text(frag: TextFragment):
-            if not frag.skip_translate and (translated := await frag.translate(lang)):
-                diminished = frag.format(diminished=True)
-                content = frag.format(translated)
-                quote = "> " if frag.quote else ""
-                text = (
-                    f"{diminished}\n{quote}-# <:trans:1289284212372934737>\n{content}"
-                )
-            else:
-                text = frag.format()
+        async def send_text():
+            for _queue, chunk in groupby(text_fragments, key=lambda f: f.queue):
+                chunk = list(chunk)
+                translated = [
+                    await frag.translate(lang) if not frag.skip_translate else None
+                    for frag in chunk
+                ]
 
-            if text:
-                if spoiler:
-                    text = f"||{text}||"
+                if any(translated):
+                    diminished = "\n".join(
+                        line.format(diminished=True) for line in chunk
+                    )
+                    content = "\n".join(
+                        trans or orig.format() for orig, trans in zip(chunk, translated)
+                    )
+                    quote = "> " if chunk[-1].quote else ""
+                    text = f"{diminished}\n{quote}-# <:trans:1289284212372934737>\n{content}"
+                else:
+                    text = "\n".join(frag.format() for frag in chunk)
 
-                await ctx.send(text, suppress_embeds=True)
+                if text:
+                    if spoiler:
+                        text = f"||{text}||"
+
+                    await ctx.send(text, suppress_embeds=True)
+
+            text_fragments.clear()
 
         try:
             for item, spoiler in items:
                 match type(item).__name__:
                     case "TextFragment":
                         tfrag: TextFragment = item  # type: ignore
-                        await send_files()
                         if tfrag.force:
+                            await send_files()
                             await ctx.send(tfrag.content, suppress_embeds=True)
                         else:
-                            await send_text(tfrag)
+                            text_fragments.append(tfrag)
                     case "EmbedFragment":
                         await send_files()
+                        await send_text()
                         efrag: EmbedFragment = item  # type: ignore
                         await ctx.send(embed=efrag.embed)
                     case "FileFragment":
+                        await send_text()
                         frag: FileFragment = item  # type: ignore
                         if to_file := getattr(frag, "to_file", None):
                             frag = await to_file(ctx)
@@ -413,5 +428,6 @@ class FragmentQueue:
                         )
         finally:
             await send_files()
+            await send_text()
 
         return embedded
