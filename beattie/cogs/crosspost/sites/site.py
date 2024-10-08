@@ -17,6 +17,7 @@ class Site(ABC):
     name: str
     pattern: re.Pattern[str]
     cooldown: Cooldown | None = None
+    concurrent: bool = True
 
     def __init__(self, cog: Crosspost):
         self.cog = cog

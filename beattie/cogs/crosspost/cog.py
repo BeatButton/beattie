@@ -282,7 +282,7 @@ class Crosspost(Cog):
             if count > 1:
                 items.sort(key=lambda tup: item_priority(tup[0]))
 
-            embedded = await FragmentQueue.present(
+            embedded = await queue.present(
                 ctx, items=items, force=kwargs["force"], settings=settings
             )
             if embedded and do_suppress:

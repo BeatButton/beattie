@@ -273,9 +273,8 @@ class FragmentQueue:
 
         return items
 
-    @classmethod
     async def present(
-        cls,
+        self,
         ctx: CrosspostContext,
         *,
         items: list[tuple[Postable, bool]],
@@ -329,8 +328,9 @@ class FragmentQueue:
             if emoji == "❌":
                 return False
 
-        for item in to_dl:
-            item.save()
+        if self.site.concurrent:
+            for item in to_dl:
+                item.save()
 
         lang = settings.language_or_default()
 
