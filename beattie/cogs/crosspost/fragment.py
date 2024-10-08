@@ -15,9 +15,19 @@ if TYPE_CHECKING:
     from .cog import Crosspost
     from .context import CrosspostContext
     from .postprocess import PP
+    from .queue import FragmentQueue
 
 
 class Fragment:
+    queue: FragmentQueue
+
+    def __init__(self, queue: FragmentQueue):
+        self.queue = queue
+
+    @property
+    def cog(self) -> Crosspost:
+        return self.queue.cog
+
     def __sizeof__(self) -> int:
         return super().__sizeof__() + sum(
             getsizeof(getattr(self, name))
@@ -26,7 +36,6 @@ class Fragment:
 
 
 class FileFragment(Fragment):
-    cog: Crosspost
     urls: tuple[str, ...]
     headers: dict[str, str] | None
     use_default_headers: bool
@@ -40,7 +49,7 @@ class FileFragment(Fragment):
 
     def __init__(
         self,
-        cog: Crosspost,
+        queue: FragmentQueue,
         *urls: str,
         filename: str = None,
         headers: dict[str, str] = None,
@@ -50,7 +59,7 @@ class FileFragment(Fragment):
         lock_filename: bool = False,
         can_link: bool = True,
     ):
-        self.cog = cog
+        super().__init__(queue)
         self.urls = urls
         self.postprocess = postprocess
         self.pp_extra = pp_extra
@@ -105,12 +114,12 @@ class FallbackFragment(Fragment):
 
     def __init__(
         self,
-        cog: Crosspost,
+        queue: FragmentQueue,
         preferred_url: str,
         fallback_url: str,
         headers: dict[str, str] | None,
     ):
-        self.cog = cog
+        super().__init__(queue)
         self.preferred_url = preferred_url
         self.fallback_url = fallback_url
         self.headers = headers
@@ -132,7 +141,7 @@ class FallbackFragment(Fragment):
         if self.preferred_len is not None and get_size_limit(ctx) > self.preferred_len:
             if (frag := self.preferred_frag) is None:
                 frag = self.preferred_frag = FileFragment(
-                    self.cog,
+                    self.queue,
                     self.preferred_url,
                     headers=self.headers,
                     use_default_headers=False,
@@ -140,7 +149,7 @@ class FallbackFragment(Fragment):
         else:
             if (frag := self.fallback_frag) is None:
                 frag = self.fallback_frag = FileFragment(
-                    self.cog,
+                    self.queue,
                     self.fallback_url,
                     headers=self.headers,
                     use_default_headers=False,
@@ -152,7 +161,8 @@ class FallbackFragment(Fragment):
 class EmbedFragment(Fragment):
     embed: Embed
 
-    def __init__(self, embed: Embed):
+    def __init__(self, queue: FragmentQueue, embed: Embed):
+        super().__init__(queue)
         self.embed = embed
 
 
@@ -170,7 +180,7 @@ class TextFragment(Fragment):
 
     def __init__(
         self,
-        cog: Crosspost,
+        queue: FragmentQueue,
         content: str,
         force: bool = False,
         interlaced: bool = False,
@@ -180,7 +190,7 @@ class TextFragment(Fragment):
         quote: bool = True,
         diminished: bool = False,
     ):
-        self.cog = cog
+        super().__init__(queue)
         self.content = content
         self.force = force
         if skip_translate is not None:

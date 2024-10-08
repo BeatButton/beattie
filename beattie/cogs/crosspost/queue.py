@@ -108,7 +108,7 @@ class FragmentQueue:
         headers: dict[str, str] = None,
     ) -> FileFragment:
         frag = FileFragment(
-            self.cog,
+            self,
             *urls,
             filename=filename,
             postprocess=postprocess,
@@ -127,7 +127,7 @@ class FragmentQueue:
         headers: dict[str, str],
     ) -> FallbackFragment:
         frag = FallbackFragment(
-            self.cog,
+            self,
             preferred_url,
             fallback_url,
             headers,
@@ -139,7 +139,7 @@ class FragmentQueue:
         self,
         embed: Embed,
     ) -> EmbedFragment:
-        frag = EmbedFragment(embed)
+        frag = EmbedFragment(self, embed)
         self.fragments.append(frag)
         return frag
 
@@ -168,7 +168,7 @@ class FragmentQueue:
             frag.content = f"{frag.content}\n{text}"
         else:
             frag = TextFragment(
-                self.cog,
+                self,
                 text,
                 force,
                 interlaced,
@@ -264,7 +264,7 @@ class FragmentQueue:
         if pages_remaining > 0:
             s = "s" if pages_remaining > 1 else ""
             frag = TextFragment(
-                self.cog,
+                self,
                 f"{pages_remaining} more item{s} at {self.link}",
                 force=True,
                 interlaced=False,
