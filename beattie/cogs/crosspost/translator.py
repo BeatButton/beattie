@@ -162,12 +162,13 @@ class DeeplTranslator(Translator):
                 (code := lang["language"].lower()): Language(code, lang["name"])
                 for lang in data
             }
-            for lang, pref, drop in [
+            for code, pref, drop in [
                 ("en", "us", "gb"),
                 ("pt", "br", "pt"),
             ]:
-                self._languages.pop(f"{lang}-{drop}")
-                self._languages[lang] = self._languages.pop(f"{lang}-{pref}")
+                self._languages.pop(f"{code}-{drop}")
+                lang = self._languages.pop(f"{code}-{pref}")
+                self._languages[code] = Language(code, lang.name)
             self._languages["xx"] = DONT
             self._languages["zz"] = UNKNOWN
 
