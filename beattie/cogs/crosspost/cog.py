@@ -521,7 +521,7 @@ applying it to the guild as a whole."""
         target: ConfigTarget = None,
     ):
         """Configure translation.
-        
+
         Specify true/yes/on to translate text into English, false/no/off not to \
 translate text, or a language name or code to translate text into that language."""
         if guild := ctx.guild:
