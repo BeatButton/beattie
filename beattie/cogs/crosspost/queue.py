@@ -360,14 +360,12 @@ class FragmentQueue:
                 ]
 
                 if any(translated):
-                    diminished = "\n".join(
-                        line.format(diminished=True) for line in chunk
-                    )
+                    dim = "\n".join(line.format(diminished=True) for line in chunk)
                     content = "\n".join(
                         trans or orig.format() for orig, trans in zip(chunk, translated)
                     )
                     quote = "> " if chunk[-1].quote else ""
-                    text = f"{diminished}\n{quote}-# <:trans:1289284212372934737>\n{content}"
+                    text = f"{dim}\n{quote}-# <:trans:1289284212372934737>\n{content}"
                 else:
                     text = "\n".join(frag.format() for frag in chunk)
 

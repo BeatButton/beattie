@@ -22,7 +22,8 @@ class Itaku(Site):
         async with self.cog.get(
             link,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)"
+                "User-Agent": "Mozilla/5.0 (compatible; Discordbot/2.0;"
+                " +https://discordapp.com)"
             },
         ) as resp:
             root = html.document_fromstring(await resp.read(), self.cog.parser)
