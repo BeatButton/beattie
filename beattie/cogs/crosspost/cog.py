@@ -33,7 +33,7 @@ from .context import CrosspostContext
 from .database import Database, Settings
 from .queue import FragmentQueue, Postable, QueueKwargs
 from .sites import SITES, Site
-from .translator import Translator, Language, DONT
+from .translator import LibreTranslator, DeeplTranslator, Language, DONT
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot
@@ -92,14 +92,28 @@ class Crosspost(Cog):
         if (session := bot.extra.get("crosspost_session")) is not None:
             self.session = session
 
+        self.translator = None
+
         try:
-            with open("config/libretranslate.toml") as fp:
-                lt_data = toml.load(fp)
-            self.translator = Translator(
-                self, lt_data["api_url"], lt_data.get("api_key", "")
-            )
+            with open("config/translator.toml") as fp:
+                trans_data = toml.load(fp)
+
+            match trans_data["provider"]:
+                case "libretranslate":
+                    cls = LibreTranslator
+                case "deepl":
+                    cls = DeeplTranslator
+                case other:
+                    self.logger.error(f"unknown translation provider {other}")
+
+            if cls is not None:
+                self.translator = cls(
+                    self,
+                    trans_data["api_url"],
+                    trans_data.get("api_key", ""),
+                )
         except FileNotFoundError:
-            self.translator = None
+            pass
 
         self.tldextract = TLDExtract(suffix_list_urls=())
         self.logger = logging.getLogger(__name__)
