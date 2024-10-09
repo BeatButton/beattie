@@ -9,7 +9,6 @@ import requests
 from lxml import html
 
 import discord
-from yarl import URL
 
 from .site import Site
 
