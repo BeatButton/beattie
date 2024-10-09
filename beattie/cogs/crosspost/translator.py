@@ -39,10 +39,51 @@ class Translator(ABC):
     async def translate(self, text: str, source: str, target: str) -> str: ...
 
 
+class HybridTranslator(Translator):
+    libre: LibreTranslator
+    deepl: DeeplTranslator
+
+    def __init__(self, cog: Crosspost, libre: LibreTranslator, deepl: DeeplTranslator):
+        super().__init__(cog, "", "")
+        self.libre = libre
+        self.deepl = deepl
+
+    async def languages(self) -> Mapping[str, Language]:
+        if not self._languages:
+            deepl_langs = await self.deepl.languages()
+            libre_langs = await self.libre.languages()
+            shared = set(deepl_langs) & set(libre_langs)
+            self._languages = {code: deepl_langs[code] for code in shared}
+
+        return self._languages
+
+    async def detect(self, text: str) -> Language:
+        langs = await self.languages()
+        lang = await self.libre.detect(text)
+
+        if lang.code not in langs:
+            return DONT
+
+        return lang
+
+    async def translate(self, text: str, source: str, target: str) -> str:
+        if source == "zz":
+            source = (await self.detect(text)).code
+        langs = await self.languages()
+        if source == DONT or source not in langs:
+            return text
+        if source in ("ja", "zh", "ko"):
+            trans = await self.deepl.translate(text, source, target)
+            if trans != text:
+                return trans
+
+        return await self.libre.translate(text, source, target)
+
+
 class LibreTranslator(Translator):
     async def languages(self) -> Mapping[str, Language]:
         if not self._languages:
-            self.logger.info("fetching language list")
+            self.logger.info(f"{type(self).__name__}: fetching language list")
             body = {
                 "api_key": self.api_key,
             }
@@ -59,7 +100,7 @@ class LibreTranslator(Translator):
         return self._languages
 
     async def detect(self, text: str) -> Language:
-        self.logger.debug(f"detecting language for: {text}")
+        self.logger.debug(f"{type(self).__name__}: detecting language for: {text}")
         body = {
             "api_key": self.api_key,
             "q": text,
@@ -80,7 +121,9 @@ class LibreTranslator(Translator):
         return langs[lang["language"]]
 
     async def translate(self, text: str, source: str, target: str) -> str:
-        self.logger.debug(f"translating from {source} to {target}: {text}")
+        self.logger.debug(
+            f"{type(self).__name__}: translating from {source} to {target}: {text}"
+        )
         if source == "zz":
             source = "auto"
         body = {
@@ -107,7 +150,7 @@ class DeeplTranslator(Translator):
 
     async def languages(self) -> Mapping[str, Language]:
         if not self._languages:
-            self.logger.info("fetching language list")
+            self.logger.info(f"{type(self).__name__}: fetching language list")
             async with self.cog.session.get(
                 f"{self.api_url}/languages",
                 headers=self.headers,
@@ -134,6 +177,9 @@ class DeeplTranslator(Translator):
         return UNKNOWN
 
     async def translate(self, text: str, source: str, target: str) -> str:
+        self.logger.debug(
+            f"{type(self).__name__}: translating from {source} to {target}: {text}"
+        )
         data = {"text": [text], "target_lang": target.upper()}
         if source != "zz":
             data["source_lang"] = source.upper()

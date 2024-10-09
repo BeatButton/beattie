@@ -33,7 +33,13 @@ from .context import CrosspostContext
 from .database import Database, Settings
 from .queue import FragmentQueue, Postable, QueueKwargs
 from .sites import SITES, Site
-from .translator import LibreTranslator, DeeplTranslator, Language, DONT
+from .translator import (
+    DONT,
+    DeeplTranslator,
+    HybridTranslator,
+    Language,
+    LibreTranslator,
+)
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot
@@ -96,22 +102,24 @@ class Crosspost(Cog):
 
         try:
             with open("config/translator.toml") as fp:
-                trans_data = toml.load(fp)
+                data: dict[str, dict[str, str]] = toml.load(fp)
 
-            match trans_data["provider"]:
-                case "libretranslate":
-                    cls = LibreTranslator
-                case "deepl":
-                    cls = DeeplTranslator
-                case other:
-                    self.logger.error(f"unknown translation provider {other}")
+            libre = deepl = None
+            if conf := data.get("libre"):
+                libre = LibreTranslator(self, conf["url"], conf["key"])
+            if conf := data.get("deepl"):
+                deepl = DeeplTranslator(self, conf["url"], conf["key"])
 
-            if cls is not None:
-                self.translator = cls(
-                    self,
-                    trans_data["api_url"],
-                    trans_data.get("api_key", ""),
-                )
+            match libre, deepl:
+                case None, None:
+                    self.translator = None
+                case libre, None:
+                    self.translator = libre
+                case None, deepl:
+                    self.translator = deepl
+                case libre, deepl:
+                    self.translator = HybridTranslator(self, libre, deepl)
+
         except FileNotFoundError:
             pass
 
