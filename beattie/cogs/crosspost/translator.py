@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import TYPE_CHECKING, Mapping
 
+import Levenshtein
 import lingua
 
 from beattie.utils.exceptions import ResponseError
@@ -89,10 +90,15 @@ class HybridTranslator(Translator):
             return text
         if source in ("ja", "zh", "ko"):
             trans = await self.deepl.translate(text, source, target)
-            if trans != text:
+            if Levenshtein.ratio(trans, text) < 0.6:
                 return trans
 
-        return await self.libre.translate(text, source, target)
+        trans = await self.libre.translate(text, source, target)
+
+        if Levenshtein.ratio(trans, text) < 0.6:
+            return trans
+
+        return text
 
 
 class LibreTranslator(Translator):

@@ -3,6 +3,7 @@ asyncpg
 discord-ext-menus
 discord.py
 jishaku
+levenshtein
 lingua-language-detector
 lxml
 psutil
