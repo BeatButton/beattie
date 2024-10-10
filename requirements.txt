@@ -3,6 +3,7 @@ asyncpg
 discord-ext-menus
 discord.py
 jishaku
+lingua-language-detector
 lxml
 psutil
 python-dateutil
