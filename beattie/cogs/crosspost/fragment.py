@@ -7,6 +7,7 @@ from sys import getsizeof
 from typing import TYPE_CHECKING, Any
 
 from discord import Embed
+from discord.utils import escape_markdown
 
 from beattie.utils.etc import URL_EXPR, get_size_limit
 from .translator import Language, DONT
@@ -226,6 +227,8 @@ class TextFragment(Fragment):
             diminished = self.diminished
         if quote is None:
             quote = self.quote
+
+        text = escape_markdown(text)
 
         if bold:
             text = f"**{text}**"
