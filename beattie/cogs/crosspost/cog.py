@@ -705,7 +705,7 @@ translate text, or a language name or code to translate text into that language.
     async def evict(
         self,
         ctx: BContext,
-        site: str | None = commands.param(converter=SiteConverter | None),
+        site: str | None = commands.param(converter=SiteConverter | str | None),
     ):
         count = 0
         for key in list(self.queue_cache.keys()):
