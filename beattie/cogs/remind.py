@@ -395,7 +395,7 @@ class Remind(Cog):
             channel = None
 
         if channel and recipient:
-            assert isinstance(channel, (GuildMessageable, DMChannel))
+            assert isinstance(channel, GuildMessageable | DMChannel)
             async with self.pool.acquire() as conn:
                 recurring = await conn.fetchrow(
                     "SELECT * FROM recurring WHERE id = $1", reminder.id
