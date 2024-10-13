@@ -384,7 +384,7 @@ class FragmentQueue:
                         tfrag: TextFragment = item  # type: ignore
                         if tfrag.force:
                             await send_files()
-                            await ctx.send(tfrag.content, suppress_embeds=True)
+                            await ctx.send(tfrag.format(), suppress_embeds=True)
                         else:
                             text_fragments.append(tfrag)
                     case "EmbedFragment":
