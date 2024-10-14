@@ -705,13 +705,32 @@ translate text, or a language name or code to translate text into that language.
     async def evict(
         self,
         ctx: BContext,
-        site: str | None = commands.param(converter=SiteConverter | str | None),
+        target: str = None,
     ):
+        """Evict posts from the cache. Optionally pass a site or a post to target."""
         count = 0
-        for key in list(self.queue_cache.keys()):
-            if site is None or key[0] == site:
-                count += 1
-                self.queue_cache.pop(key, None)
+
+        if target is not None:
+            matches: list[tuple[re.Match[str], Site]] = []
+            for site in self.sites:
+                if m := site.pattern.search(target):
+                    matches.append((m, site))
+
+            for m, site in matches:
+                name = site.name
+                args = m.groups()
+                if not args:
+                    args = (target,)
+                args = tuple(map(lambda a: a and a.strip(), args))
+                key = (name, *args)
+                if self.queue_cache.pop(key, None) is not None:
+                    count += 1
+
+        if count == 0:
+            for key in list(self.queue_cache.keys()):
+                if target is None or key[0] == target:
+                    count += 1
+                    self.queue_cache.pop(key, None)
         await ctx.send(f"Evicted {count}.")
 
     async def subcommand_error(self, ctx: BContext, e: Exception):
