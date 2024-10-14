@@ -736,11 +736,13 @@ translate text, or a language name or code to translate text into that language.
     async def subcommand_error(self, ctx: BContext, e: Exception):
         if isinstance(e, BadUnionArgument):
             inner = e.errors[0]
-            assert isinstance(inner, ChannelNotFound)
-            await ctx.send(
-                f"Could not resolve `{inner.argument}`"
-                " as a category, channel, or thread."
-            )
+            if isinstance(inner, ChannelNotFound):
+                await ctx.send(
+                    f"Could not resolve `{inner.argument}`"
+                    " as a category, channel, or thread."
+                )
+            else:
+                await ctx.bot.handle_error(ctx, e)
         else:
             await ctx.bot.handle_error(ctx, e)
 
