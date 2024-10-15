@@ -90,12 +90,12 @@ class HybridTranslator(Translator):
             return text
         if source in ("ja", "zh", "ko"):
             trans = await self.deepl.translate(text, source, target)
-            if Levenshtein.ratio(trans, text) < 0.6:
+            if Levenshtein.ratio(trans, text) < 0.75:
                 return trans
 
         trans = await self.libre.translate(text, source, target)
 
-        if Levenshtein.ratio(trans, text) < 0.6:
+        if Levenshtein.ratio(trans, text) < 0.75:
             return trans
 
         return text
