@@ -109,14 +109,12 @@ class Mastodon(Site):
             headers = {}
 
         api_url = API_FMT.format(site, post_id)
-        try:
-            async with self.cog.get(
-                api_url, headers=headers, use_default_headers=False
-            ) as resp:
-                post = await resp.json()
-        except (ResponseError, aiohttp.ClientError):
-            self.logger.info(f"not a mastodon instance: {domain}")
-            return False
+
+        async with self.cog.get(
+            api_url, headers=headers, use_default_headers=False
+        ) as resp:
+            post = await resp.json()
+
         if not (images := post.get("media_attachments")):
             return False
 
