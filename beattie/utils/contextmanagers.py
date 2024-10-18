@@ -26,7 +26,7 @@ class get:
         *urls: str,
         method: str = "GET",
         error_for_status: bool = True,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         self.session = session
         self.urls = urls
