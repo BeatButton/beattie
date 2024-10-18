@@ -1,9 +1,12 @@
+import logging
 from types import TracebackType
 from typing import Any, AsyncContextManager, Generic, Mapping, TypeVar
 
 from aiohttp import ClientResponse, ClientSession, ServerDisconnectedError
 
 from .exceptions import ResponseError
+
+LOGGER = logging.getLogger(__name__)
 
 
 class get:
@@ -52,10 +55,10 @@ class get:
                 return resp
 
     async def _aenter_inner(self) -> ClientResponse:
+        url = self.urls[self.index]
+        LOGGER.debug(f"making a request to {url}")
         try:
-            self.resp = await self.session.request(
-                self.method, self.urls[self.index], **self.kwargs
-            )
+            self.resp = await self.session.request(self.method, url, **self.kwargs)
         except ServerDisconnectedError:
             return await self.__aenter__()
         except OSError as e:

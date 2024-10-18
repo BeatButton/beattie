@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import random
 from base64 import b64encode
 from collections import defaultdict
@@ -45,7 +46,7 @@ class NSFW(Cog):
         )
         self.titles: dict[str, str] = {}
         self.get = bot.get
-        self.log = bot.logger.debug
+        self.logger = logging.getLogger(__name__)
         self.parser = etree.HTMLParser()
         try:
             with open("config/crosspost/e621.toml") as fp:
@@ -142,7 +143,7 @@ class NSFW(Cog):
             if not image.startswith("//"):
                 image = f"//{image}"
             image = f"https:{image}"
-        self.log(f"booru url: {image}")
+        self.logger.debug(f"booru url: {image}")
         embed.set_image(url=image)
         embed.title = self.titles[site]
         embed.url = self.view[site].format(post["id"])
