@@ -153,7 +153,7 @@ class FragmentQueue:
         italic: bool = False,
         quote: bool = True,
         diminished: bool = False,
-        escape: bool = False,
+        escape: bool = True,
     ) -> TextFragment:
         if (
             self.fragments
