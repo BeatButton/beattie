@@ -43,7 +43,7 @@ class Twitter(Site):
         tweet_id: str,
     ):
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
-        api_link = f"https://api.{self.method}.com/status/{tweet_id}/en"
+        api_link = f"https://api.{self.method}.com/status/{tweet_id}"
 
         async with self.cog.get(
             api_link,
