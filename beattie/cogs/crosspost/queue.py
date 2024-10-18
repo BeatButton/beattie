@@ -58,7 +58,6 @@ class FragmentQueue:
         self.author = None
         self.cog = ctx.command.cog
         self.fragments = []
-        self.wakeup = asyncio.Event()
         self.handle_task = None
         now = datetime.now().timestamp()
         self.last_used = now
