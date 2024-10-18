@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 ConfigTarget = GuildMessageable | CategoryChannel
 
-QUEUE_CACHE_SIZE: int = 2 * GB
+QUEUE_CACHE_SIZE: int = 1 * GB
 
 
 def item_priority(item: Postable):
