@@ -33,6 +33,7 @@ class Fragment:
         return super().__sizeof__() + sum(
             getsizeof(getattr(self, name))
             for name in getattr(self, "__annotations__", {})
+            if name != "queue"
         )
 
 
