@@ -118,6 +118,9 @@ class Mastodon(Site):
         if not (images := post.get("media_attachments")):
             return False
 
+        if post.get("visibility") == "private":
+            return
+
         queue.author = post["account"]["url"]
 
         real_url = post["url"]
