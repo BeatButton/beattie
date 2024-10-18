@@ -154,6 +154,7 @@ class FragmentQueue:
         italic: bool = False,
         quote: bool = True,
         diminished: bool = False,
+        escape: bool = False,
     ) -> TextFragment:
         if (
             self.fragments
@@ -165,19 +166,21 @@ class FragmentQueue:
             and frag.italic == italic
             and frag.quote == quote
             and frag.diminished == diminished
+            and frag.escape == escape
         ):
             frag.content = f"{frag.content}\n{text}"
         else:
             frag = TextFragment(
                 self,
                 text,
-                force,
-                interlaced,
-                skip_translate,
-                bold,
-                italic,
-                quote,
-                diminished,
+                force=force,
+                interlaced=interlaced,
+                skip_translate=skip_translate,
+                bold=bold,
+                italic=italic,
+                quote=quote,
+                diminished=diminished,
+                escape=escape,
             )
             self.fragments.append(frag)
         return frag

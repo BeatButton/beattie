@@ -183,6 +183,7 @@ class TextFragment(Fragment):
         self,
         queue: FragmentQueue,
         content: str,
+        *,
         force: bool = False,
         interlaced: bool = False,
         skip_translate: bool = None,
@@ -190,6 +191,7 @@ class TextFragment(Fragment):
         italic: bool = False,
         quote: bool = True,
         diminished: bool = False,
+        escape: bool = True,
     ):
         super().__init__(queue)
         self.content = content
@@ -203,6 +205,7 @@ class TextFragment(Fragment):
         self.italic = italic
         self.quote = quote
         self.diminished = diminished
+        self.escape = escape
         self.dt_task = None
         self.trans_tasks = {}
 
@@ -212,10 +215,12 @@ class TextFragment(Fragment):
     def format(
         self,
         text: str = None,
+        *,
         bold: bool = None,
         italic: bool = None,
         diminished: bool = None,
         quote: bool = None,
+        escape: bool = None,
     ) -> str:
         if text is None:
             text = self.content
@@ -227,8 +232,11 @@ class TextFragment(Fragment):
             diminished = self.diminished
         if quote is None:
             quote = self.quote
+        if escape is None:
+            escape = self.escape
 
-        text = escape_markdown(text)
+        if escape:
+            text = escape_markdown(text)
 
         if bold:
             text = f"**{text}**"

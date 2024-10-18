@@ -65,4 +65,4 @@ class Inkbunny(Site):
         queue.push_text(title, bold=True)
         if description:
             description = translate_bbcode(description)
-            queue.push_text(description)
+            queue.push_text(description, escape=False)
