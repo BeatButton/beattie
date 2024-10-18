@@ -141,7 +141,9 @@ class LibreTranslator(Translator):
             return DONT
 
         langs = await self.languages()
-        return langs[lang["language"]]
+        out = langs[lang["language"]]
+        self.logger.debug(f"detected language as {out}")
+        return out
 
     async def translate(self, text: str, source: str, target: str) -> str:
         self.logger.debug(f"translating from {source} to {target}: {text}")
