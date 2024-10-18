@@ -120,6 +120,9 @@ class Crosspost(Cog):
                 case libre, deepl:
                     self.translator = HybridTranslator(self, libre, deepl)
 
+            if bot.shared.debug and libre is not None:
+                self.translator = libre
+
         except FileNotFoundError:
             pass
 
