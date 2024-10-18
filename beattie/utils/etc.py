@@ -120,6 +120,7 @@ BB_NOOP = [
         "center",
         "t",
         "section",
+        "iconname",
     ]
 ]
 
