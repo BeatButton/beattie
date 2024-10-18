@@ -198,7 +198,7 @@ class Crosspost(Cog):
 
         logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
         settings = await self.db.get_effective_settings(ctx.message)
-        self.logger.info(f"process links: {logloc}: {settings}")
+        self.logger.debug(f"process links: {logloc}: {settings}")
 
         content = ctx.message.content
         sspans = spoiler_spans(content)
