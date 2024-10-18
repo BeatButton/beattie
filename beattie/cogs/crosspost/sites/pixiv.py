@@ -39,10 +39,10 @@ class Pixiv(Site):
         self.logger = logging.getLogger(__name__)
 
     async def load(self):
-        self.login_task = asyncio.create_task(self.login_loop())
-
-    async def unload(self):
-        self.login_task.cancel()
+        if self.cog.bot.extra.get("pixiv_login_task") is None:
+            self.cog.bot.extra["pixiv_login_task"] = asyncio.create_task(
+                self.login_loop()
+            )
 
     async def login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"

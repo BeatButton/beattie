@@ -33,10 +33,13 @@ class Inkbunny(Site):
             self.login = toml.load(fp)
 
     async def load(self):
-        url = API_FMT.format("login")
-        async with self.cog.get(url, method="POST", params=self.login) as resp:
-            json = await resp.json()
-            self.sid = json["sid"]
+        if sid := self.cog.bot.extra.get("crosspost_inkbunny_sid"):
+            self.sid = sid
+        else:
+            url = API_FMT.format("login")
+            async with self.cog.get(url, method="POST", params=self.login) as resp:
+                json = await resp.json()
+            self.sid = self.cog.bot.extra["crosspost_inkbunny_sid"] = json["sid"]
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str):
         url = API_FMT.format("submissions")
