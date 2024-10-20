@@ -770,19 +770,17 @@ translate text, or a language name or code to translate text into that language.
         ctx: CrosspostContext,
         *,
         steps: Iterable[re.Match[str] | PostFlags],
-        force=False,
+        force: bool = False,
     ):
-        message = ctx.message
-        task = asyncio.create_task(self.process_links(ctx, steps=steps, force=force))
-        self.ongoing_tasks[message.id] = task
+        message_id = ctx.message.id
+        coro = self.process_links(ctx, steps=steps, force=force)
+        task = self.ongoing_tasks[message_id] = asyncio.create_task(coro)
         try:
-            await asyncio.wait_for(task, None)
+            await task
         except asyncio.CancelledError:
             pass
-        except Exception as e:
-            raise e
         finally:
-            del self.ongoing_tasks[message.id]
+            del self.ongoing_tasks[message_id]
 
     @commands.command()
     async def post(self, ctx: BContext, *args: str):
