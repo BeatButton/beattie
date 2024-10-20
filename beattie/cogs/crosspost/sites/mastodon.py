@@ -103,10 +103,10 @@ class Mastodon(Site):
             if not await self.determine(domain):
                 return False
 
+        headers = {"Accept": "application/json"}
+
         if auth := self.auth.get(site):
-            headers = {"Authorization": f"Bearer {auth['token']}"}
-        else:
-            headers = {}
+            headers["Authorization"] = f"Bearer {auth['token']}"
 
         api_url = API_FMT.format(site, post_id)
 
