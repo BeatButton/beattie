@@ -779,6 +779,8 @@ translate text, or a language name or code to translate text into that language.
             await task
         except asyncio.CancelledError:
             pass
+        except:
+            await ctx.message.add_reaction("❗")
         finally:
             del self.ongoing_tasks[message_id]
 
