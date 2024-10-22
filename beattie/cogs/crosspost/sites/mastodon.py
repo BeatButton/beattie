@@ -53,6 +53,9 @@ class Mastodon(Site):
         async with self.cog.get(link, use_default_headers=False) as resp:
             data = await resp.json()
 
+        if data["software"]["name"] == "misskey":
+            return False
+
         return "activitypub" in data["protocols"]
 
     async def determine(self, domain: str) -> bool:
