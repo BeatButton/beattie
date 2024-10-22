@@ -97,6 +97,8 @@ class Mastodon(Site):
     ):
         info = self.cog.tldextract(link)
         domain = f"{info.domain}.{info.suffix}"
+        if sub := info.subdomain:
+            domain = f"{sub}.{domain}"
         if domain in self.blacklist:
             return False
         if domain not in self.whitelist:
