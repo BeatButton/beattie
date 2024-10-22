@@ -47,10 +47,10 @@ class get:
         while True:
             try:
                 resp = await self._aenter_inner()
-            except ResponseError as e:
+            except ResponseError:
                 self.index += 1
                 if self.index >= len(self.urls):
-                    raise e from None
+                    raise
             else:
                 return resp
 
@@ -65,7 +65,7 @@ class get:
             if e.errno == 104:
                 return await self.__aenter__()
             else:
-                raise e from None
+                raise
         if self.error_for_status and self.resp.status not in range(200, 300):
             self.resp.close()
             raise ResponseError(code=self.resp.status, url=str(self.resp.url))

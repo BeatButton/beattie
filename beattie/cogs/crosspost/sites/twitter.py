@@ -112,7 +112,7 @@ class Twitter(Site):
                             url = str(resp.url)
                     except ResponseError as e:
                         if e.code != 404:
-                            raise e
+                            raise
                     queue.push_file(url)
                 case "gif":
                     base = url.rpartition("/")[2].rpartition(".")[0]

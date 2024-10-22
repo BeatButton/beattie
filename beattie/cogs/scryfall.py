@@ -60,7 +60,7 @@ class Scryfall(Cog):
             if e.code == 404:
                 await ctx.send("No cards found.")
                 return
-            raise e
+            raise
 
         embeds = []
         cards = data["data"]
