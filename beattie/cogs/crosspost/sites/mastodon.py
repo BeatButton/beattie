@@ -123,7 +123,7 @@ class Mastodon(Site):
         if not (images := post.get("media_attachments")):
             return False
 
-        if post.get("visibility") != "public":
+        if post.get("visibility") not in ("public", "unlisted"):
             return
 
         queue.author = post["account"]["url"]
