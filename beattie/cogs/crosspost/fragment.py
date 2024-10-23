@@ -277,6 +277,9 @@ class TextFragment(Fragment):
 
         content = URL_EXPR.sub("", self.content).strip()
 
+        if not content:
+            return None
+
         trans = (
             await translator.translate(
                 content,
