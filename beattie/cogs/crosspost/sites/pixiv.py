@@ -44,6 +44,11 @@ class Pixiv(Site):
                 self.login_loop()
             )
 
+        if headers := self.cog.bot.extra.get("pixiv_headers"):
+            self.headers = headers
+        else:
+            self.cog.bot.extra["pixiv_headers"] = self.headers
+
     async def login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
