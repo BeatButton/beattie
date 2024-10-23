@@ -38,7 +38,9 @@ class YTCommunity(Site):
         try:
             tab = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][0]
         except KeyError:
-            queue.push_text("This post is not visible in browser.", force=True)
+            queue.push_text(
+                "This post is not visible in browser.", quote=False, force=True
+            )
             return
         section = tab["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]
         item = section["itemSectionRenderer"]["contents"][0]

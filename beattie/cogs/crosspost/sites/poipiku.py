@@ -92,11 +92,13 @@ class Poipiku(Site):
             return
 
         if frag == "You need to sign in.":
-            queue.push_text("Post requires authentication.", force=True)
+            queue.push_text("Post requires authentication.", quote=False, force=True)
             return
 
         if frag == "Error occurred.":
-            queue.push_text("Poipiku reported a generic error.", force=True)
+            queue.push_text(
+                "Poipiku reported a generic error.", quote=False, force=True
+            )
             return
 
         if frag == "Password is incorrect.":

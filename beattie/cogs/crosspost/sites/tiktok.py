@@ -33,13 +33,15 @@ class Tiktok(Site):
             ) as resp:
                 root = html.document_fromstring(await resp.read(), self.cog.parser)
         except ResponseError as e:
-            queue.push_text(f"Proxy server returned error {e.code}.", force=True)
+            queue.push_text(
+                f"Proxy server returned error {e.code}.", quote=False, force=True
+            )
             return
 
         try:
             url = root.xpath(OG_VIDEO)[0].get("content")
         except IndexError:
-            queue.push_text("No video found.", force=True)
+            queue.push_text("No video found.", quote=False, force=True)
             return
 
         try:
@@ -48,7 +50,9 @@ class Tiktok(Site):
             ) as resp:
                 pass
         except ResponseError as e:
-            queue.push_text(f"Proxy server returned error {e.code}.", force=True)
+            queue.push_text(
+                f"Proxy server returned error {e.code}.", quote=False, force=True
+            )
             return
 
         video_id = url.rpartition("/")[2]

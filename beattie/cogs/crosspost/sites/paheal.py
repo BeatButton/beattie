@@ -32,4 +32,4 @@ class Paheal(Site):
         queue.push_file(url, filename=filename)
 
         if source := root.xpath(SOURCE_SELECTOR):
-            queue.push_text(source[0].get("href"), force=True)
+            queue.push_text(source[0].get("href"), quote=False, force=True)

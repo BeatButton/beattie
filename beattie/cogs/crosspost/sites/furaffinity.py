@@ -31,7 +31,9 @@ class FurAffinity(Site):
             url = root.xpath(OG_IMAGE)[0].get("content")
         except IndexError:
             queue.push_text(
-                "No images found. Post may be login-restricted.", force=True
+                "No images found. Post may be login-restricted.",
+                quote=False,
+                force=True,
             )
             return
 

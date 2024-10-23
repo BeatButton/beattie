@@ -27,4 +27,4 @@ class Rule34(Site):
             return False
         queue.push_file(post["file_url"])
         if source := post.get("source"):
-            queue.push_text(html_unescape(source), force=True)
+            queue.push_text(html_unescape(source), quote=False, force=True)

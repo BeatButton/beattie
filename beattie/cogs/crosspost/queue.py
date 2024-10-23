@@ -270,6 +270,7 @@ class FragmentQueue:
                 self,
                 f"{pages_remaining} more item{s} at {self.link}",
                 force=True,
+                quote=False,
                 interlaced=False,
             )
             items.append((frag, spoiler))

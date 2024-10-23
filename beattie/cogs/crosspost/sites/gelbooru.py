@@ -65,4 +65,4 @@ class Gelbooru(Site):
             queue.push_text(text)
 
         if source := post.get("source"):
-            queue.push_text(html_unescape(source), force=True)
+            queue.push_text(html_unescape(source), quote=False, force=True)

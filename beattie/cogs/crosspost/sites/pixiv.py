@@ -112,6 +112,7 @@ class Pixiv(Site):
             queue.push_text(
                 "This feature works sometimes, but isn't working right now!"
                 f"\nDebug info:\n{res.get('error')}",
+                quote=False,
                 force=True,
             )
             return
