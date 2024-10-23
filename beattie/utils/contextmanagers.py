@@ -1,3 +1,4 @@
+import copy
 import logging
 from types import TracebackType
 from typing import Any, AsyncContextManager, Generic, Mapping, TypeVar
@@ -31,7 +32,7 @@ class get:
         self.session = session
         self.urls = urls
         self.index = 0
-        headers = kwargs.get("headers", {})
+        headers = copy.copy(kwargs.get("headers", {}))
         if "Accept-Encoding" not in headers:
             headers["Accept-Encoding"] = "gzip, deflate, sdch"
         if "User-Agent" not in headers:
