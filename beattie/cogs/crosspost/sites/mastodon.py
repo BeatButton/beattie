@@ -131,7 +131,7 @@ class Mastodon(Site):
         real_url = post["url"]
         queue.link = real_url
         if real_url.casefold() != link.casefold():
-            queue.push_text(real_url)
+            queue.push_text(real_url, quote=False, force=True)
 
         for image in images:
             urls = [url for url in [image["remote_url"], image["url"]] if url]
