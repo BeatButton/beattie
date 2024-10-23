@@ -28,6 +28,7 @@ from .exhentai import Exhentai
 from .tiktok import Tiktok
 from .nhentai import Nhentai
 from .itaku import Itaku
+from .danbooru import Danbooru
 
 SITES: list[Type[Site]] = [
     Twitter,
@@ -54,4 +55,5 @@ SITES: list[Type[Site]] = [
     Tiktok,
     Nhentai,
     Itaku,
+    Danbooru,
 ]
