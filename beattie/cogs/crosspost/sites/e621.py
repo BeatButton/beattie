@@ -19,8 +19,7 @@ class E621(Site):
     name = "e621"
     pattern = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)")
 
-    key: str
-    user: str
+    headers: dict[str, str]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
@@ -28,23 +27,16 @@ class E621(Site):
         with open("config/crosspost/e621.toml") as fp:
             data = toml.load(fp)
 
-        if data:
-            self.key = data["api_key"]
-            self.user = data["user"]
-        else:
-            self.key = ""
-            self.user = ""
+        key = data["api_key"]
+        user = data["user"]
+        auth_slug = b64encode(f"{user}:{key}".encode()).decode()
+        self.headers = {"Authorization": f"Basic {auth_slug}"}
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         params = {"tags": f"id:{post_id}"}
-        if self.key:
-            auth_slug = b64encode(f"{self.user}:{self.key}".encode()).decode()
-            headers = {"Authorization": f"Basic {auth_slug}"}
-        else:
-            headers = {}
         api_url = "https://e621.net/posts.json"
         async with self.cog.get(
-            api_url, params=params, headers=headers, use_default_headers=False
+            api_url, params=params, headers=self.headers, use_default_headers=False
         ) as resp:
             data = await resp.json()
         try:
