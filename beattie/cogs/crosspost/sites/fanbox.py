@@ -82,9 +82,4 @@ class Fanbox(Site):
                         case "file":
                             queue.push_file(file_map[block["fileId"]]["url"])
             case other:
-                queue.push_text(
-                    f"Unrecognized post type {other}! This is a bug.",
-                    quote=False,
-                    force=True,
-                )
-                return False
+                raise RuntimeError(f"Unrecognized post type {other}!")

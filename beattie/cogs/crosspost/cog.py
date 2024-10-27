@@ -744,10 +744,8 @@ translate text, or a language name or code to translate text into that language.
                     f"Could not resolve `{inner.argument}`"
                     " as a category, channel, or thread."
                 )
-            else:
-                await ctx.bot.handle_error(ctx, e)
-        else:
-            await ctx.bot.handle_error(ctx, e)
+                return
+        await ctx.bot.handle_error(ctx, e)
 
     async def blacklist_error(self, ctx: BContext, e: Exception):
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
@@ -755,8 +753,8 @@ translate text, or a language name or code to translate text into that language.
                 "Invalid site. "
                 f"To list all sites, run {ctx.prefix}crosspost blacklist list all"
             )
-        else:
-            await ctx.bot.handle_error(ctx, e)
+            return
+        await ctx.bot.handle_error(ctx, e)
 
     for subcommand in crosspost.walk_commands():
         subcommand.on_error = subcommand_error

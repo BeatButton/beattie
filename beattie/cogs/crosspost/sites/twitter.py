@@ -56,10 +56,7 @@ class Twitter(Site):
                 if self.method == "fxtwitter":
                     tweet = tweet["tweet"]
             except (json.JSONDecodeError, KeyError):
-                queue.push_text(
-                    f"Invalid response from API (code {status})", force=True
-                )
-                return
+                raise ResponseError(status, api_link)
 
         match status:
             case 200:
@@ -71,13 +68,6 @@ class Twitter(Site):
                     force=True,
                 )
                 return
-            case 500:
-                if self.method == "vxtwitter":
-                    queue.push_text(
-                        tweet.get("error", "Unspecified error."), force=True
-                    )
-                    return
-                raise ResponseError(500, api_link)
             case other:
                 raise ResponseError(other, api_link)
 

@@ -42,8 +42,6 @@ class Nhentai(Site):
             if ext:
                 queue.push_file(f"https://i.nhentai.net/galleries/{media_id}/{i}.{ext}")
             else:
-                queue.push_text(
-                    f"Unrecognized image type {page_t}", quote=False, force=True
-                )
+                raise RuntimeError(f"Unrecognized image type {page_t}")
 
         queue.push_text(data["title"]["english"], bold=True)

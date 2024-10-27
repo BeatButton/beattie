@@ -32,28 +32,21 @@ class Tiktok(Site):
                 headers={"User-Agent": "test"},
             ) as resp:
                 root = html.document_fromstring(await resp.read(), self.cog.parser)
-        except ResponseError as e:
-            queue.push_text(
-                f"Proxy server returned error {e.code}.", quote=False, force=True
-            )
-            return
+        except ResponseError:
+            raise
 
         try:
             url = root.xpath(OG_VIDEO)[0].get("content")
         except IndexError:
-            queue.push_text("No video found.", quote=False, force=True)
-            return
+            raise RuntimeError("no video in vxtiktok response") from None
 
         try:
             async with self.cog.get(
                 url, method="HEAD", use_default_headers=False
             ) as resp:
                 pass
-        except ResponseError as e:
-            queue.push_text(
-                f"Proxy server returned error {e.code}.", quote=False, force=True
-            )
-            return
+        except ResponseError:
+            raise
 
         video_id = url.rpartition("/")[2]
         filename = f"{video_id}.mp4"

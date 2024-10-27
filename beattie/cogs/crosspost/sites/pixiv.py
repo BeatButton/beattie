@@ -111,16 +111,8 @@ class Pixiv(Site):
             url, params=params, use_default_headers=False, headers=self.headers
         ) as resp:
             res = await resp.json()
-        try:
-            res = res["illust"]
-        except KeyError:
-            queue.push_text(
-                "This feature works sometimes, but isn't working right now!"
-                f"\nDebug info:\n{res.get('error')}",
-                quote=False,
-                force=True,
-            )
-            return
+
+        res = res["illust"]
 
         queue.author = res["user"]["id"]
 
