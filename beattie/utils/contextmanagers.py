@@ -57,7 +57,7 @@ class get:
 
     async def _aenter_inner(self) -> ClientResponse:
         url = self.urls[self.index]
-        LOGGER.debug(f"making a request to {url}")
+        LOGGER.debug(f"making a {self.method} request to {url}")
         try:
             self.resp = await self.session.request(self.method, url, **self.kwargs)
         except ServerDisconnectedError:
