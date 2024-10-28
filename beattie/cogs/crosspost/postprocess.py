@@ -72,7 +72,6 @@ async def ffmpeg_mp4_pp(frag: FileFragment, img: bytes, _) -> bytes:
 async def magick_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
     proc = await asyncio.create_subprocess_exec(
         "magick",
-        "convert",
         frag.urls[0],
         "gif:-",
         stderr=subprocess.DEVNULL,
