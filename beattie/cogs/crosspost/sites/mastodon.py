@@ -21,7 +21,8 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
-API_FMT = "https://{}/api/v1/statuses/{}"
+MASTO_API_FMT = "https://{}/api/v1/statuses/{}"
+MISSKEY_API_FMT = "https://{}/api/notes/show"
 CONFIG = "config/crosspost/mastodon.toml"
 
 
@@ -30,57 +31,62 @@ class Mastodon(Site):
     pattern = re.compile(r"(https?://([^\s/]+)/(?:\S+/)+([\w-]+))(?:[\s>/]|$)")
 
     auth: dict[str, dict[str, str]]
+    whitelist: dict[str, str]
+    blacklist: set[str]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
         self.logger = logging.getLogger(__name__)
-        with open(CONFIG) as fp:
-            data = toml.load(fp)
+        try:
+            with open(CONFIG) as fp:
+                data = toml.load(fp)
+        except FileNotFoundError:
+            data = {}
 
-        self.whitelist = set(data.pop("whitelist", []))
+        self.whitelist = data.pop("whitelist", {})
         self.blacklist = set(data.pop("blacklist", []))
         self.auth = data
 
-    async def sniff(self, domain: str) -> bool:
+        self.dispatch = {
+            "mastodon": self.do_mastodon,
+            "pleroma": self.do_mastodon,
+            "misskey": self.do_misskey,
+        }
+
+    async def sniff(self, domain: str) -> str:
         async with self.cog.get(
             f"https://{domain}/.well-known/nodeinfo",
-            use_default_headers=False,
         ) as resp:
             data = await resp.json()
 
         link = data["links"][0]["href"]
 
-        async with self.cog.get(link, use_default_headers=False) as resp:
+        async with self.cog.get(link) as resp:
             data = await resp.json()
 
-        if data["software"]["name"] == "misskey":
-            return False
+        return data["software"]["name"]
 
-        return "activitypub" in data["protocols"]
-
-    async def determine(self, domain: str) -> bool:
+    async def determine(self, domain: str) -> str | None:
         try:
-            supports = await self.sniff(domain)
+            software = await self.sniff(domain)
         except (
             ResponseError,
             json.JSONDecodeError,
             IndexError,
             aiohttp.ContentTypeError,
         ):
-            supports = False
-        if supports:
-            self.logger.info(f"detected {domain} as activitypub")
+            software = None
+
+        if software:
+            self.logger.info(f"detected {domain} as activitypub ({software})")
             try:
                 self.blacklist.remove(domain)
             except KeyError:
                 pass
-            self.whitelist.add(domain)
+            self.whitelist[domain] = software
         else:
             self.logger.info(f"failed to detect {domain} as activitypub")
-            try:
-                self.whitelist.remove(domain)
-            except KeyError:
-                pass
+            self.whitelist.pop(domain, None)
             self.blacklist.add(domain)
 
         data = {**self.auth, "whitelist": self.whitelist, "blacklist": self.blacklist}
@@ -88,7 +94,7 @@ class Mastodon(Site):
         with open(CONFIG, "w") as fp:
             toml.dump(data, fp)
 
-        return supports
+        return software
 
     async def handler(
         self,
@@ -104,16 +110,31 @@ class Mastodon(Site):
             domain = f"{sub}.{domain}"
         if domain in self.blacklist:
             return False
-        if domain not in self.whitelist:
-            if not await self.determine(domain):
-                return False
+        if (software := self.whitelist.get(domain)) is None and (
+            software := await self.determine(domain)
+        ) is None:
+            return False
+
+        if (handler := self.dispatch.get(software)) is None:
+            raise RuntimeError(f"unsupported activitypub software {software}")
 
         headers = {"Accept": "application/json"}
 
         if auth := self.auth.get(site):
             headers["Authorization"] = f"Bearer {auth['token']}"
 
-        api_url = API_FMT.format(site, post_id)
+        await handler(ctx, queue, link, site, post_id, headers)
+
+    async def do_mastodon(
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        link: str,
+        site: str,
+        post_id: str,
+        headers: dict[str, str],
+    ):
+        api_url = MASTO_API_FMT.format(site, post_id)
 
         async with self.cog.get(
             api_url, headers=headers, use_default_headers=False
@@ -155,4 +176,42 @@ class Mastodon(Site):
             text = "\n".join(
                 f if isinstance(f, str) else f.text_content() for f in fragments
             )
+            queue.push_text(text)
+
+    async def do_misskey(
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        link: str,
+        site: str,
+        post_id: str,
+        headers: dict[str, str],
+    ):
+        url = MISSKEY_API_FMT.format(site)
+        body = json.dumps({"noteId": post_id}).encode("utf-8")
+
+        async with self.cog.get(
+            url,
+            method="POST",
+            data=body,
+            use_default_headers=False,
+            headers={**headers, "Content-Type": "application/json"},
+        ) as resp:
+            data = await resp.json()
+
+        if not (files := data["files"]):
+            return False
+
+        queue.author = data["user"]["id"]
+
+        for file in files:
+            url = file["url"]
+            pp = None
+            ext = url.rpartition("/")[2].rpartition("?")[0].rpartition(".")[2]
+            if ext == "apng":
+                pp = ffmpeg_gif_pp
+
+            queue.push_file(url, postprocess=pp)
+
+        if text := data["text"]:
             queue.push_text(text)

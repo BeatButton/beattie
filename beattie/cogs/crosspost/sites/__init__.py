@@ -15,7 +15,6 @@ from .gelbooru import Gelbooru
 from .rule34 import Rule34
 from .fanbox import Fanbox
 from .lofter import Lofter
-from .misskey import Misskey
 from .poipiku import Poipiku
 from .bluesky import Bluesky
 from .paheal import Paheal
@@ -42,7 +41,6 @@ SITES: list[Type[Site]] = [
     Rule34,
     Fanbox,
     Lofter,
-    Misskey,
     Poipiku,
     Bluesky,
     Paheal,
