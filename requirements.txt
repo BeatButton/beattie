@@ -1,5 +1,6 @@
 asyncjisho
 asyncpg
+brotli
 discord-ext-menus
 discord.py
 jishaku

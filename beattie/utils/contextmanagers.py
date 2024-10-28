@@ -34,7 +34,7 @@ class get:
         self.index = 0
         headers = copy.copy(kwargs.get("headers", {}))
         if "Accept-Encoding" not in headers:
-            headers["Accept-Encoding"] = "gzip, deflate, sdch"
+            headers["Accept-Encoding"] = "gzip, deflate, sdch, br"
         if "User-Agent" not in headers:
             headers["User-Agent"] = "BeattieBot/1.0 (BeatButton)"
         kwargs["headers"] = headers
