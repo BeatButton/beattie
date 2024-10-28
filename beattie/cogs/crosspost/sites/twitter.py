@@ -65,6 +65,7 @@ class Twitter(Site):
                 queue.push_text(
                     "Failed to fetch tweet. It may have been deleted, "
                     "or be from a private or suspended account.",
+                    quote=False,
                     force=True,
                 )
                 return

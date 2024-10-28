@@ -57,7 +57,9 @@ class Tumblr(Site):
 
         if (post_content := data["params"]["content"]) is None:
             queue.push_text(
-                "Post inaccessible. It may require authentication.", force=True
+                "Post inaccessible. It may require authentication.",
+                force=True,
+                quote=False,
             )
             return False
 
