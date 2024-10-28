@@ -215,7 +215,7 @@ class DeeplTranslator(Translator):
         try:
             async with self.cog.session.get(
                 f"{self.api_url}/translate",
-                headers={**self.headers, "'Content-Type": "application/json"},
+                headers={**self.headers, "Content-Type": "application/json"},
                 data=data,
             ) as resp:
                 data = await resp.json()
