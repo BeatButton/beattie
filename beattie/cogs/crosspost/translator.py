@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from abc import ABC, abstractmethod
 from collections import namedtuple
@@ -212,8 +213,10 @@ class DeeplTranslator(Translator):
         if source != "zz":
             data["source_lang"] = source.upper()
 
+        data = json.dumps(data).encode("utf-8")
+
         try:
-            async with self.cog.session.get(
+            async with self.cog.session.post(
                 f"{self.api_url}/translate",
                 headers={**self.headers, "Content-Type": "application/json"},
                 data=data,
