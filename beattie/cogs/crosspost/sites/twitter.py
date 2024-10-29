@@ -48,29 +48,10 @@ class Twitter(Site):
         async with self.cog.get(
             api_link,
             use_default_headers=False,
-            error_for_status=False,
         ) as resp:
-            status = resp.status
-            try:
-                tweet = await resp.json()
-                if self.method == "fxtwitter":
-                    tweet = tweet["tweet"]
-            except (json.JSONDecodeError, KeyError):
-                raise ResponseError(status, api_link)
-
-        match status:
-            case 200:
-                pass
-            case 404:
-                queue.push_text(
-                    "Failed to fetch tweet. It may have been deleted, "
-                    "or be from a private or suspended account.",
-                    quote=False,
-                    force=True,
-                )
-                return
-            case other:
-                raise ResponseError(other, api_link)
+            tweet = await resp.json()
+        if self.method == "fxtwitter":
+            tweet = tweet["tweet"]
 
         if not (media := self.get_media(tweet)):
             qkey = {"fxtwitter": "quote", "vxtwitter": "qrt"}[self.method]
