@@ -788,17 +788,16 @@ translate text, or a language name or code to translate text into that language.
         """Embed images in the given links regardless of the auto setting.
 
         Put text=true or pages=X after post to change settings for this message only."""
-        matches = list(URL_EXPR.finditer(ctx.message.content))
+        matches = URL_EXPR.finditer(ctx.message.content)
+        match = next(matches, None)
         steps = []
         for arg in args:
             flag = await PostFlags().convert(ctx, arg)
             if flag.pages is not None or flag.text is not None:
                 steps.append(flag)
-            else:
-                for match in matches:
-                    if match.group(0) in arg:
-                        steps.append(match)
-                        break
+            elif match and match.group(0) in arg:
+                steps.append(match)
+                match = next(matches, None)
 
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self._post(new_ctx, steps=steps, force=True)
