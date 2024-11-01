@@ -25,6 +25,7 @@ POIPIKU_URL_GROUPS = re.compile(r"https?://poipiku\.com/(\d+)/(\d+)\.html")
 class Poipiku(Site):
     name = "poipiku"
     pattern = re.compile(r"https?://poipiku\.com/\d+/\d+\.html")
+    concurrent = False
 
     headers: dict[str, str]
 

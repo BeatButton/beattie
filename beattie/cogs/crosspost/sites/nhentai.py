@@ -14,10 +14,7 @@ if TYPE_CHECKING:
 class Nhentai(Site):
     name = "nhentai"
     pattern = re.compile(r"https?://(?:www\.)?nhentai\.net/g/(\d+)")
-
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-        self.concurrent = False
+    concurrent = False
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
         api_url = f"https://nhentai.net/api/gallery/{gal_id}"
