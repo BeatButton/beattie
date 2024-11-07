@@ -61,14 +61,15 @@ class YTCommunity(Site):
             img: str = max(thumbs, key=lambda t: t["width"])["url"]
 
             ext = None
-            async with self.cog.get(img, method="HEAD") as resp:
+            async with self.cog.get(img, headers={"Range": "bytes=30-33"}) as resp:
+                tag = await resp.read()
                 if (disp := resp.content_disposition) and (name := disp.filename):
                     ext = name.rpartition(".")[2]
 
             pp = None
             ext = ext or "jpeg"
 
-            if ext == "webp":
+            if ext == "webp" and tag == b"ANIM":
                 pp = magick_gif_pp
                 ext = "gif"
 
