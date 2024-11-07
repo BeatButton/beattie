@@ -29,7 +29,6 @@ class Itaku(Site):
             headers={
                 "Accept": "application/json",
             },
-            use_default_headers=False,
         ) as resp:
             post = await resp.json()
 

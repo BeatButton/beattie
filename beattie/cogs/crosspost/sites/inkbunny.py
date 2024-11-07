@@ -49,9 +49,7 @@ class Inkbunny(Site):
             "show_description": "yes",
         }
 
-        async with self.cog.get(
-            url, method="POST", use_default_headers=False, params=params
-        ) as resp:
+        async with self.cog.get(url, method="POST", params=params) as resp:
             response = await resp.json()
 
         sub = response["submissions"][0]

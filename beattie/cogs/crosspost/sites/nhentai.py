@@ -20,7 +20,6 @@ class Nhentai(Site):
         api_url = f"https://nhentai.net/api/gallery/{gal_id}"
         async with self.cog.get(
             api_url,
-            use_default_headers=False,
         ) as resp:
             data = await resp.json()
 

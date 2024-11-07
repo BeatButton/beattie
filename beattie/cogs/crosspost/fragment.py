@@ -40,7 +40,7 @@ class Fragment:
 class FileFragment(Fragment):
     urls: tuple[str, ...]
     headers: dict[str, str] | None
-    use_default_headers: bool
+    use_browser_ua: bool
     filename: str
     file_bytes: bytes
     dl_task: asyncio.Task | None
@@ -55,7 +55,7 @@ class FileFragment(Fragment):
         *urls: str,
         filename: str = None,
         headers: dict[str, str] = None,
-        use_default_headers: bool = False,
+        use_browser_ua: bool = False,
         postprocess: PP = None,
         pp_extra: Any = None,
         lock_filename: bool = False,
@@ -66,7 +66,7 @@ class FileFragment(Fragment):
         self.postprocess = postprocess
         self.pp_extra = pp_extra
         self.headers = headers
-        self.use_default_headers = use_default_headers
+        self.use_browser_ua = use_browser_ua
         self.lock_filename = lock_filename
         self.can_link = can_link
 
@@ -94,7 +94,7 @@ class FileFragment(Fragment):
         file_bytes, filename = await self.cog.save(
             *self.urls,
             headers=self.headers,
-            use_default_headers=self.use_default_headers,
+            use_browser_ua=self.use_browser_ua,
         )
 
         if not self.lock_filename and filename is not None:
@@ -135,7 +135,6 @@ class FallbackFragment(Fragment):
             async with self.cog.get(
                 self.preferred_url,
                 "HEAD",
-                use_default_headers=False,
                 headers=self.headers,
             ) as resp:
                 self.preferred_len = resp.content_length
@@ -146,7 +145,6 @@ class FallbackFragment(Fragment):
                     self.queue,
                     self.preferred_url,
                     headers=self.headers,
-                    use_default_headers=False,
                 )
         else:
             if (frag := self.fallback_frag) is None:
@@ -154,7 +152,6 @@ class FallbackFragment(Fragment):
                     self.queue,
                     self.fallback_url,
                     headers=self.headers,
-                    use_default_headers=False,
                 )
 
         return frag

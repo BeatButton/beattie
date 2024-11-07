@@ -39,7 +39,6 @@ class Imgur(Site):
 
         async with self.cog.get(
             f"https://api.imgur.com/3/{target}/{album_id}",
-            use_default_headers=False,
             headers=self.headers,
         ) as resp:
             data = (await resp.json())["data"]

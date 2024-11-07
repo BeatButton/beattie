@@ -78,11 +78,6 @@ class Crosspost(Cog):
     def __init__(self, bot: BeattieBot):
         self.bot = bot
         self.db = Database(bot, self)
-        try:
-            with open("config/headers.toml") as fp:
-                self.headers = toml.load(fp)
-        except FileNotFoundError:
-            self.headers = {}
         self.parser = html.HTMLParser(encoding="utf-8")
         self.xml_parser = etree.XMLParser(encoding="utf-8")
         if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
@@ -149,25 +144,29 @@ class Crosspost(Cog):
         self,
         *urls: str,
         method: str = "GET",
-        use_default_headers: bool = True,
+        use_browser_ua: bool = False,
         session: aiohttp.ClientSession = None,
         **kwargs: Any,
     ) -> get:
-        if use_default_headers:
-            kwargs["headers"] = {**self.headers, **kwargs.get("headers", {})}
+        if use_browser_ua:
+            kwargs["headers"] = {
+                **kwargs.get("headers", {}),
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0)"
+                " Gecko/20100101 Firefox/132.0",
+            }
         return get(session or self.session, *urls, method=method, **kwargs)
 
     async def save(
         self,
         *img_urls: str,
-        use_default_headers: bool = True,
+        use_browser_ua: bool = True,
         headers: dict[str, str] = None,
     ) -> tuple[bytes, str | None]:
         headers = headers or {}
         img = BytesIO()
         filename = None
         async with self.get(
-            *img_urls, use_default_headers=use_default_headers, headers=headers
+            *img_urls, use_browser_ua=use_browser_ua, headers=headers
         ) as resp:
             if disposition := resp.content_disposition:
                 filename = disposition.filename

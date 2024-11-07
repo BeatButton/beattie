@@ -34,9 +34,7 @@ class Danbooru(Site):
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         api_url = f"https://danbooru.donmai.us/posts/{post_id}.json"
-        async with self.cog.get(
-            api_url, headers=self.headers, use_default_headers=False
-        ) as resp:
+        async with self.cog.get(api_url, headers=self.headers) as resp:
             post = await resp.json()
 
         queue.author = post["tag_string_artist"]
@@ -48,7 +46,6 @@ class Danbooru(Site):
         async with self.cog.get(
             f"https://danbooru.donmai.us/posts/{post_id}/artist_commentary.json",
             headers=self.headers,
-            use_default_headers=False,
         ) as resp:
             post_text = await resp.json()
 

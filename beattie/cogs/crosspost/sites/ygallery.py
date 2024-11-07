@@ -38,7 +38,9 @@ class YGallery(Site):
         link = f"https://old.y-gallery.net/view/{gal_id}/"
 
         async with self.cog.get(
-            link, use_default_headers=False, headers=self.headers
+            link,
+            headers=self.headers,
+            use_browser_ua=True,
         ) as resp:
             root = html.document_fromstring(await resp.read(), self.cog.parser)
 

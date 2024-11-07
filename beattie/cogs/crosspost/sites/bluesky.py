@@ -25,7 +25,7 @@ class Bluesky(Site):
         self, ctx: CrosspostContext, queue: FragmentQueue, repo: str, rkey: str
     ):
         xrpc_url = XRPC_FMT.format(repo, rkey)
-        async with self.cog.get(xrpc_url, use_default_headers=False) as resp:
+        async with self.cog.get(xrpc_url) as resp:
             data = await resp.json()
 
         post = data["value"]

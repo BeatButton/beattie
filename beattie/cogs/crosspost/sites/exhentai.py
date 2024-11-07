@@ -28,7 +28,6 @@ class Exhentai(Site):
             method="POST",
             data=json.dumps(body),
             headers={"Content-Type": "application/json"},
-            use_default_headers=False,
         ) as resp:
             content = await resp.read()
             data = json.loads(content)

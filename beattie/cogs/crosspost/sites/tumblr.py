@@ -45,7 +45,7 @@ class Tumblr(Site):
     ):
         link = f"https://tumbex.com/{blog}.tumblr/post/{post}"
 
-        async with self.cog.get(link) as resp:
+        async with self.cog.get(link, use_browser_ua=True) as resp:
             content = await resp.read()
 
         root = html.document_fromstring(content, self.cog.parser)

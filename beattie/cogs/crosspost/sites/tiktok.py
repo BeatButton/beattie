@@ -28,7 +28,6 @@ class Tiktok(Site):
             async with self.cog.get(
                 link,
                 allow_redirects=False,
-                use_default_headers=False,
                 headers={"User-Agent": "test"},
             ) as resp:
                 root = html.document_fromstring(await resp.read(), self.cog.parser)
@@ -41,9 +40,7 @@ class Tiktok(Site):
             raise RuntimeError("no video in vxtiktok response") from None
 
         try:
-            async with self.cog.get(
-                url, method="HEAD", use_default_headers=False
-            ) as resp:
+            async with self.cog.get(url, method="HEAD") as resp:
                 pass
         except ResponseError:
             raise

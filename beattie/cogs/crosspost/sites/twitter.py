@@ -47,7 +47,6 @@ class Twitter(Site):
 
         async with self.cog.get(
             api_link,
-            use_default_headers=False,
         ) as resp:
             tweet = await resp.json()
         if self.method == "fxtwitter":
@@ -79,7 +78,6 @@ class Twitter(Site):
                             f"{url}:orig",
                             method="HEAD",
                             headers=headers,
-                            use_default_headers=False,
                         ) as resp:
                             url = str(resp.url)
                     except ResponseError as e:

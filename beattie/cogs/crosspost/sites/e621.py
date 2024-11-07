@@ -35,9 +35,7 @@ class E621(Site):
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         params = {"tags": f"id:{post_id}"}
         api_url = "https://e621.net/posts.json"
-        async with self.cog.get(
-            api_url, params=params, headers=self.headers, use_default_headers=False
-        ) as resp:
+        async with self.cog.get(api_url, params=params, headers=self.headers) as resp:
             data = await resp.json()
         try:
             post = data["posts"][0]

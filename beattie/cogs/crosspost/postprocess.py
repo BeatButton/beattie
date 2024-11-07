@@ -90,9 +90,7 @@ async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:
     url = "https://app-api.pixiv.net/v1/ugoira/metadata"
     params = {"illust_id": illust_id}
     headers = frag.headers
-    async with frag.cog.get(
-        url, params=params, use_default_headers=False, headers=headers
-    ) as resp:
+    async with frag.cog.get(url, params=params, headers=headers) as resp:
         res = (await resp.json())["ugoira_metadata"]
 
     zip_url = res["zip_urls"]["medium"]
@@ -105,9 +103,7 @@ async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:
         "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
     }
 
-    zip_bytes, _ = await frag.cog.save(
-        zip_url, headers=headers, use_default_headers=False
-    )
+    zip_bytes, _ = await frag.cog.save(zip_url, headers=headers)
     zfp = ZipFile(BytesIO(zip_bytes))
 
     with TemporaryDirectory() as td:

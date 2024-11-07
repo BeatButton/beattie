@@ -33,7 +33,9 @@ class Fanbox(Site):
         headers = {**self.headers, "Referer": queue.link}
         async with (
             aiohttp.ClientSession() as sess,
-            self.cog.get(url, headers=headers, session=sess) as resp,
+            self.cog.get(
+                url, headers=headers, session=sess, use_browser_ua=True
+            ) as resp,
         ):
             data = await resp.json()
 

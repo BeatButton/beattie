@@ -46,7 +46,9 @@ class Hiccears(Site):
             self.headers = toml.load(fp)
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        async with self.cog.get(link, headers=self.headers) as resp:
+        async with self.cog.get(
+            link, headers=self.headers, use_browser_ua=True
+        ) as resp:
             self.update_hiccears_cookies(resp)
             root = html.document_fromstring(await resp.read(), self.cog.parser)
 
@@ -79,7 +81,9 @@ class Hiccears(Site):
 
                 if next_page := root.xpath(NEXT_SELECTOR):
                     next_url = f"https://{resp.host}{next_page[0].get('href')}"
-                    async with self.cog.get(next_url, headers=self.headers) as resp:
+                    async with self.cog.get(
+                        next_url, headers=self.headers, use_browser_ua=True
+                    ) as resp:
                         self.update_hiccears_cookies(resp)
                         root = html.document_fromstring(
                             await resp.read(),

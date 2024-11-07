@@ -81,7 +81,6 @@ class Pixiv(Site):
                         url,
                         method="POST",
                         data=data,
-                        use_default_headers=False,
                         headers=headers,
                     ) as resp:
                         res = (await resp.json())["response"]
@@ -107,9 +106,7 @@ class Pixiv(Site):
     ):
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
-        async with ctx.cog.get(
-            url, params=params, use_default_headers=False, headers=self.headers
-        ) as resp:
+        async with ctx.cog.get(url, params=params, headers=self.headers) as resp:
             res = await resp.json()
 
         res = res["illust"]

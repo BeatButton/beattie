@@ -136,9 +136,7 @@ class Mastodon(Site):
     ):
         api_url = MASTO_API_FMT.format(site, post_id)
 
-        async with self.cog.get(
-            api_url, headers=headers, use_default_headers=False
-        ) as resp:
+        async with self.cog.get(api_url, headers=headers) as resp:
             post = await resp.json()
 
         if not (images := post.get("media_attachments")):
@@ -194,7 +192,6 @@ class Mastodon(Site):
             url,
             method="POST",
             data=body,
-            use_default_headers=False,
             headers={**headers, "Content-Type": "application/json"},
         ) as resp:
             data = await resp.json()

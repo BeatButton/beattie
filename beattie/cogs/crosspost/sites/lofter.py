@@ -23,7 +23,7 @@ class Lofter(Site):
     pattern = re.compile(r"https?://[\w-]+\.lofter\.com/post/\w+")
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        async with self.cog.get(link, use_default_headers=False) as resp:
+        async with self.cog.get(link, use_browser_ua=True) as resp:
             root = html.document_fromstring(await resp.read(), self.cog.parser)
 
         if elems := root.xpath(LOFTER_IMG_SELECTOR):

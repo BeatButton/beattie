@@ -27,7 +27,7 @@ class YTCommunity(Site):
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         link = f"https://youtube.com/post/{post_id}"
 
-        async with self.cog.get(link) as resp:
+        async with self.cog.get(link, use_browser_ua=True) as resp:
             root = html.document_fromstring(await resp.read(), self.cog.parser)
 
         if not (script := root.xpath(YT_SCRIPT_SELECTOR)):
@@ -61,7 +61,11 @@ class YTCommunity(Site):
             img: str = max(thumbs, key=lambda t: t["width"])["url"]
 
             ext = None
-            async with self.cog.get(img, headers={"Range": "bytes=30-33"}) as resp:
+            async with self.cog.get(
+                img,
+                headers={"Range": "bytes=30-33"},
+                use_browser_ua=True,
+            ) as resp:
                 tag = await resp.read()
                 if (disp := resp.content_disposition) and (name := disp.filename):
                     ext = name.rpartition(".")[2]

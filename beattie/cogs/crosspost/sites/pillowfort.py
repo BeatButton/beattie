@@ -22,7 +22,7 @@ class Pillowfort(Site):
     pattern = re.compile(r"https?://(?:www\.)?pillowfort\.social/posts/\d+")
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        async with self.cog.get(link) as resp:
+        async with self.cog.get(link, use_browser_ua=True) as resp:
             root = html.document_fromstring(await resp.read(), self.cog.parser)
 
         if not (images := root.xpath(OG_IMAGE)):
