@@ -352,7 +352,11 @@ class Crosspost(Cog):
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.prefix is None:
             ctx.command = self.post
-            await self._post(ctx, steps=URL_EXPR.finditer(ctx.message.content))
+            try:
+                await self._post(ctx, steps=URL_EXPR.finditer(ctx.message.content))
+            except:
+                self.logger.exception("on_message:")
+                raise
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
