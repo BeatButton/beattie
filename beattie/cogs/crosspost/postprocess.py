@@ -47,7 +47,6 @@ async def ffmpeg_gif_pp(frag: FileFragment):
 
 async def ffmpeg_mp4_pp(frag: FileFragment):
     with NamedTemporaryFile() as fp:
-        fp.name
         proc = await asyncio.create_subprocess_exec(
             "ffmpeg",
             "-i",
