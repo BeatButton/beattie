@@ -38,7 +38,6 @@ class Fragment:
         )
 
 
-# TODO: try multiple files in order until one fits
 class FileFragment(Fragment):
     urls: tuple[str, ...]
     headers: dict[str, str] | None
