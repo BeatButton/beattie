@@ -69,21 +69,29 @@ async def ffmpeg_mp4_pp(frag: FileFragment, img: bytes, _) -> bytes:
             return fp.read()
 
 
-async def magick_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
-    proc = await asyncio.create_subprocess_exec(
-        "magick",
-        frag.urls[0],
-        "gif:-",
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-    )
+def magick_pp(ext: str) -> Callable[[FileFragment, bytes, Any], Awaitable[bytes]]:
+    async def inner(frag: FileFragment, img: bytes, _) -> bytes:
+        proc = await asyncio.create_subprocess_exec(
+            "magick",
+            frag.urls[0],
+            f"{ext}:-",
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+        )
 
-    try:
-        stdout = await try_wait_for(proc)
-    except asyncio.TimeoutError:
-        return img
-    else:
-        return stdout
+        try:
+            stdout = await try_wait_for(proc)
+        except asyncio.TimeoutError:
+            return img
+        else:
+            frag.filename = f"{frag.filename.rpartition(".")[0]}.{ext}"
+            return stdout
+
+    return inner
+
+
+magick_gif_pp = magick_pp("gif")
+magick_png_pp = magick_pp("png")
 
 
 async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:

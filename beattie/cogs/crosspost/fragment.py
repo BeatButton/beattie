@@ -10,6 +10,7 @@ from discord import Embed
 from discord.utils import escape_markdown
 
 from beattie.utils.etc import URL_EXPR, get_size_limit
+from .postprocess import magick_png_pp
 from .translator import Language, DONT
 
 if TYPE_CHECKING:
@@ -80,6 +81,10 @@ class FileFragment(Fragment):
         ]:
             if filename.endswith(f".{ext}"):
                 filename = f"{filename.removesuffix(ext)}{sub}"
+        if postprocess is None and any(
+            filename.endswith(f".{ext}") for ext in ["webp", "avif"]
+        ):
+            self.postprocess = magick_png_pp
         self.filename = filename
 
         self.file_bytes = b""
