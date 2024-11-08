@@ -4,7 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from .site import Site
-from ..postprocess import ffmpeg_mp4_pp
+from ..postprocess import ffmpeg_m3u8_to_mp4_pp
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext
@@ -48,7 +48,10 @@ class Bluesky(Site):
             url = f"https://video.bsky.app/watch/{did}/{video_id}/playlist.m3u8"
             filename = f"{video_id}.m3u8"
             queue.push_file(
-                url, filename=filename, postprocess=ffmpeg_mp4_pp, can_link=False
+                url,
+                filename=filename,
+                postprocess=ffmpeg_m3u8_to_mp4_pp,
+                can_link=False,
             )
 
         for image in images:

@@ -22,30 +22,33 @@ if TYPE_CHECKING:
 
 
 async def ffmpeg_gif_pp(frag: FileFragment):
-    proc = await asyncio.create_subprocess_exec(
-        "ffmpeg",
-        "-i",
-        frag.urls[0],
-        "-i",
-        frag.urls[0],
-        "-filter_complex",
-        "[0:v]palettegen[p];[1:v][p]paletteuse",
-        "-f",
-        "gif",
-        "pipe:1",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    try:
-        stdout = await try_wait_for(proc)
-    except asyncio.TimeoutError:
-        pass
-    else:
-        frag.pp_bytes = stdout
-        frag.pp_filename = replace_ext(frag.filename, "gif")
+    with NamedTemporaryFile() as fp:
+        fp.write(frag.file_bytes)
+        proc = await asyncio.create_subprocess_exec(
+            "ffmpeg",
+            "-f",
+            "mp4",
+            "-i",
+            fp.name,
+            "-filter_complex",
+            "[0:v]palettegen[p];[0:v][p]paletteuse",
+            "-f",
+            "gif",
+            "pipe:",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+
+        try:
+            stdout = await try_wait_for(proc)
+        except asyncio.TimeoutError:
+            pass
+        else:
+            frag.pp_bytes = stdout
+            frag.pp_filename = replace_ext(frag.filename, "gif")
 
 
-async def ffmpeg_mp4_pp(frag: FileFragment):
+async def ffmpeg_m3u8_to_mp4_pp(frag: FileFragment):
     with NamedTemporaryFile() as fp:
         proc = await asyncio.create_subprocess_exec(
             "ffmpeg",
@@ -72,15 +75,22 @@ async def ffmpeg_mp4_pp(frag: FileFragment):
             frag.pp_bytes = fp.read()
 
 
-def magick_pp(ext: str) -> PP:
+def magick_pp(to: str) -> PP:
     async def inner(frag: FileFragment):
+        ext = frag.filename.rpartition(".")[2]
         proc = await asyncio.create_subprocess_exec(
             "magick",
-            frag.urls[0],
             f"{ext}:-",
-            stderr=subprocess.DEVNULL,
+            f"{to}:-",
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
         )
+
+        stdin = proc.stdin
+        assert stdin is not None
+        stdin.write(frag.file_bytes)
+        stdin.close()
 
         try:
             stdout = await try_wait_for(proc)
@@ -88,7 +98,7 @@ def magick_pp(ext: str) -> PP:
             pass
         else:
             frag.pp_bytes = stdout
-            frag.pp_filename = f"{frag.filename.rpartition(".")[0]}.{ext}"
+            frag.pp_filename = f"{frag.filename.rpartition(".")[0]}.{to}"
 
     return inner
 
@@ -110,10 +120,7 @@ async def ugoira_pp(frag: FileFragment):
 
     headers = frag.headers or {}
 
-    headers = {
-        **headers,
-        "referer": f"https://www.pixiv.net/en/artworks/{illust_id}",
-    }
+    headers["referer"] = f"https://www.pixiv.net/en/artworks/{illust_id}"
 
     zip_bytes, _ = await frag.cog.save(zip_url, headers=headers)
     zfp = ZipFile(BytesIO(zip_bytes))
