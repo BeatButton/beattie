@@ -10,14 +10,18 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable
 from zipfile import ZipFile
 
 from beattie.utils.aioutils import try_wait_for
+from beattie.utils.etc import replace_ext
 
 if TYPE_CHECKING:
     from .fragment import FileFragment
 
-    PP = Callable[[FileFragment, bytes, Any], Awaitable[bytes]]
+    PP = Callable[[FileFragment], Awaitable[None]]
 
 
-async def ffmpeg_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
+# postprocessors must set pp_bytes and pp_filename
+
+
+async def ffmpeg_gif_pp(frag: FileFragment):
     proc = await asyncio.create_subprocess_exec(
         "ffmpeg",
         "-i",
@@ -35,13 +39,13 @@ async def ffmpeg_gif_pp(frag: FileFragment, img: bytes, _) -> bytes:
     try:
         stdout = await try_wait_for(proc)
     except asyncio.TimeoutError:
-        return img
+        pass
     else:
-        frag.filename = f"{frag.filename.rpartition(".")[0]}.gif"
-        return stdout
+        frag.pp_bytes = stdout
+        frag.pp_filename = replace_ext(frag.filename, "gif")
 
 
-async def ffmpeg_mp4_pp(frag: FileFragment, img: bytes, _) -> bytes:
+async def ffmpeg_mp4_pp(frag: FileFragment):
     with NamedTemporaryFile() as fp:
         fp.name
         proc = await asyncio.create_subprocess_exec(
@@ -62,15 +66,15 @@ async def ffmpeg_mp4_pp(frag: FileFragment, img: bytes, _) -> bytes:
         try:
             await try_wait_for(proc)
         except asyncio.TimeoutError:
-            return img
+            pass
         else:
-            frag.filename = f"{frag.filename.rpartition(".")[0]}.mp4"
+            frag.pp_filename = f"{frag.filename.rpartition(".")[0]}.mp4"
             fp.seek(0)
-            return fp.read()
+            frag.pp_bytes = fp.read()
 
 
-def magick_pp(ext: str) -> Callable[[FileFragment, bytes, Any], Awaitable[bytes]]:
-    async def inner(frag: FileFragment, img: bytes, _) -> bytes:
+def magick_pp(ext: str) -> PP:
+    async def inner(frag: FileFragment):
         proc = await asyncio.create_subprocess_exec(
             "magick",
             frag.urls[0],
@@ -82,10 +86,10 @@ def magick_pp(ext: str) -> Callable[[FileFragment, bytes, Any], Awaitable[bytes]
         try:
             stdout = await try_wait_for(proc)
         except asyncio.TimeoutError:
-            return img
+            pass
         else:
-            frag.filename = f"{frag.filename.rpartition(".")[0]}.{ext}"
-            return stdout
+            frag.pp_bytes = stdout
+            frag.pp_filename = f"{frag.filename.rpartition(".")[0]}.{ext}"
 
     return inner
 
@@ -94,7 +98,8 @@ magick_gif_pp = magick_pp("gif")
 magick_png_pp = magick_pp("png")
 
 
-async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:
+async def ugoira_pp(frag: FileFragment):
+    illust_id: str = frag.pp_extra
     url = "https://app-api.pixiv.net/v1/ugoira/metadata"
     params = {"illust_id": illust_id}
     headers = frag.headers
@@ -155,7 +160,7 @@ async def ugoira_pp(frag: FileFragment, img: bytes, illust_id: str) -> bytes:
         try:
             stdout = await try_wait_for(proc)
         except asyncio.TimeoutError:
-            return img
+            pass
         else:
-            frag.filename = f"{illust_id}.gif"
-            return stdout
+            frag.pp_bytes = stdout
+            frag.pp_filename = f"{illust_id}.gif"

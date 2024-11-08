@@ -152,3 +152,7 @@ def get_size_limit(ctx: Context) -> int:
         return guild.filesize_limit
     else:
         return 25 * MB
+
+
+def replace_ext(name: str, ext: str) -> str:
+    return f"{name.rpartition('.')[0]}.{ext}"

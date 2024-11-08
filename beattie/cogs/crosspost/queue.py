@@ -7,9 +7,9 @@ from itertools import groupby
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any, Self, TypedDict
 
+import discord
 from discord import Embed, File
 from discord.utils import format_dt
-import discord
 
 from beattie.utils.etc import display_bytes, get_size_limit
 
@@ -402,8 +402,12 @@ class FragmentQueue:
                             frag = await to_file(ctx)
                         await frag.save()
                         file_bytes = frag.file_bytes
+                        filename = frag.filename
                         if not file_bytes:
                             raise RuntimeError("frag.save failed to set file_bytes")
+                        if frag.pp_bytes is not None and len(frag.pp_bytes) <= limit:
+                            file_bytes = frag.pp_bytes
+                            filename = frag.pp_filename
                         size = len(file_bytes)
                         if size > limit:
                             await send_files()
@@ -421,7 +425,7 @@ class FragmentQueue:
                         if len(file_batch) == 10:
                             await send_files()
                         file_batch.append(
-                            File(BytesIO(file_bytes), frag.filename, spoiler=spoiler)
+                            File(BytesIO(file_bytes), filename, spoiler=spoiler)
                         )
                     case _:
                         raise RuntimeError(

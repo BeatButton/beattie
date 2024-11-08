@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from discord import Embed
 from discord.utils import escape_markdown
 
-from beattie.utils.etc import URL_EXPR, get_size_limit
+from beattie.utils.etc import URL_EXPR, get_size_limit, replace_ext
 from .postprocess import magick_png_pp
 from .translator import Language, DONT
 
@@ -38,12 +38,15 @@ class Fragment:
         )
 
 
+# TODO: try multiple files in order until one fits
 class FileFragment(Fragment):
     urls: tuple[str, ...]
     headers: dict[str, str] | None
     use_browser_ua: bool
     filename: str
     file_bytes: bytes
+    pp_filename: str | None
+    pp_bytes: bytes | None
     dl_task: asyncio.Task | None
     postprocess: PP | None
     pp_extra: Any
@@ -66,6 +69,8 @@ class FileFragment(Fragment):
         self.urls = urls
         self.postprocess = postprocess
         self.pp_extra = pp_extra
+        self.pp_filename = None
+        self.pp_bytes = None
         self.headers = headers
         self.use_browser_ua = use_browser_ua
         self.lock_filename = lock_filename
@@ -80,7 +85,8 @@ class FileFragment(Fragment):
             ("pnj", "png"),
         ]:
             if filename.endswith(f".{ext}"):
-                filename = f"{filename.removesuffix(ext)}{sub}"
+                filename = replace_ext(filename, sub)
+                break
         if postprocess is None and any(
             filename.endswith(f".{ext}") for ext in ["webp", "avif"]
         ):
@@ -105,10 +111,10 @@ class FileFragment(Fragment):
         if not self.lock_filename and filename is not None:
             self.filename = filename
 
-        if self.postprocess is not None:
-            file_bytes = await self.postprocess(self, file_bytes, self.pp_extra)
-
         self.file_bytes = file_bytes
+
+        if self.postprocess is not None:
+            await self.postprocess(self)
 
 
 class FallbackFragment(Fragment):
