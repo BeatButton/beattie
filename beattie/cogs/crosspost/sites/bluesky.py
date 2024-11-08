@@ -47,7 +47,9 @@ class Bluesky(Site):
             video_id = video["ref"]["$link"]
             url = f"https://video.bsky.app/watch/{did}/{video_id}/playlist.m3u8"
             filename = f"{video_id}.m3u8"
-            queue.push_file(url, filename=filename, postprocess=ffmpeg_mp4_pp)
+            queue.push_file(
+                url, filename=filename, postprocess=ffmpeg_mp4_pp, can_link=False
+            )
 
         for image in images:
             image = image["image"]
