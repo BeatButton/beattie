@@ -277,7 +277,11 @@ class Crosspost(Cog):
                     new.add(queue)
 
         for task in tasks:
-            await task
+            try:
+                await task
+            except:
+                self.logger.exception(f"error: {logloc}: {name} {link} ")
+                raise
             if e := task.exception():
                 self.queue_cache.pop(key, None)
                 if isinstance(e, ResponseError) and e.code == 404:
@@ -352,11 +356,7 @@ class Crosspost(Cog):
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.prefix is None:
             ctx.command = self.post
-            try:
-                await self._post(ctx, steps=URL_EXPR.finditer(ctx.message.content))
-            except:
-                self.logger.exception("on_message:")
-                raise
+            await self._post(ctx, steps=URL_EXPR.finditer(ctx.message.content))
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
