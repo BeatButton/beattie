@@ -23,9 +23,7 @@ class Nhentai(Site):
 
         media_id = data["media_id"]
         for i, page in enumerate(data["images"]["pages"], 1):
-            ext = ""
-            page_t = page["t"]
-            match page_t:
+            match page["t"]:
                 case "j":
                     ext = "jpg"
                 case "p":
@@ -34,10 +32,9 @@ class Nhentai(Site):
                     ext = "gif"
                 case "w":
                     ext = "webp"
+                case oth:
+                    raise RuntimeError(f"Unrecognized image type {oth}")
 
-            if ext:
-                queue.push_file(f"https://i.nhentai.net/galleries/{media_id}/{i}.{ext}")
-            else:
-                raise RuntimeError(f"Unrecognized image type {page_t}")
+            queue.push_file(f"https://i.nhentai.net/galleries/{media_id}/{i}.{ext}")
 
         queue.push_text(data["title"]["english"], bold=True)
