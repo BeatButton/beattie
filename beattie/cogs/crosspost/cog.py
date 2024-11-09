@@ -282,11 +282,6 @@ class Crosspost(Cog):
             except:
                 self.logger.exception(f"error: {logloc}: {name} {link} ")
                 raise
-            if e := task.exception():
-                self.queue_cache.pop(key, None)
-                if isinstance(e, ResponseError) and e.code == 404:
-                    await ctx.send("Post not found.")
-                await ctx.bot.handle_error(ctx, e)
             else:
                 queue = task.result()
                 if queue in new and queue.fragments:
