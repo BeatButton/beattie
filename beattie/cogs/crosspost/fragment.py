@@ -144,7 +144,7 @@ class FallbackFragment(Fragment):
         if self.preferred_len is None:
             async with self.cog.get(
                 self.preferred_url,
-                "HEAD",
+                method="HEAD",
                 headers=self.headers,
             ) as resp:
                 self.preferred_len = resp.content_length
