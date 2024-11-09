@@ -26,12 +26,13 @@ async def squash_unfindable(coro: Awaitable[T]) -> T | None:
 
 async def try_wait_for(
     proc: asyncio.subprocess.Process,
+    in_bytes: bytes = None,
     *,
     timeout: float | None = 120,
     kill_timeout: float | None = 5,
 ) -> bytes:
     try:
-        out, _err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        out, _err = await asyncio.wait_for(proc.communicate(in_bytes), timeout=timeout)
     except asyncio.TimeoutError:
         await gently_kill(proc, timeout=kill_timeout)
         raise

@@ -87,13 +87,8 @@ def magick_pp(to: str) -> PP:
             stderr=subprocess.DEVNULL,
         )
 
-        stdin = proc.stdin
-        assert stdin is not None
-        stdin.write(frag.file_bytes)
-        stdin.close()
-
         try:
-            stdout = await try_wait_for(proc)
+            stdout = await try_wait_for(proc, frag.file_bytes)
         except asyncio.TimeoutError:
             pass
         else:
