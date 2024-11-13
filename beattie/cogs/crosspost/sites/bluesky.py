@@ -30,10 +30,23 @@ class Bluesky(Site):
 
         post = data["value"]
 
-        embed = post.get("embed", {})
+        try:
+            embed = post.get("embed", {})
+        except KeyError:
+            return
+
+        if embed["$type"] == "app.bsky.embed.record":
+            _, _, did, _, rkey = embed["record"]["uri"].split("/")
+            xrpc_url = XRPC_FMT.format(did, rkey)
+            async with self.cog.get(xrpc_url) as resp:
+                data = await resp.json()
+
+            post = data["value"]
+            embed = post.get("embed", {})
+
         media = embed.get("media", embed)
         images = media.get("images", [])
-        video = embed.get("video")
+        video = media.get("video")
 
         if not (images or video):
             return False
