@@ -133,7 +133,6 @@ class Pixiv(Site):
                 )
             else:
                 queue.push_fallback(url, res["image_urls"]["large"], headers=headers)
-
         elif multi := res["meta_pages"]:
             for page in multi:
                 queue.push_fallback(
@@ -141,6 +140,8 @@ class Pixiv(Site):
                     page["image_urls"]["large"],
                     headers=headers,
                 )
+        else:
+            raise RuntimeError("illust had no pages")
 
         queue.push_text(res["title"], bold=True)
         if caption := res.get("caption"):
