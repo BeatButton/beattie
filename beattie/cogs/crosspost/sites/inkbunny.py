@@ -52,7 +52,18 @@ class Inkbunny(Site):
         async with self.cog.get(url, method="POST", params=params) as resp:
             response = await resp.json()
 
-        sub = response["submissions"][0]
+        with open("inkbunny.json", "w") as fp:
+            import json
+
+            json.dump(response, fp)
+
+        if not (subs := response["submissions"]):
+            queue.push_text(
+                "Post not found. It may be private.", quote=False, force=True
+            )
+            return
+
+        sub = subs[0]
 
         queue.author = sub["user_id"]
         queue.link = f"https://inkbunny.net/s/{sub_id}"
