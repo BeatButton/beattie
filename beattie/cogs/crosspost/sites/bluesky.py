@@ -11,10 +11,11 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
-XRPC_FMT = (
+POST_FMT = (
     "https://bsky.social/xrpc/com.atproto.repo.getRecord"
     "?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
+PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo" "?repo={}"
 
 
 class Bluesky(Site):
@@ -24,32 +25,33 @@ class Bluesky(Site):
     async def handler(
         self, ctx: CrosspostContext, queue: FragmentQueue, repo: str, rkey: str
     ):
-        xrpc_url = XRPC_FMT.format(repo, rkey)
+        xrpc_url = POST_FMT.format(repo, rkey)
         async with self.cog.get(xrpc_url) as resp:
             data = await resp.json()
 
         post = data["value"]
         text: str | None = post["text"] or None
-        print(f"text={text}")
 
         try:
             embed = post.get("embed", {})
         except KeyError:
             return
 
-        qtext: str | None
+        qtext: str | None = None
+        qname: str | None = None
         if embed["$type"] == "app.bsky.embed.record":
             _, _, did, _, qrkey = embed["record"]["uri"].split("/")
-            xrpc_url = XRPC_FMT.format(did, qrkey)
+            xrpc_url = POST_FMT.format(did, qrkey)
             async with self.cog.get(xrpc_url) as resp:
                 data = await resp.json()
 
             post = data["value"]
             qtext = post["text"]
             embed = post.get("embed", {})
-        else:
-            qtext = None
-        print(f"qtext={qtext}")
+
+            async with self.cog.get(PROFILE_FMT.format(did)) as resp:
+                pdata = await resp.json()
+            qname = pdata["handle"]
 
         media = embed.get("media", embed)
         images = media.get("images", [])
@@ -87,5 +89,7 @@ class Bluesky(Site):
             case (txt, None) | (None, txt):
                 queue.push_text(txt)
             case _:
-                queue.push_text(f"↳ *{qtext}*", escape=False)
+                queue.push_text(
+                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname} — *{qtext}*", escape=False
+                )
                 queue.push_text(text)

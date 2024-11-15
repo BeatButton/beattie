@@ -100,5 +100,13 @@ class Twitter(Site):
             case (txt, None) | (None, txt):
                 queue.push_text(txt)
             case _:
-                queue.push_text(f"↳ *{qtext}*", escape=False)
+                assert quote is not None
+                match self.method:
+                    case "fxtwitter":
+                        qname = quote["author"]["screen_name"]
+                    case "vxtwitter":
+                        qname = quote["user_screen_name"]
+                queue.push_text(
+                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname} — *{qtext}*", escape=False
+                )
                 queue.push_text(text)
