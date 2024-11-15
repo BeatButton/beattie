@@ -29,20 +29,27 @@ class Bluesky(Site):
             data = await resp.json()
 
         post = data["value"]
+        text: str | None = post["text"] or None
+        print(f"text={text}")
 
         try:
             embed = post.get("embed", {})
         except KeyError:
             return
 
+        qtext: str | None
         if embed["$type"] == "app.bsky.embed.record":
-            _, _, did, _, rkey = embed["record"]["uri"].split("/")
-            xrpc_url = XRPC_FMT.format(did, rkey)
+            _, _, did, _, qrkey = embed["record"]["uri"].split("/")
+            xrpc_url = XRPC_FMT.format(did, qrkey)
             async with self.cog.get(xrpc_url) as resp:
                 data = await resp.json()
 
             post = data["value"]
+            qtext = post["text"]
             embed = post.get("embed", {})
+        else:
+            qtext = None
+        print(f"qtext={qtext}")
 
         media = embed.get("media", embed)
         images = media.get("images", [])
@@ -74,5 +81,11 @@ class Bluesky(Site):
             filename = f"{image_id}.jpeg"
             queue.push_file(url, filename=filename)
 
-        if text := post["text"]:
-            queue.push_text(text)
+        match text, qtext:
+            case None, None:
+                pass
+            case (txt, None) | (None, txt):
+                queue.push_text(txt)
+            case _:
+                queue.push_text(f"↳ *{qtext}*", escape=False)
+                queue.push_text(text)

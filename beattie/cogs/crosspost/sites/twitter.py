@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
-TEXT_TRIM = re.compile(r" ?https://t\.co/\w+$")
 VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
 
 
@@ -56,6 +55,8 @@ class Twitter(Site):
             qkey = {"fxtwitter": "quote", "vxtwitter": "qrt"}[self.method]
             if quote := tweet.get(qkey):
                 media = self.get_media(quote)
+        else:
+            quote = None
 
         if not media:
             return
@@ -91,6 +92,13 @@ class Twitter(Site):
                 case "video":
                     queue.push_file(url)
 
-        if text := TEXT_TRIM.sub("", tweet["text"]):
-            text = html_unescape(text)
-            queue.push_text(text)
+        text: str | None = html_unescape(tweet["text"]) or None
+        qtext: str | None = html_unescape(quote["text"]) if quote else None
+        match text, qtext:
+            case None, None:
+                pass
+            case (txt, None) | (None, txt):
+                queue.push_text(txt)
+            case _:
+                queue.push_text(f"↳ *{qtext}*", escape=False)
+                queue.push_text(text)
