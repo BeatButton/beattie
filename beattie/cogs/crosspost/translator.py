@@ -138,12 +138,12 @@ class LibreTranslator(Translator):
 
         lang = max(data, key=lambda el: el["confidence"])
 
-        if lang["confidence"] < 60:
-            return DONT
-
         langs = await self.languages()
         out = langs[lang["language"]]
-        self.logger.debug(f"detected language as {out}")
+        conf = lang["confidence"]
+        self.logger.debug(f"detected language as {out} {conf}%")
+        if conf < 60:
+            return DONT
         return out
 
     async def translate(self, text: str, source: str, target: str) -> str:
