@@ -209,7 +209,11 @@ class DeeplTranslator(Translator):
         self.logger.debug(
             f"{type(self).__name__}: translating from {source} to {target}: {text}"
         )
-        data = {"text": [text], "target_lang": target.upper()}
+        data = {
+            "text": [text],
+            "target_lang": target.upper(),
+            "model_type": "prefer_quality_optimized",
+        }
         if source != "zz":
             data["source_lang"] = source.upper()
 
