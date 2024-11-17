@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 
 MASTO_API_FMT = "https://{}/api/v1/statuses/{}"
+PEERTUBE_API_FMT = "https://{}/api/v1/videos/{}"
 MISSKEY_API_FMT = "https://{}/api/notes/show"
 CONFIG = "config/crosspost/mastodon.toml"
 
@@ -52,6 +53,13 @@ class Mastodon(Site):
             "pleroma": self.do_mastodon,
             "misskey": self.do_misskey,
         }
+        pre = "do_"
+        self.dispatch = {
+            name.removeprefix(pre): getattr(self, name)
+            for name in dir(self)
+            if name.startswith(pre)
+        }
+        self.dispatch["pleroma"] = self.do_mastodon
 
     async def sniff(self, domain: str) -> str:
         async with self.cog.get(
@@ -212,3 +220,35 @@ class Mastodon(Site):
 
         if text := data["text"]:
             queue.push_text(text)
+
+    async def do_peertube(
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        link: str,
+        site: str,
+        post_id: str,
+        headers: dict[str, str],
+    ):
+        api_url = PEERTUBE_API_FMT.format(site, post_id)
+
+        async with self.cog.get(api_url, headers=headers) as resp:
+            post = await resp.json()
+
+        if post["isLive"]:
+            return
+
+        if not (playlists := post["streamingPlaylists"]):
+            return
+
+        queue.author = post["account"]["url"]
+
+        for playlist in playlists:
+            if not (files := playlist["files"]):
+                continue
+
+            file = max(files, key=lambda f: f["width"])
+            queue.push_file(file["fileDownloadUrl"])
+
+        queue.push_text(post["name"], bold=True)
+        queue.push_text(post["description"])
