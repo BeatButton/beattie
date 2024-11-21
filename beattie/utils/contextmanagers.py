@@ -63,6 +63,7 @@ class get:
         except ServerDisconnectedError:
             return await self.__aenter__()
         except OSError as e:
+            LOGGER.warning(f"got OSError {e.errno} for {url}")
             if e.errno == 104:
                 return await self.__aenter__()
             else:
