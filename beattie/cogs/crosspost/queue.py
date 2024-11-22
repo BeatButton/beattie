@@ -11,7 +11,7 @@ import discord
 from discord import Embed, File
 from discord.utils import format_dt
 
-from beattie.utils.etc import display_bytes, get_size_limit
+from beattie.utils.etc import INVITE_EXPR, display_bytes, get_size_limit
 
 from .fragment import (
     Fragment,
@@ -375,6 +375,8 @@ class FragmentQueue:
                 if text:
                     if spoiler:
                         text = f"||{text}||"
+
+                    text = INVITE_EXPR.sub(r"`discord.gg/\2`", text)
 
                     await ctx.send(text, suppress_embeds=True)
 
