@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 
 
 VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
-IMAGE_EXPR = re.compile(r"https://pbs\.twimg\.com/media/(\w+)\.(\w+)")
-VIDEO_EXPR = re.compile(r"https://video.twimg.com/tweet_video/(\w+)\.mp4")
+IMAGE_EXPR = re.compile(r"https://pbs\.twimg\.com/media/([\w-]+)\.(\w+)")
+VIDEO_EXPR = re.compile(r"https://video.twimg.com/tweet_video/([\w-]+)\.mp4")
 
 
 class Twitter(Site):
