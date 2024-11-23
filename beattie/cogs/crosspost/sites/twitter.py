@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
 IMAGE_EXPR = re.compile(r"https://pbs\.twimg\.com/media/([\w-]+)\.(\w+)")
-VIDEO_EXPR = re.compile(r"https://video.twimg.com/tweet_video/([\w-]+)\.mp4")
+VIDEO_EXPR = re.compile(r"https://video\.twimg\.com/([\w-]+(?:/[\w-]+)*)/([\w-]+)\.mp4")
 
 
 class Twitter(Site):
@@ -74,11 +74,9 @@ class Twitter(Site):
 
         def rewrite_video(url: str) -> str:
             if self.rewrite_cdn and (m := VIDEO_EXPR.match(url)):
-                (name,) = m.groups()
-                url = (
-                    "https://cdn.xcancel.com/pic/video.twimg.com%2Ftweet_video%2F"
-                    f"{name}.mp4"
-                )
+                route, name = m.groups()
+                route = route.replace("/", "%2F")
+                url = f"https://cdn.xcancel.com/pic/{route}%2F" f"{name}.mp4"
             return url
 
         url: str
