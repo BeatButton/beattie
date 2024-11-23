@@ -76,7 +76,10 @@ class Twitter(Site):
             if self.rewrite_cdn and (m := VIDEO_EXPR.match(url)):
                 route, name = m.groups()
                 route = route.replace("/", "%2F")
-                url = f"https://cdn.xcancel.com/pic/{route}%2F" f"{name}.mp4"
+                url = (
+                    f"https://cdn.xcancel.com/pic/video.twimg.com%2F{route}%2F"
+                    f"{name}.mp4"
+                )
             return url
 
         url: str
