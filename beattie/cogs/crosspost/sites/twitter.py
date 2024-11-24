@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 
 
 VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
-IMAGE_EXPR = re.compile(r"https://pbs\.twimg\.com/media/([\w-]+)\.(\w+)")
-VIDEO_EXPR = re.compile(r"https://video\.twimg\.com/([\w-]+(?:/[\w-]+)*)/([\w-]+)\.mp4")
 
 
 class Twitter(Site):
@@ -29,7 +27,6 @@ class Twitter(Site):
     )
 
     method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
-    rewrite_cdn: bool = True
 
     def get_media(self, tweet: dict[str, Any]) -> list[dict[str, str]] | None:
         match self.method:
@@ -72,31 +69,14 @@ class Twitter(Site):
             case "vxtwitter":
                 queue.author = tweet["user_name"]
 
-        def rewrite_video(url: str) -> str:
-            if self.rewrite_cdn and (m := VIDEO_EXPR.match(url)):
-                route, name = m.groups()
-                route = route.replace("/", "%2F")
-                url = (
-                    f"https://cdn.xcancel.com/pic/video.twimg.com%2F{route}%2F"
-                    f"{name}.mp4"
-                )
-            return url
-
         url: str
         for medium in media:
             url = medium["url"]
             match medium["type"]:
                 case "photo" | "image":
                     try:
-                        if self.rewrite_cdn and (m := IMAGE_EXPR.match(url)):
-                            name, ext = m.groups()
-                            url = (
-                                f"https://cdn.xcancel.com/pic/orig/media%2F{name}.{ext}"
-                            )
-                        else:
-                            url = f"{url}:orig"
                         async with self.cog.get(
-                            url,
+                            f"{url}:orig",
                             method="HEAD",
                             headers=headers,
                         ) as resp:
@@ -108,10 +88,9 @@ class Twitter(Site):
                 case "gif":
                     base = url.rpartition("/")[2].rpartition(".")[0]
                     filename = f"{base}.mp4"
-                    url = rewrite_video(url)
                     queue.push_file(url, filename=filename, postprocess=ffmpeg_gif_pp)
                 case "video":
-                    queue.push_file(rewrite_video(url))
+                    queue.push_file(url)
 
         text: str | None = html_unescape(tweet["text"]) or None
         qtext: str | None = html_unescape(quote["text"]) if quote else None
