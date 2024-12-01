@@ -181,7 +181,15 @@ class Poipiku(Site):
         frag.dl_task = asyncio.create_task(self.save(frag, referer))
 
     async def save(self, frag: FileFragment, referer: str):
-        resp = await asyncio.to_thread(
-            self.session.get, frag.urls[0], headers={"Referer": referer}
-        )
-        frag.file_bytes = resp.content
+        wait = 1
+        while True:
+            resp = await asyncio.to_thread(
+                self.session.get, frag.urls[0], headers={"Referer": referer}
+            )
+            content = resp.content
+            if not content.startswith(b"<html>"):
+                break
+            await asyncio.sleep(wait)
+            time *= 2
+
+        frag.file_bytes = content
