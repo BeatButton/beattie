@@ -190,6 +190,6 @@ class Poipiku(Site):
             if not content.startswith(b"<html>"):
                 break
             await asyncio.sleep(wait)
-            time *= 2
+            wait *= 2
 
         frag.file_bytes = content
