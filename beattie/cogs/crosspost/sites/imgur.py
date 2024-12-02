@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 
 class Imgur(Site):
     name = "imgur"
-    pattern = re.compile(r"https?://(?:www\.)?imgur\.com/(a|gallery/)?(\w+)")
+    pattern = re.compile(
+        r"https?://(?:www\.)?imgur\.com/(?:(a|gallery)/)?(?:(?:\w+)-)*(\w+)"
+    )
 
     headers: dict[str, str] = {}
 
