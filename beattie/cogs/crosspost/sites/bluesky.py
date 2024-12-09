@@ -89,7 +89,9 @@ class Bluesky(Site):
             case (txt, None) | (None, txt):
                 queue.push_text(txt)
             case _:
+                if qtext:
+                    qtext = f" — *{qtext}*"
                 queue.push_text(
-                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname} — *{qtext}*", escape=False
+                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname}{qtext}", escape=False
                 )
                 queue.push_text(text)

@@ -106,7 +106,9 @@ class Twitter(Site):
                         qname = quote["author"]["screen_name"]
                     case "vxtwitter":
                         qname = quote["user_screen_name"]
+                if qtext:
+                    qtext = f" — *{qtext}*"
                 queue.push_text(
-                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname} — *{qtext}*", escape=False
+                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname}{qtext}", escape=False
                 )
                 queue.push_text(text)
