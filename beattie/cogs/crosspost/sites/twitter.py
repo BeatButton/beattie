@@ -22,8 +22,8 @@ class Twitter(Site):
     name = "twitter"
     pattern = re.compile(
         r"https?://(?:(?:www|mobile|m)\.)?"
-        r"(?:(?:.x|zz)?tw[ix]tter|(?:fix(?:up|v))?x(?:cancel)?)(?:vx)?"
-        r"\.com/[^\s/]+/status/(\d+)"
+        r"(?:(?:.x|zz)?tw[ix]tter|(?:fix(?:up|v)|girlcock|stupidpenis)?x"
+        r"(?:cancel)?)(?:vx)?\.com/[^\s/]+/status/(\d+)"
     )
 
     method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
