@@ -332,14 +332,14 @@ class FragmentQueue:
             if emoji == "❌":
                 return False
 
-        if self.site.concurrent:
-            for item in to_dl:
-                item.save()
-
         lang = settings.language_or_default()
 
         for item in to_trans:
             item.translate(lang)
+
+        if self.site.concurrent:
+            for item in to_dl:
+                item.save()
 
         embedded = False
 
