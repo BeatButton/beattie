@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from random import randint
 from typing import TYPE_CHECKING
 
 from .site import Site
@@ -34,7 +35,7 @@ class Nhentai(Site):
                     ext = "webp"
                 case oth:
                     raise RuntimeError(f"Unrecognized image type {oth}")
-
-            queue.push_file(f"https://i.nhentai.net/galleries/{media_id}/{i}.{ext}")
+            x = randint(1, 4)
+            queue.push_file(f"https://i{x}.nhentai.net/galleries/{media_id}/{i}.{ext}")
 
         queue.push_text(data["title"]["english"], bold=True)
