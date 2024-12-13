@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class Nhentai(Site):
     name = "nhentai"
     pattern = re.compile(r"https?://(?:www\.)?nhentai\.net/g/(\d+)")
-    concurrent = False
+    concurrent = True
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
         api_url = f"https://nhentai.net/api/gallery/{gal_id}"
