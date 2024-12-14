@@ -39,7 +39,7 @@ class Bluesky(Site):
 
         qtext: str | None = None
         qname: str | None = None
-        if embed["$type"] == "app.bsky.embed.record":
+        if embed.get("$type") == "app.bsky.embed.record":
             _, _, did, _, qrkey = embed["record"]["uri"].split("/")
             xrpc_url = POST_FMT.format(did, qrkey)
             async with self.cog.get(xrpc_url) as resp:
