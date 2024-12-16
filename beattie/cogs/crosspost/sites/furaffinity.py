@@ -18,7 +18,9 @@ AUTHOR_PATTERN = re.compile(r"furaffinity\.net/art/(\w+)/")
 
 class FurAffinity(Site):
     name = "furaffinity"
-    pattern = re.compile(r"https?://(?:www\.)?(?:[fv]x)?f[ux]raffinity\.net/view/(\d+)")
+    pattern = re.compile(
+        r"https?://(?:www\.)?(?:[fv]?x)?f[ux]raffinity\.net/view/(\d+)"
+    )
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str):
         link = f"https://www.fxraffinity.net/view/{sub_id}?full"
