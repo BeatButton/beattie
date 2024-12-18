@@ -55,6 +55,7 @@ class Mastodon(Site):
             if name.startswith(pre)
         }
         self.dispatch["pleroma"] = self.do_mastodon
+        self.dispatch["akkoma"] = self.do_mastodon
 
     async def sniff(self, domain: str) -> str:
         async with self.cog.get(
