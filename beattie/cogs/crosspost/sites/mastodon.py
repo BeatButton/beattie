@@ -48,11 +48,6 @@ class Mastodon(Site):
         self.blacklist = set(data.pop("blacklist", []))
         self.auth = data
 
-        self.dispatch = {
-            "mastodon": self.do_mastodon,
-            "pleroma": self.do_mastodon,
-            "misskey": self.do_misskey,
-        }
         pre = "do_"
         self.dispatch = {
             name.removeprefix(pre): getattr(self, name)
