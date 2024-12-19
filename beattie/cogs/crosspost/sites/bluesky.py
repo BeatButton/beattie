@@ -20,7 +20,9 @@ PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo" "?repo={}
 
 class Bluesky(Site):
     name = "bsky"
-    pattern = re.compile(r"https?://(?:c|fx)?bskyx?\.app/profile/([^/]+)/post/([^/]+)")
+    pattern = re.compile(
+        r"https?://(?:c|fx)?[bx]skyx?\.app/profile/([^/]+)/post/([^/]+)"
+    )
 
     async def handler(
         self, ctx: CrosspostContext, queue: FragmentQueue, repo: str, rkey: str
