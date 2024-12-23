@@ -44,8 +44,9 @@ async def ffmpeg_gif_pp(frag: FileFragment):
         except asyncio.TimeoutError:
             pass
         else:
-            frag.pp_bytes = stdout
-            frag.pp_filename = replace_ext(frag.filename, "gif")
+            if stdout:
+                frag.pp_bytes = stdout
+                frag.pp_filename = replace_ext(frag.filename, "gif")
 
 
 async def ffmpeg_m3u8_to_mp4_pp(frag: FileFragment):
