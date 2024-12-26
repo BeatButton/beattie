@@ -15,7 +15,7 @@ POST_FMT = (
     "https://bsky.social/xrpc/com.atproto.repo.getRecord"
     "?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
-PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo" "?repo={}"
+PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo?repo={}"
 
 
 class Bluesky(Site):
