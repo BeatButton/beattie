@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
 VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
 
+Method = Literal["fxtwitter"] | Literal["vxtwitter"]
+
 
 class Twitter(Site):
     name = "twitter"
@@ -26,10 +28,14 @@ class Twitter(Site):
         r"(?:cancel)?)(?:vx)?\.com/[^\s/]+/status/(\d+)"
     )
 
-    method: Literal["fxtwitter"] | Literal["vxtwitter"] = "fxtwitter"
+    method: Method = "fxtwitter"
 
-    def get_media(self, tweet: dict[str, Any]) -> list[dict[str, str]] | None:
-        match self.method:
+    def get_media(
+        self,
+        tweet: dict[str, Any],
+        method: Method,
+    ) -> list[dict[str, str]] | None:
+        match method:
             case "fxtwitter":
                 return tweet.get("media", {}).get("all")
             case "vxtwitter":
@@ -41,20 +47,37 @@ class Twitter(Site):
         queue: FragmentQueue,
         tweet_id: str,
     ):
+        try:
+            await self.with_method(queue, tweet_id, self.method)
+        except:
+            fallback: Method
+            match self.method:
+                case "fxtwitter":
+                    fallback = "vxtwitter"
+                case "vxtwitter":
+                    fallback = "fxtwitter"
+            await self.with_method(queue, tweet_id, fallback)
+
+    async def with_method(
+        self,
+        queue: FragmentQueue,
+        tweet_id: str,
+        method: Method,
+    ):
         headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
-        api_link = f"https://api.{self.method}.com/status/{tweet_id}"
+        api_link = f"https://api.{method}.com/status/{tweet_id}"
 
         async with self.cog.get(
             api_link,
         ) as resp:
             tweet = await resp.json()
-        if self.method == "fxtwitter":
+        if method == "fxtwitter":
             tweet = tweet["tweet"]
 
-        if not (media := self.get_media(tweet)):
-            qkey = {"fxtwitter": "quote", "vxtwitter": "qrt"}[self.method]
+        if not (media := self.get_media(tweet, method)):
+            qkey = {"fxtwitter": "quote", "vxtwitter": "qrt"}[method]
             if quote := tweet.get(qkey):
-                media = self.get_media(quote)
+                media = self.get_media(quote, method)
         else:
             quote = None
 
@@ -63,7 +86,7 @@ class Twitter(Site):
 
         queue.link = f"https://twitter.com/i/status/{tweet_id}"
 
-        match self.method:
+        match method:
             case "fxtwitter":
                 queue.author = tweet["author"]["id"]
             case "vxtwitter":
@@ -101,7 +124,7 @@ class Twitter(Site):
                 queue.push_text(txt)
             case _:
                 assert quote is not None
-                match self.method:
+                match method:
                     case "fxtwitter":
                         qname = quote["author"]["screen_name"]
                     case "vxtwitter":
