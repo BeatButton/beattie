@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from itertools import chain
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from lxml import html
@@ -63,8 +64,16 @@ class Tumblr(Site):
             )
             return False
 
+        post_blocks = post_content["posts"][0]["blocks"]
+        name = post_blocks[0]["blog"]["name"]
         blocks: list[Block]
-        blocks = post_content["posts"][0]["blocks"][0]["content"]
+        blocks = list(
+            chain.from_iterable(
+                iter(block["content"])
+                for block in post_blocks
+                if block["blog"]["name"] == name
+            )
+        )
 
         if not any(map(self.embeddable, blocks)):
             return False
