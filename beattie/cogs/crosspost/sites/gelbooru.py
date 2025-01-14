@@ -60,7 +60,7 @@ class Gelbooru(Site):
         notes = list(root)
         if notes:
             notes.sort(key=lambda n: int(n.get("y")))
-            text = "\n\n".join(n.get("body") for n in notes)
+            text = "\n".join(f'"{n.get("body")}"' for n in notes)
             text = translate_markdown(text)
             queue.push_text(text)
 
