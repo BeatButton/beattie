@@ -65,13 +65,13 @@ class Tumblr(Site):
             return False
 
         post_blocks = post_content["posts"][0]["blocks"]
-        name = post_blocks[0]["blog"]["name"]
+        name = data["params"]["name"]
         blocks: list[Block]
         blocks = list(
             chain.from_iterable(
                 iter(block["content"])
                 for block in post_blocks
-                if block["blog"]["name"] == name
+                if (blog := block["blog"]) is None or blog["name"] == name
             )
         )
 
