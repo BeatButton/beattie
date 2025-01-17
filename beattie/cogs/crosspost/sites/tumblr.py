@@ -42,9 +42,9 @@ class Tumblr(Site):
                 return False
 
     async def handler(
-        self, ctx: CrosspostContext, queue: FragmentQueue, blog: str, post: str
+        self, ctx: CrosspostContext, queue: FragmentQueue, blog: str, post_id: str
     ):
-        link = f"https://tumbex.com/{blog}.tumblr/post/{post}"
+        link = f"https://tumbex.com/{blog}.tumblr/post/{post_id}"
 
         async with self.cog.get(link, use_browser_ua=True) as resp:
             content = await resp.read()
@@ -64,21 +64,22 @@ class Tumblr(Site):
             )
             return False
 
-        post_blocks = post_content["posts"][0]["blocks"]
-        name = data["params"]["name"]
+        post = post_content["posts"][0]
+        reblog_root = post["reblogRoot"]
+        name = reblog_root["name"] if reblog_root else None
         blocks: list[Block]
         blocks = list(
             chain.from_iterable(
                 iter(block["content"])
-                for block in post_blocks
-                if (blog := block["blog"]) is None or blog["name"] == name
+                for block in post["blocks"]
+                if name is None or block["blog"]["name"] == name
             )
         )
 
         if not any(map(self.embeddable, blocks)):
             return False
 
-        queue.link = f"https://{blog}.tumblr.com/post/{post}"
+        queue.link = f"https://{blog}.tumblr.com/post/{post_id}"
         queue.author = data["params"]["id"]
 
         for block in blocks:
