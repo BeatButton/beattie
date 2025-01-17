@@ -152,9 +152,11 @@ def translate_bbcode(text: str) -> str:
 
 def get_size_limit(ctx: Context) -> int:
     if guild := ctx.guild:
+        if guild.filesize_limit == 25 * MB:
+            return 8 * MB
         return guild.filesize_limit
     else:
-        return 25 * MB
+        return 8 * MB
 
 
 def replace_ext(name: str, ext: str) -> str:
