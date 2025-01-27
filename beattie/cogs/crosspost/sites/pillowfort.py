@@ -23,7 +23,7 @@ class Pillowfort(Site):
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
         async with self.cog.get(link, use_browser_ua=True) as resp:
-            root = html.document_fromstring(await resp.read(), self.cog.parser)
+            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
 
         if not (images := root.xpath(OG_IMAGE)):
             return False

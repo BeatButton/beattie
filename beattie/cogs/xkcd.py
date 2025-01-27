@@ -68,7 +68,7 @@ class XKCD(Cog):
             url = "https://duckduckgo.com/html/"
             params = {"q": f"{inp} xkcd"}
             async with ctx.bot.get(url, params=params) as resp:
-                text = await resp.text()
+                text = await resp.text or ""
             match = re.search(r"xkcd\.com/(\d+)/\s", text)
             if match:
                 number = int(match.groups()[0])

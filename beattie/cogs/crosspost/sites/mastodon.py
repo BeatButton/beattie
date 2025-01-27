@@ -6,7 +6,6 @@ import re
 import urllib.parse as urlparse
 from typing import TYPE_CHECKING
 
-import aiohttp
 from lxml import html
 import toml
 
@@ -78,7 +77,6 @@ class Mastodon(Site):
             ResponseError,
             json.JSONDecodeError,
             IndexError,
-            aiohttp.ContentTypeError,
         ):
             software = None
 

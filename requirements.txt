@@ -1,4 +1,3 @@
-asyncjisho
 asyncpg
 brotli
 discord-ext-menus
@@ -7,6 +6,7 @@ jishaku
 levenshtein
 lingua-language-detector
 lxml
+niquests
 psutil
 python-dateutil
 recurrent

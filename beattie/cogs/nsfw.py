@@ -113,7 +113,7 @@ class NSFW(Cog):
                         "tags": " ".join(tags),
                     }
                     async with ctx.bot.get(self.urls[site], params=params) as resp:
-                        root = etree.fromstring(await resp.read(), self.parser)
+                        root = etree.fromstring(await resp.content or b"", self.parser)
                     posts = root.findall(".//post")
                 random.shuffle(posts)
                 self.cache[channel][site][tags] = posts
@@ -156,7 +156,7 @@ class NSFW(Cog):
         url = self.urls[site]
         netloc = parse.urlsplit(url).netloc
         async with self.get(f"https://{netloc}") as resp:
-            root = etree.fromstring(await resp.read(), self.parser)
+            root = etree.fromstring(await resp.content or b"", self.parser)
         self.titles[site] = root.find(".//title").text
 
 

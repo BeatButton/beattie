@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
+
 import discord
-from asyncjisho import Jisho
+import niquests
 from discord.ext import commands
 from discord.ext.commands import Cog
 
@@ -11,6 +12,65 @@ from beattie.utils.paginator import Paginator
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot
     from beattie.context import BContext
+
+
+T = TypeVar("T")
+V = str | list[str]
+LDS = list[dict[str, T]]
+
+
+class Jisho:
+    api_url = "https://jisho.org/api/v1/search/words"
+
+    def __init__(self, session: niquests.AsyncSession):
+        self.session = session
+
+    def parse(self, response: LDS[LDS[V]]) -> LDS[list[str]]:
+        results = []
+
+        for data in response:
+            readings: set[str] = set()
+            words: set[str] = set()
+
+            for kanji in data["japanese"]:
+                reading = kanji.get("reading")
+                assert isinstance(reading, str)
+                if reading and reading not in readings:
+                    readings.add(reading)
+
+                word = kanji.get("word")
+                assert isinstance(word, str)
+                if word and word not in words:
+                    words.add(word)
+
+            senses: dict[str, list[str]] = {"english": [], "parts_of_speech": []}
+
+            for sense in data["senses"]:
+                senses["english"].extend(sense.get("english_definitions", ()))
+                senses["parts_of_speech"].extend(sense.get("parts_of_speech", ()))
+
+            try:
+                senses["parts_of_speech"].remove("Wikipedia definition")
+            except ValueError:
+                pass
+
+            result = {"readings": list(readings), "words": list(words), **senses}
+            results.append(result)
+
+        return results
+
+    async def lookup(self, keyword: str, **kwargs) -> LDS[list[str]]:
+        """Search Jisho.org for a word. Returns a list of dicts with keys
+        readings, words, english, parts_of_speech."""
+        params = {"keyword": keyword, **kwargs}
+        resp = None
+        try:
+            resp = await self.session.get(self.api_url, params=params, stream=True)
+            data = (await resp.json())["data"]
+        finally:
+            if resp is not None:
+                await resp.close()
+        return self.parse(data)
 
 
 class Dictionary(Cog):

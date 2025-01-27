@@ -4,7 +4,8 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-import aiohttp
+import niquests
+import niquests.cookies
 import toml
 from lxml import html
 
@@ -50,7 +51,7 @@ class Hiccears(Site):
             link, headers=self.headers, use_browser_ua=True
         ) as resp:
             self.update_hiccears_cookies(resp)
-            root = html.document_fromstring(await resp.read(), self.cog.parser)
+            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
 
         if author := root.xpath(AUTHOR_SELECTOR):
             queue.author = author[0].text_content().strip()
@@ -86,7 +87,7 @@ class Hiccears(Site):
                     ) as resp:
                         self.update_hiccears_cookies(resp)
                         root = html.document_fromstring(
-                            await resp.read(),
+                            await resp.content or b"",
                             self.cog.parser,
                         )
                 else:
@@ -101,13 +102,14 @@ class Hiccears(Site):
             if description:
                 queue.push_text(description)
 
-    def update_hiccears_cookies(self, resp: aiohttp.ClientResponse):
+    def update_hiccears_cookies(self, resp: niquests.AsyncResponse):
+        assert isinstance(resp.cookies, niquests.cookies.RequestsCookieJar)
         if sess := resp.cookies.get("hiccears"):
             self.logger.info("Refreshing cookies from response")
 
             cookie = re.sub(
                 r"hiccears=\w+;REMEMBERME=(.*)",
-                rf"hiccears={sess.value};REMEMBERME=\g<1>",
+                rf"hiccears={sess};REMEMBERME=\g<1>",
                 self.headers["Cookie"],
             )
 

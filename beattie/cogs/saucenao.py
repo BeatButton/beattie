@@ -47,8 +47,17 @@ class SauceNao(Cog):
             link = link.strip("<>")
             payload = {"url": link}
 
-            async with self.session.post(self.sauce_url, data=payload) as resp:
-                root = etree.fromstring(await resp.text(), self.parser)
+            resp = None
+            try:
+                resp = await self.session.post(
+                    self.sauce_url, data=payload, stream=True
+                )
+                text = await resp.text or ""
+            finally:
+                if resp is not None:
+                    await resp.close()
+
+            root = etree.fromstring(text, self.parser)
 
             results = root.xpath('.//div[@class="result"]')
             result = None

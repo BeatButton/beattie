@@ -12,8 +12,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
 
-import aiohttp
 import asyncpg
+import niquests
 import toml
 from discord import AllowedMentions, Game, Guild, Intents, Message
 from discord.ext import commands
@@ -34,7 +34,7 @@ class Shared:
     bots: list[BeattieBot]
     archive_task: Task[Any] | None
     logger: logging.Logger
-    session: aiohttp.ClientSession
+    session: niquests.AsyncSession
     pool: asyncpg.Pool
     extra: dict[str, Any]
     uptime: datetime
@@ -68,7 +68,7 @@ class Shared:
         self.new_logger()
 
     async def async_init(self):
-        self.session = aiohttp.ClientSession()
+        self.session = niquests.AsyncSession()
         await self.config.async_init()
 
     async def prefix_func(self, bot: BeattieBot, message: Message) -> Iterable[str]:

@@ -27,7 +27,7 @@ class Wolfram(Cog):
         async with ctx.typing():
             params = {"input": inp, "appid": self.key, "format": "plaintext"}
             async with ctx.bot.get(self.url, params=params) as resp:
-                text = await resp.text()
+                text = await resp.text or ""
             root = etree.fromstring(text.encode(), etree.XMLParser())
             interpret = root.xpath(
                 "//pod[@title='Input interpretation']" "/subpod/plaintext/text()"

@@ -30,7 +30,9 @@ class Tiktok(Site):
                 allow_redirects=False,
                 headers={"User-Agent": "test"},
             ) as resp:
-                root = html.document_fromstring(await resp.read(), self.cog.parser)
+                root = html.document_fromstring(
+                    await resp.content or b"", self.cog.parser
+                )
         except ResponseError:
             raise
 

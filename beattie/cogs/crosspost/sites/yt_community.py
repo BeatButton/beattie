@@ -28,7 +28,7 @@ class YTCommunity(Site):
         link = f"https://youtube.com/post/{post_id}"
 
         async with self.cog.get(link, use_browser_ua=True) as resp:
-            root = html.document_fromstring(await resp.read(), self.cog.parser)
+            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
 
         if not (script := root.xpath(YT_SCRIPT_SELECTOR)):
             return False
@@ -66,7 +66,7 @@ class YTCommunity(Site):
                 headers={"Range": "bytes=30-33"},
                 use_browser_ua=True,
             ) as resp:
-                tag = await resp.read()
+                tag = await resp.content or b""
                 if (disp := resp.content_disposition) and (name := disp.filename):
                     ext = name.rpartition(".")[2]
 
