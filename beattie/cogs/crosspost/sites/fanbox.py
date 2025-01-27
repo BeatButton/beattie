@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+import niquests
 
 from .site import Site
 
@@ -30,8 +31,14 @@ class Fanbox(Site):
         queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
         headers = {**self.headers, "Referer": queue.link}
-        async with self.cog.get(url, headers=headers, use_browser_ua=True) as resp:
-            data = await resp.json()
+        async with niquests.AsyncSession() as sess:
+            resp = None
+            try:
+                resp = await sess.get(url, headers=headers, stream=True)
+                data = await resp.json()
+            finally:
+                if resp is not None:
+                    await resp.close()
 
         post = data["body"]
         body = post["body"]
