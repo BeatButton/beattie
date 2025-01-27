@@ -147,7 +147,7 @@ class FallbackFragment(Fragment):
                 method="HEAD",
                 headers=self.headers,
             ) as resp:
-                if content_length := resp.oheaders.content_length:
+                if content_length := getattr(resp.oheaders, "content_length", None):
                     if isinstance(content_length, list):
                         content_length = content_length[0]
                     self.preferred_len = int(content_length.content)
