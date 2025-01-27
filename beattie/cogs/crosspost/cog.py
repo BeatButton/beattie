@@ -216,6 +216,7 @@ class Crosspost(Cog):
                 match step.pages:
                     case int(p):
                         settings.max_pages = p
+                        ranges = None
                     case list(r):
                         ranges = r
                 if step.text is not None:
