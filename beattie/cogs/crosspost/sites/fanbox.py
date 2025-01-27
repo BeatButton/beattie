@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import json
 from typing import TYPE_CHECKING
 
 import niquests
@@ -35,7 +36,8 @@ class Fanbox(Site):
             resp = None
             try:
                 resp = await sess.get(url, headers=headers, stream=True)
-                data = await resp.json()
+                content = await resp.content or b""
+                data = json.loads(content)
             finally:
                 if resp is not None:
                     await resp.close()
