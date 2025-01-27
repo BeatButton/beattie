@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 import toml
 from typing import TYPE_CHECKING
 
-import requests
-from lxml import html
-
 import discord
+import niquests
+import niquests.cookies
+from lxml import html
 
 from .site import Site
 
@@ -33,21 +34,28 @@ class Poipiku(Site):
         super().__init__(cog)
         with open("config/headers.toml") as fp:
             headers = toml.load(fp)
-        self.session = requests.Session()
+        self.session = niquests.AsyncSession()
+        cookies = self.session.cookies
+        assert isinstance(cookies, niquests.cookies.RequestsCookieJar)
         with open("config/crosspost/poipiku.toml") as fp:
             data = toml.load(fp)
             for key, value in data.items():
-                self.session.cookies.set(key, value)
-        self.session.cookies.set("POIPIKU_CONTENTS_VIEW_MODE", "1")
+                cookies.set(key, value)
+        cookies.set("POIPIKU_CONTENTS_VIEW_MODE", "1")
 
         for k, v in headers.items():
             self.session.headers[k] = v
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        resp = await asyncio.to_thread(self.session.get, link)
-        root = html.document_fromstring(resp.content, self.cog.parser)
+        resp = None
+        try:
+            resp = await self.session.get(link, stream=True)
+            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
+            link = str(resp.url)
+        finally:
+            if resp is not None:
+                await resp.close()
 
-        link = str(resp.url)
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
             return False
 
@@ -80,13 +88,18 @@ class Poipiku(Site):
             "TWF": "-1",
         }
 
-        resp = await asyncio.to_thread(
-            self.session.post,
-            "https://poipiku.com/f/ShowAppendFileF.jsp",
-            headers=headers,
-            data=body,
-        )
-        data = resp.json()
+        resp = None
+        try:
+            resp = await self.session.post(
+                "https://poipiku.com/f/ShowAppendFileF.jsp",
+                headers=headers,
+                data=body,
+                stream=True,
+            )
+            data = json.loads(await resp.content or b"")
+        finally:
+            if resp is not None:
+                await resp.close()
 
         frag = data["html"]
         if not frag:
@@ -142,13 +155,18 @@ class Poipiku(Site):
 
                 body["PAS"] = reply.content
 
-                resp = await asyncio.to_thread(
-                    self.session.post,
-                    "https://poipiku.com/f/ShowAppendFileF.jsp",
-                    headers=headers,
-                    data=body,
-                )
-                data = resp.json()
+                resp = None
+                try:
+                    resp = await self.session.post(
+                        "https://poipiku.com/f/ShowAppendFileF.jsp",
+                        headers=headers,
+                        data=body,
+                        stream=True,
+                    )
+                    data = json.loads(await resp.content or b"")
+                finally:
+                    if resp is not None:
+                        await resp.close()
 
                 frag = data["html"]
 
@@ -183,12 +201,17 @@ class Poipiku(Site):
     async def save(self, frag: FileFragment, referer: str):
         wait = 1
         while True:
-            resp = await asyncio.to_thread(
-                self.session.get, frag.urls[0], headers={"Referer": referer}
-            )
-            content = resp.content
-            if not content.startswith(b"<html>"):
-                break
+            resp = None
+            try:
+                resp = await self.session.get(
+                    frag.urls[0], headers={"Referer": referer}, stream=True
+                )
+                content = await resp.content or b""
+                if not content.startswith(b"<html>"):
+                    break
+            finally:
+                if resp is not None:
+                    await resp.close()
             await asyncio.sleep(wait)
             wait *= 2
 
