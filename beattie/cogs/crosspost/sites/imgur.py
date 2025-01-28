@@ -43,7 +43,7 @@ class Imgur(Site):
             f"https://api.imgur.com/3/{target}/{album_id}",
             headers=self.headers,
         ) as resp:
-            data = (await resp.json())["data"]
+            data = resp.json()["data"]
 
         if is_album:
             images = data["images"]

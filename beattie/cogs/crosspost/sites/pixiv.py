@@ -83,7 +83,7 @@ class Pixiv(Site):
                         data=data,
                         headers=headers,
                     ) as resp:
-                        res = (await resp.json())["response"]
+                        res = resp.json()["response"]
                 except Exception:
                     message = "An error occurred in the pixiv login loop"
                     self.logger.exception(message)
@@ -107,7 +107,7 @@ class Pixiv(Site):
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with ctx.cog.get(url, params=params, headers=self.headers) as resp:
-            res = await resp.json()
+            res = resp.json()
 
         res = res["illust"]
 

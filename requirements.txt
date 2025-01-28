@@ -1,12 +1,13 @@
+aiohttp
 asyncpg
 brotli
 discord-ext-menus
 discord.py
+httpx
 jishaku
 levenshtein
 lingua-language-detector
 lxml
-niquests
 psutil
 python-dateutil
 recurrent

@@ -47,7 +47,7 @@ class Tumblr(Site):
         link = f"https://tumbex.com/{blog}.tumblr/post/{post_id}"
 
         async with self.cog.get(link, use_browser_ua=True) as resp:
-            content = await resp.content or b""
+            content = resp.content
 
         root = html.document_fromstring(content, self.cog.parser)
 
@@ -93,7 +93,7 @@ class Tumblr(Site):
                         async with self.cog.get(
                             url, headers={"Range": "bytes=0-2"}
                         ) as resp:
-                            start = await resp.content or b""
+                            start = resp.content
                         if start.startswith(b"GIF"):
                             url = url[:-1]
                     queue.push_file(url)

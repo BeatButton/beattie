@@ -41,7 +41,7 @@ class XKCD(Cog):
         async with ctx.typing():
             url = "https://xkcd.com/info.0.json"
             async with ctx.bot.get(url) as resp:
-                self.xkcd_data = await resp.json()
+                self.xkcd_data = resp.json()
             if not inp or inp == "random":
                 await self.random(ctx)
             elif inp in ("latest", "current"):
@@ -68,7 +68,7 @@ class XKCD(Cog):
             url = "https://duckduckgo.com/html/"
             params = {"q": f"{inp} xkcd"}
             async with ctx.bot.get(url, params=params) as resp:
-                text = await resp.text or ""
+                text = resp.text
             match = re.search(r"xkcd\.com/(\d+)/\s", text)
             if match:
                 number = int(match.groups()[0])
@@ -84,7 +84,7 @@ class XKCD(Cog):
         data: XkcdData
         try:
             async with ctx.bot.get(url) as resp:
-                data = await resp.json()
+                data = resp.json()
         except ResponseError:
             data = {
                 "title": "404",

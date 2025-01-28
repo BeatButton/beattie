@@ -30,7 +30,7 @@ class Itaku(Site):
                 "Accept": "application/json",
             },
         ) as resp:
-            post = await resp.json()
+            post = resp.json()
 
         url = post.get("image_xl")
 

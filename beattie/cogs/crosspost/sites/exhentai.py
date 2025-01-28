@@ -29,8 +29,7 @@ class Exhentai(Site):
             data=json.dumps(body),
             headers={"Content-Type": "application/json"},
         ) as resp:
-            content = await resp.content or b""
-            data = json.loads(content)
+            data = resp.json()
 
         data = data["gmetadata"][0]
 

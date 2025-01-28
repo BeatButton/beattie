@@ -27,7 +27,7 @@ class FurAffinity(Site):
         async with self.cog.get(
             link, error_for_status=False, allow_redirects=False
         ) as resp:
-            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
+            root = html.document_fromstring(resp.content, self.cog.parser)
 
         try:
             url = root.xpath(OG_IMAGE)[0].get("content")

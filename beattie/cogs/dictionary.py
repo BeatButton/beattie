@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeVar
 
 import discord
-import niquests
+import httpx
 from discord.ext import commands
 from discord.ext.commands import Cog
 
+from beattie.utils.contextmanagers import get
 from beattie.utils.paginator import Paginator
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ LDS = list[dict[str, T]]
 class Jisho:
     api_url = "https://jisho.org/api/v1/search/words"
 
-    def __init__(self, session: niquests.AsyncSession):
+    def __init__(self, session: httpx.AsyncClient):
         self.session = session
 
     def parse(self, response: LDS[LDS[V]]) -> LDS[list[str]]:
@@ -64,12 +65,9 @@ class Jisho:
         readings, words, english, parts_of_speech."""
         params = {"keyword": keyword, **kwargs}
         resp = None
-        try:
-            resp = await self.session.get(self.api_url, params=params, stream=True)
-            data = (await resp.json())["data"]
-        finally:
-            if resp is not None:
-                await resp.close()
+        async with get(self.session, self.api_url, params=params) as resp:
+            data = resp.json()["data"]
+
         return self.parse(data)
 
 
@@ -112,7 +110,7 @@ class Dictionary(Cog):
         params = {"term": word}
         get = ctx.bot.get
         async with ctx.typing(), get(self.urban_url, params=params) as resp:
-            data = await resp.json()
+            data = resp.json()
         try:
             results = data["list"]
             results[0]

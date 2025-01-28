@@ -70,7 +70,7 @@ class Twitter(Site):
         async with self.cog.get(
             api_link,
         ) as resp:
-            tweet = await resp.json()
+            tweet = resp.json()
         if method == "fxtwitter":
             tweet = tweet["tweet"]
 

@@ -47,15 +47,8 @@ class SauceNao(Cog):
             link = link.strip("<>")
             payload = {"url": link}
 
-            resp = None
-            try:
-                resp = await self.session.post(
-                    self.sauce_url, data=payload, stream=True
-                )
-                text = await resp.text or ""
-            finally:
-                if resp is not None:
-                    await resp.close()
+            resp = await self.session.post(self.sauce_url, data=payload)
+            text = resp.text
 
             root = etree.fromstring(text, self.parser)
 

@@ -61,12 +61,12 @@ class Mastodon(Site):
         async with self.cog.get(
             f"https://{domain}/.well-known/nodeinfo",
         ) as resp:
-            data = await resp.json()
+            data = resp.json()
 
         link = data["links"][0]["href"]
 
         async with self.cog.get(link) as resp:
-            data = await resp.json()
+            data = resp.json()
 
         return data["software"]["name"]
 
@@ -140,7 +140,7 @@ class Mastodon(Site):
         api_url = MASTO_API_FMT.format(site, post_id)
 
         async with self.cog.get(api_url, headers=headers) as resp:
-            post = await resp.json()
+            post = resp.json()
 
         if not (images := post.get("media_attachments")):
             return False
@@ -197,7 +197,7 @@ class Mastodon(Site):
             data=body,
             headers={**headers, "Content-Type": "application/json"},
         ) as resp:
-            data = await resp.json()
+            data = resp.json()
 
         if not (files := data["files"]):
             return False
@@ -228,7 +228,7 @@ class Mastodon(Site):
         api_url = PEERTUBE_API_FMT.format(site, post_id)
 
         async with self.cog.get(api_url, headers=headers) as resp:
-            post = await resp.json()
+            post = resp.json()
 
         if post["isLive"]:
             return

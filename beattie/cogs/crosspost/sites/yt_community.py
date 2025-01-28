@@ -4,6 +4,7 @@ import json
 import re
 from typing import TYPE_CHECKING
 
+import aiohttp
 from lxml import html
 
 from ..postprocess import magick_gif_pp
@@ -28,7 +29,7 @@ class YTCommunity(Site):
         link = f"https://youtube.com/post/{post_id}"
 
         async with self.cog.get(link, use_browser_ua=True) as resp:
-            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
+            root = html.document_fromstring(resp.content, self.cog.parser)
 
         if not (script := root.xpath(YT_SCRIPT_SELECTOR)):
             return False
@@ -66,9 +67,11 @@ class YTCommunity(Site):
                 headers={"Range": "bytes=30-33"},
                 use_browser_ua=True,
             ) as resp:
-                tag = await resp.content or b""
-                if (disp := resp.content_disposition) and (name := disp.filename):
-                    ext = name.rpartition(".")[2]
+                tag = resp.content
+                if disp := resp.headers.get("Content-Disposition"):
+                    _, params = aiohttp.multipart.parse_content_disposition(disp)
+                    if name := params.get("filename"):
+                        ext = name.rpartition(".")[2]
 
             pp = None
             ext = ext or "jpeg"

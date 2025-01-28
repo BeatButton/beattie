@@ -109,15 +109,11 @@ class LibreTranslator(Translator):
         body = {
             "api_key": self.api_key,
         }
-        resp = None
-        try:
-            resp = await self.cog.session.get(
-                f"{self.api_url}/languages", data=body, stream=True
-            )
-            data = await resp.json()
-        finally:
-            if resp is not None:
-                await resp.close()
+
+        resp = await self.cog.session.request(
+            "GET", f"{self.api_url}/languages", data=body
+        )
+        data = resp.json()
 
         return {
             "xx": DONT,
@@ -136,15 +132,8 @@ class LibreTranslator(Translator):
             "api_key": self.api_key,
             "q": text,
         }
-        resp = None
-        try:
-            resp = await self.cog.session.post(
-                f"{self.api_url}/detect", data=body, stream=True
-            )
-            data = await resp.json()
-        finally:
-            if resp is not None:
-                await resp.close()
+        resp = await self.cog.session.post(f"{self.api_url}/detect", data=body)
+        data = resp.json()
 
         for lang in data:
             if lang["language"] in ("ja", "zh"):
@@ -171,15 +160,8 @@ class LibreTranslator(Translator):
             "q": text,
         }
 
-        resp = None
-        try:
-            resp = await self.cog.session.post(
-                f"{self.api_url}/translate", data=body, stream=True
-            )
-            data = await resp.json()
-        finally:
-            if resp is not None:
-                await resp.close()
+        resp = await self.cog.session.post(f"{self.api_url}/translate", data=body)
+        data = resp.json()
 
         return data["translatedText"]
 
@@ -193,18 +175,12 @@ class DeeplTranslator(Translator):
 
     async def _languages(self) -> Mapping[str, Language]:
         self.logger.info("fetching language list")
-        resp = None
-        try:
-            resp = await self.cog.session.get(
-                f"{self.api_url}/languages",
-                headers=self.headers,
-                params={"type": "target"},
-                stream=True,
-            )
-            data = await resp.json()
-        finally:
-            if resp is not None:
-                await resp.close()
+        resp = await self.cog.session.get(
+            f"{self.api_url}/languages",
+            headers=self.headers,
+            params={"type": "target"},
+        )
+        data = resp.json()
 
         langs = {
             (code := lang["language"].lower()): Language(code, lang["name"])
@@ -244,22 +220,16 @@ class DeeplTranslator(Translator):
 
         data = json.dumps(data).encode("utf-8")
 
-        resp = None
         try:
             resp = await self.cog.session.post(
                 f"{self.api_url}/translate",
                 headers={**self.headers, "Content-Type": "application/json"},
-                data=data,
-                stream=True,
+                content=data,
             )
-            data = await resp.json()
         except ResponseError as e:
             if e.code == 456:
                 self.logger.warning("deepl character limit reached")
                 return text
             raise
         else:
-            return data["translations"][0]["text"]
-        finally:
-            if resp is not None:
-                await resp.close()
+            return resp.json()["translations"][0]["text"]

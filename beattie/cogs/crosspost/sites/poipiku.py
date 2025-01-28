@@ -7,8 +7,7 @@ import toml
 from typing import TYPE_CHECKING
 
 import discord
-import niquests
-import niquests.cookies
+import httpx
 from lxml import html
 
 from .site import Site
@@ -34,9 +33,8 @@ class Poipiku(Site):
         super().__init__(cog)
         with open("config/headers.toml") as fp:
             headers = toml.load(fp)
-        self.session = niquests.AsyncSession()
+        self.session = httpx.AsyncClient()
         cookies = self.session.cookies
-        assert isinstance(cookies, niquests.cookies.RequestsCookieJar)
         with open("config/crosspost/poipiku.toml") as fp:
             data = toml.load(fp)
             for key, value in data.items():
@@ -47,14 +45,9 @@ class Poipiku(Site):
             self.session.headers[k] = v
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
-        resp = None
-        try:
-            resp = await self.session.get(link, stream=True)
-            root = html.document_fromstring(await resp.content or b"", self.cog.parser)
-            link = str(resp.url)
-        finally:
-            if resp is not None:
-                await resp.close()
+        resp = await self.session.get(link)
+        root = html.document_fromstring(resp.content, self.cog.parser)
+        link = str(resp.url)
 
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
             return False
@@ -89,17 +82,13 @@ class Poipiku(Site):
         }
 
         resp = None
-        try:
-            resp = await self.session.post(
-                "https://poipiku.com/f/ShowAppendFileF.jsp",
-                headers=headers,
-                data=body,
-                stream=True,
-            )
-            data = json.loads(await resp.content or b"")
-        finally:
-            if resp is not None:
-                await resp.close()
+
+        resp = await self.session.post(
+            "https://poipiku.com/f/ShowAppendFileF.jsp",
+            headers=headers,
+            data=body,
+        )
+        data = resp.json()
 
         frag = data["html"]
         if not frag:
@@ -155,18 +144,12 @@ class Poipiku(Site):
 
                 body["PAS"] = reply.content
 
-                resp = None
-                try:
-                    resp = await self.session.post(
-                        "https://poipiku.com/f/ShowAppendFileF.jsp",
-                        headers=headers,
-                        data=body,
-                        stream=True,
-                    )
-                    data = json.loads(await resp.content or b"")
-                finally:
-                    if resp is not None:
-                        await resp.close()
+                resp = await self.session.post(
+                    "https://poipiku.com/f/ShowAppendFileF.jsp",
+                    headers=headers,
+                    data=body,
+                )
+                data = resp.json()
 
                 frag = data["html"]
 
@@ -201,18 +184,12 @@ class Poipiku(Site):
     async def save(self, frag: FileFragment, referer: str):
         wait = 1
         while True:
-            resp = None
-            try:
-                resp = await self.session.get(
-                    frag.urls[0], headers={"Referer": referer}, stream=True
-                )
-                content = await resp.content or b""
-                if not content.startswith(b"<html>"):
-                    break
-            finally:
-                if resp is not None:
-                    await resp.close()
+            resp = await self.session.get(frag.urls[0], headers={"Referer": referer})
+
+            if not resp.content.startswith(b"<html>"):
+                break
+
             await asyncio.sleep(wait)
             wait *= 2
 
-        frag.file_bytes = content
+        frag.file_bytes = resp.content

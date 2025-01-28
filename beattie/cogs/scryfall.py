@@ -55,7 +55,7 @@ class Scryfall(Cog):
                 ctx.typing(),
                 await self.request("cards/search", params=params) as resp,
             ):
-                data = await resp.json()
+                data = resp.json()
         except ResponseError as e:
             if e.code == 404:
                 await ctx.send("No cards found.")

@@ -45,7 +45,7 @@ class Gelbooru(Site):
             "names": post["tags"],
         }
         async with self.cog.get(GELBOORU_API_URL, params=tag_params) as resp:
-            tags = (await resp.json())["tag"]
+            tags = resp.json()["tag"]
 
         queue.author = " ".join(sorted(tag["name"] for tag in tags if tag["type"] == 1))
 
@@ -55,7 +55,7 @@ class Gelbooru(Site):
         del params["json"]
         params["post_id"] = params.pop("id")
         async with self.cog.get(GELBOORU_API_URL, params=params) as resp:
-            root = etree.fromstring(await resp.content or b"", self.cog.xml_parser)
+            root = etree.fromstring(resp.content, self.cog.xml_parser)
 
         notes = list(root)
         if notes:

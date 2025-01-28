@@ -36,7 +36,7 @@ class E621(Site):
         params = {"tags": f"id:{post_id}"}
         api_url = "https://e621.net/posts.json"
         async with self.cog.get(api_url, params=params, headers=self.headers) as resp:
-            data = await resp.json()
+            data = resp.json()
         try:
             post = data["posts"][0]
         except IndexError:

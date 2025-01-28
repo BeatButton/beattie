@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
 
 import asyncpg
-import niquests
+import httpx
 import toml
 from discord import AllowedMentions, Game, Guild, Intents, Message
 from discord.ext import commands
@@ -34,7 +34,7 @@ class Shared:
     bots: list[BeattieBot]
     archive_task: Task[Any] | None
     logger: logging.Logger
-    session: niquests.AsyncSession
+    session: httpx.AsyncClient
     pool: asyncpg.Pool
     extra: dict[str, Any]
     uptime: datetime
@@ -68,7 +68,7 @@ class Shared:
         self.new_logger()
 
     async def async_init(self):
-        self.session = niquests.AsyncSession()
+        self.session = httpx.AsyncClient()
         await self.config.async_init()
 
     async def prefix_func(self, bot: BeattieBot, message: Message) -> Iterable[str]:
@@ -86,7 +86,7 @@ class Shared:
 
         self._close = asyncio.Event()
 
-        await self.session.close()
+        await self.session.aclose()
         await self.pool.close()
         if self.archive_task is not None:
             self.archive_task.cancel()

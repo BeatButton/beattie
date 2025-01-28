@@ -4,7 +4,7 @@ import re
 import json
 from typing import TYPE_CHECKING
 
-import niquests
+import httpx
 
 from .site import Site
 
@@ -22,8 +22,6 @@ class Fanbox(Site):
     headers: dict[str, str] = {
         "Accept": "application/json, text/plain, */*",
         "Origin": "https://www.fanbox.cc",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     }
 
     async def handler(
@@ -32,15 +30,13 @@ class Fanbox(Site):
         queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
         headers = {**self.headers, "Referer": queue.link}
-        async with niquests.AsyncSession() as sess:
-            resp = None
-            try:
-                resp = await sess.get(url, headers=headers, stream=True)
-                content = await resp.content or b""
-                data = json.loads(content)
-            finally:
-                if resp is not None:
-                    await resp.close()
+        async with (
+            httpx.AsyncClient() as sess,
+            self.cog.get(
+                url, headers=headers, session=sess, use_browser_ua=True
+            ) as resp,
+        ):
+            data = resp.json()
 
         post = data["body"]
         body = post["body"]

@@ -23,7 +23,7 @@ async def get_booru_post(
     id_ = id_[0]
     params["id"] = id_
     async with cog.get(api_url, params=params) as resp:
-        data = await resp.json()
+        data = resp.json()
     if not data:
         return None
     if isinstance(data, dict):

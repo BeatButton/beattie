@@ -147,10 +147,8 @@ class FallbackFragment(Fragment):
                 method="HEAD",
                 headers=self.headers,
             ) as resp:
-                if content_length := getattr(resp.oheaders, "content_length", None):
-                    if isinstance(content_length, list):
-                        content_length = content_length[0]
-                    self.preferred_len = int(content_length.content)
+                if content_length := resp.headers.get("content-length"):
+                    self.preferred_len = int(content_length)
 
         if self.preferred_len is not None and get_size_limit(ctx) > self.preferred_len:
             if (frag := self.preferred_frag) is None:

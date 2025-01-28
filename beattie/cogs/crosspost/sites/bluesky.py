@@ -29,7 +29,7 @@ class Bluesky(Site):
     ):
         xrpc_url = POST_FMT.format(repo, rkey)
         async with self.cog.get(xrpc_url) as resp:
-            data = await resp.json()
+            data = resp.json()
 
         post = data["value"]
         text: str | None = post["text"] or None
@@ -45,14 +45,14 @@ class Bluesky(Site):
             _, _, did, _, qrkey = embed["record"]["uri"].split("/")
             xrpc_url = POST_FMT.format(did, qrkey)
             async with self.cog.get(xrpc_url) as resp:
-                data = await resp.json()
+                data = resp.json()
 
             post = data["value"]
             qtext = post["text"]
             embed = post.get("embed", {})
 
             async with self.cog.get(PROFILE_FMT.format(did)) as resp:
-                pdata = await resp.json()
+                pdata = resp.json()
             qname = pdata["handle"]
 
         media = embed.get("media", embed)

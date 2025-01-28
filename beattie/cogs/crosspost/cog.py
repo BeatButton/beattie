@@ -10,7 +10,8 @@ from itertools import groupby
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any, Iterable
 
-import niquests
+import aiohttp
+import httpx
 import toml
 from lxml import etree, html
 from tldextract import TLDExtract
@@ -73,7 +74,7 @@ class Crosspost(Cog):
     ongoing_tasks: dict[int, asyncio.Task]
     queue_cache: dict[tuple[str, ...], FragmentQueue]
     cache_lock: asyncio.Lock
-    session: niquests.AsyncSession
+    session: httpx.AsyncClient
 
     def __init__(self, bot: BeattieBot):
         self.bot = bot
@@ -128,7 +129,7 @@ class Crosspost(Cog):
 
     async def cog_load(self):
         if not hasattr(self, "session"):
-            self.session = niquests.AsyncSession()
+            self.session = httpx.AsyncClient()
             self.bot.extra["crosspost_session"] = self.session
 
         await self.db.async_init()
@@ -145,7 +146,7 @@ class Crosspost(Cog):
         *urls: str,
         method: str = "GET",
         use_browser_ua: bool = False,
-        session: niquests.AsyncSession = None,
+        session: httpx.AsyncClient = None,
         **kwargs: Any,
     ) -> get:
         if use_browser_ua:
@@ -167,9 +168,11 @@ class Crosspost(Cog):
         async with self.get(
             *img_urls, use_browser_ua=use_browser_ua, headers=headers
         ) as resp:
-            if disposition := getattr(resp.oheaders, "content_disposition", None):
-                filename = disposition.filename
-            return await resp.content or b"", filename
+            if disp := resp.headers.get("Content-Disposition"):
+                _, params = aiohttp.multipart.parse_content_disposition(disp)
+                if filename := params.get("filename"):
+                    filename = filename
+            return resp.content, filename
 
     async def process_links(
         self,

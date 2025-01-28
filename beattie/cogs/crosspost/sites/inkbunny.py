@@ -38,7 +38,7 @@ class Inkbunny(Site):
         else:
             url = API_FMT.format("login")
             async with self.cog.get(url, method="POST", params=self.login) as resp:
-                json = await resp.json()
+                json = resp.json()
             self.sid = self.cog.bot.extra["crosspost_inkbunny_sid"] = json["sid"]
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str):
@@ -50,7 +50,7 @@ class Inkbunny(Site):
         }
 
         async with self.cog.get(url, method="POST", params=params) as resp:
-            response = await resp.json()
+            response = resp.json()
 
         if not (subs := response["submissions"]):
             queue.push_text(

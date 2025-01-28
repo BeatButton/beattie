@@ -109,7 +109,7 @@ async def ugoira_pp(frag: FileFragment):
     params = {"illust_id": illust_id}
     headers = frag.headers
     async with frag.cog.get(url, params=params, headers=headers) as resp:
-        res = (await resp.json())["ugoira_metadata"]
+        res = resp.json()["ugoira_metadata"]
 
     zip_url = res["zip_urls"]["medium"]
     zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
