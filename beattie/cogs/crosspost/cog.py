@@ -129,7 +129,7 @@ class Crosspost(Cog):
 
     async def cog_load(self):
         if not hasattr(self, "session"):
-            self.session = httpx.AsyncClient()
+            self.session = httpx.AsyncClient(follow_redirects=True)
             self.bot.extra["crosspost_session"] = self.session
 
         await self.db.async_init()

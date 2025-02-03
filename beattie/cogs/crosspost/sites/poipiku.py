@@ -33,7 +33,7 @@ class Poipiku(Site):
         super().__init__(cog)
         with open("config/headers.toml") as fp:
             headers = toml.load(fp)
-        self.session = httpx.AsyncClient()
+        self.session = httpx.AsyncClient(follow_redirects=True)
         cookies = self.session.cookies
         with open("config/crosspost/poipiku.toml") as fp:
             data = toml.load(fp)
