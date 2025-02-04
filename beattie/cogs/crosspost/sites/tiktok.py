@@ -27,7 +27,7 @@ class Tiktok(Site):
         try:
             async with self.cog.get(
                 link,
-                allow_redirects=False,
+                follow_redirects=False,
                 headers={"User-Agent": "test"},
             ) as resp:
                 root = html.document_fromstring(resp.content, self.cog.parser)
