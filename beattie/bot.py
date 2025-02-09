@@ -68,7 +68,7 @@ class Shared:
         self.new_logger()
 
     async def async_init(self):
-        self.session = httpx.AsyncClient(follow_redirects=True)
+        self.session = httpx.AsyncClient(follow_redirects=True, timeout=60)
         await self.config.async_init()
 
     async def prefix_func(self, bot: BeattieBot, message: Message) -> Iterable[str]:

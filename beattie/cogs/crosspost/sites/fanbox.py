@@ -31,7 +31,7 @@ class Fanbox(Site):
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
         headers = {**self.headers, "Referer": queue.link}
         async with (
-            httpx.AsyncClient(follow_redirects=True) as sess,
+            httpx.AsyncClient(follow_redirects=True, timeout=60) as sess,
             self.cog.get(
                 url, headers=headers, session=sess, use_browser_ua=True
             ) as resp,
