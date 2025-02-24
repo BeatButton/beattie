@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Callable, MutableSequence, TypeVar
 from zoneinfo import ZoneInfo
 
+from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES
 from discord.ext.commands import Context
 
 from .type_hints import Comparable
@@ -152,11 +153,9 @@ def translate_bbcode(text: str) -> str:
 
 def get_size_limit(ctx: Context) -> int:
     if guild := ctx.guild:
-        if guild.filesize_limit == 25 * MB:
-            return 10 * MB
         return guild.filesize_limit
     else:
-        return 10 * MB
+        return DEFAULT_FILE_SIZE_LIMIT_BYTES
 
 
 def replace_ext(name: str, ext: str) -> str:
