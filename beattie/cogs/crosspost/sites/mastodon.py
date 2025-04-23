@@ -54,6 +54,7 @@ class Mastodon(Site):
             if name.startswith(pre)
         }
         self.dispatch["sharkey"] = self.do_misskey
+        self.dispatch["iceshrimp"] = self.do_misskey
         self.dispatch["pleroma"] = self.do_mastodon
         self.dispatch["akkoma"] = self.do_mastodon
 
