@@ -58,8 +58,6 @@ class Poipiku(Site):
         src: str = img.get("src")
 
         if "/img/" not in src:
-            src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
-            src = f"https:{src}"
             self.push_file(queue, src, link)
 
         user, post = match.groups()
@@ -172,12 +170,12 @@ class Poipiku(Site):
         root = html.document_fromstring(frag, self.cog.parser)
 
         for img in root.xpath(".//img"):
-            src = img.get("src")
-            src = src.removesuffix("_640.jpg").replace("//img.", "//img-org.")
-            src = f"https:{src}"
-            self.push_file(queue, src, link)
+            self.push_file(queue, img.get("src"), link)
 
     def push_file(self, queue: FragmentQueue, link: str, referer: str):
+        link = link.removesuffix("_640.jpg").replace("//img.", "//img-org.")
+        if not link.startswith("https:"):
+            link = f"https:{link}"
         frag = queue.push_file(link)
         frag.dl_task = asyncio.create_task(self.save(frag, referer))
 
