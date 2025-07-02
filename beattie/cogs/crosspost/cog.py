@@ -790,12 +790,15 @@ translate text, or a language name or code to translate text into that language.
         match = next(matches, None)
         steps = []
         for arg in args:
-            flag = await PostFlags().convert(ctx, arg)
-            if flag.pages is not None or flag.text is not None:
-                steps.append(flag)
-            elif match and match.group(0) in arg:
+            if match and match.group(0) in arg:
                 steps.append(match)
                 match = next(matches, None)
+            elif (
+                (flag := await PostFlags().convert(ctx, arg))
+                and flag.pages is not None
+                or flag.text is not None
+            ):
+                steps.append(flag)
 
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
         await self._post(new_ctx, steps=steps, force=True)
