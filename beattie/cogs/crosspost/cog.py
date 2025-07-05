@@ -5,7 +5,6 @@ import copy
 import logging
 import re
 from datetime import datetime
-from io import BytesIO
 from itertools import groupby
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any, Iterable
@@ -25,7 +24,6 @@ from discord.utils import format_dt
 from beattie.utils.aioutils import squash_unfindable
 from beattie.utils.checks import is_owner_or
 from beattie.utils.etc import GB, URL_EXPR, display_bytes, spoiler_spans
-from beattie.utils.exceptions import ResponseError
 from beattie.utils.type_hints import GuildMessageable
 from beattie.utils.contextmanagers import get
 
