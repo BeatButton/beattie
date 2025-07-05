@@ -10,8 +10,9 @@ from discord import Embed
 from discord.utils import escape_markdown
 
 from beattie.utils.etc import URL_EXPR, get_size_limit, replace_ext
+
 from .postprocess import magick_png_pp
-from .translator import Language, DONT
+from .translator import DONT, Language
 
 if TYPE_CHECKING:
     from .cog import Crosspost

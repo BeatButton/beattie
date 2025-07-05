@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import re
+from html import unescape as html_unescape
 from typing import TYPE_CHECKING
 
 import toml
-from html import unescape as html_unescape
 from lxml import etree
 
 from beattie.utils.etc import translate_markdown
 
-from .site import Site
 from .booru import API_PARAMS, get_booru_post
+from .site import Site
 
 if TYPE_CHECKING:
     from ..cog import Crosspost

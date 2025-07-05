@@ -7,13 +7,14 @@ from operator import attrgetter
 from typing import TYPE_CHECKING, Any, Mapping, Self, TypeVar
 from zoneinfo import ZoneInfo
 
-import discord
 from dateutil import rrule
+from recurrent.event_parser import RecurringEvent
+
+import discord
 from discord import AllowedMentions, DMChannel, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
 from discord.utils import format_dt
-from recurrent.event_parser import RecurringEvent
 
 from beattie.utils.aioutils import squash_unfindable
 from beattie.utils.checks import is_owner_or

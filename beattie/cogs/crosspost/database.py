@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING, Any, Self
 
 from discord import Message, Thread
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
-from .translator import Language, ENGLISH
+
+from .translator import ENGLISH, Language
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot

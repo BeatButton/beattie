@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from lxml import html
 
 from beattie.utils.exceptions import ResponseError
+
 from .selectors import OG_DESCRIPTION, OG_VIDEO
 from .site import Site
 

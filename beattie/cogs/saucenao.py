@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
+from lxml import etree
+
 from discord import Message
 from discord.ext import commands
 from discord.ext.commands import Cog
-from lxml import etree
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot

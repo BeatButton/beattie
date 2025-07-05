@@ -14,10 +14,10 @@ from discord.utils import format_dt
 from beattie.utils.etc import INVITE_EXPR, display_bytes, get_size_limit
 
 from .fragment import (
-    Fragment,
-    FileFragment,
-    FallbackFragment,
     EmbedFragment,
+    FallbackFragment,
+    FileFragment,
+    Fragment,
     TextFragment,
 )
 

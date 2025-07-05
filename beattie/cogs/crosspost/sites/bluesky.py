@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from .site import Site
 from ..postprocess import ffmpeg_m3u8_to_mp4_pp
+from .site import Site
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext

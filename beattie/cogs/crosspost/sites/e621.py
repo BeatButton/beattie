@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from base64 import b64encode
 import re
+from base64 import b64encode
 from typing import TYPE_CHECKING
 
 import toml
 
 from beattie.utils.exceptions import ResponseError
+
 from .site import Site
 
 if TYPE_CHECKING:

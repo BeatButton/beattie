@@ -2,32 +2,31 @@ from __future__ import annotations
 
 from typing import Type
 
-from .site import Site
-
-from .twitter import Twitter
-from .pixiv import Pixiv
-from .hiccears import Hiccears
-from .tumblr import Tumblr
-from .mastodon import Mastodon
-from .inkbunny import Inkbunny
-from .imgur import Imgur
-from .gelbooru import Gelbooru
-from .rule34 import Rule34
-from .fanbox import Fanbox
-from .lofter import Lofter
-from .poipiku import Poipiku
 from .bluesky import Bluesky
-from .paheal import Paheal
-from .furaffinity import FurAffinity
-from .ygallery import YGallery
-from .pillowfort import Pillowfort
-from .yt_community import YTCommunity
+from .danbooru import Danbooru
 from .e621 import E621
 from .exhentai import Exhentai
-from .tiktok import Tiktok
-from .nhentai import Nhentai
+from .fanbox import Fanbox
+from .furaffinity import FurAffinity
+from .gelbooru import Gelbooru
+from .hiccears import Hiccears
+from .imgur import Imgur
+from .inkbunny import Inkbunny
 from .itaku import Itaku
-from .danbooru import Danbooru
+from .lofter import Lofter
+from .mastodon import Mastodon
+from .nhentai import Nhentai
+from .paheal import Paheal
+from .pillowfort import Pillowfort
+from .pixiv import Pixiv
+from .poipiku import Poipiku
+from .rule34 import Rule34
+from .site import Site
+from .tiktok import Tiktok
+from .tumblr import Tumblr
+from .twitter import Twitter
+from .ygallery import YGallery
+from .yt_community import YTCommunity
 
 SITES: list[Type[Site]] = [
     Twitter,

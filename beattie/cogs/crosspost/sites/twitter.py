@@ -5,8 +5,8 @@ import re
 from html import unescape as html_unescape
 from typing import TYPE_CHECKING, Any, Literal
 
-
 from beattie.utils.exceptions import ResponseError
+
 from ..postprocess import ffmpeg_gif_pp
 from .site import Site
 

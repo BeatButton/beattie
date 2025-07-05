@@ -6,8 +6,8 @@ import re
 import urllib.parse as urlparse
 from typing import TYPE_CHECKING
 
-from lxml import html
 import toml
+from lxml import html
 
 from beattie.utils.exceptions import ResponseError
 

@@ -3,8 +3,9 @@ from datetime import datetime
 from typing import Collection
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from discord.ext.commands import BadArgument, Converter
 from recurrent import RecurringEvent
+
+from discord.ext.commands import BadArgument, Converter
 
 from beattie.context import BContext
 from beattie.utils.etc import UTC

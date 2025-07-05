@@ -8,12 +8,13 @@ from discord.ext.commands.converter import _convert_to_bool
 from discord.utils import find
 
 from beattie.utils.converters import RangesConverter
-from .translator import Language, DONT
+
+from .translator import DONT, Language
 
 if TYPE_CHECKING:
-    from .cog import Crosspost
-
     from beattie.context import BContext
+
+    from .cog import Crosspost
 
 
 class Site(Converter):

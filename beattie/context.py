@@ -4,8 +4,9 @@ import io
 import logging
 from typing import TYPE_CHECKING, Any
 
-import discord
 from aiohttp import ClientOSError
+
+import discord
 from discord import File, Message
 from discord.ext import commands
 

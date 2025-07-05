@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import toml
 from lxml import html
 
-
 from beattie.utils.etc import translate_markdown
+
 from .site import Site
 
 if TYPE_CHECKING:

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import re
+from html import unescape as html_unescape
 from typing import TYPE_CHECKING
 
-from html import unescape as html_unescape
-
-from .site import Site
 from .booru import API_PARAMS, get_booru_post
+from .site import Site
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext

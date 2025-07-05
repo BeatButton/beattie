@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 from discord import Member, Message
 from discord.ext import commands
 from discord.ext.commands import Cog

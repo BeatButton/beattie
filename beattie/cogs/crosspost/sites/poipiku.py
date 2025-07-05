@@ -3,12 +3,13 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-import toml
 from typing import TYPE_CHECKING
 
-import discord
 import httpx
+import toml
 from lxml import html
+
+import discord
 
 from .site import Site
 

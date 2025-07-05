@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import toml
 
 from beattie.utils.etc import translate_bbcode
+
 from .site import Site
 
 if TYPE_CHECKING:

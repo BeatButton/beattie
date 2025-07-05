@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 from lxml import html
 
-from .site import Site
 from .selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
+from .site import Site
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext

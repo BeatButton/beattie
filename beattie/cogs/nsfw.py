@@ -7,16 +7,17 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Iterable
 from urllib import parse
 
-import discord
 import toml
+from lxml import etree
+
+import discord
 from discord import Embed, File, TextChannel
 from discord.ext import commands
 from discord.ext.commands import Cog
-from lxml import etree
-
 
 if TYPE_CHECKING:
     from discord.abc import MessageableChannel
+
     from beattie.bot import BeattieBot
     from beattie.context import BContext
 

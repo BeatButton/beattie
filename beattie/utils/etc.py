@@ -3,8 +3,8 @@ from datetime import timedelta
 from typing import Callable, MutableSequence, TypeVar
 from zoneinfo import ZoneInfo
 
-from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES
 from discord.ext.commands import Context
+from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES
 
 from .type_hints import Comparable
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING
 
-import discord
 import psutil
+
+import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
 

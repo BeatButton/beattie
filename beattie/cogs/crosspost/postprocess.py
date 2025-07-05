@@ -5,7 +5,7 @@ import re
 from asyncio import subprocess
 from io import BytesIO
 from pathlib import Path
-from tempfile import TemporaryDirectory, NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 from zipfile import ZipFile
 
