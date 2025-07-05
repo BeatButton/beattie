@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from itertools import groupby
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import httpx
@@ -42,6 +42,8 @@ from .translator import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from beattie.bot import BeattieBot
     from beattie.context import BContext
 

@@ -6,7 +6,7 @@ import random
 import re
 from concurrent import futures
 from itertools import islice
-from typing import TYPE_CHECKING, Collection
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -16,6 +16,8 @@ from beattie.utils.converters import SUITS, SuitConverter
 from beattie.utils.genesys import die_names, genesysroller
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from beattie.bot import BeattieBot
     from beattie.context import BContext
 

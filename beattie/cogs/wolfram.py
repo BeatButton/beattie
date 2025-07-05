@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 import toml
 from lxml import etree
@@ -9,6 +9,8 @@ from discord.ext import commands
 from discord.ext.commands import Cog
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from beattie.bot import BeattieBot
     from beattie.context import BContext
 

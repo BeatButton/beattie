@@ -98,7 +98,7 @@ class Dictionary(Cog):
             embed.add_field(name="Readings", value=res["readings"])
             embed.add_field(name="Parts of Speech", value=res["parts_of_speech"])
             embed.add_field(name="Meanings", value=res["english"])
-            embed.set_footer(text="Page {}/{}".format(i, size))
+            embed.set_footer(text=f"Page {i}/{size}")
             embed.color = discord.Color(0x56D926)
             results.append(embed)
         paginator = Paginator(results)
@@ -125,7 +125,7 @@ class Dictionary(Cog):
                 embed.url = res["permalink"]
                 embed.description = res["definition"]
                 embed.color = discord.Color(0xE86222)
-                embed.set_footer(text="Page {}/{}".format(i, size))
+                embed.set_footer(text=f"Page {i}/{size}")
                 embeds.append(embed)
             paginator = Paginator(embeds)
             await paginator.start(ctx)

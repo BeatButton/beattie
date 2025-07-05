@@ -1,7 +1,9 @@
 import copy
 import logging
+from collections.abc import Mapping
+from contextlib import AbstractAsyncContextManager
 from types import TracebackType
-from typing import Any, AsyncContextManager, Generic, Mapping, TypeVar
+from typing import Any, Generic, TypeVar
 
 from httpx import AsyncClient, Response
 
@@ -70,7 +72,7 @@ class get:
         pass
 
 
-CM = TypeVar("CM", bound=AsyncContextManager)
+CM = TypeVar("CM", bound=AbstractAsyncContextManager)
 
 
 class MultiAsyncWith(Generic[CM]):

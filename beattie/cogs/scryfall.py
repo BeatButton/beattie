@@ -103,7 +103,7 @@ class Scryfall(Cog):
                 case _:
                     color = Color.gold()
             embed.color = color
-            embed.set_footer(text="Page {}/{}".format(i, size))
+            embed.set_footer(text=f"Page {i}/{size}")
             embeds.append(embed)
         if size == 1:
             embed.set_footer(text=None)

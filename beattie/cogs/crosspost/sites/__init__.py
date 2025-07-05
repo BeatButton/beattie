@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Type
-
 from .bluesky import Bluesky
 from .danbooru import Danbooru
 from .e621 import E621
@@ -30,7 +28,7 @@ from .yt_community import YTCommunity
 
 __all__ = ["Site", "SITES"]
 
-SITES: list[Type[Site]] = [
+SITES: list[type[Site]] = [
     Twitter,
     Pixiv,
     Hiccears,

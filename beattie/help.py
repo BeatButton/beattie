@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from discord.ext.commands import Cog, Command, MinimalHelpCommand
 

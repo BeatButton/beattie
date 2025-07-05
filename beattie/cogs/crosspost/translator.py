@@ -5,7 +5,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 import Levenshtein
 import lingua
@@ -13,6 +13,8 @@ import lingua
 from beattie.utils.exceptions import ResponseError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from .cog import Crosspost
 
 

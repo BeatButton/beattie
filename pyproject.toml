@@ -3,7 +3,7 @@ typeCheckingMode = "basic"
 strictParameterNoneValue = false
 
 [tool.ruff.lint]
-select = ["I", "TC"]
+select = ["I", "TC", "UP"]
 
 [tool.ruff.lint.isort.sections]
 discord = ["discord"]

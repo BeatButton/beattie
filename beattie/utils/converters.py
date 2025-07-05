@@ -1,6 +1,6 @@
 import re
+from collections.abc import Collection
 from datetime import datetime
-from typing import Collection
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from recurrent import RecurringEvent

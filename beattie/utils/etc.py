@@ -1,6 +1,7 @@
 import re
+from collections.abc import MutableSequence
 from datetime import timedelta
-from typing import Callable, MutableSequence, TypeVar
+from typing import Callable, TypeVar
 from zoneinfo import ZoneInfo
 
 from discord.ext.commands import Context

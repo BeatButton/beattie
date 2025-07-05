@@ -4,7 +4,7 @@ import logging
 import random
 from base64 import b64encode
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 from urllib import parse
 
 import toml
@@ -16,6 +16,8 @@ from discord.ext import commands
 from discord.ext.commands import Cog
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from discord.abc import MessageableChannel
 
     from beattie.bot import BeattieBot
@@ -127,7 +129,7 @@ class NSFW(Cog):
                 self.cache[channel][site].pop(tags, None)
 
     def make_embed(
-        self, post: "etree.Element | dict", site: str  # type: ignore
+        self, post: etree.Element | dict, site: str  # type: ignore
     ) -> tuple[Embed, File]:
         if not isinstance(post, dict):
             post = dict(post.items()) or {

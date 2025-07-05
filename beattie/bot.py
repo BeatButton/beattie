@@ -10,7 +10,7 @@ import traceback
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Awaitable, Iterable, Type, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import httpx
 import toml
@@ -26,6 +26,8 @@ from beattie.utils import contextmanagers, exceptions
 from beattie.utils.aioutils import do_every
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Iterable
+
     import asyncpg
 
     from discord.http import HTTPClient
@@ -238,10 +240,10 @@ class BeattieBot(Bot):
     async def get_context(self, message: Message) -> BContext: ...
 
     @overload
-    async def get_context(self, message: Message, *, cls: Type[C]) -> C: ...
+    async def get_context(self, message: Message, *, cls: type[C]) -> C: ...
 
     def get_context(
-        self, message: Message, *, cls: Type[Context] = None
+        self, message: Message, *, cls: type[Context] = None
     ) -> Awaitable[Context]:
         return super().get_context(message, cls=cls or BContext)
 

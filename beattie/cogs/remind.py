@@ -4,7 +4,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, Mapping, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar
 from zoneinfo import ZoneInfo
 
 from dateutil import rrule
@@ -23,6 +23,8 @@ from beattie.utils.etc import UTC, display_timedelta, reverse_insort_by_key
 from beattie.utils.type_hints import GuildMessageable
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from beattie.bot import BeattieBot
     from beattie.context import BContext
 

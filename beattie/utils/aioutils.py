@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any, Awaitable, Callable, TypeVar
+from collections.abc import Awaitable
+from typing import Any, Callable, TypeVar
 
 import discord
 
