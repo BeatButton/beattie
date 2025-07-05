@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from discord.ext.commands import Cooldown
-
 if TYPE_CHECKING:
+    import re
+
+    from discord.ext.commands import Cooldown
+
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue

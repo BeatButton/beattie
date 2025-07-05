@@ -10,22 +10,25 @@ import traceback
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Awaitable, Iterable, Type, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Awaitable, Iterable, Type, TypeVar, overload
 
-import asyncpg
 import httpx
 import toml
 
 from discord import AllowedMentions, Game, Guild, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
-from discord.http import HTTPClient
 
 from beattie.config import Config
 from beattie.context import BContext
 from beattie.help import BHelp
 from beattie.utils import contextmanagers, exceptions
 from beattie.utils.aioutils import do_every
+
+if TYPE_CHECKING:
+    import asyncpg
+
+    from discord.http import HTTPClient
 
 C = TypeVar("C", bound=Context)
 

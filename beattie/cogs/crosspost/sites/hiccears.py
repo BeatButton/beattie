@@ -4,13 +4,14 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-import httpx
 import toml
 from lxml import html
 
 from .site import Site
 
 if TYPE_CHECKING:
+    import httpx
+
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue

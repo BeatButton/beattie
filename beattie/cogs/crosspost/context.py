@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from discord import Message
-
 from beattie.context import BContext
 
 if TYPE_CHECKING:
+    from discord import Message
+
     from .cog import Crosspost
 
 

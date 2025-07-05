@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import re
-from collections.abc import Awaitable
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any
 
-from discord import Embed
 from discord.utils import escape_markdown
 
 from beattie.utils.etc import URL_EXPR, get_size_limit, replace_ext
@@ -15,6 +13,10 @@ from .postprocess import magick_png_pp
 from .translator import DONT, Language
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable
+
+    from discord import Embed
+
     from .cog import Crosspost
     from .context import CrosspostContext
     from .postprocess import PP

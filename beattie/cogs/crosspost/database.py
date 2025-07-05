@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import copy
 from collections import deque
-from collections.abc import Mapping
 from datetime import timedelta
 from itertools import groupby
 from operator import itemgetter
@@ -15,6 +14,8 @@ from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 from .translator import ENGLISH, Language
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from beattie.bot import BeattieBot
 
     from .cog import Crosspost

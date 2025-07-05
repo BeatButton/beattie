@@ -9,13 +9,13 @@ from discord import Color, Embed
 from discord.ext import commands
 from discord.ext.commands import Cog
 
-from beattie.utils.contextmanagers import get
 from beattie.utils.exceptions import ResponseError
 from beattie.utils.paginator import Paginator
 
 if TYPE_CHECKING:
     from beattie.bot import BeattieBot
     from beattie.context import BContext
+    from beattie.utils.contextmanagers import get
 
 API = "https://api.scryfall.com"
 DELAY = timedelta(milliseconds=100)

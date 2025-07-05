@@ -28,6 +28,8 @@ from .twitter import Twitter
 from .ygallery import YGallery
 from .yt_community import YTCommunity
 
+__all__ = ["Site", "SITES"]
+
 SITES: list[Type[Site]] = [
     Twitter,
     Pixiv,

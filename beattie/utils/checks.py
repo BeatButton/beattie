@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Callable, TypeVar
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 from discord import Member
 from discord.ext import commands
-from discord.ext.commands import Context
 
 from beattie.utils.type_hints import GuildMessageable
+
+if TYPE_CHECKING:
+    from discord.ext.commands import Context
 
 T = TypeVar("T")
 

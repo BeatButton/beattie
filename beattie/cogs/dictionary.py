@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-import httpx
-
 import discord
 from discord.ext import commands
 from discord.ext.commands import Cog
@@ -12,6 +10,8 @@ from beattie.utils.contextmanagers import get
 from beattie.utils.paginator import Paginator
 
 if TYPE_CHECKING:
+    import httpx
+
     from beattie.bot import BeattieBot
     from beattie.context import BContext
 
