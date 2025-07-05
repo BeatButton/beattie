@@ -6,7 +6,7 @@ from asyncio import subprocess
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable
 from zipfile import ZipFile
 
 from beattie.utils.aioutils import try_wait_for

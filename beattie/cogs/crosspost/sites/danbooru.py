@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING
 
 import toml
 
-from beattie.utils.exceptions import ResponseError
-
 from .site import Site
 
 if TYPE_CHECKING:

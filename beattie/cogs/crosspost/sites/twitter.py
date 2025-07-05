@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 from html import unescape as html_unescape
 from typing import TYPE_CHECKING, Any, Literal

@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 import re
-from html import unescape as html_unescape
 from typing import TYPE_CHECKING
 
-from lxml import html
-
-from .selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
 from .site import Site
 
 if TYPE_CHECKING:
