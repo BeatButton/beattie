@@ -64,7 +64,6 @@ class Jisho:
         """Search Jisho.org for a word. Returns a list of dicts with keys
         readings, words, english, parts_of_speech."""
         params = {"keyword": keyword, **kwargs}
-        resp = None
         async with get(self.session, self.api_url, params=params) as resp:
             data = resp.json()["data"]
 
