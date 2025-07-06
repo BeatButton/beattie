@@ -104,7 +104,9 @@ class Manage(Cog):
         channel = ctx.channel
         assert isinstance(channel, GuildMessageable)
         await channel.purge(
-            before=ctx.message, after=until, check=lambda msg: msg.author == ctx.me
+            before=ctx.message,
+            after=until,
+            check=lambda msg: msg.author == ctx.me,
         )
         await ctx.message.add_reaction("<:blobuwu:1060009055860572210>")
 

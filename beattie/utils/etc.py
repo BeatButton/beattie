@@ -13,7 +13,7 @@ T = TypeVar("T")
 U = TypeVar("U", bound=Comparable)
 
 LINK_EXPR = re.compile(
-    r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)"
+    r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",
 )
 UTC = ZoneInfo("UTC")
 

@@ -24,7 +24,7 @@ class Twitter(Site):
     pattern = re.compile(
         r"https?://(?:(?:www|mobile|m)\.)?"
         r"(?:(?:.x|zz)?tw[ix]tter|(?:fix(?:up|v)|girlcock|stupidpenis)?x"
-        r"(?:cancel)?)(?:vx)?\.com/[^\s/]+/status/(\d+)"
+        r"(?:cancel)?)(?:vx)?\.com/[^\s/]+/status/(\d+)",
     )
 
     method: Method = "fxtwitter"
@@ -131,6 +131,7 @@ class Twitter(Site):
                 if qtext:
                     qtext = f" — *{qtext}*"
                 queue.push_text(
-                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname}{qtext}", escape=False
+                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname}{qtext}",
+                    escape=False,
                 )
                 queue.push_text(text)

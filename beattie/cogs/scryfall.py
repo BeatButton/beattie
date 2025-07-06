@@ -74,7 +74,7 @@ class Scryfall(Cog):
                     uris = faces[0]["image_uris"]
                 else:
                     await ctx.send(
-                        f"{card['name']} had neither image_uris nor card_faces"
+                        f"{card['name']} had neither image_uris nor card_faces",
                     )
                     return
 

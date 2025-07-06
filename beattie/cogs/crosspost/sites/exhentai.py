@@ -18,7 +18,11 @@ class Exhentai(Site):
     pattern = re.compile(r"https?://e[x-]hentai\.org/g/(\d+)/(\w+)")
 
     async def handler(
-        self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str, token: str
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        gal_id: str,
+        token: str,
     ):
         body = {"method": "gdata", "gidlist": [[int(gal_id), token]], "namespace": 1}
 

@@ -57,6 +57,6 @@ class LanguageConverter(Converter):
 
 class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
     pages: int | list[tuple[int, int]] | None = commands.flag(
-        converter=int | RangesConverter | None
+        converter=int | RangesConverter | None,
     )
     text: bool | None

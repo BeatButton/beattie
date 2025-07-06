@@ -25,7 +25,10 @@ class Site(ABC):
 
     @abstractmethod
     async def handler(
-        self, ctx: CrosspostContext, queue: FragmentQueue, *args: str
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        *args: str,
     ) -> None:
         raise NotImplementedError
 

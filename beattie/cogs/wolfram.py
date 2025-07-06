@@ -33,11 +33,11 @@ class Wolfram(Cog):
                 text = resp.text
             root = etree.fromstring(text.encode(), etree.XMLParser())
             interpret = root.xpath(
-                "//pod[@title='Input interpretation']" "/subpod/plaintext/text()"
+                "//pod[@title='Input interpretation']" "/subpod/plaintext/text()",
             )
             if not interpret:
                 interpret = root.xpath(
-                    "//pod[@title='Input']" "/subpod/plaintext/text()"
+                    "//pod[@title='Input']" "/subpod/plaintext/text()",
                 )
             if not interpret:
                 interpret = [""]
@@ -45,7 +45,7 @@ class Wolfram(Cog):
             try:
                 result = root.xpath(
                     "//pod[not(starts-with(@title, 'Input'))]"
-                    "/subpod/plaintext/text()"
+                    "/subpod/plaintext/text()",
                 )[0]
             except IndexError:
                 result = "No results found."

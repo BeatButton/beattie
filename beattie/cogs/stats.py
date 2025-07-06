@@ -45,7 +45,8 @@ class Stats(Cog):
 
         if owner is not None:
             embed.set_author(
-                name=f"Created by {owner}", icon_url=owner.display_avatar.url
+                name=f"Created by {owner}",
+                icon_url=owner.display_avatar.url,
             )
 
         total_members = sum(len(s.members) for s in bot.guilds)
@@ -64,7 +65,8 @@ class Stats(Cog):
         embed.add_field(name="Channels", value=f"{text} text\n{voice} voice")
         embed.add_field(name="Uptime", value=self.get_bot_uptime(bot, True))
         embed.set_footer(
-            text="Made with discord.py", icon_url="http://i.imgur.com/5BFecvA.png"
+            text="Made with discord.py",
+            icon_url="http://i.imgur.com/5BFecvA.png",
         )
         try:
             embed.timestamp = bot.uptime

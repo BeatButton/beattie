@@ -16,18 +16,22 @@ if TYPE_CHECKING:
 class Fanbox(Site):
     name = "fanbox"
     pattern = re.compile(
-        r"https://(?:(?:www\.)?fanbox\.cc/@)?([\w-]+)(?:\.fanbox\.cc)?/posts/(\d+)"
+        r"https://(?:(?:www\.)?fanbox\.cc/@)?([\w-]+)(?:\.fanbox\.cc)?/posts/(\d+)",
     )
 
     headers = MappingProxyType(
         {
             "Accept": "application/json, text/plain, */*",
             "Origin": "https://www.fanbox.cc",
-        }
+        },
     )
 
     async def handler(
-        self, ctx: CrosspostContext, queue: FragmentQueue, user: str, post_id: str
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        user: str,
+        post_id: str,
     ):
         queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
@@ -35,7 +39,10 @@ class Fanbox(Site):
         async with (
             httpx.AsyncClient(follow_redirects=True, timeout=None) as sess,
             self.cog.get(
-                url, headers=headers, session=sess, use_browser_ua=True
+                url,
+                headers=headers,
+                session=sess,
+                use_browser_ua=True,
             ) as resp,
         ):
             data = resp.json()
@@ -51,7 +58,9 @@ class Fanbox(Site):
             case "image":
                 for image in body["images"]:
                     queue.push_fallback(
-                        image["originalUrl"], image["thumbnailUrl"], headers
+                        image["originalUrl"],
+                        image["thumbnailUrl"],
+                        headers,
                     )
                 if text := body.get("text", "").strip():
                     queue.push_text(text, interlaced=True)

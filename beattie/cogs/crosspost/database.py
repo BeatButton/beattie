@@ -61,7 +61,7 @@ class Database:
                     site text NOT NULL,
                     PRIMARY KEY(guild_id, site)
                 );
-                """
+                """,
             )
 
             rows = await conn.fetch(

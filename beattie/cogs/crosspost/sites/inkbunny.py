@@ -22,7 +22,7 @@ class Inkbunny(Site):
     name = "inkbunny"
     pattern = re.compile(
         r"https?://(?:www\.)?inkbunny\.net/"
-        r"(?:s/|submissionview\.php\?id=)(\d+)(?:-p\d+-)?(?:#.*)?"
+        r"(?:s/|submissionview\.php\?id=)(\d+)(?:-p\d+-)?(?:#.*)?",
     )
 
     sid: str
@@ -55,7 +55,9 @@ class Inkbunny(Site):
 
         if not (subs := response["submissions"]):
             queue.push_text(
-                "Post not found. It may be private.", quote=False, force=True
+                "Post not found. It may be private.",
+                quote=False,
+                force=True,
             )
             return
 

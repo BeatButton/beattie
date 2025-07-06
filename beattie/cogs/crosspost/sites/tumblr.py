@@ -28,7 +28,7 @@ class Tumblr(Site):
     name = "tumblr"
     pattern = re.compile(
         r"https?://(?:(?:www\.)?tumb(?:lr|ex)\.com/)?"
-        r"([\w-]+)(?:/|\.tumblr(?:\.com)?/post/)(\d+)"
+        r"([\w-]+)(?:/|\.tumblr(?:\.com)?/post/)(\d+)",
     )
 
     @staticmethod
@@ -42,7 +42,11 @@ class Tumblr(Site):
                 return False
 
     async def handler(
-        self, ctx: CrosspostContext, queue: FragmentQueue, blog: str, post_id: str
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        blog: str,
+        post_id: str,
     ):
         link = f"https://tumbex.com/{blog}.tumblr/post/{post_id}"
 
@@ -73,7 +77,7 @@ class Tumblr(Site):
                 iter(block["content"])
                 for block in post["blocks"]
                 if name is None or block["blog"]["name"] == name
-            )
+            ),
         )
 
         if not any(map(self.embeddable, blocks)):
@@ -91,7 +95,8 @@ class Tumblr(Site):
                     url = block["hd"]
                     if url.endswith(".gifv"):
                         async with self.cog.get(
-                            url, headers={"Range": "bytes=0-2"}
+                            url,
+                            headers={"Range": "bytes=0-2"},
                         ) as resp:
                             start = resp.content
                         if start.startswith(b"GIF"):

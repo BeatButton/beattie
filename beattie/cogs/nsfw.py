@@ -31,7 +31,7 @@ class NSFW(Cog):
             "gelbooru": "https://gelbooru.com/index.php?page=post&s=view&id={}",
             "rule34": "https://rule34.xxx/index.php?page=post&s=view&id={}",
             "e621": "http://e621.net/posts/{}",
-        }
+        },
     )
 
     urls = MappingProxyType(
@@ -39,7 +39,7 @@ class NSFW(Cog):
             "gelbooru": "http://gelbooru.com/index.php",
             "rule34": "http://rule34.xxx/index.php",
             "e621": "https://e621.net/posts.json",
-        }
+        },
     )
 
     def cog_check(self, ctx: BContext) -> bool:
@@ -95,13 +95,15 @@ class NSFW(Cog):
                     params = {"limit": limit, "tags": " ".join(tags)}
                     if self.e621_key:
                         auth_slug = b64encode(
-                            f"{self.e621_user}:{self.e621_key}".encode()
+                            f"{self.e621_user}:{self.e621_key}".encode(),
                         ).decode()
                         headers = {"Authorization": f"Basic {auth_slug}"}
                     else:
                         headers = {}
                     async with ctx.bot.get(
-                        self.urls[site], params=params, headers=headers
+                        self.urls[site],
+                        params=params,
+                        headers=headers,
                     ) as resp:
                         data = resp.json()
                     posts = [
@@ -134,7 +136,9 @@ class NSFW(Cog):
                 self.cache[channel][site].pop(tags, None)
 
     def make_embed(
-        self, post: etree.Element | dict, site: str  # type: ignore
+        self,
+        post: etree.Element | dict,  # type: ignore
+        site: str,
     ) -> tuple[Embed, File]:
         if not isinstance(post, dict):
             post = dict(post.items()) or {

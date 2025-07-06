@@ -58,7 +58,9 @@ class Result:
             )
         elif isinstance(other, int):
             return type(self)(
-                self.advantages + other, self.successs + other, self.triumphs + other
+                self.advantages + other,
+                self.successs + other,
+                self.triumphs + other,
             )
         else:
             return NotImplemented
@@ -68,7 +70,9 @@ class Result:
     def __mul__(self, other: Any) -> Result:
         if isinstance(other, int):
             return type(self)(
-                self.advantages * other, self.successs * other, self.triumphs * other
+                self.advantages * other,
+                self.successs * other,
+                self.triumphs * other,
             )
         else:
             return NotImplemented

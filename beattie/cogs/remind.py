@@ -120,7 +120,7 @@ class Remind(Cog):
                     user_id bigint NOT NULL PRIMARY KEY,
                     timezone text NOT NULL
                 );
-                """
+                """,
             )
             self.queue = [
                 Reminder.from_record(row)
@@ -151,7 +151,8 @@ class Remind(Cog):
     async def get_user_timezone(self, user_id: int) -> ZoneInfo | None:
         async with self.pool.acquire() as conn:
             tz = await conn.fetchval(
-                "SELECT timezone FROM timezone WHERE user_id = $1", user_id
+                "SELECT timezone FROM timezone WHERE user_id = $1",
+                user_id,
             )
         if tz:
             return ZoneInfo(tz)
@@ -203,7 +204,7 @@ class Remind(Cog):
             await ctx.send(
                 "Bad input. Valid input examples:\n"
                 f"{command_str} 10m pizza\n"
-                f'{command_str} "every week" call your mom'
+                f'{command_str} "every week" call your mom',
             )
         else:
             await ctx.bot.handle_error(ctx, e)
@@ -234,7 +235,7 @@ class Remind(Cog):
                 description="\n".join(
                     f'ID {row.id}: "{row.topic}" at {row.time.astimezone(tz)}'
                     for row in rows
-                )
+                ),
             )
             await ctx.send(embed=embed)
         else:
@@ -245,7 +246,8 @@ class Remind(Cog):
         """Delete a specific reminder. Use `list` to get IDs."""
         async with self.pool.acquire() as conn:
             record = await conn.fetchrow(
-                "SELECT * FROM reminder WHERE id = $1", reminder_id
+                "SELECT * FROM reminder WHERE id = $1",
+                reminder_id,
             )
             if record is None:
                 await ctx.send("No such reminder.")
@@ -276,7 +278,8 @@ class Remind(Cog):
         """Set the channel reminders will appear in. Invoke with no input to reset."""
         assert ctx.guild is not None
         await ctx.bot.config.set_guild(
-            ctx.guild.id, reminder_channel=channel and channel.id
+            ctx.guild.id,
+            reminder_channel=channel and channel.id,
         )
         if channel is None:
             destination = "the channel they were invoked in"
@@ -309,7 +312,7 @@ class Remind(Cog):
             if next_ - time < MINIMUM_RECURRING_DELTA:
                 await ctx.send(
                     "Recurring period too short. Minimum period is:\n"
-                    f"{display_timedelta(MINIMUM_RECURRING_DELTA)}"
+                    f"{display_timedelta(MINIMUM_RECURRING_DELTA)}",
                 )
                 return None
             time = time.replace(tzinfo=tz)
@@ -387,11 +390,11 @@ class Remind(Cog):
 
             if recipient:
                 reminder_channel_id = (await self.bot.config.get_guild(guild.id)).get(
-                    "reminder_channel"
+                    "reminder_channel",
                 ) or channel_id
 
                 channel = guild.get_channel_or_thread(
-                    reminder_channel_id
+                    reminder_channel_id,
                 ) or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
 
         else:
@@ -401,11 +404,12 @@ class Remind(Cog):
             assert isinstance(channel, GuildMessageable | DMChannel)
             async with self.pool.acquire() as conn:
                 recurring = await conn.fetchrow(
-                    "SELECT * FROM recurring WHERE id = $1", reminder.id
+                    "SELECT * FROM recurring WHERE id = $1",
+                    reminder.id,
                 )
 
             self.logger.info(
-                f"reminder {reminder.id} found, recurring={recurring is not None}"
+                f"reminder {reminder.id} found, recurring={recurring is not None}",
             )
 
             reference = None
@@ -418,7 +422,7 @@ class Remind(Cog):
                 if reminder_channel_id == channel_id:
                     message_id: int = reminder.message_id
                     reference = await squash_unfindable(
-                        channel.fetch_message(message_id)
+                        channel.fetch_message(message_id),
                     ) and discord.MessageReference(
                         message_id=message_id,
                         channel_id=channel_id,
@@ -435,7 +439,7 @@ class Remind(Cog):
                 allowed_mentions = AllowedMentions.all()
             else:
                 allowed_mentions = AllowedMentions.none().merge(
-                    AllowedMentions(replied_user=True, users=[recipient])
+                    AllowedMentions(replied_user=True, users=[recipient]),
                 )
 
             kwargs = {"allowed_mentions": allowed_mentions, "reference": reference}
@@ -491,7 +495,8 @@ class Remind(Cog):
         ctx: BContext,
         *,
         timezone: ZoneInfo | None = commands.param(
-            converter=TimezoneConverter, default=None
+            converter=TimezoneConverter,
+            default=None,
         ),
     ):
         """Commands for managing your timezone."""

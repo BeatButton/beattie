@@ -19,7 +19,8 @@ class TimeConverter(Converter):
     async def convert(self, ctx: BContext, argument: str) -> RecurringEvent | datetime:
         async with ctx.bot.pool.acquire() as conn:
             tz = await conn.fetchval(
-                "SELECT timezone FROM timezone WHERE user_id = $1", ctx.author.id
+                "SELECT timezone FROM timezone WHERE user_id = $1",
+                ctx.author.id,
             )
 
         if tz:
@@ -46,7 +47,7 @@ class TimezoneConverter(Converter):
             if argument.startswith(("GMT", "UTC")):
                 try:
                     return ZoneInfo(
-                        f"Etc/{argument.replace('UTC', 'GMT').translate(GMT_TRANS)}"
+                        f"Etc/{argument.replace('UTC', 'GMT').translate(GMT_TRANS)}",
                     )
                 except ZoneInfoNotFoundError:
                     raise BadArgument("Not a time zone", e.args[0])

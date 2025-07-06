@@ -23,7 +23,7 @@ class Config:
                     cog_blacklist text,
                     prefix text,
                     reminder_channel bigint
-                );"""
+                );""",
             )
 
     async def get_guild(self, guild_id: int) -> Mapping[str, Any]:
@@ -32,7 +32,8 @@ class Config:
         except KeyError:
             async with self.pool.acquire() as conn:
                 guild = await conn.fetchrow(
-                    "SELECT * FROM guild WHERE guild.id = $1", guild_id
+                    "SELECT * FROM guild WHERE guild.id = $1",
+                    guild_id,
                 )
             if guild is None:
                 guild = {"id": guild_id}

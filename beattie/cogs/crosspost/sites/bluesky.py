@@ -21,11 +21,15 @@ PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo?repo={}"
 class Bluesky(Site):
     name = "bsky"
     pattern = re.compile(
-        r"https?://(?:c|[fv]x)?[bx]s[ky]yx?\.app/profile/([^/]+)/post/([^/]+)"
+        r"https?://(?:c|[fv]x)?[bx]s[ky]yx?\.app/profile/([^/]+)/post/([^/]+)",
     )
 
     async def handler(
-        self, ctx: CrosspostContext, queue: FragmentQueue, repo: str, rkey: str
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        repo: str,
+        rkey: str,
     ):
         xrpc_url = POST_FMT.format(repo, rkey)
         async with self.cog.get(xrpc_url) as resp:
@@ -94,6 +98,7 @@ class Bluesky(Site):
                 if qtext:
                     qtext = f" — *{qtext}*"
                 queue.push_text(
-                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname}{qtext}", escape=False
+                    f"\N{BRAILLE PATTERN BLANK}↳ @{qname}{qtext}",
+                    escape=False,
                 )
                 queue.push_text(text)

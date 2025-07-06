@@ -29,7 +29,7 @@ class Default(Cog):
         match which:
             case "server" | "guild" | "local":
                 avatar = user.display_avatar.with_format(
-                    "gif" if user.display_avatar.is_animated() else "png"
+                    "gif" if user.display_avatar.is_animated() else "png",
                 )
             case "global":
                 asset = user.avatar or user.display_avatar
@@ -78,7 +78,7 @@ class Default(Cog):
         assert edited_at is not None
         delta2 = edited_at - ctx.message.created_at
         await msg.edit(
-            content=f"{msg.content}\n**{delta2.total_seconds()*1000:.0f}ms**"
+            content=f"{msg.content}\n**{delta2.total_seconds()*1000:.0f}ms**",
         )
 
     @commands.command()

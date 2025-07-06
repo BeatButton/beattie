@@ -33,7 +33,7 @@ class Hiccears(Site):
     name = "hiccears"
     pattern = re.compile(
         r"https?://(?:www\.)?hiccears\.com/(?:[\w-]+/)?"
-        r"(?:contents/[\w-]+|file/[\w-]+/[\w-]+/preview)"
+        r"(?:contents/[\w-]+|file/[\w-]+/[\w-]+/preview)",
     )
 
     headers: dict[str, str]
@@ -48,7 +48,9 @@ class Hiccears(Site):
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
         async with self.cog.get(
-            link, headers=self.headers, use_browser_ua=True
+            link,
+            headers=self.headers,
+            use_browser_ua=True,
         ) as resp:
             self.update_hiccears_cookies(resp)
             root = html.document_fromstring(resp.content, self.cog.parser)
@@ -83,7 +85,9 @@ class Hiccears(Site):
                 if next_page := root.xpath(NEXT_SELECTOR):
                     next_url = f"https://{resp.url.host}{next_page[0].get('href')}"
                     async with self.cog.get(
-                        next_url, headers=self.headers, use_browser_ua=True
+                        next_url,
+                        headers=self.headers,
+                        use_browser_ua=True,
                     ) as resp:
                         self.update_hiccears_cookies(resp)
                         root = html.document_fromstring(

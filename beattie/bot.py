@@ -68,7 +68,7 @@ class Shared:
             self.archive_task = None
             handler = logging.StreamHandler(sys.stdout)
             handler.setFormatter(
-                logging.Formatter("%(levelname)s:%(name)s: %(message)s")
+                logging.Formatter("%(levelname)s:%(name)s: %(message)s"),
             )
             logging.getLogger("beattie").addHandler(handler)
         else:
@@ -124,7 +124,7 @@ class Shared:
         filename = now.strftime(f"{pre}%Y%m%d%H%M.log")
         handler = logging.FileHandler(filename=filename, encoding="utf-8", mode="w")
         handler.setFormatter(
-            logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+            logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"),
         )
         logger.addHandler(handler)
         self.logger = logger
@@ -214,7 +214,7 @@ class BeattieBot(Bot):
                 await ctx.send("Bad arguments.")
         elif isinstance(e, exceptions.ResponseError):
             await ctx.send(
-                f"An HTTP request to <{e.url}> failed with error code {e.code}"
+                f"An HTTP request to <{e.url}> failed with error code {e.code}",
             )
         elif not isinstance(e, self.command_ignore):
             await ctx.send(f"{type(e).__name__}: {e}")
@@ -250,7 +250,10 @@ class BeattieBot(Bot):
     async def get_context(self, message: Message, *, cls: type[C]) -> C: ...
 
     def get_context(
-        self, message: Message, *, cls: type[Context] = None
+        self,
+        message: Message,
+        *,
+        cls: type[Context] = None,
     ) -> Awaitable[Context]:
         return super().get_context(message, cls=cls or BContext)
 

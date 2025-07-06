@@ -10,7 +10,10 @@ API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
 
 
 async def get_booru_post(
-    cog: Crosspost, link: str, api_url: str, params: dict[str, str]
+    cog: Crosspost,
+    link: str,
+    api_url: str,
+    params: dict[str, str],
 ) -> dict[str, Any] | None:
     parsed = urlparse.urlparse(link)
     query = urlparse.parse_qs(parsed.query)

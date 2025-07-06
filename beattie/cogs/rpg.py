@@ -27,7 +27,7 @@ L1 = list[L2]
 
 ROLL_EXPR = re.compile(
     r"^(?:(?P<num>\d*)d)?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?"
-    r"(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$"
+    r"(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$",
 )
 SHADOWRUN_EXPR = re.compile(r"^\d+e?$")
 GENESYS_ROLL_EXPR = re.compile(r"^(?:\d+[a-z])+$")
@@ -56,7 +56,9 @@ class RPG(Cog):
         ctx: BContext,
         *,
         suits: Collection[str] = commands.param(
-            converter=SuitConverter, default=SUITS, displayed_default=""
+            converter=SuitConverter,
+            default=SUITS,
+            displayed_default="",
         ),
     ):
         """Get a random tarot card.
@@ -167,7 +169,7 @@ class RPG(Cog):
                 "\n1d6"
                 "\n2d8-4"
                 "\n2d20+2v1"
-                "\n4d6v1x6t"
+                "\n4d6v1x6t",
             )
         elif isinstance(e, asyncio.TimeoutError):
             await ctx.reply("Your execution took too long. Roll fewer dice.")

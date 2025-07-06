@@ -25,7 +25,7 @@ class Pixiv(Site):
     name = "pixiv"
     pattern = re.compile(
         r"https?://(?:www\.)?ph?ixiv\.net/(?:(?:en/)?artworks/|"
-        r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=|i/)(\d+)"
+        r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=|i/)(\d+)",
     )
     headers: dict[str, str]
     cooldown = Cooldown(10, 60)
@@ -43,7 +43,7 @@ class Pixiv(Site):
     async def load(self):
         if self.cog.bot.extra.get("pixiv_login_task") is None:
             self.cog.bot.extra["pixiv_login_task"] = asyncio.create_task(
-                self.login_loop()
+                self.login_loop(),
             )
 
         if headers := self.cog.bot.extra.get("pixiv_headers"):

@@ -22,7 +22,7 @@ class YTCommunity(Site):
     name = "yt_community"
     pattern = re.compile(
         r"https?://(?:www\.)?youtube\.com/"
-        r"(?:post/|channel/[^/]+/community\?lb=)([\w-]+)"
+        r"(?:post/|channel/[^/]+/community\?lb=)([\w-]+)",
     )
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
@@ -40,7 +40,9 @@ class YTCommunity(Site):
             tab = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][0]
         except KeyError:
             queue.push_text(
-                "This post is not visible in browser.", quote=False, force=True
+                "This post is not visible in browser.",
+                quote=False,
+                force=True,
             )
             return
         section = tab["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]

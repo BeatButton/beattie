@@ -3,7 +3,7 @@ typeCheckingMode = "basic"
 strictParameterNoneValue = false
 
 [tool.ruff.lint]
-select = ["I", "TC", "UP", "F", "RUF"]
+select = ["I", "TC", "UP", "F", "RUF", "COM"]
 ignore = ["RUF013", "RUF021", "RUF023"]
 
 [tool.ruff.lint.isort.sections]

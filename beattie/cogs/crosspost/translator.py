@@ -63,7 +63,7 @@ class HybridTranslator(Translator):
         shared = set(deepl_langs) & set(libre_langs) - {"xx", "zz"}
 
         self.detector = lingua.LanguageDetectorBuilder.from_iso_codes_639_1(
-            *(getattr(lingua.IsoCode639_1, code.upper()) for code in shared)
+            *(getattr(lingua.IsoCode639_1, code.upper()) for code in shared),
         ).build()
 
         return {
@@ -113,7 +113,9 @@ class LibreTranslator(Translator):
         }
 
         resp = await self.cog.session.request(
-            "GET", f"{self.api_url}/languages", data=body
+            "GET",
+            f"{self.api_url}/languages",
+            data=body,
         )
         data = resp.json()
 
@@ -210,7 +212,7 @@ class DeeplTranslator(Translator):
 
     async def translate(self, text: str, source: str, target: str) -> str:
         self.logger.debug(
-            f"{type(self).__name__}: translating from {source} to {target}: {text}"
+            f"{type(self).__name__}: translating from {source} to {target}: {text}",
         )
         data = {
             "text": [text],

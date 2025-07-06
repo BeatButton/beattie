@@ -167,7 +167,9 @@ class Crosspost(Cog):
         headers = headers or {}
         filename = None
         async with self.get(
-            *img_urls, use_browser_ua=use_browser_ua, headers=headers
+            *img_urls,
+            use_browser_ua=use_browser_ua,
+            headers=headers,
         ) as resp:
             if disp := resp.headers.get("Content-Disposition"):
                 _, params = aiohttp.multipart.parse_content_disposition(disp)
@@ -260,7 +262,8 @@ class Crosspost(Cog):
                         wait_until = queue.wait_until
                         if now < wait_until and (timeout := wait_until - now) > 5:
                             dt = format_dt(
-                                datetime.fromtimestamp(wait_until), style="R"
+                                datetime.fromtimestamp(wait_until),
+                                style="R",
                             )
                             await ctx.send(
                                 f"{queue.site.name} ratelimit hit, resuming {dt}.",
@@ -300,14 +303,17 @@ class Crosspost(Cog):
                         spoiler=kwargs["spoiler"],
                         ranges=kwargs["ranges"],
                         settings=kwargs["settings"],
-                    )
+                    ),
                 )
 
             if count > 1:
                 items.sort(key=lambda tup: item_priority(tup[0]))
 
             embedded = await queue.present(
-                ctx, items=items, force=kwargs["force"], settings=settings
+                ctx,
+                items=items,
+                force=kwargs["force"],
+                settings=settings,
             )
             if embedded and do_suppress:
                 await squash_unfindable(ctx.message.edit(suppress=True))
@@ -328,7 +334,9 @@ class Crosspost(Cog):
             return
 
         queues = sorted(
-            self.queue_cache.items(), key=lambda kv: kv[1].last_used, reverse=True
+            self.queue_cache.items(),
+            key=lambda kv: kv[1].last_used,
+            reverse=True,
         )
 
         while queues and size > QUEUE_CACHE_SIZE:
@@ -581,7 +589,9 @@ translate text, or a language name or code to translate text into that language.
 
     @blacklist.command(name="add")
     async def blacklist_add(
-        self, ctx: BContext, site: str = commands.param(converter=SiteConverter)
+        self,
+        ctx: BContext,
+        site: str = commands.param(converter=SiteConverter),
     ):
         """Add a site to the blacklist.
 
@@ -595,7 +605,9 @@ translate text, or a language name or code to translate text into that language.
 
     @blacklist.command(name="remove", aliases=["del", "rm"])
     async def blacklist_remove(
-        self, ctx: BContext, site: str = commands.param(converter=SiteConverter)
+        self,
+        ctx: BContext,
+        site: str = commands.param(converter=SiteConverter),
     ):
         """Remove a site from the blacklist."""
         guild = ctx.guild
@@ -741,7 +753,7 @@ translate text, or a language name or code to translate text into that language.
             if isinstance(inner, ChannelNotFound):
                 await ctx.send(
                     f"Could not resolve `{inner.argument}`"
-                    " as a category, channel, or thread."
+                    " as a category, channel, or thread.",
                 )
                 return
         await ctx.bot.handle_error(ctx, e)
@@ -750,7 +762,7 @@ translate text, or a language name or code to translate text into that language.
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
             await ctx.send(
                 "Invalid site. "
-                f"To list all sites, run {ctx.prefix}crosspost blacklist list all"
+                f"To list all sites, run {ctx.prefix}crosspost blacklist list all",
             )
             return
         await ctx.bot.handle_error(ctx, e)

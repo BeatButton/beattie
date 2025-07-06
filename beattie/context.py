@@ -61,6 +61,6 @@ class BContext(commands.Context):
             )
         except ClientOSError:
             logging.getLogger(__name__).exception(
-                "Ignoring ClientOSError in BContext.send"
+                "Ignoring ClientOSError in BContext.send",
             )
             return await self.send(content, **kwargs)

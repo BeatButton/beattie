@@ -98,7 +98,9 @@ class Poipiku(Site):
 
         if frag == "Error occurred.":
             queue.push_text(
-                "Poipiku reported a generic error.", quote=False, force=True
+                "Poipiku reported a generic error.",
+                quote=False,
+                force=True,
             )
             return
 
@@ -134,7 +136,8 @@ class Poipiku(Site):
                     reply = await ctx.bot.wait_for("message", check=check, timeout=60)
                 except asyncio.TimeoutError:
                     await ctx.send(
-                        "Poipiku password timeout expired.", delete_after=delete_after
+                        "Poipiku password timeout expired.",
+                        delete_after=delete_after,
                     )
                     await clean()
 
@@ -163,7 +166,9 @@ class Poipiku(Site):
 
         if frag == "Error occurred.":
             queue.push_text(
-                "Poipiku reported a generic error.", quote=False, force=True
+                "Poipiku reported a generic error.",
+                quote=False,
+                force=True,
             )
             return
 

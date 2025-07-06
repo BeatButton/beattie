@@ -78,7 +78,7 @@ class FragmentQueue:
         cooldown = self.site.cooldown
         if cooldown and (timeout := cooldown.update_rate_limit()):
             self.cog.logger.info(
-                f"{self.site.name} ratelimit hit, sleeping for {timeout:.2f} seconds"
+                f"{self.site.name} ratelimit hit, sleeping for {timeout:.2f} seconds",
             )
             wait_until = datetime.now() + timedelta(seconds=timeout)
             dt = format_dt(wait_until, style="R")
@@ -259,7 +259,7 @@ class FragmentQueue:
                     items.append((frag, spoiler))
                 case _:
                     raise RuntimeError(
-                        f"unexpected Fragment subtype {type(frag).__name__}"
+                        f"unexpected Fragment subtype {type(frag).__name__}",
                     )
 
         pages_remaining = 0 if max_pages == 0 else num_files - max_pages
@@ -321,7 +321,9 @@ class FragmentQueue:
 
             try:
                 reaction, _ = await ctx.bot.wait_for(
-                    "reaction_add", check=check, timeout=timeout
+                    "reaction_add",
+                    check=check,
+                    timeout=timeout,
                 )
             except asyncio.TimeoutError:
                 emoji = "❌"
@@ -421,17 +423,17 @@ class FragmentQueue:
                                 embedded = True
                             else:
                                 await ctx.send(
-                                    f"File too large to upload ({display_bytes(size)})."
+                                    f"File too large to upload ({display_bytes(size)}).",
                                 )
                             continue
                         if len(file_batch) == 10:
                             await send_files()
                         file_batch.append(
-                            File(BytesIO(file_bytes), filename, spoiler=spoiler)
+                            File(BytesIO(file_bytes), filename, spoiler=spoiler),
                         )
                     case _:
                         raise RuntimeError(
-                            f"unexpected item of type {type(item).__name__}"
+                            f"unexpected item of type {type(item).__name__}",
                         )
         finally:
             await send_files()

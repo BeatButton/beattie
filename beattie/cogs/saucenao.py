@@ -26,7 +26,8 @@ class SauceNao(Cog):
         async with ctx.typing():
             if link is None:
                 if (ref := ctx.message.reference) and isinstance(
-                    resolved := ref.resolved, Message
+                    resolved := ref.resolved,
+                    Message,
                 ):
                     reply = resolved
                 else:
