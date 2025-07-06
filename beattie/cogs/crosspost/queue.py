@@ -317,7 +317,7 @@ class FragmentQueue:
                 mention_author=True,
             )
             for emoji in "⭕❌":
-                asyncio.create_task(msg.add_reaction(emoji))
+                ctx.bot.shared.create_task(msg.add_reaction(emoji))
 
             try:
                 reaction, _ = await ctx.bot.wait_for(

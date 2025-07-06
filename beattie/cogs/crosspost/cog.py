@@ -313,7 +313,7 @@ class Crosspost(Cog):
                 await squash_unfindable(ctx.message.edit(suppress=True))
                 do_suppress = False
 
-        asyncio.create_task(self.try_evict())
+        ctx.bot.shared.create_task(self.try_evict())
 
     async def try_evict(self):
         if self.cache_lock.locked():
@@ -777,7 +777,7 @@ translate text, or a language name or code to translate text into that language.
         except asyncio.CancelledError:
             pass
         except:
-            asyncio.create_task(ctx.message.add_reaction("❗"))
+            ctx.bot.shared.create_task(ctx.message.add_reaction("❗"))
             raise
         finally:
             del self.ongoing_tasks[message_id]

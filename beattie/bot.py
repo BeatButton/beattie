@@ -26,7 +26,7 @@ from beattie.utils import contextmanagers, exceptions
 from beattie.utils.aioutils import do_every
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Iterable
+    from collections.abc import Awaitable, Coroutine, Iterable
 
     import asyncpg
 
@@ -44,6 +44,7 @@ class Shared:
     pool: asyncpg.Pool
     extra: dict[str, Any]
     uptime: datetime
+    tasks: set[Task]
 
     def __init__(
         self,
@@ -61,6 +62,7 @@ class Shared:
         self.config = Config(self)
         self.uptime = datetime.now().astimezone()
         self.extra = {}
+        self.tasks = set()
         if debug:
             self.loglevel = logging.DEBUG
             self.archive_task = None
@@ -76,6 +78,11 @@ class Shared:
     async def async_init(self):
         self.session = httpx.AsyncClient(follow_redirects=True, timeout=None)
         await self.config.async_init()
+
+    def create_task(self, coro: Coroutine) -> None:
+        task = asyncio.create_task(coro)
+        self.tasks.add(task)
+        task.add_done_callback(self.tasks.discard)
 
     async def prefix_func(self, bot: BeattieBot, message: Message) -> Iterable[str]:
         prefix = self.prefixes
@@ -97,7 +104,7 @@ class Shared:
         if self.archive_task is not None:
             self.archive_task.cancel()
         for bot in self.bots:
-            asyncio.create_task(bot.close())
+            self.create_task(bot.close())
 
         self._close.set()
 
