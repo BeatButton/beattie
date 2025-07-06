@@ -27,16 +27,17 @@ class Pixiv(Site):
         r"https?://(?:www\.)?ph?ixiv\.net/(?:(?:en/)?artworks/|"
         r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=|i/)(\d+)"
     )
-    headers: dict[str, str] = {
-        "App-OS": "android",
-        "App-OS-Version": "4.4.2",
-        "App-Version": "5.0.145",
-        "User-Agent": "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)",
-    }
+    headers: dict[str, str]
     cooldown = Cooldown(10, 60)
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
+        self.headers = {
+            "App-OS": "android",
+            "App-OS-Version": "4.4.2",
+            "App-Version": "5.0.145",
+            "User-Agent": "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)",
+        }
         self.logger = logging.getLogger(__name__)
 
     async def load(self):

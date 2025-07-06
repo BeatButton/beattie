@@ -89,7 +89,7 @@ class Shared:
         if guild := message.guild:
             guild_conf = await bot.shared.config.get_guild(guild.id)
             if guild_pre := guild_conf.get("prefix"):
-                prefix = prefix + (guild_pre,)
+                prefix = (*prefix, guild_pre)
         return when_mentioned_or(*prefix)(bot, message)
 
     async def close(self):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 import httpx
@@ -18,10 +19,12 @@ class Fanbox(Site):
         r"https://(?:(?:www\.)?fanbox\.cc/@)?([\w-]+)(?:\.fanbox\.cc)?/posts/(\d+)"
     )
 
-    headers: dict[str, str] = {
-        "Accept": "application/json, text/plain, */*",
-        "Origin": "https://www.fanbox.cc",
-    }
+    headers = MappingProxyType(
+        {
+            "Accept": "application/json, text/plain, */*",
+            "Origin": "https://www.fanbox.cc",
+        }
+    )
 
     async def handler(
         self, ctx: CrosspostContext, queue: FragmentQueue, user: str, post_id: str

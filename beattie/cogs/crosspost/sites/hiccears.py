@@ -36,7 +36,7 @@ class Hiccears(Site):
         r"(?:contents/[\w-]+|file/[\w-]+/[\w-]+/preview)"
     )
 
-    headers: dict[str, str] = {}
+    headers: dict[str, str]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)

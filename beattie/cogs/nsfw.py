@@ -4,6 +4,7 @@ import logging
 import random
 from base64 import b64encode
 from collections import defaultdict
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 from urllib import parse
 
@@ -25,17 +26,21 @@ if TYPE_CHECKING:
 
 
 class NSFW(Cog):
-    view = {
-        "gelbooru": "https://gelbooru.com/index.php?page=post&s=view&id={}",
-        "rule34": "https://rule34.xxx/index.php?page=post&s=view&id={}",
-        "e621": "http://e621.net/posts/{}",
-    }
+    view = MappingProxyType(
+        {
+            "gelbooru": "https://gelbooru.com/index.php?page=post&s=view&id={}",
+            "rule34": "https://rule34.xxx/index.php?page=post&s=view&id={}",
+            "e621": "http://e621.net/posts/{}",
+        }
+    )
 
-    urls = {
-        "gelbooru": "http://gelbooru.com/index.php",
-        "rule34": "http://rule34.xxx/index.php",
-        "e621": "https://e621.net/posts.json",
-    }
+    urls = MappingProxyType(
+        {
+            "gelbooru": "http://gelbooru.com/index.php",
+            "rule34": "http://rule34.xxx/index.php",
+            "e621": "https://e621.net/posts.json",
+        }
+    )
 
     def cog_check(self, ctx: BContext) -> bool:
         channel = ctx.channel

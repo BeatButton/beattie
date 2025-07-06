@@ -25,7 +25,7 @@ class YGallery(Site):
     name = "ygal"
     pattern = re.compile(r"https?://(?:(?:old|www)\.)?y-gallery\.net/view/(\d+)")
 
-    headers: dict[str, str] = {}
+    headers: dict[str, str]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)

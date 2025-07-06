@@ -19,7 +19,7 @@ class Imgur(Site):
         r"https?://(?:www\.)?imgur\.com/(?:(a|gallery)/)?(?:(?:\w+)-)*(\w+)"
     )
 
-    headers: dict[str, str] = {}
+    headers: dict[str, str]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
@@ -27,7 +27,7 @@ class Imgur(Site):
             data = toml.load(fp)
 
         client_id = data["id"]
-        self.headers["Authorization"] = f"Client-ID {client_id}"
+        self.headers = {"Authorization": f"Client-ID {client_id}"}
 
     async def handler(
         self,
