@@ -4,18 +4,18 @@ strictParameterNoneValue = false
 
 [tool.ruff.lint]
 select = [
+    "ARG",
+    "COM",
+    "DTZ",
+    "F",
     "I",
+    "PERF",
+    "PL",
+    "RET",
+    "RUF",
+    "SIM",
     "TC",
     "UP",
-    "F",
-    "RUF",
-    "COM",
-    "PL",
-    "SIM",
-    "DTZ",
-    "PERF",
-    "RET",
-    "ARG",
 ]
 ignore = [
     "PLR0912",
