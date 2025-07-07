@@ -41,7 +41,7 @@ class E621(Site):
         try:
             post = data["posts"][0]
         except IndexError:
-            raise ResponseError(404, api_url)
+            raise ResponseError(404, api_url) from None
 
         queue.author = " ".join(sorted(post["tags"]["artist"]))
 

@@ -298,7 +298,7 @@ class Crosspost(Cog):
             lambda p: (p[0].site.name, p[0].author or object()),
         ):
             items: list[tuple[Postable, bool]] = []
-            for count, (queue, kwargs) in enumerate(batch, 1):
+            for count, (queue, kwargs) in enumerate(batch, 1):  # noqa: B007
                 items.extend(
                     await queue.produce(
                         ctx,

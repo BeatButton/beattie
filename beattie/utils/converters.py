@@ -56,10 +56,10 @@ class TimezoneConverter(Converter):
                     )
                 except ZoneInfoNotFoundError:
                     msg = "Not a time zone"
-                    raise BadArgument(msg, e.args[0])
+                    raise BadArgument(msg, e.args[0]) from None
             else:
                 msg = "Not a time zone"
-                raise BadArgument(msg, e.args[0])
+                raise BadArgument(msg, e.args[0]) from None
 
 
 class SuitConverter(Converter):
