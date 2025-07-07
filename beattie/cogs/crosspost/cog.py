@@ -812,4 +812,3 @@ translate text, or a language name or code to translate text into that language.
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = ""):
         """Ignore links in the following message."""
-        pass

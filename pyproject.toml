@@ -16,6 +16,7 @@ select = [
     "I",
     "ISC",
     "PERF",
+    "PIE",
     "PL",
     "PYI",
     "RET",
