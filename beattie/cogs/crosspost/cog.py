@@ -173,8 +173,7 @@ class Crosspost(Cog):
         ) as resp:
             if disp := resp.headers.get("Content-Disposition"):
                 _, params = aiohttp.multipart.parse_content_disposition(disp)
-                if filename := params.get("filename"):
-                    filename = filename
+                filename = params.get("filename")
             return resp.content, filename
 
     async def process_links(

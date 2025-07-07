@@ -302,11 +302,7 @@ class FragmentQueue:
         if not force and len(to_dl) >= 25:
 
             def check(r: discord.Reaction, u: discord.User):
-                return (
-                    u == ctx.author
-                    and r.message == msg
-                    and (r.emoji == "❌" or r.emoji == "⭕")
-                )
+                return u == ctx.author and r.message == msg and r.emoji in {"❌", "⭕"}
 
             timeout = 60
             dt = format_dt(datetime.now() + timedelta(seconds=timeout), style="R")

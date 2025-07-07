@@ -300,6 +300,9 @@ class Settings:
         else:
             return "(none)"
 
+    def __hash__(self) -> int:
+        return hash((self.auto, self.max_pages, self.text, self.language))
+
     def __eq__(self, other: Any) -> bool:
         if not type(other).__name__ == "Settings":
             return NotImplemented

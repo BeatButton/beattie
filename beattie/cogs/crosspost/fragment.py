@@ -160,13 +160,12 @@ class FallbackFragment(Fragment):
                     self.preferred_url,
                     headers=self.headers,
                 )
-        else:
-            if (frag := self.fallback_frag) is None:
-                frag = self.fallback_frag = FileFragment(
-                    self.queue,
-                    self.fallback_url,
-                    headers=self.headers,
-                )
+        elif (frag := self.fallback_frag) is None:
+            frag = self.fallback_frag = FileFragment(
+                self.queue,
+                self.fallback_url,
+                headers=self.headers,
+            )
 
         return frag
 
@@ -283,7 +282,7 @@ class TextFragment(Fragment):
             return None
 
         source = await self.detect()
-        if source == DONT or target == source:
+        if source in (DONT, target):
             return None
 
         content = URL_EXPR.sub("", self.content).strip()

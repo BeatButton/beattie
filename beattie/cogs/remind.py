@@ -69,6 +69,9 @@ class Reminder:
         self.time = time
         self.topic = topic
 
+    def __hash__(self) -> int:
+        return hash(self.id)
+
     def __eq__(self, other: Any):
         if not isinstance(other, Reminder):
             return NotImplemented
