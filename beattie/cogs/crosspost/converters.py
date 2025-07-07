@@ -31,7 +31,8 @@ class LanguageConverter(Converter):
     async def convert(self, ctx: BContext, argument: str) -> Language:
         cog: Crosspost = ctx.bot.get_cog("Crosspost")  # type: ignore
         if (translator := cog.translator) is None:
-            raise BadArgument("no translator available")
+            msg = "no translator available"
+            raise BadArgument(msg)
 
         langs = await translator.languages()
 
@@ -51,7 +52,8 @@ class LanguageConverter(Converter):
         if lang := find(lambda lang: lang.name.lower() == lower, langs.values()):
             return lang
 
-        raise BadArgument(f'Failed to find language with name or code "{argument}".')
+        msg = f'Failed to find language with name or code "{argument}".'
+        raise BadArgument(msg)
 
 
 class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):

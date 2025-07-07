@@ -143,7 +143,8 @@ class Pixiv(Site):
                     headers=headers,
                 )
         else:
-            raise RuntimeError("illust had no pages")
+            msg = "illust had no pages"
+            raise RuntimeError(msg)
 
         queue.push_text(res["title"], bold=True)
         if caption := res.get("caption"):

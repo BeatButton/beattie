@@ -19,7 +19,7 @@ from tldextract import TLDExtract
 import discord
 from discord import CategoryChannel, Message, Thread
 from discord.ext import commands
-from discord.ext.commands import BadArgument, BadUnionArgument, ChannelNotFound, Cog
+from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import format_dt
 
 from beattie.utils.aioutils import squash_unfindable
@@ -579,12 +579,8 @@ translate text, or a language name or code to translate text into that language.
         To view all possible sites, run `blacklist list all`.
         """
         if site:
-            try:
-                site = await SiteConverter().convert(ctx, site)
-            except BadArgument:
-                raise
-            else:
-                await self.blacklist_add(ctx, site)
+            site = await SiteConverter().convert(ctx, site)
+            await self.blacklist_add(ctx, site)
         else:
             await self.blacklist_list(ctx)
 

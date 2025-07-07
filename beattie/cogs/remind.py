@@ -311,7 +311,8 @@ class Remind(Cog):
             rr = rrule.rrulestr(rrule_str)
             time: datetime | None = rr.after(now.astimezone().replace(tzinfo=None))
             if time is None:
-                raise RuntimeError("rr.after returned None")
+                msg = "rr.after returned None"
+                raise RuntimeError(msg)
             next_ = rr.after(time)
             if next_ - time < MINIMUM_RECURRING_DELTA:
                 await ctx.send(

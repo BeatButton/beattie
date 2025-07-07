@@ -33,7 +33,8 @@ class Nhentai(Site):
                 case "w":
                     ext = "webp"
                 case oth:
-                    raise RuntimeError(f"Unrecognized image type {oth}")
+                    msg = f"Unrecognized image type {oth}"
+                    raise RuntimeError(msg)
             x = randint(1, 4)
             queue.push_file(f"https://i{x}.nhentai.net/galleries/{media_id}/{i}.{ext}")
 

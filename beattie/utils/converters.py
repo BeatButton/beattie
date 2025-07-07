@@ -55,9 +55,11 @@ class TimezoneConverter(Converter):
                         f"Etc/{argument.replace('UTC', 'GMT').translate(GMT_TRANS)}",
                     )
                 except ZoneInfoNotFoundError:
-                    raise BadArgument("Not a time zone", e.args[0])
+                    msg = "Not a time zone"
+                    raise BadArgument(msg, e.args[0])
             else:
-                raise BadArgument("Not a time zone", e.args[0])
+                msg = "Not a time zone"
+                raise BadArgument(msg, e.args[0])
 
 
 class SuitConverter(Converter):
@@ -71,7 +73,8 @@ class SuitConverter(Converter):
             suits.update(MINOR)
 
         if bad_suits := suits - SUITS:
-            raise BadArgument("Not a suit", ", ".join(bad_suits))
+            msg = "Not a suit"
+            raise BadArgument(msg, ", ".join(bad_suits))
 
         return suits
 
@@ -82,7 +85,8 @@ RANGE_EXPR = re.compile(r"^(?:(?:\d+(?:-\d+)?),?)+$")
 class RangesConverter(Converter):
     async def convert(self, _ctx: BContext, argument: str) -> list[tuple[int, int]]:
         if not RANGE_EXPR.match(argument):
-            raise BadArgument("Failed to parse ranges.")
+            msg = "Failed to parse ranges."
+            raise BadArgument(msg)
 
         out = []
         for part in argument.split(","):

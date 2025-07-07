@@ -19,6 +19,7 @@ select = [
     "RUF",
     "SIM",
     "TC",
+    "TRY",
     "UP",
 ]
 ignore = [

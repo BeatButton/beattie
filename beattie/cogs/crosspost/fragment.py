@@ -81,7 +81,8 @@ class FileFragment(Fragment):
         if filename is None:
             filename = re.findall(r"[\w. -]+\.[\w. -]+", urls[0])[-1]
         if filename is None:
-            raise RuntimeError(f"could not parse filename from URL: {urls[0]}")
+            msg = f"could not parse filename from URL: {urls[0]}"
+            raise RuntimeError(msg)
         for ext, sub in [
             ("jfif", "jpeg"),
             ("pnj", "png"),

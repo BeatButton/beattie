@@ -120,7 +120,8 @@ class Mastodon(Site):
             return
 
         if (handler := self.dispatch.get(software)) is None:
-            raise RuntimeError(f"unsupported activitypub software {software}")
+            msg = f"unsupported activitypub software {software}"
+            raise RuntimeError(msg)
 
         headers = {"Accept": "application/json"}
 

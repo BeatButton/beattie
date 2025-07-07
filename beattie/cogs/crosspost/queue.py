@@ -264,9 +264,8 @@ class FragmentQueue:
                         continue
                     items.append((frag, spoiler))
                 case _:
-                    raise RuntimeError(
-                        f"unexpected Fragment subtype {type(frag).__name__}",
-                    )
+                    msg = f"unexpected Fragment subtype {type(frag).__name__}"
+                    raise RuntimeError(msg)
 
         pages_remaining = 0 if max_pages == 0 else num_files - max_pages
 
@@ -413,7 +412,8 @@ class FragmentQueue:
                         file_bytes = frag.file_bytes
                         filename = frag.filename
                         if not file_bytes:
-                            raise RuntimeError("frag.save failed to set file_bytes")
+                            msg = "frag.save failed to set file_bytes"
+                            raise RuntimeError(msg)
                         if frag.pp_bytes is not None and len(frag.pp_bytes) <= limit:
                             file_bytes = frag.pp_bytes
                             filename = frag.pp_filename
@@ -437,9 +437,8 @@ class FragmentQueue:
                             File(BytesIO(file_bytes), filename, spoiler=spoiler),
                         )
                     case _:
-                        raise RuntimeError(
-                            f"unexpected item of type {type(item).__name__}",
-                        )
+                        msg = f"unexpected item of type {type(item).__name__}"
+                        raise RuntimeError(msg)
         finally:
             await send_files()
             await send_text()

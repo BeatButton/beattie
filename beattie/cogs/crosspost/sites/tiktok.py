@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING
 
 from lxml import html
 
-from beattie.utils.exceptions import ResponseError
-
 from .selectors import OG_DESCRIPTION, OG_VIDEO
 from .site import Site
 
@@ -25,26 +23,21 @@ class Tiktok(Site):
         if "vxtiktok.com" not in link:
             link = link.replace("tiktok.com", "vxtiktok.com")
 
-        try:
-            async with self.cog.get(
-                link,
-                follow_redirects=False,
-                headers={"User-Agent": "test"},
-            ) as resp:
-                root = html.document_fromstring(resp.content, self.cog.parser)
-        except ResponseError:
-            raise
+        async with self.cog.get(
+            link,
+            follow_redirects=False,
+            headers={"User-Agent": "test"},
+        ) as resp:
+            root = html.document_fromstring(resp.content, self.cog.parser)
 
         try:
             url = root.xpath(OG_VIDEO)[0].get("content")
         except IndexError:
-            raise RuntimeError("no video in vxtiktok response") from None
+            msg = "no video in vxtiktok response"
+            raise RuntimeError(msg) from None
 
-        try:
-            async with self.cog.get(url, method="HEAD") as resp:
-                pass
-        except ResponseError:
-            raise
+        async with self.cog.get(url, method="HEAD") as resp:
+            pass
 
         video_id = url.rpartition("/")[2]
         filename = f"{video_id}.mp4"
