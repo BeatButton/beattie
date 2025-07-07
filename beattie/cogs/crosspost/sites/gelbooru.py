@@ -32,7 +32,7 @@ class Gelbooru(Site):
         with open("config/crosspost/gelbooru.toml") as fp:
             self.gelbooru_params = toml.load(fp)
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, link: str):
         params = {**API_PARAMS, **self.gelbooru_params}
         post = await get_booru_post(self.cog, link, GELBOORU_API_URL, params)
         if post is None:

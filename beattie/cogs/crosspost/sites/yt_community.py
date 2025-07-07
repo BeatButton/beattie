@@ -25,7 +25,7 @@ class YTCommunity(Site):
         r"(?:post/|channel/[^/]+/community\?lb=)([\w-]+)",
     )
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         link = f"https://youtube.com/post/{post_id}"
 
         async with self.cog.get(link, use_browser_ua=True) as resp:

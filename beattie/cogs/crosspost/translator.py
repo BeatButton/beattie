@@ -206,7 +206,7 @@ class DeeplTranslator(Translator):
             self._lang_task = asyncio.Task(self._languages())
         return self._lang_task
 
-    async def detect(self, text: str) -> Language:
+    async def detect(self, _text: str) -> Language:
         return UNKNOWN
 
     async def translate(self, text: str, source: str, target: str) -> str:

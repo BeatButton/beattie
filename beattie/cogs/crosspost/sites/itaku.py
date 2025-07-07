@@ -16,7 +16,7 @@ class Itaku(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         image_id: str,
     ):

@@ -28,7 +28,7 @@ class Fanbox(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         user: str,
         post_id: str,

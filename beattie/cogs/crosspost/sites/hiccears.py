@@ -46,7 +46,7 @@ class Hiccears(Site):
         with open("config/crosspost/hiccears.toml") as fp:
             self.headers = toml.load(fp)
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, link: str):
         async with self.cog.get(
             link,
             headers=self.headers,

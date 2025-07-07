@@ -38,7 +38,7 @@ class TimeConverter(Converter):
 
 
 class TimezoneConverter(Converter):
-    async def convert(self, ctx: BContext, argument: str) -> ZoneInfo:
+    async def convert(self, _ctx: BContext, argument: str) -> ZoneInfo:
         argument = argument.replace(" ", "_")
         try:
             return ZoneInfo(argument)
@@ -55,7 +55,7 @@ class TimezoneConverter(Converter):
 
 
 class SuitConverter(Converter):
-    async def convert(self, ctx: BContext, argument: str) -> Collection[str]:
+    async def convert(self, _ctx: BContext, argument: str) -> Collection[str]:
         if not argument:
             return SUITS
 
@@ -74,7 +74,7 @@ RANGE_EXPR = re.compile(r"^(?:(?:\d+(?:-\d+)?),?)+$")
 
 
 class RangesConverter(Converter):
-    async def convert(self, ctx: BContext, argument: str) -> list[tuple[int, int]]:
+    async def convert(self, _ctx: BContext, argument: str) -> list[tuple[int, int]]:
         if not RANGE_EXPR.match(argument):
             raise BadArgument("Failed to parse ranges.")
 

@@ -33,7 +33,7 @@ class YGallery(Site):
         with open("config/crosspost/ygal.toml") as fp:
             self.headers = toml.load(fp)
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
 
         link = f"https://old.y-gallery.net/view/{gal_id}/"
 

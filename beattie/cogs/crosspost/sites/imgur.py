@@ -31,7 +31,7 @@ class Imgur(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         fragment: str | None,
         album_id: str,

@@ -31,7 +31,7 @@ class Danbooru(Site):
         auth_slug = b64encode(f"{user}:{key}".encode()).decode()
         self.headers = {"Authorization": f"Basic {auth_slug}"}
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         api_url = f"https://danbooru.donmai.us/posts/{post_id}.json"
         async with self.cog.get(api_url, headers=self.headers) as resp:
             post = resp.json()

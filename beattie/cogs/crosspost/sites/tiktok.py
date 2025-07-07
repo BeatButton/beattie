@@ -21,7 +21,7 @@ class Tiktok(Site):
         r"https?://(?:www\.)(?:vx)?tiktok\.com/(?:@[\w\.]+/video/\d+|t/\w+)+",
     )
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, link: str):
         if "vxtiktok.com" not in link:
             link = link.replace("tiktok.com", "vxtiktok.com")
 

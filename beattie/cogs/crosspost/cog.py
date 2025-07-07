@@ -455,7 +455,7 @@ applying it to the guild as a whole."""
         await ctx.send(f"{message}.")
 
     @crosspost.command(hidden=True)
-    async def mode(self, ctx: BContext, mode: str, *, _: str):
+    async def mode(self, ctx: BContext, mode: str, *, _: str):  # noqa: ARG002
         """Setting crosspost mode is no longer supported."""
         await ctx.send("Setting crosspost mode is no longer supported.")
 
@@ -490,7 +490,7 @@ applying it to the guild as a whole."""
     async def cleanup(
         self,
         ctx: BContext,
-        enabled: bool,
+        enabled: bool,  # noqa: ARG002
         *,
         _: str = "",
     ):
@@ -648,10 +648,8 @@ translate text, or a language name or code to translate text into that language.
         await ctx.send("\n".join([list_msg, "Sites you could blacklist:", left_msg]))
 
     @crosspost.command()
-    async def info(self, ctx: BContext, *flags: PostFlags, _: str | None):
-        """Get info on crosspost settings for the current channel.
-
-        You can specify overrides using the same syntax as `post`"""
+    async def info(self, ctx: BContext, _: str | None):
+        """Get info on crosspost settings for the current channel."""
         final_conf = Settings()
 
         if guild := ctx.guild:

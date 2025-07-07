@@ -43,7 +43,7 @@ class Tumblr(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         blog: str,
         post_id: str,

@@ -19,7 +19,7 @@ class Rule34(Site):
     name = "r34"
     pattern = re.compile(r"https?://rule34\.xxx/index\.php\?(?:\w+=[^&]+&?){2,}")
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, link: str):
         params = {**API_PARAMS}
         post = await get_booru_post(self.cog, link, API_URL, params)
         if post is None:

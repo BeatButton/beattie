@@ -33,7 +33,7 @@ class E621(Site):
         auth_slug = b64encode(f"{user}:{key}".encode()).decode()
         self.headers = {"Authorization": f"Basic {auth_slug}"}
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         params = {"tags": f"id:{post_id}"}
         api_url = "https://e621.net/posts.json"
         async with self.cog.get(api_url, params=params, headers=self.headers) as resp:

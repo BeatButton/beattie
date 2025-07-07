@@ -13,8 +13,8 @@ class PaginatorSource(menus.ListPageSource):
     def __init__(self, entries):
         super().__init__(entries, per_page=1)
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, _ctx, channel):
         return await channel.send(embed=self.entries[0])
 
-    async def format_page(self, menu, entries):
+    async def format_page(self, menu, _entries):
         return self.entries[menu.current_page]

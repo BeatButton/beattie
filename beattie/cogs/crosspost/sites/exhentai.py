@@ -19,7 +19,7 @@ class Exhentai(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         gal_id: str,
         token: str,

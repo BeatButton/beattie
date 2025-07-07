@@ -42,7 +42,7 @@ class Inkbunny(Site):
                 json = resp.json()
             self.sid = self.cog.bot.extra["crosspost_inkbunny_sid"] = json["sid"]
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, sub_id: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, sub_id: str):
         url = API_FMT.format("submissions")
         params = {
             "sid": self.sid,

@@ -42,7 +42,7 @@ class Twitter(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         tweet_id: str,
     ):

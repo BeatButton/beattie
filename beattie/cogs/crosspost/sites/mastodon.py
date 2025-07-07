@@ -131,7 +131,7 @@ class Mastodon(Site):
 
     async def do_mastodon(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         link: str,
         site: str,
@@ -183,9 +183,9 @@ class Mastodon(Site):
 
     async def do_misskey(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
-        link: str,
+        _link: str,
         site: str,
         post_id: str,
         headers: dict[str, str],
@@ -220,9 +220,9 @@ class Mastodon(Site):
 
     async def do_peertube(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
-        link: str,
+        _link: str,
         site: str,
         post_id: str,
         headers: dict[str, str],

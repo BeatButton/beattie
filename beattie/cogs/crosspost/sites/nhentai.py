@@ -16,7 +16,7 @@ class Nhentai(Site):
     pattern = re.compile(r"https?://(?:www\.)?nhentai\.net/g/(\d+)")
     concurrent = True
 
-    async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
+    async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
         api_url = f"https://nhentai.net/api/gallery/{gal_id}"
         async with self.cog.get(api_url) as resp:
             data = resp.json()

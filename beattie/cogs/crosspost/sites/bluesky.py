@@ -26,7 +26,7 @@ class Bluesky(Site):
 
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         repo: str,
         rkey: str,
