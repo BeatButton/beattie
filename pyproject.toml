@@ -5,6 +5,7 @@ strictParameterNoneValue = false
 [tool.ruff.lint]
 select = [
     "A",
+    "ANN",
     "ARG",
     "ASYNC",
     "COM",
@@ -29,6 +30,10 @@ select = [
     "UP",
 ]
 ignore = [
+    "ANN201",
+    "ANN202",
+    "ANN204",
+    "ANN401",
     "PLR0912",
     "PLR0913",
     "PLR0915",

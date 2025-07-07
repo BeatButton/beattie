@@ -1,3 +1,5 @@
+# ruff: noqa: ANN001
+
 from discord.ext import menus
 from discord.ext.menus import MenuPages
 

@@ -45,7 +45,7 @@ class Twitter(Site):
         _ctx: CrosspostContext,
         queue: FragmentQueue,
         tweet_id: str,
-    ):
+    ) -> None:
         try:
             await self.with_method(queue, tweet_id, self.method)
         except Exception:

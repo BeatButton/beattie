@@ -416,7 +416,7 @@ class Crosspost(Cog):
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
-    async def crosspost(self, ctx: BContext, argument: str = None, *_):
+    async def crosspost(self, ctx: BContext, argument: str = None, *_: str):
         """Change image crosspost settings.
 
         Each subcommand takes, in addition to the configuration value, an optional \

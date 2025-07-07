@@ -61,10 +61,10 @@ class Jisho:
 
         return results
 
-    async def lookup(self, keyword: str, **kwargs) -> LDS[list[str]]:
+    async def lookup(self, keyword: str) -> LDS[list[str]]:
         """Search Jisho.org for a word. Returns a list of dicts with keys
         readings, words, english, parts_of_speech."""
-        params = {"keyword": keyword, **kwargs}
+        params = {"keyword": keyword}
         async with get(self.session, self.api_url, params=params) as resp:
             data = resp.json()["data"]
 
