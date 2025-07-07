@@ -6,6 +6,7 @@ strictParameterNoneValue = false
 select = [
     "A",
     "ARG",
+    "ASYNC",
     "COM",
     "DTZ",
     "E",

@@ -7,10 +7,11 @@ from datetime import datetime
 from hashlib import md5
 from typing import TYPE_CHECKING
 
-import toml
 from lxml import html
 
 from discord.ext.commands import Cooldown
+
+from beattie.utils.aioutils import adump, aload
 
 from ..postprocess import ugoira_pp
 from .site import Site
@@ -19,6 +20,9 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+
+CONFIG = "config/crosspost/pixiv.toml"
 
 
 class Pixiv(Site):
@@ -54,8 +58,7 @@ class Pixiv(Site):
     async def login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
-            with open("config/crosspost/pixiv.toml") as fp:
-                login = toml.load(fp)
+            login = await aload(CONFIG)
 
             data = {
                 "get_secure_url": 1,
@@ -96,8 +99,8 @@ class Pixiv(Site):
 
             self.headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
-            with open("config/crosspost/pixiv.toml", "w") as fp:
-                toml.dump(login, fp)
+
+            await adump(CONFIG, login)
             await asyncio.sleep(res["expires_in"])
 
     async def handler(

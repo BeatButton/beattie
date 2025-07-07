@@ -6,7 +6,7 @@ from asyncio import subprocess
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 from zipfile import ZipFile
 
 from beattie.utils.aioutils import try_wait_for
@@ -105,6 +105,13 @@ magick_gif_pp = magick_pp("gif")
 magick_png_pp = magick_pp("png")
 
 
+def write_durations(tempdir: Path, res: dict[str, Any]):
+    with open(tempdir / "durations.txt", "w") as fp:
+        for frame in res["frames"]:
+            duration = int(frame["delay"]) / 1000
+            fp.write(f"file '{frame['file']}'\nduration {duration}\n")
+
+
 async def ugoira_pp(frag: FileFragment):
     illust_id: str = frag.pp_extra
     url = "https://app-api.pixiv.net/v1/ugoira/metadata"
@@ -126,10 +133,7 @@ async def ugoira_pp(frag: FileFragment):
     with TemporaryDirectory() as td:
         tempdir = Path(td)
         zfp.extractall(tempdir)
-        with open(tempdir / "durations.txt", "w") as fp:
-            for frame in res["frames"]:
-                duration = int(frame["delay"]) / 1000
-                fp.write(f"file '{frame['file']}'\nduration {duration}\n")
+        await asyncio.to_thread(write_durations, tempdir, res)
 
         proc = await subprocess.create_subprocess_exec(
             "ffmpeg",

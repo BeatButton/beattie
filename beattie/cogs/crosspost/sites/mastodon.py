@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import toml
 from lxml import html
 
+from beattie.utils.aioutils import adump
 from beattie.utils.exceptions import ResponseError
 
 from ..postprocess import ffmpeg_gif_pp
@@ -95,8 +96,7 @@ class Mastodon(Site):
 
         data = {**self.auth, "whitelist": self.whitelist, "blacklist": self.blacklist}
 
-        with open(CONFIG, "w") as fp:
-            toml.dump(data, fp)
+        await adump(CONFIG, data)
 
         return software
 

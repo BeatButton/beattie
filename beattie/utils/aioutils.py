@@ -3,10 +3,13 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
+import toml
+
 import discord
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
+    from os import PathLike
 
 T = TypeVar("T")
 
@@ -54,3 +57,21 @@ async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: float | None
         await asyncio.wait_for(proc.wait(), timeout=timeout)
     except asyncio.TimeoutError:
         proc.kill()
+
+
+async def aload(path: str | bytes | PathLike) -> dict[str, Any]:
+    return await asyncio.to_thread(_load, path)
+
+
+def _load(path: str | bytes | PathLike) -> dict[str, Any]:
+    with open(path) as fp:
+        return toml.load(fp)
+
+
+async def adump(path: str | bytes | PathLike, data: dict[str, Any]):
+    return await asyncio.to_thread(_dump, path, data)
+
+
+def _dump(path: str | bytes | PathLike, data: dict[str, Any]):
+    with open(path, "w") as fp:
+        toml.dump(data, fp)

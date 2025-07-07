@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 import toml
 from lxml import html
 
+from beattie.utils.aioutils import aload
+
 from .site import Site
 
 if TYPE_CHECKING:
@@ -43,8 +45,7 @@ class Hiccears(Site):
         self.logger = logging.getLogger(__name__)
 
     async def load(self):
-        with open("config/crosspost/hiccears.toml") as fp:
-            self.headers = toml.load(fp)
+        self.headers = await aload("config/crosspost/hiccears.toml")
 
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, link: str):
         async with self.cog.get(
