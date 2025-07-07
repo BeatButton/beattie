@@ -53,7 +53,7 @@ class Reminder:
 
     def __init__(
         self,
-        id: int,
+        id_: int,
         guild_id: int,
         channel_id: int,
         message_id: int,
@@ -61,7 +61,7 @@ class Reminder:
         time: datetime,
         topic: str,
     ):
-        self.id = id
+        self.id = id_
         self.guild_id = guild_id
         self.channel_id = channel_id
         self.message_id = message_id

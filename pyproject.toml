@@ -4,6 +4,7 @@ strictParameterNoneValue = false
 
 [tool.ruff.lint]
 select = [
+    "A",
     "ARG",
     "COM",
     "DTZ",
