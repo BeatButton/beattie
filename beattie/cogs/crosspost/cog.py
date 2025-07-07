@@ -641,7 +641,7 @@ translate text, or a language name or code to translate text into that language.
             left_msg = "\n".join(sorted(sites_left))
         else:
             left_msg = "... none...?"
-        await ctx.send("\n".join([list_msg, "Sites you could blacklist:", left_msg]))
+        await ctx.send(f"{list_msg}\nSites you could blacklist:\n{left_msg}")
 
     @crosspost.command()
     async def info(self, ctx: BContext, _: str | None):
