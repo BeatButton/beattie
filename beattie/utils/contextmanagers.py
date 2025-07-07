@@ -50,7 +50,7 @@ class get:
         while True:
             try:
                 resp = await self._aenter_inner()
-            except ResponseError:
+            except ResponseError:  # noqa: PERF203
                 self.index += 1
                 if self.index >= len(self.urls):
                     raise

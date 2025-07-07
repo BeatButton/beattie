@@ -46,15 +46,14 @@ def spoiler_spans(text: str) -> list[tuple[int, int]]:
     """Returns indices substrings in spoilers (inclusive left, exclusive right)"""
     spans = []
     start = 0
-    while True:
-        try:
+    try:
+        while True:
             left = text.index("||", start) + 2
             right = text.index("||", left)
-        except ValueError:
-            break
-        else:
             start = right + 2
             spans.append((left, right))
+    except ValueError:
+        pass
 
     return spans
 

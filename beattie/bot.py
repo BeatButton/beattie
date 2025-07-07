@@ -187,7 +187,7 @@ class BeattieBot(Bot):
         for extension in extensions:
             try:
                 await self.load_extension(extension, package="cogs")
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 print(
                     "Failed to load extension",
                     extension,

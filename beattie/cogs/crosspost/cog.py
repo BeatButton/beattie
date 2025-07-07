@@ -283,15 +283,14 @@ class Crosspost(Cog):
                     queues.append((queue, kwargs))
                     new.add(queue)
 
-        for task in tasks:
-            try:
+        try:
+            for task in tasks:
                 queue = await task
-            except:
-                self.logger.exception(f"error: {logloc}: {name} {link} ")
-                raise
-            else:
                 if queue in new and queue.fragments:
                     self.logger.info(f"{queue.site.name}: {logloc}: {link}")
+        except:
+            self.logger.exception(f"error: {logloc}: {name} {link} ")
+            raise
 
         for _, batch in groupby(
             filter(lambda p: p[0].fragments, queues),
@@ -377,7 +376,7 @@ class Crosspost(Cog):
         for message_id in sent_messages:
             try:
                 msg = await message.channel.fetch_message(message_id)
-            except discord.NotFound:
+            except discord.NotFound:  # noqa: PERF203
                 pass
             except discord.Forbidden:
                 return
@@ -393,7 +392,7 @@ class Crosspost(Cog):
         for message_id in messages:
             try:
                 await self.bot.http.delete_message(channel_id, message_id)
-            except discord.NotFound:
+            except discord.NotFound:  # noqa: PERF203
                 pass
             except discord.Forbidden:
                 return
@@ -727,10 +726,9 @@ translate text, or a language name or code to translate text into that language.
         count = 0
 
         if target is not None:
-            matches: list[tuple[re.Match[str], Site]] = []
-            for site in self.sites:
-                if m := site.pattern.search(target):
-                    matches.append((m, site))
+            matches = (
+                (m, site) for site in self.sites if (m := site.pattern.search(target))
+            )
 
             for m, site in matches:
                 name = site.name
