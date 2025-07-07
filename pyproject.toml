@@ -13,6 +13,7 @@ select = [
     "FA",
     "G",
     "I",
+    "ISC",
     "PERF",
     "PL",
     "PYI",

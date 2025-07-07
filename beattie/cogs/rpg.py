@@ -204,7 +204,7 @@ class RPG(Cog):
         if isinstance(e, commands.CommandInvokeError):
             e = e.original
         if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
-            await ctx.send("Invalid input. Valid input examples:" "\n6" "\n13e")
+            await ctx.send("Invalid input. Valid input examples:\n6\n13e")
         elif isinstance(e, futures.TimeoutError):
             await ctx.reply("Your execution took too long. Roll fewer dice.")
         else:
