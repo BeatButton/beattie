@@ -22,6 +22,7 @@ select = [
     "RET",
     "RUF",
     "SIM",
+    "T",
     "TC",
     "TRY",
     "UP",
