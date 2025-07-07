@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 import copy
 import logging
-from collections.abc import Mapping
 from contextlib import AbstractAsyncContextManager
-from types import TracebackType
-from typing import Any, Generic, TypeVar
-
-from httpx import AsyncClient, Response
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from .exceptions import ResponseError
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from types import TracebackType
+
+    from httpx import AsyncClient, Response
 
 LOGGER = logging.getLogger(__name__)
 

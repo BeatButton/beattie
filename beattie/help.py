@@ -1,6 +1,11 @@
-from collections.abc import Mapping
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from discord.ext.commands import Cog, Command, MinimalHelpCommand
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class BHelp(MinimalHelpCommand):

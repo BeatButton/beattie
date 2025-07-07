@@ -9,6 +9,7 @@ select = [
     "COM",
     "DTZ",
     "F",
+    "FA",
     "I",
     "PERF",
     "PL",

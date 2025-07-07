@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Awaitable
-from typing import Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import discord
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 T = TypeVar("T")
 

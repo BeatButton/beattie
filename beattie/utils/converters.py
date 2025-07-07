@@ -1,14 +1,20 @@
+from __future__ import annotations
+
 import re
-from collections.abc import Collection
 from datetime import datetime
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from recurrent import RecurringEvent
 
 from discord.ext.commands import BadArgument, Converter
 
-from beattie.context import BContext
 from beattie.utils.etc import UTC
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
+
+    from beattie.context import BContext
 
 GMT_TRANS = str.maketrans("+-", "-+")
 MINOR = frozenset(("cups", "swords", "wands", "pentacles"))
