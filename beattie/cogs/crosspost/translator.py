@@ -133,7 +133,7 @@ class LibreTranslator(Translator):
         return self._lang_task
 
     async def detect(self, text: str) -> Language:
-        self.logger.debug(f"detecting language for: {text}")
+        self.logger.debug("detecting language for: %s", text)
         body = {
             "api_key": self.api_key,
             "q": text,
@@ -150,13 +150,19 @@ class LibreTranslator(Translator):
         langs = await self.languages()
         out = langs[lang["language"]]
         conf = lang["confidence"]
-        self.logger.debug(f"detected language as {out} {conf}%")
+        self.logger.debug("detected language as %s %d%%", out, conf)
         if conf < 60:
             return DONT
         return out
 
     async def translate(self, text: str, source: str, target: str) -> str:
-        self.logger.debug(f"translating from {source} to {target}: {text}")
+        self.logger.debug(
+            "%s: translating from %s to %s: %s",
+            type(self).__name__,
+            source,
+            target,
+            text,
+        )
         if source == "zz":
             source = "auto"
         body = {
@@ -214,7 +220,11 @@ class DeeplTranslator(Translator):
 
     async def translate(self, text: str, source: str, target: str) -> str:
         self.logger.debug(
-            f"{type(self).__name__}: translating from {source} to {target}: {text}",
+            "%s: translating from %s to %s: %s",
+            type(self).__name__,
+            source,
+            target,
+            text,
         )
         data = {
             "text": [text],

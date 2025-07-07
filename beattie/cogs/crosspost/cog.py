@@ -201,7 +201,7 @@ class Crosspost(Cog):
 
         logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
         settings = await self.db.get_effective_settings(ctx.message)
-        self.logger.debug(f"process links: {logloc}: {settings}")
+        self.logger.debug("process links: %s: %s", logloc, settings)
 
         content = ctx.message.content
         sspans = spoiler_spans(content)
@@ -259,7 +259,7 @@ class Crosspost(Cog):
                     self.queue_cache.pop(key, None)
                 if queue:
                     if queue.fragments:
-                        self.logger.info(f"cache hit: {logloc}: {name} {args}")
+                        self.logger.info("cache hit: %s: %s %s", logloc, name, args)
                     if task := queue.handle_task:
                         now = time.time()
                         wait_until = queue.wait_until
@@ -277,7 +277,7 @@ class Crosspost(Cog):
                     queues.append((queue, kwargs))
                 else:
                     if self.bot.shared.debug or name != "mastodon":
-                        self.logger.info(f"began {name}: {logloc}: {link}")
+                        self.logger.info("began %s: %s: %s", name, logloc, link)
                     self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
                     tasks.append(asyncio.Task(queue.handle(ctx, *args)))
                     queues.append((queue, kwargs))
@@ -287,9 +287,9 @@ class Crosspost(Cog):
             for task in tasks:
                 queue = await task
                 if queue in new and queue.fragments:
-                    self.logger.info(f"{queue.site.name}: {logloc}: {link}")
+                    self.logger.info("%s: %s: %s", queue.site.name, logloc, link)
         except:
-            self.logger.exception(f"error: {logloc}: {name} {link} ")
+            self.logger.exception("error: %s: %s %s ", logloc, name, link)
             raise
 
         for _, batch in groupby(

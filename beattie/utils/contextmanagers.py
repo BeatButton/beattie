@@ -63,7 +63,7 @@ class get:
 
     async def _aenter_inner(self) -> Response:
         url = self.urls[self.index]
-        LOGGER.debug(f"making a {self.method} request to {url}")
+        LOGGER.debug("making a %s request to %s", self.method, url)
 
         self.resp = await self.session.request(self.method, url, **self.kwargs)
 

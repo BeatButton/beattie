@@ -375,7 +375,7 @@ class Remind(Cog):
             )
 
     async def send_reminder(self, reminder: Reminder):
-        self.logger.info(f"handling reminder {reminder}")
+        self.logger.info("handling reminder %s", reminder)
         recurring = None
         guild_id = reminder.guild_id
         user_id = reminder.user_id
@@ -413,7 +413,9 @@ class Remind(Cog):
                 )
 
             self.logger.info(
-                f"reminder {reminder.id} found, recurring={recurring is not None}",
+                "reminder %d found, recurring=%r",
+                reminder.id,
+                recurring is not None,
             )
 
             reference = None
@@ -459,7 +461,7 @@ class Remind(Cog):
                     chan = f"DM with {recipient.name}"
                 message = f"An error occured in sending a reminder to {chan}"
                 self.logger.exception(message)
-            self.logger.info(f"reminder {reminder.id} was sent")
+            self.logger.info("reminder %d was sent", reminder.id)
             if recurring is not None:
                 rr = rrule.rrulestr(recurring["rrule"], dtstart=reminder.time)
                 time = rr.after(reminder.time)
@@ -472,7 +474,7 @@ class Remind(Cog):
                 reminder.time = time
                 await self.schedule_reminder(reminder)
         else:
-            self.logger.info(f"reminder {reminder.id} could not be resolved")
+            self.logger.info("reminder %d could not be resolved", reminder.id)
         if recurring is None:
             async with self.pool.acquire() as conn:
                 await conn.execute("DELETE FROM reminder WHERE id = $1", reminder.id)
@@ -492,7 +494,7 @@ class Remind(Cog):
                 except Exception:
                     self.logger.exception("Error sending reminder")
             else:
-                self.logger.info(f"sleeping for {delta} seconds")
+                self.logger.info("sleeping for %d seconds", delta)
                 await asyncio.sleep(delta)
 
     @commands.group(invoke_without_command=True, usage="", aliases=["tz"])

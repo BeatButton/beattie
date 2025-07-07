@@ -82,14 +82,14 @@ class Mastodon(Site):
             software = None
 
         if software:
-            self.logger.info(f"detected {domain} as activitypub ({software})")
+            self.logger.info("detected %s as activitypub (%s)", domain, software)
             try:
                 self.blacklist.remove(domain)
             except KeyError:
                 pass
             self.whitelist[domain] = software
         else:
-            self.logger.info(f"failed to detect {domain} as activitypub")
+            self.logger.info("failed to detect %s as activitypub", domain)
             self.whitelist.pop(domain, None)
             self.blacklist.add(domain)
 

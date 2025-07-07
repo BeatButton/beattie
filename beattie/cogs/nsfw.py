@@ -155,7 +155,7 @@ class NSFW(Cog):
             if not image.startswith("//"):
                 image = f"//{image}"
             image = f"https:{image}"
-        self.logger.debug(f"booru url: {image}")
+        self.logger.debug("booru url: %s", image)
         embed.set_image(url=image)
         embed.title = self.titles[site]
         embed.url = self.view[site].format(post["id"])

@@ -40,7 +40,7 @@ class Scryfall(Cog):
 
             if (diff := now - self.last_request) < DELAY:
                 secs = diff.total_seconds()
-                self.logger.info(f"sleeping for {secs} seconds")
+                self.logger.info("sleeping for %f seconds", secs)
                 await asyncio.sleep(secs)
                 now += diff
             self.last_request = now

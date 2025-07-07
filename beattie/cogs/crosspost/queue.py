@@ -79,7 +79,9 @@ class FragmentQueue:
         cooldown = self.site.cooldown
         if cooldown and (timeout := cooldown.update_rate_limit()):
             self.cog.logger.info(
-                f"{self.site.name} ratelimit hit, sleeping for {timeout:.2f} seconds",
+                "%s ratelimit hit, sleeping for %f seconds",
+                self.site.name,
+                timeout,
             )
             wait_until = time.time() + timeout
             dt = format_dt(
