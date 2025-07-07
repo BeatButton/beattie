@@ -428,7 +428,8 @@ class FragmentQueue:
                                 embedded = True
                             else:
                                 await ctx.send(
-                                    f"File too large to upload ({display_bytes(size)}).",
+                                    "File too large to upload "
+                                    f"({display_bytes(size)}).",
                                 )
                             continue
                         if len(file_batch) == 10:
