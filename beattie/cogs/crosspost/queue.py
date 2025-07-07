@@ -48,7 +48,7 @@ class FragmentQueue:
     link: str
     author: str | None
     fragments: list[Fragment]
-    handle_task: asyncio.Task | None
+    handle_task: asyncio.Task[Self] | None
     last_used: float  # timestamps
     wait_until: float
 
@@ -75,7 +75,7 @@ class FragmentQueue:
             + sum(map(getsizeof, self.fragments))
         )
 
-    async def _handle(self, ctx: CrosspostContext, *args: str):
+    async def _handle(self, ctx: CrosspostContext, *args: str) -> Self:
         cooldown = self.site.cooldown
         if cooldown and (timeout := cooldown.update_rate_limit()):
             self.cog.logger.info(
@@ -94,13 +94,13 @@ class FragmentQueue:
             await asyncio.sleep(timeout)
 
         await self.site.handler(ctx, self, *args)
+        return self
 
     async def handle(self, ctx: CrosspostContext, *args: str) -> Self:
         if self.handle_task is None:
             self.handle_task = asyncio.create_task(self._handle(ctx, *args))
 
-        await self.handle_task
-        return self
+        return await self.handle_task
 
     def push_file(
         self,

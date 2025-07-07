@@ -208,7 +208,7 @@ class Crosspost(Cog):
 
         queues: list[tuple[FragmentQueue, QueueKwargs]] = []
         new: set[FragmentQueue] = set()
-        tasks: list[asyncio.Task] = []
+        tasks: list[asyncio.Task[FragmentQueue]] = []
 
         ranges = None
         for step in steps:
@@ -285,12 +285,11 @@ class Crosspost(Cog):
 
         for task in tasks:
             try:
-                await task
+                queue = await task
             except:
                 self.logger.exception(f"error: {logloc}: {name} {link} ")
                 raise
             else:
-                queue = task.result()
                 if queue in new and queue.fragments:
                     self.logger.info(f"{queue.site.name}: {logloc}: {link}")
 
