@@ -152,6 +152,7 @@ class FragmentQueue:
     def push_text(
         self,
         text: str,
+        *,
         force: bool = False,
         interlaced: bool = False,
         skip_translate: bool = None,

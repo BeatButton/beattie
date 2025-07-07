@@ -192,8 +192,7 @@ class RPG(Cog):
         edge = "e" in inp
         num = int(inp.rstrip("e"))
 
-        args = (num, edge)
-        future = asyncio.to_thread(shadowroller, *args)
+        future = asyncio.to_thread(shadowroller, num, edge=edge)
         async with ctx.typing():
             result = await asyncio.wait_for(future, 10)
 
@@ -285,7 +284,7 @@ def roller(
     return rolls
 
 
-def shadowroller(num: int, edge: bool = False) -> str:
+def shadowroller(num: int, *, edge: bool = False) -> str:
     rolls = hits = count1 = 0
     while True:
         count6 = 0

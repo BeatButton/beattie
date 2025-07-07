@@ -279,9 +279,9 @@ class Settings:
 
     def __init__(
         self,
-        auto: bool = None,
+        auto: bool = None,  # noqa: FBT001
         max_pages: int = None,
-        text: bool = None,
+        text: bool = None,  # noqa: FBT001
         language: Language = None,
     ):
         self.auto = auto

@@ -181,6 +181,7 @@ class Crosspost(Cog):
         self,
         ctx: CrosspostContext,
         steps: Iterable[re.Match | PostFlags],
+        *,
         force: bool = False,
     ):
         steps = list(steps)
@@ -431,7 +432,7 @@ applying it to the guild as a whole."""
     async def auto(
         self,
         ctx: BContext,
-        enabled: bool,
+        enabled: bool,  # noqa: FBT001
         *,
         target: ConfigTarget = None,
     ):
@@ -490,7 +491,7 @@ applying it to the guild as a whole."""
     async def cleanup(
         self,
         ctx: BContext,
-        enabled: bool,  # noqa: ARG002
+        enabled: bool,  # noqa: ARG002, FBT001
         *,
         _: str = "",
     ):
@@ -501,7 +502,7 @@ applying it to the guild as a whole."""
     async def text(
         self,
         ctx: BContext,
-        enabled: bool,
+        enabled: bool,  # noqa: FBT001
         *,
         target: ConfigTarget = None,
     ):

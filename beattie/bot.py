@@ -52,6 +52,7 @@ class Shared:
         self,
         prefixes: tuple[str, ...],
         pool: asyncpg.Pool,
+        *,
         debug: bool,
     ):
         with open("config/config.toml") as file:
@@ -110,7 +111,7 @@ class Shared:
 
         self._close.set()
 
-    def swap_logs(self, new: bool = True) -> Awaitable[None]:
+    def swap_logs(self, *, new: bool = True) -> Awaitable[None]:
         if new:
             self.new_logger()
         return asyncio.to_thread(self.archive_logs)

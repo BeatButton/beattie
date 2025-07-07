@@ -63,7 +63,7 @@ class Stats(Cog):
         members = f"{total_members} total\n{unique_members} unique"
         embed.add_field(name="Members", value=members)
         embed.add_field(name="Channels", value=f"{text} text\n{voice} voice")
-        embed.add_field(name="Uptime", value=self.get_bot_uptime(bot, True))
+        embed.add_field(name="Uptime", value=self.get_bot_uptime(bot, brief=True))
         embed.set_footer(
             text="Made with discord.py",
             icon_url="http://i.imgur.com/5BFecvA.png",
@@ -81,7 +81,7 @@ class Stats(Cog):
         embed.add_field(name="Memory Usage", value=f"{memory_usage:.2f} MiB")
         await ctx.send(embed=embed)
 
-    def get_bot_uptime(self, bot: BeattieBot, brief: bool = False) -> str:
+    def get_bot_uptime(self, bot: BeattieBot, *, brief: bool = False) -> str:
         now = datetime.datetime.now().astimezone()
         try:
             delta = now - bot.uptime
