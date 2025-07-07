@@ -301,7 +301,7 @@ class Settings:
     def __hash__(self) -> int:
         return hash((self.auto, self.max_pages, self.text, self.language))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not type(other).__name__ == "Settings":
             return NotImplemented
         return all(getattr(self, k) == getattr(other, k) for k in self.__slots__)

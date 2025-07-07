@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 VIDEO_WIDTH = re.compile(r"vid/(\d+)x")
 
-Method = Literal["fxtwitter"] | Literal["vxtwitter"]
+Method = Literal["fxtwitter", "vxtwitter"]
 
 
 class Twitter(Site):

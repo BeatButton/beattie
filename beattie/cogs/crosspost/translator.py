@@ -4,8 +4,7 @@ import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
-from collections import namedtuple
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import Levenshtein
 import lingua
@@ -18,7 +17,11 @@ if TYPE_CHECKING:
     from .cog import Crosspost
 
 
-Language = namedtuple("Language", ("code", "name"))
+class Language(NamedTuple):
+    code: str
+    name: str
+
+
 DONT = Language("xx", "Don't")
 UNKNOWN = Language("zz", "Unknown")
 ENGLISH = Language("en", "English (default)")

@@ -68,7 +68,12 @@ class get:
             raise ResponseError(code=self.resp.status_code, url=str(self.resp.url))
         return self.resp
 
-    async def __aexit__(self, exc_type: type, exc: Exception, tb: TracebackType):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ):
         pass
 
 
@@ -84,6 +89,11 @@ class MultiAsyncWith(Generic[CM]):
             await ctx.__aenter__()
         return self.ctxs
 
-    async def __aexit__(self, exc_type: type, exc: Exception, tb: TracebackType):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ):
         for ctx in self.ctxs:
             await ctx.__aexit__(exc_type, exc, tb)

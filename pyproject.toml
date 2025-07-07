@@ -11,6 +11,7 @@ select = [
     "I",
     "PERF",
     "PL",
+    "PYI",
     "RET",
     "RUF",
     "SIM",
