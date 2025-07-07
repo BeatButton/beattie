@@ -31,12 +31,12 @@ class Scryfall(Cog):
     def __init__(self, bot: BeattieBot) -> None:
         self.bot = bot
         self.lock = asyncio.Lock()
-        self.last_request = datetime.now() - DELAY
+        self.last_request = datetime.now().astimezone() - DELAY
         self.logger = logging.getLogger(__name__)
 
     async def request(self, endpoint: str, **kwargs: Any) -> get:
         async with self.lock:
-            now = datetime.now()
+            now = datetime.now().astimezone()
 
             if (diff := now - self.last_request) < DELAY:
                 secs = diff.total_seconds()

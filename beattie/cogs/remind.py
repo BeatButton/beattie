@@ -482,7 +482,9 @@ class Remind(Cog):
     async def sleep(self):
         while self.queue:
             reminder_time: datetime = self.queue[-1].time
-            delta = (reminder_time - datetime.now()).total_seconds()
+            delta = (
+                reminder_time.astimezone() - datetime.now().astimezone()
+            ).total_seconds()
             if delta <= 0:
                 try:
                     await self.send_reminder(self.queue.pop())

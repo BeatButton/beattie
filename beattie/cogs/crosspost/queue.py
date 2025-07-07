@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta
+import time
+from datetime import datetime
 from io import BytesIO
 from itertools import groupby
 from sys import getsizeof
@@ -59,7 +60,7 @@ class FragmentQueue:
         self.cog = ctx.command.cog
         self.fragments = []
         self.handle_task = None
-        now = datetime.now().timestamp()
+        now = time.time()
         self.last_used = now
         self.wait_until = now
 
@@ -80,9 +81,12 @@ class FragmentQueue:
             self.cog.logger.info(
                 f"{self.site.name} ratelimit hit, sleeping for {timeout:.2f} seconds",
             )
-            wait_until = datetime.now() + timedelta(seconds=timeout)
-            dt = format_dt(wait_until, style="R")
-            self.wait_until = wait_until.timestamp()
+            wait_until = time.time() + timeout
+            dt = format_dt(
+                datetime.fromtimestamp(wait_until),  # noqa: DTZ006
+                style="R",
+            )
+            self.wait_until = wait_until
             await ctx.send(
                 f"Global {self.site.name} ratelimit hit, resuming {dt}.",
                 delete_after=timeout,
@@ -217,7 +221,7 @@ class FragmentQueue:
         ranges: list[tuple[int, int]] | None,
         settings: Settings,
     ) -> list[tuple[Postable, bool]]:
-        self.last_used = datetime.now().timestamp()
+        self.last_used = time.time()
         await self.handle(ctx)
         items: list[tuple[Postable, bool]] = []
 
@@ -305,7 +309,10 @@ class FragmentQueue:
                 return u == ctx.author and r.message == msg and r.emoji in {"❌", "⭕"}
 
             timeout = 60
-            dt = format_dt(datetime.now() + timedelta(seconds=timeout), style="R")
+            dt = format_dt(
+                datetime.fromtimestamp(time.time() + timeout),  # noqa: DTZ006
+                style="R",
+            )
             msg = await ctx.reply(
                 f"This post has {len(to_dl)} items. Are you sure? React {dt}."
                 "\n-# You can post specific pages with a command like "

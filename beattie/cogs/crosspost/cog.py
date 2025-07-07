@@ -4,6 +4,7 @@ import asyncio
 import copy
 import logging
 import re
+import time
 from datetime import datetime
 from itertools import groupby
 from sys import getsizeof
@@ -260,11 +261,11 @@ class Crosspost(Cog):
                     if queue.fragments:
                         self.logger.info(f"cache hit: {logloc}: {name} {args}")
                     if task := queue.handle_task:
-                        now = datetime.now().timestamp()
+                        now = time.time()
                         wait_until = queue.wait_until
                         if now < wait_until and (timeout := wait_until - now) > 5:
                             dt = format_dt(
-                                datetime.fromtimestamp(wait_until),
+                                datetime.fromtimestamp(wait_until),  # noqa: DTZ006
                                 style="R",
                             )
                             await ctx.send(
@@ -703,7 +704,7 @@ translate text, or a language name or code to translate text into that language.
         memory = await asyncio.to_thread(sum, map(getsizeof, queues))
         length = sum(len(queue.fragments) > 0 for queue in queues)
         if stamp := min((queue.last_used for queue in queues), default=None):
-            oldest = format_dt(datetime.fromtimestamp(stamp), style="R")
+            oldest = format_dt(datetime.fromtimestamp(stamp), style="R")  # noqa: DTZ006
         else:
             oldest = "(none)"
 

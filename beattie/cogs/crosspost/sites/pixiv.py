@@ -70,7 +70,7 @@ class Pixiv(Site):
                 "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
             )
 
-            now = datetime.now().isoformat()
+            now = datetime.now().isoformat()  # noqa: DTZ005
             headers = {
                 "X-Client-Time": now,
                 "X-Client-Hash": md5((now + hash_secret).encode("utf-8")).hexdigest(),
