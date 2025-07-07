@@ -248,11 +248,14 @@ class Crosspost(Cog):
                 args = tuple(map(lambda a: a and a.strip(), args))
                 key = (name, *args)
                 queue = None
-                if queue := self.queue_cache.get(key):
-                    if task := queue.handle_task:
-                        if task.done() and task.exception():
-                            queue = None
-                            self.queue_cache.pop(key, None)
+                if (
+                    (queue := self.queue_cache.get(key))
+                    and (task := queue.handle_task)
+                    and task.done()
+                    and task.exception()
+                ):
+                    queue = None
+                    self.queue_cache.pop(key, None)
                 if queue:
                     if queue.fragments:
                         self.logger.info(f"cache hit: {logloc}: {name} {args}")
