@@ -184,7 +184,7 @@ class Database:
     async def get_sent_messages(self, invoking_message: int) -> list[int]:
         if sent_messages := self._message_cache.get(invoking_message):
             return sent_messages
-        elif (
+        if (
             utcnow() - snowflake_time(invoking_message)
         ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
             async with self.pool.acquire() as conn:
@@ -192,9 +192,8 @@ class Database:
                     "SELECT * FROM crosspostmessage WHERE invoking_message = $1",
                     invoking_message,
                 )
-                return [row["sent_message"] for row in rows]
-        else:
-            return []
+            return [row["sent_message"] for row in rows]
+        return []
 
     async def add_sent_message(self, invoking_message: int, sent_message: int):
         if (messages := self._message_cache.get(invoking_message)) is None:
@@ -297,8 +296,7 @@ class Settings:
                 for k in self.__slots__
                 if (v := getattr(self, k)) is not None
             )
-        else:
-            return "(none)"
+        return "(none)"
 
     def __hash__(self) -> int:
         return hash((self.auto, self.max_pages, self.text, self.language))

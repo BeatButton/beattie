@@ -56,7 +56,7 @@ class Tumblr(Site):
         root = html.document_fromstring(content, self.cog.parser)
 
         if not (script := root.xpath(TUMBLR_SCRIPT_SELECTOR)):
-            return False
+            return
 
         data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition('}')[0]}}}")
 
@@ -66,7 +66,7 @@ class Tumblr(Site):
                 force=True,
                 quote=False,
             )
-            return False
+            return
 
         post = post_content["posts"][0]
         reblog_root = post["reblogRoot"]
@@ -81,7 +81,7 @@ class Tumblr(Site):
         )
 
         if not any(map(self.embeddable, blocks)):
-            return False
+            return
 
         queue.link = f"https://{blog}.tumblr.com/post/{post_id}"
         queue.author = data["params"]["id"]

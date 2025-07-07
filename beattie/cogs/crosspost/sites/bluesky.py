@@ -64,7 +64,7 @@ class Bluesky(Site):
         video = media.get("video")
 
         if not (images or video):
-            return False
+            return
 
         did = data["uri"].removeprefix("at://").partition("/")[0]
 

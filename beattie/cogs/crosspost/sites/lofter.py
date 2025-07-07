@@ -29,7 +29,7 @@ class Lofter(Site):
         if elems := root.xpath(LOFTER_IMG_SELECTOR):
             img = elems[0]
         else:
-            return False
+            return
         queue.push_file(img.get("src"))
 
         if elems := root.xpath(LOFTER_TEXT_SELECTOR):

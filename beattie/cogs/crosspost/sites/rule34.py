@@ -23,7 +23,7 @@ class Rule34(Site):
         params = {**API_PARAMS}
         post = await get_booru_post(self.cog, link, API_URL, params)
         if post is None:
-            return False
+            return
         queue.push_file(post["file_url"])
         if source := post.get("source"):
             queue.push_text(html_unescape(source), quote=False, force=True)

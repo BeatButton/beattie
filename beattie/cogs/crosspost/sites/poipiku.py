@@ -50,7 +50,7 @@ class Poipiku(Site):
         link = str(resp.url)
 
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
-            return False
+            return
 
         refer = {"Referer": link}
 

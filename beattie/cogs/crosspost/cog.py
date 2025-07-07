@@ -622,8 +622,7 @@ translate text, or a language name or code to translate text into that language.
     def blacklist_list_msg(blacklist: set[str]) -> str:
         if blacklist:
             return f"Currently blacklisted sites:\n{'\n'.join(sorted(blacklist))}"
-        else:
-            return "No sites are currently blacklisted."
+        return "No sites are currently blacklisted."
 
     @blacklist.group(name="list", aliases=["get", "info"], invoke_without_command=True)
     async def blacklist_list(self, ctx: BContext):

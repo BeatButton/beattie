@@ -26,7 +26,7 @@ class Pillowfort(Site):
             root = html.document_fromstring(resp.content, self.cog.parser)
 
         if not (images := root.xpath(OG_IMAGE)):
-            return False
+            return
 
         queue.author = root.xpath(AUTHOR_SELECTOR)[0].text_content().strip()
 

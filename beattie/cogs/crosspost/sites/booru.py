@@ -31,5 +31,4 @@ async def get_booru_post(
         return None
     if isinstance(data, dict):
         data = data["post"]
-    post = data[0]
-    return post
+    return data[0]

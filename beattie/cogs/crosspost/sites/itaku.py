@@ -34,7 +34,7 @@ class Itaku(Site):
             url = post.get("image")
 
         if url is None:
-            return False
+            return
 
         queue.author = post["owner_username"]
         queue.push_file(url)

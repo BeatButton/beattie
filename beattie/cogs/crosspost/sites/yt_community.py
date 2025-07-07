@@ -32,7 +32,7 @@ class YTCommunity(Site):
             root = html.document_fromstring(resp.content, self.cog.parser)
 
         if not (script := root.xpath(YT_SCRIPT_SELECTOR)):
-            return False
+            return
 
         data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition(';')[0]}")
 
@@ -50,7 +50,7 @@ class YTCommunity(Site):
         post = item["backstagePostThreadRenderer"]["post"]["backstagePostRenderer"]
 
         if not (attachment := post.get("backstageAttachment")):
-            return False
+            return
 
         images = attachment.get("postMultiImageRenderer", {}).get("images", [])
 

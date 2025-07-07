@@ -82,8 +82,7 @@ class HybridTranslator(Translator):
 
         if lang := await asyncio.to_thread(self.detector.detect_language_of, text):
             return langs[lang.iso_code_639_1.name.lower()]
-        else:
-            return DONT
+        return DONT
 
     async def translate(self, text: str, source: str, target: str) -> str:
         langs = await self.languages()

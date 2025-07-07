@@ -113,11 +113,11 @@ class Mastodon(Site):
         if sub := info.subdomain:
             domain = f"{sub}.{domain}"
         if domain in self.blacklist:
-            return False
+            return
         if (software := self.whitelist.get(domain)) is None and (
             software := await self.determine(domain)
         ) is None:
-            return False
+            return
 
         if (handler := self.dispatch.get(software)) is None:
             raise RuntimeError(f"unsupported activitypub software {software}")
@@ -144,7 +144,7 @@ class Mastodon(Site):
             post = resp.json()
 
         if not (images := post.get("media_attachments")):
-            return False
+            return
 
         if post.get("visibility") not in ("public", "unlisted"):
             return
@@ -202,7 +202,7 @@ class Mastodon(Site):
             data = resp.json()
 
         if not (files := data["files"]):
-            return False
+            return
 
         queue.author = data["user"]["id"]
 

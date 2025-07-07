@@ -3,7 +3,7 @@ typeCheckingMode = "basic"
 strictParameterNoneValue = false
 
 [tool.ruff.lint]
-select = ["I", "TC", "UP", "F", "RUF", "COM", "PL", "SIM", "DTZ", "PERF"]
+select = ["I", "TC", "UP", "F", "RUF", "COM", "PL", "SIM", "DTZ", "PERF", "RET"]
 ignore = [
     "PLR0912",
     "PLR0913",

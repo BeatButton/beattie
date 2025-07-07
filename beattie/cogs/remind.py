@@ -159,6 +159,7 @@ class Remind(Cog):
             )
         if tz:
             return ZoneInfo(tz)
+        return None
 
     @commands.group(invoke_without_command=True, usage="")
     async def remind(

@@ -36,7 +36,7 @@ class Gelbooru(Site):
         params = {**API_PARAMS, **self.gelbooru_params}
         post = await get_booru_post(self.cog, link, GELBOORU_API_URL, params)
         if post is None:
-            return False
+            return
 
         tag_params = {
             **API_PARAMS,

@@ -68,12 +68,11 @@ GB = MB * KB
 def display_bytes(num_bytes: int) -> str:
     if num_bytes < KB:
         return f"{num_bytes} B"
-    elif num_bytes < MB:
+    if num_bytes < MB:
         return f"{num_bytes / KB:.2f} KiB"
-    elif num_bytes < GB:
+    if num_bytes < GB:
         return f"{num_bytes / MB:.2f} MiB"
-    else:
-        return f"{num_bytes / GB:.2f} GiB"
+    return f"{num_bytes / GB:.2f} GiB"
 
 
 SECOND = 1
@@ -139,8 +138,7 @@ INVITE_EXPR = re.compile(
 def translate_markdown(text: str) -> str:
     for expr, mkd in MD_TRANS:
         text = expr.sub(mkd, text)
-    text = re.sub(r"<br ?/?>", "\n", text)
-    return text
+    return re.sub(r"<br ?/?>", "\n", text)
 
 
 def translate_bbcode(text: str) -> str:
@@ -148,15 +146,13 @@ def translate_bbcode(text: str) -> str:
         text = expr.sub(mkd, text)
     for expr in [*BB_NOOP, *BB_STRIP]:
         text = expr.sub("", text)
-    text = BB_URL.sub(r"[\2](\1)", text)
-    return text
+    return BB_URL.sub(r"[\2](\1)", text)
 
 
 def get_size_limit(ctx: Context) -> int:
     if guild := ctx.guild:
         return guild.filesize_limit
-    else:
-        return DEFAULT_FILE_SIZE_LIMIT_BYTES
+    return DEFAULT_FILE_SIZE_LIMIT_BYTES
 
 
 def replace_ext(name: str, ext: str) -> str:

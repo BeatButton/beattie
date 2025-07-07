@@ -50,7 +50,7 @@ class Fanbox(Site):
         post = data["body"]
         body = post["body"]
         if body is None:
-            return False
+            return
 
         queue.author = post["creatorId"]
 
@@ -77,7 +77,7 @@ class Fanbox(Site):
                 file_map = body["fileMap"]
 
                 if not (image_map or file_map):
-                    return False
+                    return
 
                 for block in blocks:
                     match block["type"]:

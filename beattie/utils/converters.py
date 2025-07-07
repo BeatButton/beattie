@@ -32,10 +32,9 @@ class TimeConverter(Converter):
         time: str | datetime | None = event.parse(argument)
         if time is None:
             raise BadArgument
-        elif isinstance(time, str):
+        if isinstance(time, str):
             return event
-        else:
-            return time.replace(tzinfo=tz)
+        return time.replace(tzinfo=tz)
 
 
 class TimezoneConverter(Converter):

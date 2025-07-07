@@ -42,8 +42,7 @@ class LanguageConverter(Converter):
         else:
             if on:
                 return langs["en"]
-            else:
-                return DONT
+            return DONT
 
         lower = argument.lower()
         if lang := langs.get(lower):

@@ -56,14 +56,13 @@ class Result:
                 self.successs + other.successs,
                 self.triumphs + other.triumphs,
             )
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return type(self)(
                 self.advantages + other,
                 self.successs + other,
                 self.triumphs + other,
             )
-        else:
-            return NotImplemented
+        return NotImplemented
 
     __radd__ = __add__
 
@@ -74,8 +73,7 @@ class Result:
                 self.successs * other,
                 self.triumphs * other,
             )
-        else:
-            return NotImplemented
+        return NotImplemented
 
     __rmul__ = __mul__
 
@@ -106,18 +104,16 @@ class Force:
     def __add__(self, other: Any) -> Force:
         if isinstance(other, Force):
             return type(self)(self.light + other.light, self.dark + other.dark)
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return type(self)(self.light + other, self.dark + other)
-        else:
-            return NotImplemented
+        return NotImplemented
 
     __radd__ = __add__
 
     def __mul__(self, other: Any) -> Force:
         if isinstance(other, int):
             return type(self)(self.light * other, self.dark * other)
-        else:
-            return NotImplemented
+        return NotImplemented
 
     __rmul__ = __mul__
 
