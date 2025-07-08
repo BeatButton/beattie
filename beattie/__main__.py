@@ -36,9 +36,9 @@ async def main():
     await shared.async_init()
     bots: list[BeattieBot] = [BeattieBot(shared) for _ in tokens]
     async with MultiAsyncWith(bots) as bots, asyncio.TaskGroup() as tg:
-        bots_tokens = list(zip(bots, tokens))
+        bots_tokens = [*zip(bots, tokens)]
         shared.bot_ids = set()
-        shared.bots = list()
+        shared.bots = []
         for bot in bots:
             bot.shared = shared
             shared.bots.append(bot)

@@ -247,8 +247,7 @@ class Crosspost(Cog):
                 args = m.groups()
                 if not args:
                     args = (link,)
-                args = tuple(map(lambda a: a and a.strip(), args))
-                key = (name, *args)
+                key = (name, *(a and a.strip() for a in args))
                 queue = None
                 if (
                     (queue := self.queue_cache.get(key))
@@ -729,8 +728,7 @@ translate text, or a language name or code to translate text into that language.
                 args = m.groups()
                 if not args:
                     args = (target,)
-                args = tuple(map(lambda a: a and a.strip(), args))
-                key = (name, *args)
+                key = (name, *(a and a.strip() for a in args))
                 if self.queue_cache.pop(key, None) is not None:
                     count += 1
 
