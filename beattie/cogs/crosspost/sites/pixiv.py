@@ -1,3 +1,5 @@
+# ruff: noqa: S105, S324
+
 from __future__ import annotations
 
 import asyncio

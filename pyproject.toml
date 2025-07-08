@@ -3,35 +3,7 @@ typeCheckingMode = "basic"
 strictParameterNoneValue = false
 
 [tool.ruff.lint]
-select = [
-    "A",
-    "ANN",
-    "ARG",
-    "ASYNC",
-    "B",
-    "C",
-    "COM",
-    "DTZ",
-    "E",
-    "F",
-    "FA",
-    "FBT",
-    "FLY",
-    "G",
-    "I",
-    "ISC",
-    "PERF",
-    "PIE",
-    "PL",
-    "PYI",
-    "RET",
-    "RUF",
-    "SIM",
-    "T",
-    "TC",
-    "TRY",
-    "UP",
-]
+select = ["ALL"]
 ignore = [
     "ANN201",
     "ANN202",
@@ -40,16 +12,26 @@ ignore = [
     "B008",
     "B027",
     "C901",
+    "D",
+    "INP001",
+    "PGH003",
+    "PGH004",
     "PLR0912",
     "PLR0913",
     "PLR0915",
     "PLR2004",
     "PLW2901",
+    "PTH",
     "RUF013",
     "RUF021",
     "RUF023",
+    "S101",
+    "S113",
+    "S311",
     "SIM105",
     "SIM108",
+    "SLF001",
+    "TID252",
 ]
 
 [tool.ruff.lint.isort.sections]

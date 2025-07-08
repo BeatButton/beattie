@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-class get:
+class get:  # noqa: N801
     """Returns a response to the first URL that returns a 200 status code."""
 
     session: AsyncClient
