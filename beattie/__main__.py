@@ -46,4 +46,7 @@ async def main():
             tg.create_task(bot.start(token))
 
 
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except KeyboardInterrupt:
+    pass
