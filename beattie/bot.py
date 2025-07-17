@@ -196,7 +196,7 @@ class BeattieBot(Bot):
                     extension,
                     file=sys.stderr,
                 )
-                traceback.print_exception(type(e), e, e.__traceback__)
+                traceback.print_exception(e)
 
     async def close(self):
         await super().close()
@@ -227,7 +227,7 @@ class BeattieBot(Bot):
                 message = (
                     f"An error occured in guild {ctx.guild} channel #{ctx.channel}"
                 )
-            self.logger.exception(message, exc_info=(type(e), e, e.__traceback__))
+            self.logger.exception(message, exc_info=e)
             raise e
 
     async def on_ready(self):
