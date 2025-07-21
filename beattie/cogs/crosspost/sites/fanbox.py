@@ -44,7 +44,7 @@ class Fanbox(Site):
 
     async def handler(
         self,
-        _ctx: CrosspostContext,
+        ctx: CrosspostContext,
         queue: FragmentQueue,
         user: str,
         post_id: str,
@@ -53,13 +53,18 @@ class Fanbox(Site):
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
 
         async with FlareSolverr(self.solver_url, self.proxy_url) as fs:
-            resp = await fs.get(
-                url,
-                headers={
-                    "Accept": "application/json, text/plain, */*",
-                    "Origin": "https://www.fanbox.cc",
-                },
-            )
+            msg = await ctx.send("Solving captcha...")
+            try:
+                await fs.get("https://fanbox.cc")
+                resp = await fs.get(
+                    url,
+                    headers={
+                        "Accept": "application/json, text/plain, */*",
+                        "Origin": "https://www.fanbox.cc",
+                    },
+                )
+            finally:
+                await msg.delete()
 
         root = etree.fromstring(resp["solution"]["response"], self.parser)
         data = json.loads(root.xpath("//pre")[0].text)
