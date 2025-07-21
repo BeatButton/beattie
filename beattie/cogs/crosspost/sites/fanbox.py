@@ -42,9 +42,17 @@ class Fanbox(Site):
             self.cog.sites.remove(self)
         self.parser = etree.HTMLParser()
 
+    async def load(self):
+        self.flaresolverr = FlareSolverr(self.solver_url, self.proxy_url)
+        await self.flaresolverr.start()
+        self.cog.bot.shared.create_task(self.flaresolverr.get("https://fanbox.cc"))
+
+    async def unload(self):
+        await self.flaresolverr.close()
+
     async def handler(
         self,
-        ctx: CrosspostContext,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         user: str,
         post_id: str,
@@ -52,19 +60,13 @@ class Fanbox(Site):
         queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
 
-        async with FlareSolverr(self.solver_url, self.proxy_url) as fs:
-            msg = await ctx.send("Solving captcha...")
-            try:
-                await fs.get("https://fanbox.cc")
-                resp = await fs.get(
-                    url,
-                    headers={
-                        "Accept": "application/json, text/plain, */*",
-                        "Origin": "https://www.fanbox.cc",
-                    },
-                )
-            finally:
-                await msg.delete()
+        resp = await self.flaresolverr.get(
+            url,
+            headers={
+                "Origin": "https://www.fanbox.cc",
+                "Accept": "application/json, text/plain, */*",
+            },
+        )
 
         root = etree.fromstring(resp["solution"]["response"], self.parser)
         data = json.loads(root.xpath("//pre")[0].text)
@@ -124,19 +126,17 @@ class Fanbox(Site):
 class FlareSolverr:
     solver: str
     proxy: str
-    session: str
+    session: str | None
     client: httpx.AsyncClient
 
     def __init__(self, solver: str, proxy: str):
         self.solver = solver
         self.proxy = proxy
         self.client = httpx.AsyncClient(follow_redirects=True, timeout=None)
+        self.session = None
 
     async def __aenter__(self):
-        data = await self._request(
-            {"cmd": "sessions.create", "proxy": {"url": self.proxy}},
-        )
-        self.session = data["session"]
+        await self.start()
         return self
 
     async def __aexit__(
@@ -145,8 +145,19 @@ class FlareSolverr:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ):
+        await self.close()
+
+    async def start(self):
+        if self.session is None:
+            data = await self._request(
+                {"cmd": "sessions.create", "proxy": {"url": self.proxy}},
+            )
+            self.session = data["session"]
+
+    async def close(self):
         if self.session is not None:
             await self._request({"cmd": "sessions.destroy", "session": self.session})
+            self.session = None
 
     async def _request(self, command: dict[str, Any]) -> dict[str, Any]:
         resp = await self.client.post(
