@@ -1,3 +1,4 @@
+asyncpg-stubs
 black
 isort
 objgraph

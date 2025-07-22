@@ -23,7 +23,7 @@ from beattie.utils.etc import UTC, display_timedelta, reverse_insort_by_key
 from beattie.utils.type_hints import GuildMessageable
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from _typeshed import SupportsGetItem
 
     from beattie.bot import BeattieBot
     from beattie.context import BContext
@@ -85,7 +85,7 @@ class Reminder:
         return {k: v for k in self.__slots__ if (v := getattr(self, k)) is not None}
 
     @classmethod
-    def from_record(cls, row: Mapping[str, Any]) -> Self:
+    def from_record(cls, row: SupportsGetItem) -> Self:
         return cls(*(row[attr] for attr in cls.__slots__))
 
 
