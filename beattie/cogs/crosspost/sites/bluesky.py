@@ -72,14 +72,14 @@ class Bluesky(Site):
         queue.link = f"https://bsky.app/profile/{repo}/post/{rkey}"
 
         if video:
-            video_id = video["ref"]["$link"]
-            url = f"https://video.bsky.app/watch/{did}/{video_id}/playlist.m3u8"
-            filename = f"{video_id}.m3u8"
+            cid = video["ref"]["$link"]
+            url = (
+                f"https://bsky.social/xrpc/com.atproto.sync.getBlob?did={did}&cid={cid}"
+            )
+            filename = f"{cid}.mp4"
             queue.push_file(
                 url,
                 filename=filename,
-                postprocess=ffmpeg_m3u8_to_mp4_pp,
-                can_link=False,
             )
 
         for image in images:
