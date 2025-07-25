@@ -18,7 +18,6 @@ class BHelp(MinimalHelpCommand):
 
     def add_subcommand_formatting(self, command: Command):
         fmt = "{0} \N{EN DASH} {1}" if command.short_doc else "{0}"
-        assert self.paginator is not None
         self.paginator.add_line(
             fmt.format(
                 self.get_command_signature(command),

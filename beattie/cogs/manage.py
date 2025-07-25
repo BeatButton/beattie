@@ -40,7 +40,6 @@ class Manage(Cog):
         author = ctx.author
         channel = ctx.channel
         assert isinstance(author, Member)
-        assert isinstance(channel, GuildMessageable)
         return (
             await ctx.bot.is_owner(author)
             or channel.permissions_for(author).manage_guild
