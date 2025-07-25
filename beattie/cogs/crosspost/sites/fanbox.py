@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -42,17 +43,9 @@ class Fanbox(Site):
             self.cog.sites.remove(self)
         self.parser = etree.HTMLParser()
 
-    async def load(self):
-        self.flaresolverr = FlareSolverr(self.solver_url, self.proxy_url)
-        await self.flaresolverr.start()
-        self.cog.bot.shared.create_task(self.flaresolverr.get("https://fanbox.cc"))
-
-    async def unload(self):
-        await self.flaresolverr.close()
-
     async def handler(
         self,
-        _ctx: CrosspostContext,
+        ctx: CrosspostContext,
         queue: FragmentQueue,
         user: str,
         post_id: str,
@@ -60,13 +53,21 @@ class Fanbox(Site):
         queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
 
-        resp = await self.flaresolverr.get(
-            url,
-            headers={
-                "Origin": "https://www.fanbox.cc",
-                "Accept": "application/json, text/plain, */*",
-            },
-        )
+        async with FlareSolverr(self.solver_url, self.proxy_url) as fs:
+            solve = asyncio.create_task(fs.get("https://fanbox.cc"))
+            send = asyncio.create_task(ctx.send("Solving challenge..."))
+            try:
+                await solve
+                resp = await fs.get(
+                    url,
+                    headers={
+                        "Accept": "application/json, text/plain, */*",
+                        "Origin": "https://www.fanbox.cc",
+                    },
+                )
+            finally:
+                msg = await send
+                await msg.delete()
 
         root = etree.fromstring(resp["solution"]["response"], self.parser)
         data = json.loads(root.xpath("//pre")[0].text)
