@@ -200,11 +200,16 @@ class DeeplTranslator(Translator):
         }
         for code, pref, drop in [
             ("en", "us", "gb"),
-            ("pt", "br", "pt"),
         ]:
             langs.pop(f"{code}-{drop}")
             lang = langs.pop(f"{code}-{pref}")
             langs[code] = Language(code, lang.name)
+
+        # deepl is a very serious API
+        langs["pt"] = langs.pop("pt-br")
+        langs.pop("pt-pt (european)", None)
+        langs.pop("pt-pt", None)
+
         langs["xx"] = DONT
         langs["zz"] = UNKNOWN
 
