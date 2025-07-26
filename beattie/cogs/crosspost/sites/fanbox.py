@@ -41,7 +41,6 @@ class Fanbox(Site):
                 "no solver/proxy setup found, fanbox disabled.",
             )
             self.cog.sites.remove(self)
-        self.parser = etree.HTMLParser()
 
     async def handler(
         self,
@@ -69,7 +68,7 @@ class Fanbox(Site):
                 msg = await send
                 await msg.delete()
 
-        root = etree.fromstring(resp["solution"]["response"], self.parser)
+        root = etree.fromstring(resp["solution"]["response"], self.cog.parser)
         data = json.loads(root.xpath("//pre")[0].text)
 
         post = data["body"]
