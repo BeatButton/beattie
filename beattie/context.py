@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import ClientOSError
 
 import discord
-from discord import File, Message
+from discord import AllowedMentions, File, Message
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -28,6 +28,29 @@ class BContext(commands.Context):
     ) -> discord.Message:
         if mention_author is None:
             mention_author = False
+        if (
+            isinstance(self.me, discord.Member)
+            and not self.channel.permissions_for(self.me).read_message_history
+        ):
+            if mention_author:
+                content = f"{self.message.author.mention} {content}"
+                mentions: AllowedMentions | None
+                if mentions := kwargs.get("allowed_mentions"):
+                    match mentions.users:
+                        case True:
+                            pass
+                        case False:
+                            mentions = mentions.merge(
+                                AllowedMentions(users=[self.author]),
+                            )
+                        case users:
+                            mentions = mentions.merge(
+                                AllowedMentions(users=[self.author, *users]),
+                            )
+                else:
+                    mentions = AllowedMentions(users=[self.author])
+                kwargs["allowed_mentions"] = mentions
+            return await super().send(content, **kwargs)
         return await super().reply(content, mention_author=mention_author, **kwargs)
 
     async def send(
