@@ -3,8 +3,6 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from lxml import html
-
 from .site import Site
 
 if TYPE_CHECKING:
