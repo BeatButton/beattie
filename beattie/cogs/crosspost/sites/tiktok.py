@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Tiktok(Site):
     name = "tiktok"
     pattern = re.compile(
-        r"https?://(?:\w+\.)?(?:vx|kk)?tiktok\.com/(?:@[\w\.]+/video/|t/)?(\w+)",
+        r"https?://(?:\w+\.)?(?:vx|kk)?tiktok\.com/(?:@[\w\.]+/video/|t/)?([\w\-]+)",
     )
 
     async def handler(
