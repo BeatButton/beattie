@@ -24,11 +24,12 @@ class Tiktok(Site):
         queue: FragmentQueue,
         video_id: str,
     ):
-        async with self.cog.get(f"https://kktiktok.com/t/{video_id}?_kk=1") as resp:
+        link = f"https://kktiktok.com/t/{video_id}?_kk=1"
+        async with self.cog.get(link) as resp:
             url = resp.json()["url"]
 
         if url is None:
-            raise ResponseError(404)
+            raise ResponseError(404, link)
 
         filename = f"{video_id}.mp4"
 
