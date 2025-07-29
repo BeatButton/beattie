@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from beattie.utils.exceptions import ResponseError
+
 from .site import Site
 
 if TYPE_CHECKING:
@@ -24,6 +26,9 @@ class Tiktok(Site):
     ):
         async with self.cog.get(f"https://kktiktok.com/t/{video_id}?_kk=1") as resp:
             url = resp.json()["url"]
+
+        if url is None:
+            raise ResponseError(404)
 
         filename = f"{video_id}.mp4"
 
