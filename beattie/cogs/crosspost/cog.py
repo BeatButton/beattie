@@ -209,7 +209,6 @@ class Crosspost(Cog):
 
         queues: list[tuple[FragmentQueue, QueueKwargs]] = []
         new: set[FragmentQueue] = set()
-        tasks: list[asyncio.Task[FragmentQueue]] = []
 
         ranges = None
         for step in steps:
@@ -272,7 +271,6 @@ class Crosspost(Cog):
                                 f"{queue.site.name} ratelimit hit, resuming {dt}.",
                                 delete_after=timeout,
                             )
-                            tasks.append(task)
 
                     queues.append((queue, kwargs))
                 else:
@@ -280,13 +278,12 @@ class Crosspost(Cog):
                         self.logger.info("began %s: %s: %s", name, logloc, link)
                     queue = FragmentQueue(ctx, site, link, *args)
                     self.queue_cache[key] = queue
-                    tasks.append(asyncio.Task(queue.handle(ctx)))
                     queues.append((queue, kwargs))
                     new.add(queue)
 
         try:
-            for task in tasks:
-                queue = await task
+            for queue, _ in queues:
+                await queue.handle_task
                 if queue in new and queue.fragments:
                     self.logger.info("%s: %s: %s", queue.site.name, logloc, link)
         except:
@@ -301,7 +298,6 @@ class Crosspost(Cog):
             for count, (queue, kwargs) in enumerate(batch, 1):  # noqa: B007
                 items.extend(
                     await queue.produce(
-                        ctx,
                         spoiler=kwargs["spoiler"],
                         ranges=kwargs["ranges"],
                         settings=kwargs["settings"],

@@ -49,7 +49,7 @@ class FragmentQueue:
     args: tuple[str, ...]
     author: str | None
     fragments: list[Fragment]
-    handle_task: asyncio.Task[Self] | None
+    handle_task: asyncio.Task[Self]
     last_used: float  # timestamps
     wait_until: float
 
@@ -60,7 +60,7 @@ class FragmentQueue:
         self.author = None
         self.cog = ctx.cog
         self.fragments = []
-        self.handle_task = None
+        self.handle_task = asyncio.create_task(self._handle(ctx))
         now = time.time()
         self.last_used = now
         self.wait_until = now
@@ -98,12 +98,6 @@ class FragmentQueue:
 
         await self.site.handler(ctx, self, *self.args)
         return self
-
-    async def handle(self, ctx: CrosspostContext) -> Self:
-        if self.handle_task is None:
-            self.handle_task = asyncio.create_task(self._handle(ctx))
-
-        return await self.handle_task
 
     def push_file(
         self,
@@ -205,7 +199,6 @@ class FragmentQueue:
         settings: Settings,
     ) -> bool:
         items = await self.produce(
-            ctx,
             spoiler=spoiler,
             ranges=ranges,
             settings=settings,
@@ -219,14 +212,13 @@ class FragmentQueue:
 
     async def produce(
         self,
-        ctx: CrosspostContext,
         *,
         spoiler: bool,
         ranges: list[tuple[int, int]] | None,
         settings: Settings,
     ) -> list[tuple[Postable, bool]]:
         self.last_used = time.time()
-        await self.handle(ctx)
+        await self.handle_task
         items: list[tuple[Postable, bool]] = []
 
         if not self.fragments:
