@@ -278,8 +278,9 @@ class Crosspost(Cog):
                 else:
                     if self.bot.shared.debug or name != "mastodon":
                         self.logger.info("began %s: %s: %s", name, logloc, link)
-                    self.queue_cache[key] = queue = FragmentQueue(ctx, site, link)
-                    tasks.append(asyncio.Task(queue.handle(ctx, *args)))
+                    queue = FragmentQueue(ctx, site, link, *args)
+                    self.queue_cache[key] = queue
+                    tasks.append(asyncio.Task(queue.handle(ctx)))
                     queues.append((queue, kwargs))
                     new.add(queue)
 

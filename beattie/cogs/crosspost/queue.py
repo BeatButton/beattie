@@ -46,18 +46,19 @@ class FragmentQueue:
     cog: Crosspost
     site: Site
     link: str
+    args: tuple[str, ...]
     author: str | None
     fragments: list[Fragment]
     handle_task: asyncio.Task[Self] | None
     last_used: float  # timestamps
     wait_until: float
 
-    def __init__(self, ctx: CrosspostContext, site: Site, link: str):
-        assert ctx.command is not None
+    def __init__(self, ctx: CrosspostContext, site: Site, link: str, *args: str):
         self.site = site
         self.link = link
+        self.args = args
         self.author = None
-        self.cog = ctx.command.cog
+        self.cog = ctx.cog
         self.fragments = []
         self.handle_task = None
         now = time.time()
@@ -75,7 +76,7 @@ class FragmentQueue:
             + sum(map(getsizeof, self.fragments))
         )
 
-    async def _handle(self, ctx: CrosspostContext, *args: str) -> Self:
+    async def _handle(self, ctx: CrosspostContext) -> Self:
         cooldown = self.site.cooldown
         if cooldown and (timeout := cooldown.update_rate_limit()):
             self.cog.logger.info(
@@ -95,12 +96,12 @@ class FragmentQueue:
             )
             await asyncio.sleep(timeout)
 
-        await self.site.handler(ctx, self, *args)
+        await self.site.handler(ctx, self, *self.args)
         return self
 
-    async def handle(self, ctx: CrosspostContext, *args: str) -> Self:
+    async def handle(self, ctx: CrosspostContext) -> Self:
         if self.handle_task is None:
-            self.handle_task = asyncio.create_task(self._handle(ctx, *args))
+            self.handle_task = asyncio.create_task(self._handle(ctx))
 
         return await self.handle_task
 
