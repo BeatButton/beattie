@@ -23,6 +23,13 @@ class Site(ABC):
     def __init__(self, cog: Crosspost):
         self.cog = cog
 
+    async def on_handle(
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+    ):
+        pass
+
     @abstractmethod
     async def handler(
         self,

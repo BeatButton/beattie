@@ -42,9 +42,21 @@ class Fanbox(Site):
             )
             self.cog.sites.remove(self)
 
-    async def handler(
+    async def on_handle(
         self,
         ctx: CrosspostContext,
+        queue: FragmentQueue,
+    ):
+        if not queue.handle_task.done():
+            msg = await ctx.send("Solving challenge...")
+            try:
+                await queue.handle_task
+            finally:
+                await msg.delete()
+
+    async def handler(
+        self,
+        _ctx: CrosspostContext,
         queue: FragmentQueue,
         user: str,
         post_id: str,
@@ -53,20 +65,14 @@ class Fanbox(Site):
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
 
         async with FlareSolverr(self.solver_url, self.proxy_url) as fs:
-            solve = asyncio.create_task(fs.get("https://fanbox.cc"))
-            send = asyncio.create_task(ctx.send("Solving challenge..."))
-            try:
-                await solve
-                resp = await fs.get(
-                    url,
-                    headers={
-                        "Accept": "application/json, text/plain, */*",
-                        "Origin": "https://www.fanbox.cc",
-                    },
-                )
-            finally:
-                msg = await send
-                await msg.delete()
+            await fs.get("https://fanbox.cc")
+            resp = await fs.get(
+                url,
+                headers={
+                    "Accept": "application/json, text/plain, */*",
+                    "Origin": "https://www.fanbox.cc",
+                },
+            )
 
         root = etree.fromstring(resp["solution"]["response"], self.cog.parser)
         data = json.loads(root.xpath("//pre")[0].text)
