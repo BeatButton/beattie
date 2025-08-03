@@ -124,7 +124,7 @@ class FallbackFragment(Fragment):
     preferred_url: str
     fallback_url: str
     headers: dict[str, str] | None
-    preferred_len: int | None
+    length_task: asyncio.Task[int] | None
     preferred_frag: FileFragment | None
     fallback_frag: FileFragment | None
 
@@ -142,19 +142,38 @@ class FallbackFragment(Fragment):
 
         self.preferred_frag = None
         self.fallback_frag = None
-        self.preferred_len = None
+        self.length_task = None
+
+    async def _determine_length(self) -> int:
+        length = None
+        async with self.cog.get(
+            self.preferred_url,
+            method="HEAD",
+            headers=self.headers,
+        ) as resp:
+            if content_length := resp.headers.get("content-length"):
+                length = int(content_length)
+
+        if length is None:
+            self.preferred_frag = FileFragment(
+                self.queue,
+                self.preferred_url,
+                headers=self.headers,
+            )
+            await self.preferred_frag.save()
+            length = len(self.preferred_frag.file_bytes)
+
+        return length
+
+    async def determine_length(self) -> int:
+        if self.length_task is None:
+            self.length_task = asyncio.create_task(self._determine_length())
+        return await self.length_task
 
     async def to_file(self, ctx: CrosspostContext) -> FileFragment:
-        if self.preferred_len is None:
-            async with self.cog.get(
-                self.preferred_url,
-                method="HEAD",
-                headers=self.headers,
-            ) as resp:
-                if content_length := resp.headers.get("content-length"):
-                    self.preferred_len = int(content_length)
+        length = await self.determine_length()
 
-        if self.preferred_len is not None and get_size_limit(ctx) > self.preferred_len:
+        if get_size_limit(ctx) > length:
             if (frag := self.preferred_frag) is None:
                 frag = self.preferred_frag = FileFragment(
                     self.queue,
