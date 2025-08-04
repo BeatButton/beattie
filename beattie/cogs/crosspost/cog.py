@@ -247,30 +247,24 @@ class Crosspost(Cog):
                 if not args:
                     args = (link,)
                 key = (name, *(a and a.strip() for a in args))
-                queue = None
-                if (
-                    (queue := self.queue_cache.get(key))
-                    and (task := queue.handle_task)
-                    and task.done()
-                    and task.exception()
-                ):
+                queue = self.queue_cache.get(key)
+                if queue and queue.handle_task.done() and queue.handle_task.exception():
                     queue = None
                     self.queue_cache.pop(key, None)
                 if queue:
                     if queue.fragments:
                         self.logger.info("cache hit: %s: %s %s", logloc, name, args)
-                    if task := queue.handle_task:
-                        now = time.time()
-                        wait_until = queue.wait_until
-                        if now < wait_until and (timeout := wait_until - now) > 5:
-                            dt = format_dt(
-                                datetime.fromtimestamp(wait_until),  # noqa: DTZ006
-                                style="R",
-                            )
-                            await ctx.send(
-                                f"{queue.site.name} ratelimit hit, resuming {dt}.",
-                                delete_after=timeout,
-                            )
+                    now = time.time()
+                    wait_until = queue.wait_until
+                    if now < wait_until and (timeout := wait_until - now) > 5:
+                        dt = format_dt(
+                            datetime.fromtimestamp(wait_until),  # noqa: DTZ006
+                            style="R",
+                        )
+                        await ctx.send(
+                            f"{queue.site.name} ratelimit hit, resuming {dt}.",
+                            delete_after=timeout,
+                        )
 
                     queues.append((queue, kwargs))
                 else:
