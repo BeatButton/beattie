@@ -229,15 +229,15 @@ class FragmentQueue:
             frags = [
                 frag
                 for frag in self.fragments
-                if type(frag).__name__ in ("FileFragment", "FallbackFragment")
+                if isinstance(frag, (FileFragment, FallbackFragment))
             ]
             fragments = [
                 frag for start, end in ranges for frag in frags[start - 1 : end]
             ] + [
                 frag
                 for frag in self.fragments
-                if type(frag).__name__ == "TextFragment"
-                and (frag.force or not frag.interlaced)  # type: ignore
+                if isinstance(frag, TextFragment)
+                and (frag.force or not frag.interlaced)
             ]
         else:
             fragments = self.fragments[:]
