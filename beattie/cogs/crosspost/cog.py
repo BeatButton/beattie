@@ -283,7 +283,7 @@ class Crosspost(Cog):
 
         try:
             for queue, _ in queues:
-                self.bot.shared.create_task(queue.site.on_handle(ctx, queue))
+                self.bot.shared.create_task(queue.site.on_invoke(ctx, queue))
                 await queue.handle_task
                 if queue in new and queue.fragments:
                     self.logger.info("%s: %s: %s", queue.site.name, logloc, link)

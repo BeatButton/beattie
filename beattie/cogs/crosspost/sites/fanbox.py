@@ -42,7 +42,7 @@ class Fanbox(Site):
             )
             self.cog.sites.remove(self)
 
-    async def on_handle(
+    async def on_invoke(
         self,
         ctx: CrosspostContext,
         queue: FragmentQueue,
