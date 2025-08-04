@@ -20,7 +20,7 @@ PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo?repo={}"
 class Bluesky(Site):
     name = "bsky"
     pattern = re.compile(
-        r"https?://(?:c|[fv]x)?[bx]s[ky]yx?\.app/profile/([^/]+)/post/([^/]+)",
+        r"https?://(?:(?:c|[fv]x)?[bx]s[ky]yx?\.app|deer\.social)/profile/([^/]+)/post/([^/]+)",
     )
 
     async def handler(
