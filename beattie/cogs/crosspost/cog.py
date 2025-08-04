@@ -254,18 +254,6 @@ class Crosspost(Cog):
                 if queue:
                     if queue.fragments:
                         self.logger.info("cache hit: %s: %s %s", logloc, name, args)
-                    now = time.time()
-                    wait_until = queue.wait_until
-                    if now < wait_until and (timeout := wait_until - now) > 5:
-                        dt = format_dt(
-                            datetime.fromtimestamp(wait_until),  # noqa: DTZ006
-                            style="R",
-                        )
-                        await ctx.send(
-                            f"{queue.site.name} ratelimit hit, resuming {dt}.",
-                            delete_after=timeout,
-                        )
-
                     queues.append((queue, kwargs))
                 else:
                     if self.bot.shared.debug or name != "mastodon":
