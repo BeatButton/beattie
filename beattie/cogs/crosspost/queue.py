@@ -240,7 +240,7 @@ class FragmentQueue:
                 and (frag.force or not frag.interlaced)
             ]
         else:
-            fragments = self.fragments[:]
+            fragments = self.fragments
             max_pages = settings.max_pages_or_default()
 
         num_files = 0
