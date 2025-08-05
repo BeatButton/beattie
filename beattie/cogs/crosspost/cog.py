@@ -4,7 +4,6 @@ import asyncio
 import copy
 import logging
 import re
-import time
 from datetime import datetime
 from itertools import groupby
 from sys import getsizeof
