@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, NoReturn, TypeVar
 
 import toml
 
@@ -19,7 +19,7 @@ def do_every(
     coro: Callable[..., Awaitable[Any]],
     *args: Any,
     **kwargs: Any,
-) -> asyncio.Task:
+) -> asyncio.Task[NoReturn]:
     async def task():
         while True:
             await coro(*args, **kwargs)

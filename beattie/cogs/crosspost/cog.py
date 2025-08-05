@@ -72,7 +72,7 @@ class Crosspost(Cog):
 
     sites: list[Site]
 
-    ongoing_tasks: dict[int, asyncio.Task]
+    ongoing_tasks: dict[int, asyncio.Task[None]]
     queue_cache: dict[tuple[str, ...], FragmentQueue]
     cache_lock: asyncio.Lock
     session: httpx.AsyncClient

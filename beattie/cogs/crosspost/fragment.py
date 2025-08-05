@@ -49,7 +49,7 @@ class FileFragment(Fragment):
     file_bytes: bytes
     pp_filename: str | None
     pp_bytes: bytes | None
-    dl_task: asyncio.Task | None
+    dl_task: asyncio.Task[None] | None
     postprocess: PP | None
     pp_extra: Any
     lock_filename: bool
@@ -208,7 +208,7 @@ class TextFragment(Fragment):
     quote: bool
     diminished: bool
     dt_task: asyncio.Task[Language] | None
-    trans_tasks: dict[Language, asyncio.Task]
+    trans_tasks: dict[Language, asyncio.Task[str | None]]
 
     def __init__(
         self,
