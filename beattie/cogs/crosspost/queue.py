@@ -8,11 +8,10 @@ from itertools import groupby
 from sys import getsizeof
 from typing import TYPE_CHECKING, Any, Self, TypedDict
 
-import discord
 from discord import Embed, File
 from discord.utils import format_dt
 
-from beattie.utils.etc import INVITE_EXPR, display_bytes, get_size_limit
+from beattie.utils.etc import INVITE_EXPR, display_bytes, get_size_limit, prompt_confirm
 
 from .fragment import (
     EmbedFragment,
@@ -298,39 +297,18 @@ class FragmentQueue:
                 if not tfrag.skip_translate:
                     to_trans.append(tfrag)
 
-        if not force and len(to_dl) >= 25:
-
-            def check(r: discord.Reaction, u: discord.User):
-                return u == ctx.author and r.message == msg and r.emoji in {"❌", "⭕"}
-
-            timeout = 60
-            dt = format_dt(
-                datetime.fromtimestamp(time.time() + timeout),  # noqa: DTZ006
-                style="R",
-            )
-            msg = await ctx.reply(
-                f"This post has {len(to_dl)} items. Are you sure? React {dt}."
-                "\n-# You can post specific pages with a command like "
+        num_items = len(to_dl)
+        if (
+            not force
+            and num_items >= 25
+            and not await prompt_confirm(
+                ctx,
+                f"This post has {num_items} items. Are you sure?",
+                addendum="You can post specific pages with a command like "
                 "`b>post pages=1-3,5,7,12-16`",
-                mention_author=True,
             )
-            for emoji in "⭕❌":
-                ctx.bot.shared.create_task(msg.add_reaction(emoji))
-
-            try:
-                reaction, _ = await ctx.bot.wait_for(
-                    "reaction_add",
-                    check=check,
-                    timeout=timeout,
-                )
-            except asyncio.TimeoutError:
-                emoji = "❌"
-            else:
-                emoji = reaction.emoji
-
-            await msg.delete()
-            if emoji == "❌":
-                return False
+        ):
+            return False
 
         lang = settings.language_or_default()
 

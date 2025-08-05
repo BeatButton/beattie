@@ -1,13 +1,21 @@
+from __future__ import annotations
+
+import asyncio
 import re
-from collections.abc import MutableSequence
-from datetime import timedelta
-from typing import Callable, TypeVar
+import time
+from datetime import datetime
+from typing import TYPE_CHECKING, Callable, TypeVar
 from zoneinfo import ZoneInfo
 
-from discord.ext.commands import Context
-from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES
+from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES, format_dt
 
 from .type_hints import Comparable
+
+if TYPE_CHECKING:
+    from collections.abc import MutableSequence
+    from datetime import timedelta
+
+    from beattie.context import BContext
 
 T = TypeVar("T")
 U = TypeVar("U", bound=Comparable)
@@ -149,7 +157,7 @@ def translate_bbcode(text: str) -> str:
     return BB_URL.sub(r"[\2](\1)", text)
 
 
-def get_size_limit(ctx: Context) -> int:
+def get_size_limit(ctx: BContext) -> int:
     if guild := ctx.guild:
         return guild.filesize_limit
     return DEFAULT_FILE_SIZE_LIMIT_BYTES
@@ -157,3 +165,42 @@ def get_size_limit(ctx: Context) -> int:
 
 def replace_ext(name: str, ext: str) -> str:
     return f"{name.rpartition('.')[0]}.{ext}"
+
+
+async def prompt_confirm(
+    ctx: BContext,
+    message: str,
+    *,
+    addendum: str = None,
+    timeout: int = 60,
+) -> bool:
+    dt = format_dt(
+        datetime.fromtimestamp(time.time() + timeout),  # noqa: DTZ006
+        style="R",
+    )
+    message = f"{message} React {dt}s."
+    if addendum is not None:
+        message = f"{message}\n-# {addendum}"
+
+    msg = await ctx.reply(
+        message,
+        mention_author=True,
+    )
+    for emoji in "⭕❌":
+        ctx.bot.shared.create_task(msg.add_reaction(emoji))
+
+    try:
+        reaction, _ = await ctx.bot.wait_for(
+            "reaction_add",
+            check=lambda r, u: u == ctx.author
+            and r.message == msg
+            and r.emoji in {"❌", "⭕"},
+            timeout=timeout,
+        )
+    except asyncio.TimeoutError:
+        emoji = "❌"
+    else:
+        emoji = reaction.emoji
+
+    ctx.bot.shared.create_task(msg.delete())
+    return emoji == "⭕"
