@@ -9,16 +9,16 @@ from zoneinfo import ZoneInfo
 
 from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES, format_dt
 
-from .type_hints import Comparable
-
 if TYPE_CHECKING:
     from collections.abc import MutableSequence
     from datetime import timedelta
 
+    from _typeshed import SupportsDunderGT
+
     from beattie.context import BContext
 
-T = TypeVar("T")
-U = TypeVar("U", bound=Comparable)
+    T = TypeVar("T")
+    U = TypeVar("U", bound=SupportsDunderGT)
 
 LINK_EXPR = re.compile(
     r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",
