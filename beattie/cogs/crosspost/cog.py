@@ -267,15 +267,25 @@ class Crosspost(Cog):
                     queues.append((queue, kwargs))
                     new.add(queue)
 
-        try:
             for queue, _ in queues:
                 self.bot.shared.create_task(queue.site.on_invoke(ctx, queue))
-                await queue.handle_task
+                try:
+                    await queue.handle_task
+                except:
+                    self.logger.exception(
+                        "error: %s/%s/%s: %s %s ",
+                        *logloc,
+                        queue.site.name,
+                        link,
+                    )
+                    raise
                 if queue in new and queue.fragments:
-                    self.logger.info("%s: %s/%s/%s: %s", queue.site.name, *logloc, link)
-        except:
-            self.logger.exception("error: %s/%s/%s: %s %s ", *logloc, name, link)
-            raise
+                    self.logger.info(
+                        "%s: %s/%s/%s: %s",
+                        queue.site.name,
+                        *logloc,
+                        queue.link,
+                    )
 
         for _, batch in groupby(
             filter(lambda p: p[0].fragments, queues),
