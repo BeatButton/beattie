@@ -179,7 +179,7 @@ class Crosspost(Cog):
     async def process_links(
         self,
         ctx: CrosspostContext,
-        steps: Iterable[re.Match | PostFlags],
+        steps: Iterable[re.Match[str] | PostFlags],
         *,
         force: bool = False,
     ):
@@ -292,7 +292,8 @@ class Crosspost(Cog):
             lambda p: (p[0].site.name, p[0].author or object()),
         ):
             items: list[tuple[Postable, bool]] = []
-            for count, (queue, kwargs) in enumerate(batch, 1):  # noqa: B007
+            batch = list(batch)
+            for queue, kwargs in batch:
                 items.extend(
                     await queue.produce(
                         spoiler=kwargs["spoiler"],
@@ -301,9 +302,10 @@ class Crosspost(Cog):
                     ),
                 )
 
-            if count > 1:
+            if len(batch) > 1:
                 items.sort(key=lambda tup: item_priority(tup[0]))
 
+            queue, kwargs = batch[0]
             embedded = await queue.present(
                 ctx,
                 items=items,

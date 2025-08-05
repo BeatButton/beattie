@@ -11,6 +11,8 @@ from discord import AllowedMentions, File, Message
 from discord.ext import commands
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from beattie.bot import BeattieBot
 
 
@@ -58,7 +60,7 @@ class BContext(commands.Context):
         content: str = None,
         *,
         file: File = None,
-        files: list[File] = None,
+        files: Sequence[File] = None,
         **kwargs: Any,
     ) -> Message:
         if content and len(content) >= 2000:
@@ -68,6 +70,7 @@ class BContext(commands.Context):
             content = None
             new_file = discord.File(fp, filename=f"{self.message.id}.txt")
             if files is not None:
+                files = list(files)
                 files.append(new_file)
             elif file is not None:
                 files = [file, new_file]

@@ -404,9 +404,11 @@ class Remind(Cog):
                 channel = guild.get_channel_or_thread(
                     reminder_channel_id,
                 ) or await squash_unfindable(guild.fetch_channel(reminder_channel_id))
-
+            else:
+                channel = None
         else:
             channel = None
+            recipient = None
 
         if channel and recipient:
             assert isinstance(channel, GuildMessageable | DMChannel)

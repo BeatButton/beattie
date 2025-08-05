@@ -140,6 +140,7 @@ class Poipiku(Site):
                         delete_after=delete_after,
                     )
                     await clean()
+                    raise
 
                 to_clean.append(reply)
 
