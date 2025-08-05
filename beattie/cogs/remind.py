@@ -308,6 +308,9 @@ class Remind(Cog):
         rrule_str = None
         if isinstance(argument, RecurringEvent):
             rrule_str = argument.get_RFC_rrule()
+            if rrule_str is None:
+                msg = "RecurringEvent rrule was None"
+                raise RuntimeError(msg)
             rr = rrule.rrulestr(rrule_str)
             time: datetime | None = rr.after(now.astimezone().replace(tzinfo=None))
             if time is None:
