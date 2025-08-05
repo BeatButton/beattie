@@ -200,9 +200,9 @@ class Crosspost(Cog):
         else:
             blacklist = await self.db.get_blacklist(guild_id)
 
-        logloc = f"{guild_id}/{ctx.channel.id}/{ctx.message.id}"
+        logloc = guild_id, ctx.channel.id, ctx.message.id
         settings = await self.db.get_effective_settings(ctx.message)
-        self.logger.debug("process links: %s: %s", logloc, settings)
+        self.logger.debug("process links: %s/%s/%s: %s", *logloc, settings)
 
         content = ctx.message.content
         sspans = spoiler_spans(content)
@@ -253,11 +253,16 @@ class Crosspost(Cog):
                     self.queue_cache.pop(key, None)
                 if queue:
                     if queue.fragments:
-                        self.logger.info("cache hit: %s: %s %s", logloc, name, args)
+                        self.logger.info(
+                            "cache hit: %s/%s/%s: %s %s",
+                            *logloc,
+                            name,
+                            args,
+                        )
                     queues.append((queue, kwargs))
                 else:
                     if self.bot.shared.debug or name != "mastodon":
-                        self.logger.info("began %s: %s: %s", name, logloc, link)
+                        self.logger.info("began %s: %s/%s/%s: %s", name, *logloc, link)
                     queue = FragmentQueue(ctx, site, link, *args)
                     self.queue_cache[key] = queue
                     queues.append((queue, kwargs))
@@ -268,9 +273,9 @@ class Crosspost(Cog):
                 self.bot.shared.create_task(queue.site.on_invoke(ctx, queue))
                 await queue.handle_task
                 if queue in new and queue.fragments:
-                    self.logger.info("%s: %s: %s", queue.site.name, logloc, link)
+                    self.logger.info("%s: %s/%s/%s: %s", queue.site.name, *logloc, link)
         except:
-            self.logger.exception("error: %s: %s %s ", logloc, name, link)
+            self.logger.exception("error: %s/%s/%s: %s %s ", *logloc, name, link)
             raise
 
         for _, batch in groupby(
