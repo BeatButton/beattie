@@ -399,6 +399,10 @@ class Crosspost(Cog):
         messages_deleted = False
         if task := self.ongoing_tasks.get(message_id):
             task.cancel()
+            try:
+                await task
+            except Exception:  # noqa: S110, this exception belongs to _post
+                pass
         if messages := await self.db.get_sent_messages(message_id):
             await self.delete_messages(payload.channel_id, messages)
             messages_deleted = True
