@@ -30,7 +30,7 @@ ENGLISH = Language("en", "English (default)")
 class Translator(ABC):
     cog: Crosspost
     api_url: str
-    _lang_task = asyncio.Task[dict[str, Language]] | None
+    _lang_task: asyncio.Task[Mapping[str, Language]] | None
 
     def __init__(self, cog: Crosspost, api_url: str, api_key: str):
         self.cog = cog
