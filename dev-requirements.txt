@@ -2,3 +2,4 @@ asyncpg-stubs
 black
 objgraph
 ruff
+types-lxml

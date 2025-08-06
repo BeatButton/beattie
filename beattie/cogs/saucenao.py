@@ -61,7 +61,12 @@ class SauceNao(Cog):
             source_link = None
             similarity = ""
             if len(results):
-                similarity = root.find(".//div[@class='resultsimilarityinfo']").text
+                el = root.find(".//div[@class='resultsimilarityinfo']")
+                similarity = el.text if el else None
+                if similarity is None:
+                    msg = "saucenao returned no similarity value"
+                    raise RuntimeError(msg)
+
                 sim_percent = float(similarity[:-1])
                 if sim_percent > 60:
                     result = results[0]

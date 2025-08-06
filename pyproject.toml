@@ -2,7 +2,6 @@
 typeCheckingMode = "standard"
 strictParameterNoneValue = false         # less ugly
 reportIncompatibleMethodOverride = false # simply not useful
-reportAttributeAccessIssue = false       # from lxml import etree
 reportFunctionMemberAccess = false       # @group.command
 
 [tool.ruff.lint]

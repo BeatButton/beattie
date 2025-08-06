@@ -169,7 +169,9 @@ class NSFW(Cog):
         netloc = parse.urlsplit(url).netloc
         async with self.get(f"https://{netloc}") as resp:
             root = etree.fromstring(resp.content, self.parser)
-        self.titles[site] = root.find(".//title").text
+        el = root.find(".//title")
+        title = el.text if el else ""
+        self.titles[site] = title or ""
 
 
 async def setup(bot: BeattieBot):
