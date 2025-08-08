@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 
 from discord.utils import find
 
@@ -10,6 +10,96 @@ from .site import Site
 if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class PlcService(TypedDict):
+        type: str
+        serviceEndpoint: str
+
+    class PlcDirectory(TypedDict):
+        service: list[PlcService]
+
+    class ProfileResponse(TypedDict):
+        handle: str
+
+    class Record(TypedDict):
+        cid: str
+        uri: str
+
+    Ref = TypedDict("Ref", {"$link": str})
+
+    class Video(TypedDict):
+        ref: Ref
+
+    class Image(TypedDict):
+        ref: Ref
+
+    class ImageContainer(TypedDict):
+        image: Image
+
+    ExternalMedia = TypedDict(
+        "ExternalMedia",
+        {
+            "$type": Literal["external"],
+        },
+    )
+
+    VideoMedia = TypedDict(
+        "VideoMedia",
+        {
+            "$type": Literal["video"],
+            "video": Video,
+        },
+    )
+
+    Media = ExternalMedia | VideoMedia
+
+    RecordEmbed = TypedDict(
+        "RecordEmbed",
+        {
+            "$type": Literal["app.bsky.embed.record"],
+            "record": Record,
+        },
+    )
+
+    ImagesEmbed = TypedDict(
+        "ImagesEmbed",
+        {
+            "$type": Literal["app.bsky.embed.images"],
+            "images": list[ImageContainer],
+        },
+    )
+
+    VideoEmbed = TypedDict(
+        "VideoEmbed",
+        {
+            "$type": Literal["app.bsky.embed.video"],
+            "video": Video,
+        },
+    )
+
+    RecordWithMediaEmbed = TypedDict(
+        "RecordWithMediaEmbed",
+        {
+            "$type": Literal["app.bsky.embed.recordWithMedia"],
+            "media": Media,
+            "record": Record,
+        },
+    )
+
+    Embed = RecordEmbed | ImagesEmbed | VideoEmbed | RecordWithMediaEmbed
+
+    Post = TypedDict(
+        "Post",
+        {
+            "text": str,
+            "$type": str,
+            "embed": NotRequired[Embed],
+        },
+    )
+
+    class PostResponse(TypedDict):
+        uri: str
+        value: Post
 
 
 POST_FMT = (
@@ -34,35 +124,45 @@ class Bluesky(Site):
     ):
         xrpc_url = POST_FMT.format(repo, rkey)
         async with self.cog.get(xrpc_url) as resp:
-            data = resp.json()
+            data: PostResponse = resp.json()
 
         post = data["value"]
-        text: str | None = post["text"] or None
+        text = post["text"] or None
 
         embed = post.get("embed")
         if embed is None:
             return
 
-        qtext: str | None = None
-        qname: str | None = None
-        if embed.get("$type") == "app.bsky.embed.record":
+        qtext = None
+        qname = None
+        if embed["$type"] == "app.bsky.embed.record":
             _, _, did, _, qrkey = embed["record"]["uri"].split("/")
             xrpc_url = POST_FMT.format(did, qrkey)
             async with self.cog.get(xrpc_url) as resp:
-                data = resp.json()
+                data: PostResponse = resp.json()
 
             post = data["value"]
             qtext = post["text"]
-            embed = post.get("embed", {})
+            embed = post.get("embed")
+            if embed is None:
+                return
 
             pds = await self.get_pds(did)
             async with self.cog.get(PROFILE_FMT.format(pds, did)) as resp:
-                pdata = resp.json()
+                pdata: ProfileResponse = resp.json()
             qname = pdata["handle"]
 
-        media = embed.get("media", embed)
-        images = media.get("images", [])
-        video = media.get("video")
+        images = []
+        video = None
+        match embed["$type"]:
+            case "app.bsky.embed.images":
+                images = embed["images"]
+            case "app.bsky.embed.video":
+                video = embed["video"]
+            case "app.bsky.embed.recordWithMedia":
+                media = embed["media"]
+                if media["$type"] == "video":
+                    video = media["video"]
 
         if not (images or video):
             return
@@ -105,7 +205,7 @@ class Bluesky(Site):
 
     async def get_pds(self, did: str) -> str:
         async with self.cog.get(f"https://plc.directory/{did}") as resp:
-            info = resp.json()
+            info: PlcDirectory = resp.json()
         service = find(
             lambda svc: svc["type"] == "AtprotoPersonalDataServer",
             info["service"],
