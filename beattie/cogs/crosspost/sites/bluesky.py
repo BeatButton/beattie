@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from discord.utils import find
+
 from .site import Site
 
 if TYPE_CHECKING:
@@ -72,9 +74,17 @@ class Bluesky(Site):
 
         if video:
             cid = video["ref"]["$link"]
-            url = (
-                f"https://bsky.social/xrpc/com.atproto.sync.getBlob?did={did}&cid={cid}"
+            async with self.cog.get(f"https://plc.directory/{did}") as resp:
+                info: PlcDirectory = resp.json()
+            service = find(
+                lambda svc: svc["type"] == "AtprotoPersonalDataServer",
+                info["service"],
             )
+            if service:
+                pds = service["serviceEndpoint"]
+            else:
+                pds = "https://bsky.social"
+            url = f"{pds}/xrpc/com.atproto.sync.getBlob?did={did}&cid={cid}"
             filename = f"{cid}.mp4"
             queue.push_file(
                 url,
