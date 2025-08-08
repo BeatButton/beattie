@@ -245,7 +245,7 @@ class Crosspost(Cog):
                 args = m.groups()
                 if not args:
                     args = (link,)
-                key = (name, *(a and a.strip() for a in args))
+                key = (name, *(a.strip() if a else "" for a in args))
                 queue = self.queue_cache.get(key)
                 if queue and queue.handle_task.done() and queue.handle_task.exception():
                     queue = None
@@ -728,7 +728,7 @@ translate text, or a language name or code to translate text into that language.
                 args = m.groups()
                 if not args:
                     args = (target,)
-                key = (name, *(a and a.strip() for a in args))
+                key = (name, *(a.strip() if a else "" for a in args))
                 if self.queue_cache.pop(key, None) is not None:
                     count += 1
 

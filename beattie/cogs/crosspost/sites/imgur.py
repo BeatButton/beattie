@@ -33,7 +33,7 @@ class Imgur(Site):
         self,
         _ctx: CrosspostContext,
         queue: FragmentQueue,
-        fragment: str | None,
+        fragment: str,
         album_id: str,
     ):
         is_album = bool(fragment)
