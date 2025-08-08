@@ -39,9 +39,8 @@ class Bluesky(Site):
         post = data["value"]
         text: str | None = post["text"] or None
 
-        try:
-            embed = post.get("embed", {})
-        except KeyError:
+        embed = post.get("embed")
+        if embed is None:
             return
 
         qtext: str | None = None
