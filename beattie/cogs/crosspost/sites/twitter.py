@@ -48,13 +48,16 @@ class Twitter(Site):
     ) -> None:
         try:
             await self.with_method(queue, tweet_id, self.method)
-        except:  # noqa: E722
+        except Exception as e:
             match self.method:
                 case "fxtwitter":
                     fallback = "vxtwitter"
                 case "vxtwitter":
                     fallback = "fxtwitter"
-            await self.with_method(queue, tweet_id, fallback)
+            try:
+                await self.with_method(queue, tweet_id, fallback)
+            except:  # noqa: E722
+                raise e from None
 
     async def with_method(
         self,
