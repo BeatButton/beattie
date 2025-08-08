@@ -21,6 +21,7 @@ from discord.ext import commands
 from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import format_dt
 
+from beattie.cogs.crosspost.exceptions import DownloadError
 from beattie.utils.aioutils import squash_unfindable
 from beattie.utils.checks import is_owner_or
 from beattie.utils.contextmanagers import get
@@ -306,12 +307,19 @@ class Crosspost(Cog):
                 items.sort(key=lambda tup: item_priority(tup[0]))
 
             queue, kwargs = batch[0]
-            embedded = await queue.present(
-                ctx,
-                items=items,
-                force=kwargs["force"],
-                settings=settings,
-            )
+            try:
+                embedded = await queue.present(
+                    ctx,
+                    items=items,
+                    force=kwargs["force"],
+                    settings=settings,
+                )
+            except DownloadError as e:
+                queue = e.fragment.queue
+                key = (queue.site.name, *queue.args)
+                self.queue_cache.pop(key, None)
+                raise e.source from None
+
             if embedded and do_suppress:
                 await squash_unfindable(ctx.message.edit(suppress=True))
                 do_suppress = False

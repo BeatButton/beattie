@@ -13,6 +13,7 @@ from discord.utils import format_dt
 
 from beattie.utils.etc import INVITE_EXPR, display_bytes, get_size_limit, prompt_confirm
 
+from .exceptions import DownloadError
 from .fragment import (
     EmbedFragment,
     FallbackFragment,
@@ -378,9 +379,12 @@ class FragmentQueue:
                     case "FileFragment":
                         await send_text()
                         frag: FileFragment = item  # type: ignore
-                        if to_file := getattr(frag, "to_file", None):
-                            frag = await to_file(ctx)
-                        await frag.save()
+                        try:
+                            if to_file := getattr(frag, "to_file", None):
+                                frag = await to_file(ctx)
+                            await frag.save()
+                        except Exception as e:
+                            raise DownloadError(e, frag) from e
                         file_bytes = frag.file_bytes
                         filename = frag.filename
                         if not file_bytes:
