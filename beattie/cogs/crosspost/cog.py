@@ -276,7 +276,7 @@ class Crosspost(Cog):
                         "error: %s/%s/%s: %s %s ",
                         *logloc,
                         queue.site.name,
-                        link,
+                        queue.link,
                     )
                     raise
                 if queue in new and queue.fragments:
