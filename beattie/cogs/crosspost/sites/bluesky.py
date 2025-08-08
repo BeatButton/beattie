@@ -16,7 +16,7 @@ POST_FMT = (
     "https://bsky.social/xrpc/com.atproto.repo.getRecord"
     "?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
-PROFILE_FMT = "https://bsky.social/xrpc/com.atproto.repo.describeRepo?repo={}"
+PROFILE_FMT = "https://{}/xrpc/com.atproto.repo.describeRepo?repo={}"
 
 
 class Bluesky(Site):
@@ -55,7 +55,8 @@ class Bluesky(Site):
             qtext = post["text"]
             embed = post.get("embed", {})
 
-            async with self.cog.get(PROFILE_FMT.format(did)) as resp:
+            pds = await self.get_pds(did)
+            async with self.cog.get(PROFILE_FMT.format(pds, did)) as resp:
                 pdata = resp.json()
             qname = pdata["handle"]
 
@@ -73,16 +74,7 @@ class Bluesky(Site):
 
         if video:
             cid = video["ref"]["$link"]
-            async with self.cog.get(f"https://plc.directory/{did}") as resp:
-                info: PlcDirectory = resp.json()
-            service = find(
-                lambda svc: svc["type"] == "AtprotoPersonalDataServer",
-                info["service"],
-            )
-            if service:
-                pds = service["serviceEndpoint"]
-            else:
-                pds = "https://bsky.social"
+            pds = await self.get_pds(did)
             url = f"{pds}/xrpc/com.atproto.sync.getBlob?did={did}&cid={cid}"
             filename = f"{cid}.mp4"
             queue.push_file(
@@ -110,3 +102,16 @@ class Bluesky(Site):
                     escape=False,
                 )
                 queue.push_text(text)
+
+    async def get_pds(self, did: str) -> str:
+        async with self.cog.get(f"https://plc.directory/{did}") as resp:
+            info = resp.json()
+        service = find(
+            lambda svc: svc["type"] == "AtprotoPersonalDataServer",
+            info["service"],
+        )
+        if service:
+            pds = service["serviceEndpoint"]
+        else:
+            pds = "https://bsky.social"
+        return pds
