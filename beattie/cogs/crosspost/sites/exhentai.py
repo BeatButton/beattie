@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from discord import Embed
 
@@ -11,6 +11,17 @@ from .site import Site
 if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class GalleryMetadata(TypedDict):
+        title: str
+        category: str
+        thumb: str
+        uploader: str
+        rating: str
+        tags: list[str]
+
+    class Response(TypedDict):
+        gmetadata: list[GalleryMetadata]
 
 
 class Exhentai(Site):
@@ -33,24 +44,24 @@ class Exhentai(Site):
             data=json.dumps(body),
             headers={"Content-Type": "application/json"},
         ) as resp:
-            data = resp.json()
+            data: Response = resp.json()
 
-        data = data["gmetadata"][0]
+        gal = data["gmetadata"][0]
 
         tag: str
         tags: dict[str, list[str]] = {}
-        for tag in data["tags"]:
+        for tag in gal["tags"]:
             namespace, _, tag = tag.partition(":")
             tags.setdefault(namespace, []).append(tag)
 
         taglist = "\n".join(f"{ns}: {', '.join(ts)}" for ns, ts in tags.items())
 
         embed = (
-            Embed(title=data["title"], url=queue.link)
-            .set_image(url=data["thumb"])
-            .add_field(name="Category", value=data["category"])
-            .add_field(name="Rating", value=data["rating"])
-            .add_field(name="Uploader", value=data["uploader"])
+            Embed(title=gal["title"], url=queue.link)
+            .set_image(url=gal["thumb"])
+            .add_field(name="Category", value=gal["category"])
+            .add_field(name="Rating", value=gal["rating"])
+            .add_field(name="Uploader", value=gal["uploader"])
             .add_field(name="Tags", value=taglist)
         )
 
