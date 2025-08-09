@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from html import unescape as html_unescape
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import toml
 from lxml import etree
@@ -16,6 +16,12 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Tag(TypedDict):
+        name: str
+
+    class Response(TypedDict):
+        tag: list[Tag]
 
 
 GELBOORU_API_URL = "https://gelbooru.com/index.php"
@@ -45,7 +51,9 @@ class Gelbooru(Site):
             "names": post["tags"],
         }
         async with self.cog.get(GELBOORU_API_URL, params=tag_params) as resp:
-            tags = resp.json()["tag"]
+            data = resp.json()
+
+        tags = data["tag"]
 
         queue.author = " ".join(sorted(tag["name"] for tag in tags if tag["type"] == 1))
 
