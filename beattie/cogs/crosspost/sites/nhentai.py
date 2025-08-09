@@ -2,13 +2,27 @@ from __future__ import annotations
 
 import re
 from random import randint
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from .site import Site
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Page(TypedDict):
+        t: Literal["j", "p", "g", "w"]
+
+    class Images(TypedDict):
+        pages: list[Page]
+
+    class Title(TypedDict):
+        english: str
+
+    class Response(TypedDict):
+        media_id: str
+        title: Title
+        images: Images
 
 
 class Nhentai(Site):
@@ -19,7 +33,7 @@ class Nhentai(Site):
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
         api_url = f"https://nhentai.net/api/gallery/{gal_id}"
         async with self.cog.get(api_url) as resp:
-            data = resp.json()
+            data: Response = resp.json()
 
         media_id = data["media_id"]
         for i, page in enumerate(data["images"]["pages"], 1):
