@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from base64 import b64encode
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import toml
 
@@ -15,6 +15,23 @@ if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
+    class Config(TypedDict):
+        user: str
+        api_key: str
+
+    class File(TypedDict):
+        url: str
+
+    class Tags(TypedDict):
+        artist: list[str]
+
+    class Post(TypedDict):
+        file: File
+        tags: Tags
+
+    class Response(TypedDict):
+        posts: list[Post]
+
 
 class E621(Site):
     name = "e621"
@@ -26,7 +43,7 @@ class E621(Site):
         super().__init__(cog)
 
         with open("config/crosspost/e621.toml") as fp:
-            data = toml.load(fp)
+            data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
 
         key = data["api_key"]
         user = data["user"]
@@ -37,7 +54,7 @@ class E621(Site):
         params = {"tags": f"id:{post_id}"}
         api_url = "https://e621.net/posts.json"
         async with self.cog.get(api_url, params=params, headers=self.headers) as resp:
-            data = resp.json()
+            data: Response = resp.json()
         try:
             post = data["posts"][0]
         except IndexError:
