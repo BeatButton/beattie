@@ -789,7 +789,7 @@ translate text, or a language name or code to translate text into that language.
         except asyncio.CancelledError:
             pass
         except:
-            ctx.bot.shared.create_task(ctx.message.add_reaction("❗"))
+            ctx.bot.shared.create_task(ctx.message.add_reaction("⚠️"))
             raise
         finally:
             del self.ongoing_tasks[message_id]
