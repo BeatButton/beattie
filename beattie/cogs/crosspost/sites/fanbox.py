@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import urllib.parse
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import httpx
 import toml
@@ -19,6 +19,48 @@ if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
+    class Config(TypedDict):
+        solver: str
+        proxy: str
+
+    class Image(TypedDict):
+        originalUrl: str
+        thumbnailUrl: str
+
+    class File(TypedDict):
+        name: str
+        extension: str
+        url: str
+
+    class TextBlock(TypedDict):
+        type: Literal["p"]
+        text: str
+
+    class ImageBlock(TypedDict):
+        type: Literal["image"]
+        imageId: str
+
+    class FileBlock(TypedDict):
+        type: Literal["file"]
+        fileId: str
+
+    Block = TextBlock | ImageBlock | FileBlock
+
+    class Body(TypedDict):
+        images: list[Image]
+        files: list[File]
+        blocks: list[Block]
+        imageMap: dict[str, Image]
+        fileMap: dict[str, File]
+
+    class Post(TypedDict):
+        creatorId: str
+        type: Literal["image", "file", "article"]
+        body: Body | None
+
+    class Response(TypedDict):
+        body: Post
+
 
 class Fanbox(Site):
     name = "fanbox"
@@ -32,7 +74,7 @@ class Fanbox(Site):
         super().__init__(cog)
         try:
             with open("config/crosspost/fanbox.toml") as fp:
-                data = toml.load(fp)
+                data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
                 self.solver_url = data["solver"]
                 self.proxy_url = data["proxy"]
         except (FileNotFoundError, KeyError):
@@ -74,7 +116,7 @@ class Fanbox(Site):
             )
 
         root = etree.fromstring(resp["solution"]["response"], self.cog.parser)
-        data = json.loads(root.xpath("//pre")[0].text)
+        data: Response = json.loads(root.xpath("//pre")[0].text)
 
         post = data["body"]
         body = post["body"]
