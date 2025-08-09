@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import urllib.parse as urlparse
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from ..cog import Crosspost
+
+    class Post(TypedDict):
+        tags: str
+        file_url: str
+
+    class Response(TypedDict):
+        post: list[Post]
+
 
 API_PARAMS = {"page": "dapi", "s": "post", "q": "index", "json": "1"}
 
@@ -14,7 +22,7 @@ async def get_booru_post(
     link: str,
     api_url: str,
     params: dict[str, str],
-) -> dict[str, Any] | None:
+) -> Post | None:
     parsed = urlparse.urlparse(link)
     query = urlparse.parse_qs(parsed.query)
     page = query.get("page")
@@ -26,7 +34,7 @@ async def get_booru_post(
     id_ = id_[0]
     params["id"] = id_
     async with cog.get(api_url, params=params) as resp:
-        data = resp.json()
+        data: Response | list[Post] | None = resp.json()
     if not data:
         return None
     if isinstance(data, dict):
