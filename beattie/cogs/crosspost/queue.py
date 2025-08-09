@@ -189,27 +189,6 @@ class FragmentQueue:
     def clear(self):
         self.fragments.clear()
 
-    async def perform(
-        self,
-        ctx: CrosspostContext,
-        *,
-        spoiler: bool,
-        force: bool,
-        ranges: list[tuple[int, int]] | None,
-        settings: Settings,
-    ) -> bool:
-        items = await self.produce(
-            spoiler=spoiler,
-            ranges=ranges,
-            settings=settings,
-        )
-        return await self.present(
-            ctx,
-            items=items,
-            settings=settings,
-            force=force,
-        )
-
     async def produce(
         self,
         *,
