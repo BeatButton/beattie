@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from base64 import b64encode
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import toml
 
@@ -12,6 +12,19 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Config(TypedDict):
+        user: str
+        api_key: str
+
+    class Response(TypedDict):
+        tag_string_artist: str
+        file_url: str
+        source: str
+
+    class Commentary(TypedDict):
+        original_title: str
+        original_description: str
 
 
 class Danbooru(Site):
@@ -24,7 +37,7 @@ class Danbooru(Site):
         super().__init__(cog)
 
         with open("config/crosspost/danbooru.toml") as fp:
-            data = toml.load(fp)
+            data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
 
         key = data["api_key"]
         user = data["user"]
@@ -34,7 +47,7 @@ class Danbooru(Site):
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
         api_url = f"https://danbooru.donmai.us/posts/{post_id}.json"
         async with self.cog.get(api_url, headers=self.headers) as resp:
-            post = resp.json()
+            post: Response = resp.json()
 
         queue.author = post["tag_string_artist"]
 
@@ -46,7 +59,7 @@ class Danbooru(Site):
             f"https://danbooru.donmai.us/posts/{post_id}/artist_commentary.json",
             headers=self.headers,
         ) as resp:
-            post_text = resp.json()
+            post_text: Commentary = resp.json()
 
         if title := post_text["original_title"]:
             queue.push_text(title, bold=True)
