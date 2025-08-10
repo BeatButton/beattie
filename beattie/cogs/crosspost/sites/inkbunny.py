@@ -67,8 +67,7 @@ class Inkbunny(Site):
         queue.link = f"https://inkbunny.net/s/{sub_id}"
 
         for file in sub["files"]:
-            url = file["file_url_full"]
-            queue.push_file(url)
+            queue.push_fallback(file["file_url_full"], file["file_url_screen"], None)
 
         title = sub["title"]
         description = sub["description"].strip()
