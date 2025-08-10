@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import toml
 
@@ -13,6 +13,19 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class File(TypedDict):
+        file_url_full: str
+        file_url_screen: str
+
+    class Submission(TypedDict):
+        user_id: str
+        files: list[File]
+        title: str
+        description: str
+
+    class Response(TypedDict):
+        submissions: list[Submission]
 
 
 API_FMT = "https://inkbunny.net/api_{}.php"
@@ -51,7 +64,7 @@ class Inkbunny(Site):
         }
 
         async with self.cog.get(url, method="POST", params=params) as resp:
-            response = resp.json()
+            response: Response = resp.json()
 
         if not (subs := response["submissions"]):
             queue.push_text(
