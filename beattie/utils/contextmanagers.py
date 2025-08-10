@@ -38,7 +38,7 @@ class get:  # noqa: N801
         self.session = session
         self.urls = urls
         self.index = 0
-        headers = copy.copy(kwargs.get("headers", {}))
+        headers = copy.copy(kwargs.get("headers") or {})
         if "Accept-Encoding" not in headers:
             headers["Accept-Encoding"] = "gzip, deflate, sdch, br"
         if "User-Agent" not in headers:
