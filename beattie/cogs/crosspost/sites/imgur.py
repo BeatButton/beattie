@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import toml
 
@@ -11,6 +11,24 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Image(TypedDict):
+        link: str
+
+    class AlbumData(TypedDict):
+        account_id: str
+        link: str
+        images: list[Image]
+
+    class AlbumResponse(TypedDict):
+        data: AlbumData
+
+    class ImageData(TypedDict):
+        account_id: str
+        link: str
+
+    class ImageResponse(TypedDict):
+        data: ImageData
 
 
 class Imgur(Site):
@@ -43,14 +61,16 @@ class Imgur(Site):
             f"https://api.imgur.com/3/{target}/{album_id}",
             headers=self.headers,
         ) as resp:
-            data = resp.json()["data"]
+            data: ImageResponse | AlbumResponse = resp.json()["data"]
 
-        if is_album:
-            images = data["images"]
+        post = data["data"]
+
+        if "images" in post:
+            images = post["images"]
         else:
-            images = [data]
+            images = [post]
 
-        queue.author = str(data["account_id"])
+        queue.author = str(post["account_id"])
         queue.link = f"https://imgur.com/a/{album_id}"
 
         for image in images:
