@@ -7,7 +7,7 @@ import logging
 import re
 from datetime import datetime
 from hashlib import md5
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from lxml import html
 
@@ -22,6 +22,36 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Config(TypedDict):
+        username: str
+        refresh_token: str
+
+    class ImageUrls(TypedDict):
+        large: str
+
+    class MetaImageUrls(ImageUrls):
+        original: str
+
+    class User(TypedDict):
+        id: int
+
+    class MetaSinglePage(TypedDict):
+        original_image_url: str
+
+    class MetaPage(TypedDict):
+        image_urls: MetaImageUrls
+
+    class Illustration(TypedDict):
+        title: str
+        image_urls: ImageUrls
+        caption: str
+        user: User
+        meta_single_page: MetaSinglePage
+        meta_pages: list[MetaPage]
+
+    class Response(TypedDict):
+        illust: Illustration
 
 
 CONFIG = "config/crosspost/pixiv.toml"
@@ -60,7 +90,7 @@ class Pixiv(Site):
     async def login_loop(self):
         url = "https://oauth.secure.pixiv.net/auth/token"
         while True:
-            login = await aload(CONFIG)
+            login: Config = await aload(CONFIG)  # pyright: ignore[reportAssignmentType]
 
             data = {
                 "get_secure_url": 1,
@@ -102,7 +132,7 @@ class Pixiv(Site):
             self.headers["Authorization"] = f'Bearer {res["access_token"]}'
             login["refresh_token"] = res["refresh_token"]
 
-            await adump(CONFIG, login)
+            await adump(CONFIG, login)  # pyright: ignore[reportArgumentType]
             await asyncio.sleep(res["expires_in"])
 
     async def handler(
@@ -114,11 +144,11 @@ class Pixiv(Site):
         params = {"illust_id": illust_id}
         url = "https://app-api.pixiv.net/v1/illust/detail"
         async with ctx.cog.get(url, params=params, headers=self.headers) as resp:
-            res = resp.json()
+            res: Response = resp.json()
 
-        res = res["illust"]
+        illust = res["illust"]
 
-        queue.author = res["user"]["id"]
+        queue.author = str(illust["user"]["id"])
 
         headers = {
             **self.headers,
@@ -127,7 +157,7 @@ class Pixiv(Site):
 
         queue.link = f"https://www.pixiv.net/en/artworks/{illust_id}"
 
-        if single := res["meta_single_page"]:
+        if single := illust["meta_single_page"]:
             url = single["original_image_url"]
 
             if "ugoira" in url:
@@ -139,8 +169,8 @@ class Pixiv(Site):
                     can_link=False,
                 )
             else:
-                queue.push_fallback(url, res["image_urls"]["large"], headers=headers)
-        elif multi := res["meta_pages"]:
+                queue.push_fallback(url, illust["image_urls"]["large"], headers=headers)
+        elif multi := illust["meta_pages"]:
             for page in multi:
                 queue.push_fallback(
                     page["image_urls"]["original"],
@@ -151,8 +181,8 @@ class Pixiv(Site):
             msg = "illust had no pages"
             raise RuntimeError(msg)
 
-        queue.push_text(res["title"], bold=True)
-        if caption := res.get("caption"):
+        queue.push_text(illust["title"], bold=True)
+        if caption := illust["caption"]:
             caption = re.sub(r"<br ?/?>", "\n", caption)
             root = html.document_fromstring(caption, self.cog.parser)
             text = root.text_content()
