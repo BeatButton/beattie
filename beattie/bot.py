@@ -8,7 +8,6 @@ import lzma
 import os
 import sys
 import tarfile
-import traceback
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
@@ -190,13 +189,8 @@ class BeattieBot(Bot):
         for extension in extensions:
             try:
                 await self.load_extension(extension, package="cogs")
-            except Exception as e:  # noqa: PERF203
-                print(
-                    "Failed to load extension",
-                    extension,
-                    file=sys.stderr,
-                )
-                traceback.print_exception(e)
+            except Exception:  # noqa: PERF203
+                self.logger.exception("Failed to load extension %s", extension)
 
     async def close(self):
         await super().close()
