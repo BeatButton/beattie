@@ -1,20 +1,15 @@
 from __future__ import annotations
 
 import json
-import logging
 import re
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-import toml
 from lxml import etree
 
-from ..flaresolverr import FlareSolverr
 from .site import Site
 
 if TYPE_CHECKING:
-    from ..cog import Crosspost
     from ..context import CrosspostContext
-    from ..flaresolverr import Config
     from ..queue import FragmentQueue
 
     class Image(TypedDict):
@@ -61,21 +56,6 @@ class Fanbox(Site):
     pattern = re.compile(
         r"https://(?:(?:www\.)?fanbox\.cc/@)?([\w-]+)(?:\.fanbox\.cc)?/posts/(\d+)",
     )
-    solver_url: str
-    proxy_url: str
-
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-        try:
-            with open("config/crosspost/flaresolverr.toml") as fp:
-                data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
-                self.solver_url = data["solver"]
-                self.proxy_url = data["proxy"]
-        except (FileNotFoundError, KeyError):
-            logging.getLogger(__name__).warning(
-                "no solver/proxy setup found, fanbox disabled.",
-            )
-            self.cog.sites.remove(self)
 
     async def on_invoke(
         self,
@@ -99,7 +79,7 @@ class Fanbox(Site):
         queue.link = f"https://www.fanbox.cc/@{user}/posts/{post_id}"
         url = f"https://api.fanbox.cc/post.info?postId={post_id}"
 
-        async with FlareSolverr(self.solver_url, self.proxy_url) as fs:
+        async with self.cog.flaresolverr() as fs:
             await fs.get("https://fanbox.cc")
             resp = await fs.get(
                 url,

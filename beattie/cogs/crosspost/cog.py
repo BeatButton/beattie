@@ -22,6 +22,7 @@ from discord.ext.commands import BadUnionArgument, ChannelNotFound, Cog
 from discord.utils import format_dt
 
 from beattie.cogs.crosspost.exceptions import DownloadError
+from beattie.cogs.crosspost.flaresolverr import FlareSolverr
 from beattie.utils.aioutils import squash_unfindable
 from beattie.utils.checks import is_owner_or
 from beattie.utils.contextmanagers import get
@@ -40,6 +41,7 @@ from .translator import (
     HybridTranslator,
     Language,
     LibreTranslator,
+    Translator,
 )
 
 if TYPE_CHECKING:
@@ -47,6 +49,8 @@ if TYPE_CHECKING:
 
     from beattie.bot import BeattieBot
     from beattie.context import BContext
+
+    from .flaresolverr import Config as FsC
 
 
 ConfigTarget = GuildMessageable | CategoryChannel
@@ -73,6 +77,9 @@ class Crosspost(Cog):
 
     sites: list[Site]
 
+    fs_solver_url: str | None
+    fs_proxy_url: str | None
+    translator: Translator | None
     ongoing_tasks: dict[int, asyncio.Task[None]]
     queue_cache: dict[tuple[str, ...], FragmentQueue]
     cache_lock: asyncio.Lock
@@ -95,6 +102,21 @@ class Crosspost(Cog):
             bot.extra["crosspost_queue_cache"] = self.queue_cache
         if (session := bot.extra.get("crosspost_session")) is not None:
             self.session = session
+
+        self.fs_solver_url = None
+        self.fs_proxy_url = None
+
+        try:
+            with open("config/crosspost/flaresolverr.toml") as fp:
+                fsconfig: FsC = toml.load(fp)  # pyright: ignore[reportAssignmentType]
+                solver_url = fsconfig["solver"]
+                proxy_url = fsconfig["proxy"]
+
+        except (FileNotFoundError, KeyError):
+            pass
+        else:
+            self.fs_solver_url = solver_url
+            self.fs_proxy_url = proxy_url
 
         self.translator = None
 
@@ -158,6 +180,12 @@ class Crosspost(Cog):
                 " Gecko/20100101 Firefox/141.0",
             }
         return get(session or self.session, *urls, method=method, **kwargs)
+
+    def flaresolverr(self) -> FlareSolverr:
+        if self.fs_solver_url is None or self.fs_proxy_url is None:
+            msg = "FlareSolverr config not set"
+            raise RuntimeError(msg)
+        return FlareSolverr(self.fs_solver_url, self.fs_proxy_url)
 
     async def save(
         self,
