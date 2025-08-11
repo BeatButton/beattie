@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import httpx
 import toml
@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..fragment import FileFragment
     from ..queue import FragmentQueue
+
+    class Response(TypedDict):
+        html: str
 
 
 POIPIKU_URL_GROUPS = re.compile(r"https?://poipiku\.com/(\d+)/(\d+)\.html")
@@ -86,7 +89,7 @@ class Poipiku(Site):
             headers=headers,
             data=body,
         )
-        data = resp.json()
+        data: Response = resp.json()
 
         frag = data["html"]
         if not frag:
@@ -151,7 +154,7 @@ class Poipiku(Site):
                     headers=headers,
                     data=body,
                 )
-                data = resp.json()
+                data: Response = resp.json()
 
                 frag = data["html"]
 
