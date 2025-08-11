@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import httpx
 
@@ -12,6 +12,51 @@ if TYPE_CHECKING:
     class Config(TypedDict):
         solver: str
         proxy: str
+
+    class Proxy(TypedDict):
+        url: str
+
+    class SessionsCreateCmd(TypedDict):
+        cmd: Literal["sessions.create"]
+        session: NotRequired[str]
+        proxy: NotRequired[Proxy]
+
+    class SessionsDestroyCmd(TypedDict):
+        cmd: Literal["sessions.destroy"]
+        session: str
+
+    class RequestGetBasicCmd(TypedDict):
+        cmd: Literal["request.get"]
+        url: str
+
+    class RequestGetSessionCmd(TypedDict):
+        cmd: Literal["request.get"]
+        url: str
+        session: str
+
+    class RequestGetProxyCmd(TypedDict):
+        cmd: Literal["request.get"]
+        url: str
+        proxy: Proxy
+
+    RequestGetCmd = RequestGetBasicCmd | RequestGetSessionCmd | RequestGetProxyCmd
+
+    Command = SessionsCreateCmd | SessionsDestroyCmd | RequestGetCmd
+
+    class Response(TypedDict):
+        status: str
+        message: str
+
+    class SessionsCreate(Response):
+        session: str
+
+    class Solution(TypedDict):
+        response: str
+
+    class RequestsGet(Response):
+        status: str
+        message: str
+        solution: Solution
 
 
 class FlareSolverr:
@@ -40,8 +85,11 @@ class FlareSolverr:
 
     async def start(self):
         if self.session is None:
-            data = await self._request(
-                {"cmd": "sessions.create", "proxy": {"url": self.proxy}},
+            data: SessionsCreate = await self._request(
+                {
+                    "cmd": "sessions.create",
+                    "proxy": {"url": self.proxy},
+                },
             )
             self.session = data["session"]
 
@@ -50,25 +98,28 @@ class FlareSolverr:
             await self._request({"cmd": "sessions.destroy", "session": self.session})
             self.session = None
 
-    async def _request(self, command: dict[str, Any]) -> dict[str, Any]:
+    async def _request(self, command: Command) -> Any:
         resp = await self.client.post(
             self.solver,
             headers={"Content-Type": "application/json"},
             content=json.dumps(command),
         )
-        data = resp.json()
+        data: Response = resp.json()
         if data["status"] != "ok":
             msg = f"solver error: {data['message']}"
             raise RuntimeError(msg)
 
         return data
 
-    async def get(self, url: str, *, headers: dict[str, str] = None) -> dict[str, Any]:
+    async def get(self, url: str, *, headers: dict[str, str] = None) -> RequestsGet:
         if headers:
             for name, value in headers.items():
                 slug = f"{name}:{value}"
                 data = urllib.parse.quote(slug, safe="")
                 url = f"{url}&$$headers[]={data}"
+        if self.session is None:
+            msg = "get called before session was set"
+            raise RuntimeError(msg)
         return await self._request(
             {
                 "cmd": "request.get",
