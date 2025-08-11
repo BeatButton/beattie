@@ -154,8 +154,8 @@ class Crosspost(Cog):
         if use_browser_ua:
             kwargs["headers"] = {
                 **(kwargs.get("headers") or {}),
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0)"
-                " Gecko/20100101 Firefox/140.0",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0)"
+                " Gecko/20100101 Firefox/141.0",
             }
         return get(session or self.session, *urls, method=method, **kwargs)
 
