@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from .site import Site
 
 if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Response(TypedDict):
+        owner_username: str
+        image_xl: NotRequired[str]
+        image: str
+        title: str
+        description: str
 
 
 class Itaku(Site):
@@ -26,15 +33,12 @@ class Itaku(Site):
                 "Accept": "application/json",
             },
         ) as resp:
-            post = resp.json()
+            post: Response = resp.json()
 
         url = post.get("image_xl")
 
         if url is None:
-            url = post.get("image")
-
-        if url is None:
-            return
+            url = post["image"]
 
         queue.author = post["owner_username"]
         queue.push_file(url)
