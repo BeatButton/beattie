@@ -13,15 +13,35 @@ if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
+    class Blog(TypedDict):
+        name: str
+
+    class ContentBlock(TypedDict):
+        type: str
+        text: str
+        hd: str
+        media: NotRequired[dict[str, str]]
+
+    class Block(TypedDict):
+        content: list[ContentBlock]
+        blog: Blog
+
+    class Post(TypedDict):
+        blocks: list[Block]
+        reblogRoot: Blog
+
+    class Content(TypedDict):
+        posts: list[Post]
+
+    class Params(TypedDict):
+        id: str
+        content: Content
+
+    class Response(TypedDict):
+        params: Params
+
 
 TUMBLR_SCRIPT_SELECTOR = ".//script[contains(text(),'window.launcher')]"
-
-
-class Block(TypedDict):
-    type: str
-    text: str
-    hd: str
-    media: NotRequired[dict[str, str]]
 
 
 class Tumblr(Site):
@@ -32,7 +52,7 @@ class Tumblr(Site):
     )
 
     @staticmethod
-    def embeddable(block: Block) -> bool:
+    def embeddable(block: ContentBlock) -> bool:
         match block["type"]:
             case "image":
                 return True
@@ -58,7 +78,9 @@ class Tumblr(Site):
         if not (script := root.xpath(TUMBLR_SCRIPT_SELECTOR)):
             return
 
-        data = json.loads(f"{{{script[0].text.partition('{')[-1].rpartition('}')[0]}}}")
+        data: Response = json.loads(
+            f"{{{script[0].text.partition('{')[-1].rpartition('}')[0]}}}",
+        )
 
         if (post_content := data["params"]["content"]) is None:
             queue.push_text(
@@ -71,7 +93,6 @@ class Tumblr(Site):
         post = post_content["posts"][0]
         reblog_root = post["reblogRoot"]
         name = reblog_root["name"] if reblog_root else None
-        blocks: list[Block]
         blocks = list(
             chain.from_iterable(
                 iter(block["content"])
