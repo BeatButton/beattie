@@ -442,8 +442,8 @@ class Crosspost(Cog):
         if not (
             author_id == reactor_id
             or await self.bot.is_owner(reactor)
-            or (guild_id := payload.guild_id)
-            and (guild := self.bot.get_guild(guild_id))
+            or (guild_id := payload.guild_id) is None
+            or (guild := self.bot.get_guild(guild_id))
             and (member := guild.get_member(reactor_id))
             and (channel := guild.get_channel(payload.channel_id))
             and channel.permissions_for(member).manage_messages
