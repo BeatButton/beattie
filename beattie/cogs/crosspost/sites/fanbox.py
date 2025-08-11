@@ -90,7 +90,7 @@ class Fanbox(Site):
                     queue.push_fallback(
                         image["originalUrl"],
                         image["thumbnailUrl"],
-                        headers,
+                        headers=headers,
                     )
                 if text := body.get("text", "").strip():
                     queue.push_text(text, interlaced=True)
@@ -119,7 +119,7 @@ class Fanbox(Site):
                             queue.push_fallback(
                                 image["originalUrl"],
                                 image["thumbnailUrl"],
-                                headers,
+                                headers=headers,
                             )
                         case "file":
                             queue.push_file(file_map[block["fileId"]]["url"])

@@ -125,13 +125,14 @@ class FragmentQueue:
         self,
         preferred_url: str,
         fallback_url: str,
+        *,
         headers: dict[str, str] = None,
     ) -> FallbackFragment:
         frag = FallbackFragment(
             self,
             preferred_url,
             fallback_url,
-            headers,
+            headers=headers,
         )
         self.fragments.append(frag)
         return frag
