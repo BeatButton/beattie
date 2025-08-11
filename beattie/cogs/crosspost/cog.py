@@ -300,7 +300,7 @@ class Crosspost(Cog):
                 self.bot.shared.create_task(queue.site.on_invoke(ctx, queue))
                 try:
                     await queue.handle_task
-                except:
+                except Exception:
                     self.logger.exception(
                         "error: %s/%s/%s: %s %s ",
                         *logloc,
@@ -847,7 +847,7 @@ translate text, or a language name or code to translate text into that language.
             await task
         except asyncio.CancelledError:
             pass
-        except:
+        except Exception:
             ctx.bot.shared.create_task(ctx.message.add_reaction("⚠️"))
             raise
         finally:
