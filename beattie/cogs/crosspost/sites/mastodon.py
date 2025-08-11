@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import urllib.parse as urlparse
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import toml
 from lxml import html
@@ -19,6 +19,67 @@ if TYPE_CHECKING:
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Link(TypedDict):
+        rel: str
+        href: str
+
+    class WellKnown(TypedDict):
+        links: list[Link]
+
+    class Software(TypedDict):
+        name: str
+
+    class NodeInfo(TypedDict):
+        software: Software
+
+    class MastodonAccount(TypedDict):
+        url: str
+
+    class MastodonMedia(TypedDict):
+        type: str
+        url: str
+        preview_url: str
+        remote_url: str | None
+
+    class MastodonResponse(TypedDict):
+        spoiler_text: str
+        url: str
+        visibility: str
+        content: str
+        account: MastodonAccount
+        media_attachments: list[MastodonMedia]
+
+    class MisskeyUser(TypedDict):
+        id: str
+
+    class MisskeyFile(TypedDict):
+        name: str
+        type: str
+        url: str
+        thumbnailUrl: str
+
+    class MisskeyResponse(TypedDict):
+        user: MisskeyUser
+        text: str
+        files: list[MisskeyFile]
+
+    class PeertubeAccount(TypedDict):
+        url: str
+
+    class PeertubePlaylistFile(TypedDict):
+        width: int
+        fileDownloadUrl: str
+
+    class PeertubePlaylist(TypedDict):
+        files: list[PeertubePlaylistFile]
+
+    class PeertubeResponse(TypedDict):
+        name: str
+        description: str
+        isLive: bool
+        account: PeertubeAccount
+        streamingPlaylists: list[PeertubePlaylist]
 
 
 MASTO_API_FMT = "https://{}/api/v1/statuses/{}"
@@ -63,12 +124,12 @@ class Mastodon(Site):
         async with self.cog.get(
             f"https://{domain}/.well-known/nodeinfo",
         ) as resp:
-            data = resp.json()
+            info: WellKnown = resp.json()
 
-        link = data["links"][0]["href"]
+        link = info["links"][0]["href"]
 
         async with self.cog.get(link) as resp:
-            data = resp.json()
+            data: NodeInfo = resp.json()
 
         return data["software"]["name"]
 
@@ -142,12 +203,14 @@ class Mastodon(Site):
         api_url = MASTO_API_FMT.format(site, post_id)
 
         async with self.cog.get(api_url, headers=headers) as resp:
-            post = resp.json()
+            post: MastodonResponse = resp.json()
 
-        if not (images := post.get("media_attachments")):
+        images = post["media_attachments"]
+
+        if not images:
             return
 
-        if post.get("visibility") not in ("public", "unlisted"):
+        if post["visibility"] not in ("public", "unlisted"):
             return
 
         queue.author = post["account"]["url"]
@@ -161,17 +224,16 @@ class Mastodon(Site):
             url = image["remote_url"]
             if url is None:
                 url = image["url"]
-
             if not urlparse.urlsplit(url).netloc:
                 netloc = urlparse.urlsplit(str(resp.url)).netloc
                 url = f"https://{netloc}/{url.lstrip('/')}"
-            if image.get("type") == "gifv":
+            if image["type"] == "gifv":
                 queue.push_file(url, postprocess=ffmpeg_gif_pp)
             else:
                 queue.push_fallback(url, image["preview_url"])
 
         if content := post["content"]:
-            if cw := post.get("spoiler_text"):
+            if cw := post["spoiler_text"]:
                 queue.push_text(cw, skip_translate=True, diminished=True)
 
             fragments = html.fragments_fromstring(
@@ -201,7 +263,7 @@ class Mastodon(Site):
             data=body,
             headers={**headers, "Content-Type": "application/json"},
         ) as resp:
-            data = resp.json()
+            data: MisskeyResponse = resp.json()
 
         if not (files := data["files"]):
             return
@@ -239,8 +301,7 @@ class Mastodon(Site):
         api_url = PEERTUBE_API_FMT.format(site, post_id)
 
         async with self.cog.get(api_url, headers=headers) as resp:
-            post = resp.json()
-
+            post: PeertubeResponse = resp.json()
         if post["isLive"]:
             return
 
