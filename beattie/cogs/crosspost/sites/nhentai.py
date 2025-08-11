@@ -32,8 +32,8 @@ class Nhentai(Site):
 
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
         api_url = f"https://nhentai.net/api/gallery/{gal_id}"
-        async with self.cog.get(api_url, use_browser_ua=True) as resp:
-            data: Response = resp.json()
+        async with self.cog.flaresolverr() as fs:
+            data: Response = await fs.get_json(api_url)
 
         media_id = data["media_id"]
         for i, page in enumerate(data["images"]["pages"], 1):
