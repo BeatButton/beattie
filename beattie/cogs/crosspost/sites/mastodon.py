@@ -208,13 +208,10 @@ class Mastodon(Site):
         queue.author = data["user"]["id"]
 
         for file in files:
-            url = file["url"]
             pp = None
-            ext = url.rpartition("/")[2].rpartition("?")[0].rpartition(".")[2]
-            if ext == "apng":
+            if file["type"] == "image/apng":
                 pp = ffmpeg_gif_pp
-
-            queue.push_file(url, postprocess=pp)
+            queue.push_file(file["url"], filename=file["name"], postprocess=pp)
 
         if text := data["text"]:
             queue.push_text(text)
