@@ -123,6 +123,8 @@ class FileFragment(Fragment):
 class FallbackFragment(Fragment):
     preferred_url: str
     fallback_url: str
+    preferred_filename: str | None
+    fallback_filename: str | None
     headers: dict[str, str] | None
     length_task: asyncio.Task[int] | None
     preferred_frag: FileFragment | None
@@ -134,11 +136,18 @@ class FallbackFragment(Fragment):
         preferred_url: str,
         fallback_url: str,
         *,
+        preferred_filename: str = None,
+        fallback_filename: str = None,
         headers: dict[str, str] = None,
     ):
         super().__init__(queue)
         self.preferred_url = preferred_url
         self.fallback_url = fallback_url
+        self.preferred_filename = preferred_filename
+        if fallback_filename is None:
+            self.fallback_filename = preferred_filename
+        else:
+            self.fallback_filename = fallback_filename
         self.headers = headers
 
         self.preferred_frag = None
@@ -159,6 +168,7 @@ class FallbackFragment(Fragment):
             self.preferred_frag = FileFragment(
                 self.queue,
                 self.preferred_url,
+                filename=self.preferred_filename,
                 headers=self.headers,
             )
             await self.preferred_frag.save()
@@ -179,12 +189,14 @@ class FallbackFragment(Fragment):
                 frag = self.preferred_frag = FileFragment(
                     self.queue,
                     self.preferred_url,
+                    filename=self.preferred_filename,
                     headers=self.headers,
                 )
         elif (frag := self.fallback_frag) is None:
             frag = self.fallback_frag = FileFragment(
                 self.queue,
                 self.fallback_url,
+                filename=self.fallback_filename,
                 headers=self.headers,
             )
 
