@@ -434,6 +434,7 @@ class Crosspost(Cog):
         message_id = payload.message_id
         messages_deleted = False
         if await self.db.get_invoking_author_id(message_id):
+            await self.db.del_sent_message(message_id)
             return
 
         if task := self.ongoing_tasks.get(message_id):
@@ -479,7 +480,6 @@ class Crosspost(Cog):
             return
 
         await self.delete_messages(payload.channel_id, [message_id])
-        await self.db.del_sent_message(message_id)
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
