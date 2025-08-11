@@ -125,7 +125,7 @@ class FragmentQueue:
         self,
         preferred_url: str,
         fallback_url: str,
-        headers: dict[str, str] | None,
+        headers: dict[str, str] = None,
     ) -> FallbackFragment:
         frag = FallbackFragment(
             self,

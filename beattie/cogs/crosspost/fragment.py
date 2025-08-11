@@ -133,7 +133,7 @@ class FallbackFragment(Fragment):
         queue: FragmentQueue,
         preferred_url: str,
         fallback_url: str,
-        headers: dict[str, str] | None,
+        headers: dict[str, str] = None,
     ):
         super().__init__(queue)
         self.preferred_url = preferred_url
