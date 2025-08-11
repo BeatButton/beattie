@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from beattie.utils.exceptions import ResponseError
 
@@ -10,6 +10,9 @@ from .site import Site
 if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
+
+    class Response(TypedDict):
+        url: str
 
 
 class Tiktok(Site):
@@ -26,7 +29,9 @@ class Tiktok(Site):
     ):
         link = f"https://kktiktok.com/t/{video_id}?_kk=1"
         async with self.cog.get(link) as resp:
-            url = resp.json()["url"]
+            post: Response = resp.json()
+
+        url = post["url"]
 
         if url is None:
             raise ResponseError(404, link)
