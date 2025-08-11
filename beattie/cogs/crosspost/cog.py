@@ -393,7 +393,7 @@ class Crosspost(Cog):
         ctx = await self.bot.get_context(message, cls=CrosspostContext)
         if ctx.prefix is None:
             ctx.command = self.post
-            await self._post(ctx, steps=URL_EXPR.finditer(ctx.message.content))
+            await self._post(ctx)
 
     @Cog.listener()
     async def on_message_edit(self, _: Message, message: Message):
@@ -837,9 +837,22 @@ translate text, or a language name or code to translate text into that language.
         self,
         ctx: CrosspostContext,
         *,
-        steps: Iterable[re.Match[str] | PostFlags],
         force: bool = False,
     ):
+        matches = URL_EXPR.finditer(ctx.message.content)
+        match = next(matches, None)
+        steps: list[re.Match[str] | PostFlags] = []
+        for arg in ctx.message.content.split():
+            if match and match.group(0) in arg:
+                steps.append(match)
+                match = next(matches, None)
+            elif (
+                (flag := await PostFlags().convert(ctx, arg))
+                and flag.pages is not None
+                or flag.text is not None
+            ):
+                steps.append(flag)
+
         message_id = ctx.message.id
         coro = self.process_links(ctx, steps=steps, force=force)
         task = self.ongoing_tasks[message_id] = asyncio.create_task(coro)
@@ -854,26 +867,12 @@ translate text, or a language name or code to translate text into that language.
             del self.ongoing_tasks[message_id]
 
     @commands.command()
-    async def post(self, ctx: BContext, *args: str):
+    async def post(self, ctx: BContext):
         """Embed images in the given links regardless of the auto setting.
 
         Put text=true or pages=X after post to change settings for this message only."""
-        matches = URL_EXPR.finditer(ctx.message.content)
-        match = next(matches, None)
-        steps = []
-        for arg in args:
-            if match and match.group(0) in arg:
-                steps.append(match)
-                match = next(matches, None)
-            elif (
-                (flag := await PostFlags().convert(ctx, arg))
-                and flag.pages is not None
-                or flag.text is not None
-            ):
-                steps.append(flag)
-
         new_ctx = await self.bot.get_context(ctx.message, cls=CrosspostContext)
-        await self._post(new_ctx, steps=steps, force=True)
+        await self._post(new_ctx, force=True)
 
     @commands.command(aliases=["_"])
     async def nopost(self, ctx: BContext, *, _: str = ""):
