@@ -5,9 +5,12 @@ import urllib.parse
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import httpx
+from lxml import etree
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+    from beattie.cogs.crosspost.cog import Crosspost
 
     class Config(TypedDict):
         solver: str
@@ -60,12 +63,14 @@ if TYPE_CHECKING:
 
 
 class FlareSolverr:
+    cog: Crosspost
     solver: str
     proxy: str
     session: str | None
     client: httpx.AsyncClient
 
-    def __init__(self, solver: str, proxy: str):
+    def __init__(self, cog: Crosspost, solver: str, proxy: str):
+        self.cog = cog
         self.solver = solver
         self.proxy = proxy
         self.client = httpx.AsyncClient(follow_redirects=True, timeout=None)
@@ -127,3 +132,8 @@ class FlareSolverr:
                 "session": self.session,
             },
         )
+
+    async def get_json(self, url: str, *, headers: dict[str, str] = None) -> Any:
+        resp = await self.get(url, headers=headers)
+        root = etree.fromstring(resp["solution"]["response"], self.cog.parser)
+        return json.loads(root.xpath("//pre")[0].text)

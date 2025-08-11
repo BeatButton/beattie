@@ -185,7 +185,7 @@ class Crosspost(Cog):
         if self.fs_solver_url is None or self.fs_proxy_url is None:
             msg = "FlareSolverr config not set"
             raise RuntimeError(msg)
-        return FlareSolverr(self.fs_solver_url, self.fs_proxy_url)
+        return FlareSolverr(self, self.fs_solver_url, self.fs_proxy_url)
 
     async def save(
         self,

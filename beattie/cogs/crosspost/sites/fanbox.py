@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import json
 import re
 from typing import TYPE_CHECKING, Literal, TypedDict
-
-from lxml import etree
 
 from .site import Site
 
@@ -81,16 +78,13 @@ class Fanbox(Site):
 
         async with self.cog.flaresolverr() as fs:
             await fs.get("https://fanbox.cc")
-            resp = await fs.get(
+            data: Response = await fs.get_json(
                 url,
                 headers={
                     "Accept": "application/json, text/plain, */*",
                     "Origin": "https://www.fanbox.cc",
                 },
             )
-
-        root = etree.fromstring(resp["solution"]["response"], self.cog.parser)
-        data: Response = json.loads(root.xpath("//pre")[0].text)
 
         post = data["body"]
         body = post["body"]
