@@ -19,6 +19,6 @@ class CrosspostContext(BContext):
             **kwargs,
         )
 
-        await self.cog.db.add_sent_message(self.message.id, msg.id)
+        await self.cog.db.add_sent_message(self.message, msg)
 
         return msg

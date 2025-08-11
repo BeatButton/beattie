@@ -24,6 +24,16 @@ if TYPE_CHECKING:
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
 
 
+class SentMessages:
+    __slots__ = ("author_id", "message_ids")
+    author_id: int
+    message_ids: list[int]
+
+    def __init__(self, author_id: int, message_ids: list[int]):
+        self.author_id = author_id
+        self.message_ids = message_ids
+
+
 class Database:
     def __init__(self, bot: BeattieBot, cog: Crosspost):
         self.pool = bot.pool
@@ -32,7 +42,8 @@ class Database:
         self._settings_cache: dict[tuple[int, int], Settings] = {}
         self._blacklist_cache: dict[int, set[str]] = {}
         self._expiry_deque: deque[int] = deque()
-        self._message_cache: dict[int, list[int]] = {}
+        self._message_cache: dict[int, SentMessages] = {}
+        self._invoker_cache: dict[int, int] = {}
 
     async def async_init(self):
         async with self.pool.acquire() as conn:
@@ -74,15 +85,27 @@ class Database:
                 time_snowflake(utcnow() - timedelta(seconds=MESSAGE_CACHE_TTL)),
             )
 
+            for row in rows:
+                self._invoker_cache[row["sent_message"]] = row["invoking_user"]
+
             for invoking_message, elems in groupby(
                 rows,
                 key=itemgetter("invoking_message"),
             ):
                 self._expiry_deque.append(invoking_message)
-                self._message_cache[invoking_message] = [
-                    elem["sent_message"] for elem in elems
-                ]
+                elems = list(elems)
+                author_id = elems[0]["invoking_user"]
+                message_ids = [elem["sent_message"] for elem in elems]
+                self._message_cache[invoking_message] = SentMessages(
+                    author_id,
+                    message_ids,
+                )
             self._expiry_task = asyncio.create_task(self._expire())
+
+    def _pop_message_cache(self, invoking_message: int):
+        if sent := self._message_cache.pop(invoking_message, None):
+            for sent_message in sent.message_ids:
+                self._invoker_cache.pop(sent_message, None)
 
     async def _expire(self):
         try:
@@ -90,7 +113,7 @@ class Database:
                 entry = self._expiry_deque.popleft()
                 until = snowflake_time(entry) + timedelta(seconds=MESSAGE_CACHE_TTL)
                 await sleep_until(until)
-                self._message_cache.pop(entry, None)
+                self._pop_message_cache(entry)
         except Exception:
             self.cog.logger.exception("Exception in message cache expiry task")
 
@@ -181,7 +204,7 @@ class Database:
         for row in rows:
             self._settings_cache.pop((guild_id, row["channel_id"]), None)
 
-    async def get_sent_messages(self, invoking_message: int) -> list[int]:
+    async def get_sent_messages(self, invoking_message: int) -> SentMessages | None:
         if sent_messages := self._message_cache.get(invoking_message):
             return sent_messages
         if (
@@ -192,33 +215,66 @@ class Database:
                     "SELECT * FROM crosspostmessage WHERE invoking_message = $1",
                     invoking_message,
                 )
-            return [row["sent_message"] for row in rows]
-        return []
+            author_id = rows[0]["invoking_user"]
+            message_ids = [row["sent_message"] for row in rows]
+            return SentMessages(author_id, message_ids)
+        return None
 
-    async def add_sent_message(self, invoking_message: int, sent_message: int):
-        if (messages := self._message_cache.get(invoking_message)) is None:
-            messages = []
-            self._message_cache[invoking_message] = messages
-            self._expiry_deque.append(invoking_message)
-        messages.append(sent_message)
+    async def get_invoking_author_id(self, sent_message: int) -> int | None:
+        if author_id := self._invoker_cache.get(sent_message):
+            return author_id
+        if (
+            utcnow() - snowflake_time(sent_message)
+        ).total_seconds() > MESSAGE_CACHE_TTL - 3600:  # an hour's leeway
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    SELECT invoking_user
+                    FROM crosspostmessage
+                    WHERE sent_message = $1
+                    """,
+                    sent_message,
+                )
+            if row:
+                return row["invoking_user"]
+        return None
+
+    async def add_sent_message(self, invoking_message: Message, sent_message: Message):
+        sent_id = sent_message.id
+        invoking_id = invoking_message.id
+        author_id = invoking_message.author.id
+        if (sent := self._message_cache.get(invoking_id)) is None:
+            sent = self._message_cache[invoking_id] = SentMessages(author_id, [])
+            self._expiry_deque.append(invoking_id)
+        sent.message_ids.append(sent_id)
         async with self.pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO crosspostmessage(sent_message, invoking_message)
-                VALUES ($1, $2)
+                INSERT INTO crosspostmessage
+                (sent_message, invoking_message, invoking_user)
+                VALUES ($1, $2, $3)
                 """,
-                sent_message,
-                invoking_message,
+                sent_id,
+                invoking_id,
+                author_id,
             )
         if self._expiry_task.done():
             self._expiry_task = asyncio.create_task(self._expire())
 
     async def del_sent_messages(self, invoking_message: int):
-        self._message_cache.pop(invoking_message, None)
+        self._pop_message_cache(invoking_message)
         async with self.pool.acquire() as conn:
             await conn.execute(
                 "DELETE FROM crosspostmessage WHERE invoking_message = $1",
                 invoking_message,
+            )
+
+    async def del_sent_message(self, sent_message: int):
+        self._invoker_cache.pop(sent_message, None)
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM crosspostmessage WHERE sent_message = $1",
+                sent_message,
             )
 
     async def get_blacklist(self, guild_id: int) -> set[str]:

@@ -377,7 +377,7 @@ class Crosspost(Cog):
         ):
             return
 
-        for message_id in sent_messages:
+        for message_id in sent_messages.message_ids:
             try:
                 msg = await message.channel.fetch_message(message_id)
             except discord.NotFound:  # noqa: PERF203
@@ -405,6 +405,9 @@ class Crosspost(Cog):
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         message_id = payload.message_id
         messages_deleted = False
+        if await self.db.get_invoking_author_id(message_id):
+            return
+
         if task := self.ongoing_tasks.get(message_id):
             task.cancel()
             try:
@@ -412,15 +415,43 @@ class Crosspost(Cog):
             except Exception:  # noqa: S110, this exception belongs to _post
                 pass
         if messages := await self.db.get_sent_messages(message_id):
-            await self.delete_messages(payload.channel_id, messages)
+            await self.delete_messages(payload.channel_id, messages.message_ids)
             messages_deleted = True
         if task:
             await task
             if messages:
-                await self.delete_messages(payload.channel_id, messages)
+                await self.delete_messages(payload.channel_id, messages.message_ids)
                 messages_deleted = True
         if messages_deleted:
             await self.db.del_sent_messages(message_id)
+
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        if str(payload.emoji) != "❌":
+            return
+
+        message_id = payload.message_id
+        if not (author_id := await self.db.get_invoking_author_id(message_id)):
+            return
+
+        reactor_id = payload.user_id
+        reactor = self.bot.get_user(reactor_id)
+        if not reactor:
+            return
+
+        if not (
+            author_id == reactor_id
+            or await self.bot.is_owner(reactor)
+            or (guild_id := payload.guild_id)
+            and (guild := self.bot.get_guild(guild_id))
+            and (member := guild.get_member(reactor_id))
+            and (channel := guild.get_channel(payload.channel_id))
+            and channel.permissions_for(member).manage_messages
+        ):
+            return
+
+        await self.delete_messages(payload.channel_id, [message_id])
+        await self.db.del_sent_message(message_id)
 
     @commands.group(invoke_without_command=True, usage="")
     @is_owner_or(manage_guild=True)
