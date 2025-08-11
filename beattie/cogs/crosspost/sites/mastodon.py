@@ -158,16 +158,17 @@ class Mastodon(Site):
             queue.push_text(real_url, quote=False, force=True)
 
         for image in images:
-            urls = [url for url in [image["remote_url"], image["url"]] if url]
+            url = image["remote_url"]
+            if url is None:
+                url = image["url"]
 
-            for idx, url in enumerate(urls):
-                if not urlparse.urlparse(url).netloc:
-                    netloc = urlparse.urlparse(str(resp.url)).netloc
-                    urls[idx] = f"https://{netloc}/{url.lstrip('/')}"
+            if not urlparse.urlsplit(url).netloc:
+                netloc = urlparse.urlsplit(str(resp.url)).netloc
+                url = f"https://{netloc}/{url.lstrip('/')}"
             if image.get("type") == "gifv":
-                queue.push_file(*urls, postprocess=ffmpeg_gif_pp)
+                queue.push_file(url, postprocess=ffmpeg_gif_pp)
             else:
-                queue.push_file(*urls)
+                queue.push_fallback(url, image["preview_url"])
 
         if content := post["content"]:
             if cw := post.get("spoiler_text"):
@@ -208,10 +209,20 @@ class Mastodon(Site):
         queue.author = data["user"]["id"]
 
         for file in files:
-            pp = None
+            url = file["url"]
+            filename = file["name"]
             if file["type"] == "image/apng":
-                pp = ffmpeg_gif_pp
-            queue.push_file(file["url"], filename=file["name"], postprocess=pp)
+                queue.push_file(
+                    url,
+                    filename=filename,
+                    postprocess=ffmpeg_gif_pp,
+                )
+            else:
+                queue.push_fallback(
+                    url,
+                    file["thumbnailUrl"],
+                    preferred_filename=filename,
+                )
 
         if text := data["text"]:
             queue.push_text(text)
