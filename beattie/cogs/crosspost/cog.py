@@ -839,6 +839,7 @@ translate text, or a language name or code to translate text into that language.
         *,
         force: bool = False,
     ):
+        ctx.current_parameter = commands.parameter()
         matches = URL_EXPR.finditer(ctx.message.content)
         match = next(matches, None)
         steps: list[re.Match[str] | PostFlags] = []
