@@ -246,6 +246,7 @@ class Database:
         if (sent := self._message_cache.get(invoking_id)) is None:
             sent = self._message_cache[invoking_id] = SentMessages(author_id, [])
             self._expiry_deque.append(invoking_id)
+        self._invoker_cache[sent_message.id] = invoking_message.author.id
         sent.message_ids.append(sent_id)
         async with self.pool.acquire() as conn:
             await conn.execute(
