@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import copy
 import logging
 from contextlib import AbstractAsyncContextManager
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+from httpx import RemoteProtocolError
 
 from .exceptions import ResponseError
 
@@ -51,6 +54,7 @@ class get:  # noqa: N801
         self.error_for_status = error_for_status
 
     async def __aenter__(self) -> Response:
+        retry = 0
         while True:
             try:
                 resp = await self._aenter_inner()
@@ -58,6 +62,11 @@ class get:  # noqa: N801
                 self.index += 1
                 if self.index >= len(self.urls):
                     raise
+            except RemoteProtocolError:
+                if retry >= 4:
+                    raise
+                await asyncio.sleep(2**retry / 10)
+                retry += 1
             else:
                 return resp
 
