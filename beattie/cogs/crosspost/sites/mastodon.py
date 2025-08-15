@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import urllib.parse as urlparse
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypedDict
 
 import toml
 from lxml import html
@@ -16,6 +16,8 @@ from ..postprocess import ffmpeg_gif_pp
 from .site import Site
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine
+
     from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
@@ -81,6 +83,11 @@ if TYPE_CHECKING:
         account: PeertubeAccount
         streamingPlaylists: list[PeertubePlaylist]
 
+    Handler = Callable[
+        [CrosspostContext, FragmentQueue, str, str, str, dict[str, str]],
+        Coroutine[Any, Any, None],
+    ]
+
 
 MASTO_API_FMT = "https://{}/api/v1/statuses/{}"
 PEERTUBE_API_FMT = "https://{}/api/v1/videos/{}"
@@ -95,6 +102,7 @@ class Mastodon(Site):
     auth: dict[str, dict[str, str]]
     whitelist: dict[str, str]
     blacklist: set[str]
+    dispatch: dict[str, Handler | Literal["SKIP"]]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
@@ -119,6 +127,7 @@ class Mastodon(Site):
         self.dispatch["iceshrimp"] = self.do_misskey
         self.dispatch["pleroma"] = self.do_mastodon
         self.dispatch["akkoma"] = self.do_mastodon
+        self.dispatch["bridgy-fed"] = "SKIP"
 
     async def sniff(self, domain: str) -> str:
         async with self.cog.get(
@@ -183,6 +192,9 @@ class Mastodon(Site):
         if (handler := self.dispatch.get(software)) is None:
             msg = f"unsupported activitypub software {software}"
             raise RuntimeError(msg)
+
+        if handler == "SKIP":
+            return
 
         headers = {"Accept": "application/json"}
 
