@@ -99,3 +99,4 @@ config/
 /discord*.log.xz
 **/.mypy_cache
 /beattie/cogs/secret.py
+/testing
