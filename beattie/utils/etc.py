@@ -194,7 +194,7 @@ async def prompt_confirm(
             "reaction_add",
             check=lambda r, u: u == ctx.author
             and r.message == msg
-            and r.emoji in {"❌", "⭕"},
+            and str(r.emoji) in "❌⭕",
             timeout=timeout,
         )
     except asyncio.TimeoutError:
