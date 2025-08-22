@@ -36,6 +36,14 @@ if TYPE_CHECKING:
     class ImageContainer(TypedDict):
         image: Image
 
+    ImagesEmbed = TypedDict(
+        "ImagesEmbed",
+        {
+            "$type": Literal["app.bsky.embed.images"],
+            "images": list[ImageContainer],
+        },
+    )
+
     ExternalMedia = TypedDict(
         "ExternalMedia",
         {
@@ -51,21 +59,13 @@ if TYPE_CHECKING:
         },
     )
 
-    Media = ExternalMedia | VideoMedia
+    Media = ExternalMedia | VideoMedia | ImagesEmbed
 
     RecordEmbed = TypedDict(
         "RecordEmbed",
         {
             "$type": Literal["app.bsky.embed.record"],
             "record": Record,
-        },
-    )
-
-    ImagesEmbed = TypedDict(
-        "ImagesEmbed",
-        {
-            "$type": Literal["app.bsky.embed.images"],
-            "images": list[ImageContainer],
         },
     )
 
@@ -162,8 +162,11 @@ class Bluesky(Site):
                 video = embed["video"]
             case "app.bsky.embed.recordWithMedia":
                 media = embed["media"]
-                if media["$type"] == "video":
-                    video = media["video"]
+                match media["$type"]:
+                    case "video":
+                        video = media["video"]
+                    case "app.bsky.embed.images":
+                        images = media["images"]
 
         if not (images or video):
             return
