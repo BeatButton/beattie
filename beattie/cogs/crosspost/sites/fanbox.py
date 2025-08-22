@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Literal, TypedDict
 
+from discord import NotFound
+
 from .site import Site
 
 if TYPE_CHECKING:
@@ -64,7 +66,10 @@ class Fanbox(Site):
             try:
                 await queue.handle_task
             finally:
-                await msg.delete()
+                try:
+                    await msg.delete()
+                except NotFound:
+                    pass
 
     async def handler(
         self,
