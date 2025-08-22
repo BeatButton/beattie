@@ -215,6 +215,8 @@ class Database:
                     "SELECT * FROM crosspostmessage WHERE invoking_message = $1",
                     invoking_message,
                 )
+            if not rows:
+                return None
             author_id = rows[0]["invoking_user"]
             message_ids = [row["sent_message"] for row in rows]
             return SentMessages(author_id, message_ids)
