@@ -13,7 +13,7 @@ import aiohttp
 import httpx
 import toml
 from lxml import etree, html
-from tldextract import TLDExtract
+from tldextract import ExtractResult, TLDExtract
 
 import discord
 from discord import CategoryChannel, Message, Thread
@@ -146,7 +146,7 @@ class Crosspost(Cog):
         except FileNotFoundError:
             pass
 
-        self.tldextract = TLDExtract(suffix_list_urls=())
+        self._tldextract = TLDExtract()
         self.logger = logging.getLogger(__name__)
         self.sites = [cls(self) for cls in SITES]
         self.cache_lock = asyncio.Lock()
@@ -186,6 +186,9 @@ class Crosspost(Cog):
             msg = "FlareSolverr config not set"
             raise RuntimeError(msg)
         return FlareSolverr(self, self.fs_solver_url, self.fs_proxy_url)
+
+    async def tldextract(self, url: str) -> ExtractResult:
+        return await asyncio.to_thread(self._tldextract, url)
 
     async def save(
         self,

@@ -178,7 +178,7 @@ class Mastodon(Site):
         site: str,
         post_id: str,
     ):
-        info = self.cog.tldextract(link)
+        info = await self.cog.tldextract(link)
         domain = f"{info.domain}.{info.suffix}"
         if sub := info.subdomain:
             domain = f"{sub}.{domain}"
