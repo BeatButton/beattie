@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import asyncio
 import platform
 import sys
+from typing import TYPE_CHECKING
 
 import asyncpg
 import toml
@@ -9,13 +12,16 @@ import toml
 from beattie.bot import BeattieBot, Shared
 from beattie.utils.contextmanagers import MultiAsyncWith
 
+if TYPE_CHECKING:
+    from beattie.utils.type_hints import BotConfig
+
 if platform.system() != "Windows":
     import uvloop
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 with open("config/config.toml") as file:
-    config = toml.load(file)
+    config: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
 
 debug = config.get("debug") or "debug" in sys.argv
 if debug:

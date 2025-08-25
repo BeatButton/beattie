@@ -33,6 +33,8 @@ if TYPE_CHECKING:
 
     from discord.http import HTTPClient
 
+    from beattie.utils.type_hints import BotConfig
+
 C = TypeVar("C", bound=Context)
 
 
@@ -55,7 +57,7 @@ class Shared:
         debug: bool,
     ):
         with open("config/config.toml") as file:
-            data = toml.load(file)
+            data: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
 
         self.prefixes = prefixes
         self.loglevel = data.get("loglevel", logging.WARNING)
