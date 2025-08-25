@@ -59,6 +59,8 @@ class Shared:
         with open("config/config.toml") as file:
             data: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
 
+        self.bot_ids = set()
+        self.bots = []
         self.prefixes = prefixes
         self.loglevel = data.get("loglevel", logging.WARNING)
         self.debug = debug

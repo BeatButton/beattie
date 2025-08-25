@@ -20,38 +20,41 @@ if platform.system() != "Windows":
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-with open("config/config.toml") as file:
-    config: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
 
-debug = config.get("debug") or "debug" in sys.argv
-if debug:
-    prefixes = config["test_prefixes"]
-    tokens = [config["test_token"]]
-else:
-    prefixes = config["prefixes"]
-    tokens = config["tokens"]
+async def get_pool(config: BotConfig) -> asyncpg.Pool:
+    password = config.get("config_password", "")
+    dsn = f"postgresql://beattie:{password}@localhost/beattie"
 
-password = config.get("config_password", "")
-dsn = f"postgresql://beattie:{password}@localhost/beattie"
+    return await asyncpg.create_pool(dsn)
 
 
-async def main():
-    pool = await asyncpg.create_pool(dsn)
+async def main(config: BotConfig):
+    debug = config.get("debug") or "debug" in sys.argv
+    if debug:
+        prefixes = config["test_prefixes"]
+        tokens = [config["test_token"]]
+    else:
+        prefixes = config["prefixes"]
+        tokens = config["tokens"]
+
+    pool = await get_pool(config)
+
     shared = Shared(prefixes=tuple(prefixes), pool=pool, debug=debug)
     await shared.async_init()
-    bots: list[BeattieBot] = [BeattieBot(shared) for _ in tokens]
+
+    bots = [BeattieBot(shared) for _ in tokens]
     async with MultiAsyncWith(bots) as bots, asyncio.TaskGroup() as tg:
-        bots_tokens = [*zip(bots, tokens)]
-        shared.bot_ids = set()
-        shared.bots = []
+        shared.bots = bots
         for bot in bots:
             bot.shared = shared
-            shared.bots.append(bot)
-        for bot, token in bots_tokens:
+        for bot, token in zip(bots, tokens):
             tg.create_task(bot.start(token))
 
 
-try:
-    asyncio.run(main())
-except KeyboardInterrupt:
-    pass
+if __name__ == "__main__":
+    with open("config/config.toml") as file:
+        config: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
+    try:
+        asyncio.run(main(config))
+    except KeyboardInterrupt:
+        pass
