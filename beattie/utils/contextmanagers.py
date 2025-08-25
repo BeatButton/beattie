@@ -107,6 +107,5 @@ class MultiAsyncWith(Generic[CM]):
         exc_type: type[BaseException] | None,
         exc: BaseException | None,
         tb: TracebackType | None,
-    ):
-        for ctx in self.ctxs:
-            await ctx.__aexit__(exc_type, exc, tb)
+    ) -> bool | None:
+        return all([await ctx.__aexit__(exc_type, exc, tb) for ctx in self.ctxs])
