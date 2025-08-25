@@ -178,7 +178,6 @@ class BeattieBot(Bot):
             help_command=BHelp(),
             intents=Intents.all(),
             allowed_mentions=AllowedMentions.none(),
-            log_handler=None,
         )
 
     async def setup_hook(self):
