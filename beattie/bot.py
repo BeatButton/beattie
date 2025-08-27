@@ -42,6 +42,7 @@ class Shared:
     bot_ids: set[int]
     bots: list[BeattieBot]
     archive_task: Task[Any] | None
+    close_task: Task[None] | None
     logger: logging.Logger
     session: httpx.AsyncClient
     pool: asyncpg.Pool
@@ -69,6 +70,7 @@ class Shared:
         self.uptime = datetime.now().astimezone()
         self.extra = {}
         self.tasks = set()
+        self.close_task = None
         if debug:
             self.loglevel = logging.DEBUG
             self.archive_task = None
@@ -98,13 +100,7 @@ class Shared:
                 prefix = (*prefix, guild_pre)
         return when_mentioned_or(*prefix)(bot, message)
 
-    async def close(self):
-        if close := getattr(self, "_close", None):
-            await close.wait()
-            return
-
-        self._close = asyncio.Event()
-
+    async def _close(self):
         await self.session.aclose()
         await self.pool.close()
         if self.archive_task is not None:
@@ -112,7 +108,10 @@ class Shared:
         for bot in self.bots:
             self.create_task(bot.close())
 
-        self._close.set()
+    async def close(self):
+        if self.close_task is None:
+            self.close_task = asyncio.create_task(self._close())
+        await self.close_task
 
     def swap_logs(self, *, new: bool = True) -> Awaitable[None]:
         if new:
