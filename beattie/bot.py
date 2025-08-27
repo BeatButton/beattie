@@ -11,7 +11,7 @@ import tarfile
 from asyncio import Task
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, overload
 
 import httpx
 import toml
@@ -41,7 +41,7 @@ C = TypeVar("C", bound=Context)
 class Shared:
     bot_ids: set[int]
     bots: list[BeattieBot]
-    archive_task: Task[Any] | None
+    archive_task: Task[NoReturn] | None
     close_task: Task[None] | None
     logger: logging.Logger
     session: httpx.AsyncClient
