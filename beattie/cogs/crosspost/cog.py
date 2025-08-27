@@ -435,7 +435,6 @@ class Crosspost(Cog):
     @Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         message_id = payload.message_id
-        messages_deleted = False
         if await self.db.get_invoking_author_id(message_id):
             await self.db.del_sent_message(message_id)
             return
@@ -448,13 +447,6 @@ class Crosspost(Cog):
                 pass
         if messages := await self.db.get_sent_messages(message_id):
             await self.delete_messages(payload.channel_id, messages.message_ids)
-            messages_deleted = True
-        if task:
-            await task
-            if messages:
-                await self.delete_messages(payload.channel_id, messages.message_ids)
-                messages_deleted = True
-        if messages_deleted:
             await self.db.del_sent_messages(message_id)
 
     @Cog.listener()
