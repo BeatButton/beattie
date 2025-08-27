@@ -401,9 +401,9 @@ class Crosspost(Cog):
     async def on_message_edit(self, _: Message, message: Message):
         if not (
             message.embeds
-            and (sent_messages := self.db._message_cache.get(message.id))
             and (guild := message.guild)
             and message.channel.permissions_for(guild.me).manage_messages
+            and (sent_messages := await self.db.get_sent_messages(message.id))
         ):
             return
 
