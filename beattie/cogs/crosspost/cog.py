@@ -23,7 +23,6 @@ from discord.utils import format_dt
 
 from beattie.cogs.crosspost.exceptions import DownloadError
 from beattie.cogs.crosspost.flaresolverr import FlareSolverr
-from beattie.utils.aioutils import squash_unfindable
 from beattie.utils.checks import is_owner_or
 from beattie.utils.contextmanagers import get
 from beattie.utils.etc import GB, URL_EXPR, display_bytes, spoiler_spans
@@ -352,7 +351,7 @@ class Crosspost(Cog):
                 raise e.source from None
 
             if embedded and do_suppress:
-                await squash_unfindable(ctx.message.edit(suppress=True))
+                ctx.bot.shared.create_task(ctx.message.edit(suppress=True))
                 do_suppress = False
 
         ctx.bot.shared.create_task(self.try_evict())
