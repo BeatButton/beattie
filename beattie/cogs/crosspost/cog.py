@@ -468,7 +468,7 @@ class Crosspost(Cog):
 
         reactor_id = payload.user_id
         reactor = self.bot.get_user(reactor_id)
-        if not reactor:
+        if not reactor or reactor == self.bot.user:
             return
 
         if not (
