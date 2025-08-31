@@ -475,18 +475,19 @@ class Crosspost(Cog):
 
         await self.delete_messages(payload.channel_id, [message_id])
 
-    @commands.group(invoke_without_command=True, usage="")
+    @commands.group()
     @is_owner_or(manage_guild=True)
-    async def crosspost(self, ctx: BContext, argument: str = None, *_: str):
+    async def crosspost(self, ctx: BContext):
         """Change image crosspost settings.
 
         Each subcommand takes, in addition to the configuration value, an optional \
 target, which specifies a channel or category to apply the setting to, instead of \
 applying it to the guild as a whole."""
-        if argument is not None:
-            await ctx.send(f"No such configuration option: {argument}")
-        else:
-            await ctx.send("Missing configuration option.")
+        if ctx.invoked_subcommand is None:
+            if argument := ctx.subcommand_passed:
+                await ctx.send(f"No such configuration option: {argument}")
+            else:
+                await ctx.send("Missing configuration option.")
 
     @crosspost.command()
     async def auto(
@@ -632,18 +633,19 @@ translate text, or a language name or code to translate text into that language.
             where = str(target)
         await ctx.send(f"Crosspost settings overrides cleared for {where}.")
 
-    @crosspost.group(invoke_without_command=True)
+    @crosspost.group()
     @commands.check(lambda ctx: ctx.guild is not None)
-    async def blacklist(self, ctx: BContext, site: str = ""):
+    async def blacklist(self, ctx: BContext):
         """Manage site blacklist for this server.
 
         To view all possible sites, run `blacklist list all`.
         """
-        if site:
-            site = await SiteConverter().convert(ctx, site)
-            await self.blacklist_add(ctx, site)
-        else:
-            await self.blacklist_list(ctx)
+        if ctx.invoked_subcommand is None:
+            if site := ctx.subcommand_passed:
+                site = await SiteConverter().convert(ctx, site)
+                await self.blacklist_add(ctx, site)
+            else:
+                await self.blacklist_list(ctx)
 
     @blacklist.command(name="add")
     async def blacklist_add(
@@ -681,15 +683,16 @@ translate text, or a language name or code to translate text into that language.
             return f"Currently blacklisted sites:\n{'\n'.join(sorted(blacklist))}"
         return "No sites are currently blacklisted."
 
-    @blacklist.group(name="list", aliases=["get", "info"], invoke_without_command=True)
+    @blacklist.group(name="list", aliases=["get", "info"])
     async def blacklist_list(self, ctx: BContext):
         """List currently blacklisted sites.
 
         To view all sites, run `blacklist list all`."""
-        guild = ctx.guild
-        assert guild is not None
-        blacklist = await self.db.get_blacklist(guild.id)
-        await ctx.send(self.blacklist_list_msg(blacklist))
+        if ctx.invoked_subcommand is None:
+            guild = ctx.guild
+            assert guild is not None
+            blacklist = await self.db.get_blacklist(guild.id)
+            await ctx.send(self.blacklist_list_msg(blacklist))
 
     @blacklist_list.command(name="all")
     async def blacklist_list_all(self, ctx: BContext):
