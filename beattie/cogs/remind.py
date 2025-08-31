@@ -161,16 +161,17 @@ class Remind(Cog):
             return ZoneInfo(tz)
         return None
 
-    @commands.group(invoke_without_command=True, usage="")
-    async def remind(
-        self,
-        ctx: BContext,
-        time: RecurringEvent | datetime = commands.param(converter=TimeConverter),
-        *,
-        topic: str = None,
-    ):
+    @commands.group()
+    async def remind(self, ctx: BContext):
         """Commands for setting and managing reminders."""
-        await self.set_reminder(ctx, time, topic=topic)
+        if ctx.invoked_subcommand is None:
+            if argument := ctx.subcommand_passed:
+                time = await TimeConverter().convert(ctx, argument)
+                ctx.view.read(1)
+                topic = ctx.view.read_rest()
+                await self.set_reminder(ctx, time, topic=topic)
+            else:
+                await self.set_reminder_error(ctx, commands.BadArgument())
 
     @remind.error
     async def remind_error(self, ctx: BContext, e: Exception):
@@ -197,7 +198,7 @@ class Remind(Cog):
     @set_reminder.error
     async def set_reminder_error(self, ctx: BContext, e: Exception):
         if isinstance(e, (commands.BadArgument, commands.ConversionError)):
-            invoked = ctx.invoked_parents or []
+            invoked = ctx.invoked_parents or ["remind"]
             if ctx.invoked_subcommand:
                 assert ctx.subcommand_passed is not None
                 invoked.append(ctx.subcommand_passed)
@@ -503,21 +504,15 @@ class Remind(Cog):
                 self.logger.info("sleeping for %d seconds", delta)
                 await asyncio.sleep(delta)
 
-    @commands.group(invoke_without_command=True, usage="", aliases=["tz"])
-    async def timezone(
-        self,
-        ctx: BContext,
-        *,
-        timezone: ZoneInfo | None = commands.param(
-            converter=TimezoneConverter,
-            default=None,
-        ),
-    ):
+    @commands.group(aliases=["tz"])
+    async def timezone(self, ctx: BContext):
         """Commands for managing your timezone."""
-        if timezone:
-            await self.set_timezone(ctx, timezone=timezone)
-        else:
-            await self.get_timezone(ctx)
+        if ctx.invoked_subcommand is None:
+            if argument := ctx.subcommand_passed:
+                timezone = await TimezoneConverter().convert(ctx, argument)
+                await self.set_timezone(ctx, timezone=timezone)
+            else:
+                await self.get_timezone(ctx)
 
     @timezone.command(name="get")
     async def get_timezone(self, ctx: BContext):
