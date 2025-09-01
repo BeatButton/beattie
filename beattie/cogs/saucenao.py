@@ -60,9 +60,9 @@ class SauceNao(Cog):
             sim_percent = 0.0
             source_link = None
             similarity = ""
-            if len(results):
-                el = root.find(".//div[@class='resultsimilarityinfo']")
-                similarity = el.text if el else None
+            if isinstance(results, list):
+                el = results[0].find(".//div[@class='resultsimilarityinfo']")
+                similarity = getattr(el, "text", None)
                 if similarity is None:
                     msg = "saucenao returned no similarity value"
                     raise RuntimeError(msg)
