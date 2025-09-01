@@ -56,34 +56,25 @@ class SauceNao(Cog):
             root = etree.fromstring(text, self.parser)
 
             results = root.xpath('.//div[@class="result"]')
-            result = None
-            sim_percent = 0.0
-            source_link = None
+            link = None
             similarity = ""
-            if isinstance(results, list):
-                el = results[0].find(".//div[@class='resultsimilarityinfo']")
-                similarity = getattr(el, "text", None)
-                if similarity is None:
-                    msg = "saucenao returned no similarity value"
-                    raise RuntimeError(msg)
-
+            if isinstance(results, list) and results:
+                result = results[0]
+                el = result.find(".//div[@class='resultsimilarityinfo']")
+                similarity = el.text
                 sim_percent = float(similarity[:-1])
                 if sim_percent > 60:
                     result = results[0]
-                    source_link = result.find('.//div[@class="resultcontentcolumn"]/a')
+                    if booru := result.find('.//div[@class="resultmiscinfo"]/a'):
+                        link = booru.get("href")
+                    else:
+                        source = result.find('.//div[@class="resultcontentcolumn"]/a')
+                        link = source.get("href")
 
-            if source_link is None:
-                await ctx.send("No sauce found.")
+            if link is not None:
+                await ctx.send(f"Sauce found ({similarity}) <{link}>")
             else:
-                result = results[0]
-                if (
-                    booru_link := result.find('.//div[@class="resultmiscinfo"]/a')
-                ) is not None:
-                    link = f"<{booru_link.get('href')}>"
-                else:
-                    link = f"<{source_link.get('href')}>"
-
-                await ctx.send(f"Sauce found ({similarity}) {link}")
+                await ctx.send("No sauce found.")
 
     @saucenao.error
     async def saucenao_error(self, ctx: BContext, e: Exception):
