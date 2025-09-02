@@ -208,6 +208,15 @@ class FragmentQueue:
         if not self.fragments:
             return items
 
+        ranges = [
+            (
+                (start - 1, None if end == 1 else end - 2, -1)
+                if end < start
+                else (start - 1, end, 1)
+            )
+            for start, end in ranges
+        ]
+
         if ranges:
             max_pages = 0
             frags = [
@@ -216,7 +225,7 @@ class FragmentQueue:
                 if isinstance(frag, (FileFragment, FallbackFragment))
             ]
             fragments = [
-                frag for start, end in ranges for frag in frags[start - 1 : end]
+                frag for start, end, step in ranges for frag in frags[start:end:step]
             ] + [
                 frag
                 for frag in self.fragments
