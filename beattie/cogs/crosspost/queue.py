@@ -208,16 +208,15 @@ class FragmentQueue:
         if not self.fragments:
             return items
 
-        ranges = [
-            (
-                (start - 1, None if end == 1 else end - 2, -1)
-                if end < start
-                else (start - 1, end, 1)
-            )
-            for start, end in ranges
-        ]
-
         if ranges:
+            ranges = [
+                (
+                    (start - 1, None if end == 1 else end - 2, -1)
+                    if end < start
+                    else (start - 1, end, 1)
+                )
+                for start, end in ranges
+            ]
             max_pages = 0
             frags = [
                 frag
