@@ -209,7 +209,7 @@ class FragmentQueue:
             return items
 
         if ranges:
-            ranges = [
+            slices = [
                 (
                     (start - 1, None if end == 1 else end - 2, -1)
                     if end < start
@@ -224,7 +224,7 @@ class FragmentQueue:
                 if isinstance(frag, (FileFragment, FallbackFragment))
             ]
             fragments = [
-                frag for start, end, step in ranges for frag in frags[start:end:step]
+                frag for start, end, step in slices for frag in frags[start:end:step]
             ] + [
                 frag
                 for frag in self.fragments
