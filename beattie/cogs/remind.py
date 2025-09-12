@@ -165,7 +165,9 @@ class Remind(Cog):
     async def remind(self, ctx: BContext):
         """Commands for setting and managing reminders."""
         if ctx.invoked_subcommand is None:
-            if argument := ctx.subcommand_passed:
+            if ctx.subcommand_passed:
+                ctx.view.undo()
+                argument = ctx.view.get_quoted_word() or ""
                 time = await TimeConverter().convert(ctx, argument)
                 ctx.view.read(1)
                 topic = ctx.view.read_rest()
