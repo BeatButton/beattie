@@ -106,7 +106,7 @@ POST_FMT = (
     "https://bsky.social/xrpc/com.atproto.repo.getRecord"
     "?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
-PROFILE_FMT = "https://{}/xrpc/com.atproto.repo.describeRepo?repo={}"
+PROFILE_FMT = "{}/xrpc/com.atproto.repo.describeRepo?repo={}"
 
 
 class Bluesky(Site):
@@ -149,7 +149,10 @@ class Bluesky(Site):
                 return
 
             pds = await self.get_pds(did)
-            async with self.cog.get(PROFILE_FMT.format(pds, did)) as resp:
+            url = PROFILE_FMT.format(pds, did)
+            if not url.startswith("http"):
+                url = f"https://{url}"
+            async with self.cog.get(url) as resp:
                 pdata: ProfileResponse = resp.json()
             qname = pdata["handle"]
 
