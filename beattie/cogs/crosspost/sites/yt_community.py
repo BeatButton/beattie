@@ -29,7 +29,7 @@ class YTCommunity(Site):
         link = f"https://youtube.com/post/{post_id}"
 
         async with self.cog.get(link, use_browser_ua=True) as resp:
-            root = html.document_fromstring(resp.content, self.cog.parser)
+            root = html.document_fromstring(resp.content)
 
         if not (script := root.xpath(YT_SCRIPT_SELECTOR)):
             return

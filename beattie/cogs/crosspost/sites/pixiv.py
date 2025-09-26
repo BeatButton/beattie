@@ -184,6 +184,6 @@ class Pixiv(Site):
         queue.push_text(illust["title"], bold=True)
         if caption := illust["caption"]:
             caption = re.sub(r"<br ?/?>", "\n", caption)
-            root = html.document_fromstring(caption, self.cog.parser)
+            root = html.document_fromstring(caption)
             text = root.text_content()
             queue.push_text(text)

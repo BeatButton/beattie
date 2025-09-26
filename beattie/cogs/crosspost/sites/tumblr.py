@@ -73,7 +73,7 @@ class Tumblr(Site):
         async with self.cog.get(link, use_browser_ua=True) as resp:
             content = resp.content
 
-        root = html.document_fromstring(content, self.cog.parser)
+        root = html.document_fromstring(content)
 
         if not (script := root.xpath(TUMBLR_SCRIPT_SELECTOR)):
             return

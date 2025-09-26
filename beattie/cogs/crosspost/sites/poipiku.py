@@ -49,7 +49,7 @@ class Poipiku(Site):
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
         resp = await self.session.get(link)
-        root = html.document_fromstring(resp.content, self.cog.parser)
+        root = html.document_fromstring(resp.content)
         link = str(resp.url)
 
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
@@ -176,7 +176,7 @@ class Poipiku(Site):
             )
             return
 
-        root = html.document_fromstring(frag, self.cog.parser)
+        root = html.document_fromstring(frag)
 
         for img in root.xpath(".//img"):
             self.push_file(queue, img.get("src"), link)

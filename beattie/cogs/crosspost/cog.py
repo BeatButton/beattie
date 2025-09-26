@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import httpx
 import toml
-from lxml import etree, html
 from tldextract import ExtractResult, TLDExtract
 
 import discord
@@ -87,8 +86,6 @@ class Crosspost(Cog):
     def __init__(self, bot: BeattieBot):
         self.bot = bot
         self.db = Database(bot, self)
-        self.parser = html.HTMLParser(encoding="utf-8")
-        self.xml_parser = etree.XMLParser(encoding="utf-8")
         if (ongoing_tasks := bot.extra.get("crosspost_ongoing_tasks")) is not None:
             self.ongoing_tasks = ongoing_tasks
         else:
