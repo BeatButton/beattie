@@ -7,6 +7,7 @@ from .exhentai import Exhentai
 from .fanbox import Fanbox
 from .furaffinity import FurAffinity
 from .gelbooru import Gelbooru
+from .hentaiera import HentaiEra
 from .hiccears import Hiccears
 from .hitomi import Hitomi
 from .imgur import Imgur
@@ -37,6 +38,7 @@ SITES: list[type[Site]] = [
     Fanbox,
     FurAffinity,
     Gelbooru,
+    HentaiEra,
     Hiccears,
     Hitomi,
     Imgur,
