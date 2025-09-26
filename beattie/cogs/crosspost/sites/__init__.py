@@ -8,6 +8,7 @@ from .fanbox import Fanbox
 from .furaffinity import FurAffinity
 from .gelbooru import Gelbooru
 from .hiccears import Hiccears
+from .hitomi import Hitomi
 from .imgur import Imgur
 from .inkbunny import Inkbunny
 from .itaku import Itaku
@@ -37,6 +38,7 @@ SITES: list[type[Site]] = [
     FurAffinity,
     Gelbooru,
     Hiccears,
+    Hitomi,
     Imgur,
     Inkbunny,
     Itaku,
