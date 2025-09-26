@@ -31,7 +31,7 @@ GG_B = re.compile(r"b: '(\d+)/'")
 class Hitomi(Site):
     name = "hitomi"
     pattern = re.compile(
-        r"https?://(?:www\.)?hitomi\.la/(?:[^/]+)/(?:[\w-]+-)?(\d+)(?:\.html)?",
+        r"https?://(?:www\.)?hitomi\.la/(?:[^/]+)/(?:.+-)?(\d+)(?:\.html)?",
     )
     concurrent = False
 
