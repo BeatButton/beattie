@@ -136,7 +136,9 @@ BB_STRIP = [re.compile(rf"\[{tag}[^\]]*\].*\[/{tag}\]") for tag in ["hugethumb"]
 
 BB_URL = re.compile(r"\[url=(.+?)\](.+?)\[/url\]")
 
-URL_EXPR = re.compile(r"https?://[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[@!$&'()*+,;=.\]]+")
+URL_EXPR = re.compile(
+    r"https?://[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[@!$&'()*+,;=.%\]]+",
+)
 INVITE_EXPR = re.compile(
     r"(`?)(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/(\w+)\1",
     flags=re.IGNORECASE,
