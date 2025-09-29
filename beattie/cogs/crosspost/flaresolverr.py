@@ -5,7 +5,7 @@ import urllib.parse
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import httpx
-from lxml import etree
+from lxml import html
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -135,5 +135,5 @@ class FlareSolverr:
 
     async def get_json(self, url: str, *, headers: dict[str, str] = None) -> Any:
         resp = await self.get(url, headers=headers)
-        root = etree.fromstring(resp["solution"]["response"])
+        root = html.document_fromstring(resp["solution"]["response"])
         return json.loads(root.xpath("//pre")[0].text)
