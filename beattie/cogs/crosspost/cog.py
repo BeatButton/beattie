@@ -843,12 +843,7 @@ translate text, or a language name or code to translate text into that language.
             if match and match.group(0) in arg:
                 steps.append(match)
                 match = next(matches, None)
-            elif (
-                (flag := await PostFlags().convert(ctx, arg))
-                and flag.pages is not None
-                or flag.page is not None
-                or flag.text is not None
-            ):
+            elif flag := await PostFlags().convert(ctx, arg):
                 steps.append(flag)
 
         message_id = ctx.message.id

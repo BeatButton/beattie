@@ -62,3 +62,6 @@ class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
     )
     page: int | None
     text: bool | None
+
+    def __bool__(self) -> bool:
+        return any(prop is not None for prop in vars(self).values())
