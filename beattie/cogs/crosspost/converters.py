@@ -60,4 +60,5 @@ class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
     pages: int | list[tuple[int, int]] | None = commands.flag(
         converter=int | RangesConverter | None,
     )
+    page: int | None
     text: bool | None

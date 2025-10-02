@@ -247,6 +247,8 @@ class Crosspost(Cog):
                         ranges = None
                     case list(r):
                         ranges = r
+                if (p := step.page) is not None:
+                    ranges = [(p, p)]
                 if step.text is not None:
                     settings.text = step.text
                 continue
@@ -844,6 +846,7 @@ translate text, or a language name or code to translate text into that language.
             elif (
                 (flag := await PostFlags().convert(ctx, arg))
                 and flag.pages is not None
+                or flag.page is not None
                 or flag.text is not None
             ):
                 steps.append(flag)
