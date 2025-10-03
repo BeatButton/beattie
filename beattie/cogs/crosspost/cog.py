@@ -241,14 +241,8 @@ class Crosspost(Cog):
         for step in steps:
             if isinstance(step, PostFlags):
                 settings = copy.copy(settings)
-                match step.pages:
-                    case int(p):
-                        settings.max_pages = p
-                        ranges = None
-                    case list(r):
-                        ranges = r
-                if (p := step.page) is not None:
-                    ranges = [(p, p)]
+                if r := step.pages:
+                    ranges = r
                 if step.text is not None:
                     settings.text = step.text
                 continue
