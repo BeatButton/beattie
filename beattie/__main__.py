@@ -15,10 +15,10 @@ from beattie.utils.contextmanagers import MultiAsyncWith
 if TYPE_CHECKING:
     from beattie.utils.type_hints import BotConfig
 
-if platform.system() != "Windows":
-    import uvloop
-
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+if platform.system() == "Windows":
+    from asyncio import run
+else:
+    from uvloop import run
 
 
 async def get_pool(config: BotConfig) -> asyncpg.Pool:
@@ -55,6 +55,6 @@ if __name__ == "__main__":
     with open("config/config.toml") as file:
         config: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
     try:
-        asyncio.run(main(config))
+        run(main(config))
     except KeyboardInterrupt:
         pass
