@@ -4,13 +4,13 @@ import asyncio
 import re
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 from zoneinfo import ZoneInfo
 
 from discord.utils import DEFAULT_FILE_SIZE_LIMIT_BYTES, format_dt
 
 if TYPE_CHECKING:
-    from collections.abc import MutableSequence
+    from collections.abc import Callable, MutableSequence
     from datetime import timedelta
 
     from _typeshed import SupportsDunderGT

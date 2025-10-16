@@ -6,14 +6,14 @@ from asyncio import subprocess
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from zipfile import ZipFile
 
 from beattie.utils.aioutils import try_wait_for
 from beattie.utils.etc import replace_ext
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
 
     from .fragment import FileFragment
 

@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import urllib.parse as urlparse
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import toml
 from lxml import html
@@ -16,7 +16,7 @@ from ..postprocess import ffmpeg_gif_pp
 from .site import Site
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine
+    from collections.abc import Callable, Coroutine
 
     from ..cog import Crosspost
     from ..context import CrosspostContext
