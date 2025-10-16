@@ -47,7 +47,7 @@ async def main(config: BotConfig):
         shared.bots = bots
         for bot in bots:
             bot.shared = shared
-        for bot, token in zip(bots, tokens):
+        for bot, token in zip(bots, tokens, strict=True):
             tg.create_task(bot.start(token))
 
 
