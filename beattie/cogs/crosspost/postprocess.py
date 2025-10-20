@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 async def ffmpeg_gif_pp(frag: FileFragment):
     with NamedTemporaryFile() as fp:
         fp.write(frag.file_bytes)
+        fp.flush()
         proc = await asyncio.create_subprocess_exec(
             "ffmpeg",
             "-f",
