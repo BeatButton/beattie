@@ -178,6 +178,7 @@ class BeattieBot(Bot):
             shared.prefix_func,
             activity=Game(name=f"{shared.prefixes[0]}help"),
             case_insensitive=True,
+            strip_after_prefix=True,
             help_command=BHelp(),
             intents=Intents.all(),
             allowed_mentions=AllowedMentions.none(),
