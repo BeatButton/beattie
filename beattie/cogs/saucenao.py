@@ -58,9 +58,11 @@ class SauceNao(Cog):
             results = root.xpath('.//div[@class="result"]')
             link = None
             similarity = ""
+            el = None
             if isinstance(results, list) and results:
                 result = results[0]
                 el = result.find(".//div[@class='resultsimilarityinfo']")
+            if el is not None:
                 similarity = el.text
                 sim_percent = float(similarity[:-1])
                 if sim_percent > 60:
