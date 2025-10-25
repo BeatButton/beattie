@@ -392,7 +392,7 @@ class FragmentQueue:
                             if frag.can_link:
                                 url = frag.urls[0]
                                 if spoiler:
-                                    url = f"||{url}||"
+                                    url = f"|| {url} ||"
                                 await ctx.send(url)
                                 embedded = True
                             else:
