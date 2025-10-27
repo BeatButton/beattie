@@ -55,14 +55,6 @@ class Poipiku(Site):
         if (match := POIPIKU_URL_GROUPS.match(link)) is None:
             return
 
-        refer = {"Referer": link}
-
-        img = root.xpath(".//img[contains(@class, 'IllustItemThumbImg')]")[0]
-        src: str = img.get("src")
-
-        if "/img/" not in src:
-            self.push_file(queue, src, link)
-
         user, post = match.groups()
 
         queue.author = user
@@ -71,21 +63,23 @@ class Poipiku(Site):
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://poipiku.com",
-            **refer,
+            "Referer": link,
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
         }
 
         body = {
-            "UID": user,
-            "IID": post,
+            "ID": user,
+            "TD": post,
+            "AD": "-1",
             "PAS": "",
-            "MD": "0",
-            "TWF": "-1",
         }
 
         resp = None
 
         resp = await self.session.post(
-            "https://poipiku.com/f/ShowAppendFileF.jsp",
+            "https://poipiku.com/f/ShowIllustDetailF.jsp",
             headers=headers,
             data=body,
         )
@@ -150,7 +144,7 @@ class Poipiku(Site):
                 body["PAS"] = reply.content
 
                 resp = await self.session.post(
-                    "https://poipiku.com/f/ShowAppendFileF.jsp",
+                    "https://poipiku.com/f/ShowIllustDetailF.jsp",
                     headers=headers,
                     data=body,
                 )
@@ -182,7 +176,6 @@ class Poipiku(Site):
             self.push_file(queue, img.get("src"), link)
 
     def push_file(self, queue: FragmentQueue, link: str, referer: str):
-        link = link.removesuffix("_640.jpg").replace("//img.", "//img-org.")
         if not link.startswith("https:"):
             link = f"https:{link}"
         frag = queue.push_file(link)
