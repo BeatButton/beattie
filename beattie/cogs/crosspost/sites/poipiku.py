@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     class Response(TypedDict):
         html: str
+        error_code: int
 
 
 POIPIKU_URL_GROUPS = re.compile(r"https?://poipiku\.com/(\d+)/(\d+)\.html")
@@ -76,8 +77,6 @@ class Poipiku(Site):
             "PAS": "",
         }
 
-        resp = None
-
         resp = await self.session.post(
             "https://poipiku.com/f/ShowIllustDetailF.jsp",
             headers=headers,
@@ -86,22 +85,9 @@ class Poipiku(Site):
         data: Response = resp.json()
 
         frag = data["html"]
-        if not frag:
-            return
+        error_code = data["error_code"]
 
-        if frag == "You need to sign in.":
-            queue.push_text("Post requires authentication.", quote=False, force=True)
-            return
-
-        if frag == "Error occurred.":
-            queue.push_text(
-                "Poipiku reported a generic error.",
-                quote=False,
-                force=True,
-            )
-            return
-
-        if frag == "Password is incorrect.":
+        if error_code == -3:
 
             def check(m: discord.Message):
                 return (
@@ -151,8 +137,9 @@ class Poipiku(Site):
                 data: Response = resp.json()
 
                 frag = data["html"]
+                error_code = data["error_code"]
 
-                if frag == "Password is incorrect.":
+                if error_code == -3:
                     msg = await reply.reply(
                         "Incorrect password. Try again, replying to this message.",
                         mention_author=True,
@@ -162,9 +149,9 @@ class Poipiku(Site):
                     await clean()
                     break
 
-        if frag == "Error occurred.":
+        if error_code != 0:
             queue.push_text(
-                "Poipiku reported a generic error.",
+                f"Uninterpreted poipiku error code: {error_code}",
                 quote=False,
                 force=True,
             )
