@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 
@@ -138,6 +139,9 @@ class Bluesky(Site):
         qname = None
         if embed["$type"] == "app.bsky.embed.record":
             _, _, did, _, qrkey = embed["record"]["uri"].split("/")
+
+            pds_task = asyncio.create_task(self.get_pds(did))
+
             xrpc_url = POST_FMT.format(did, qrkey)
             async with self.cog.get(xrpc_url) as resp:
                 data: PostResponse = resp.json()
@@ -148,7 +152,7 @@ class Bluesky(Site):
             if embed is None:
                 return
 
-            pds = await self.get_pds(did)
+            pds = await pds_task
             url = PROFILE_FMT.format(pds, did)
             if not url.startswith("http"):
                 url = f"https://{url}"

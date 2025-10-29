@@ -118,11 +118,13 @@ class Poipiku(Site):
                 try:
                     reply = await ctx.bot.wait_for("message", check=check, timeout=60)
                 except asyncio.TimeoutError:
-                    await ctx.send(
-                        "Poipiku password timeout expired.",
-                        delete_after=delete_after,
+                    ctx.bot.shared.create_task(
+                        ctx.send(
+                            "Poipiku password timeout expired.",
+                            delete_after=delete_after,
+                        ),
                     )
-                    await clean()
+                    ctx.bot.shared.create_task(clean())
                     raise
 
                 to_clean.append(reply)
@@ -146,7 +148,7 @@ class Poipiku(Site):
                     )
                     to_clean.append(msg)
                 else:
-                    await clean()
+                    ctx.bot.shared.create_task(clean())
                     break
 
         if error_code != 0:
