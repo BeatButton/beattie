@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from lxml import html
 
-from .selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
+from ..selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
 from .site import Site
 
 if TYPE_CHECKING:

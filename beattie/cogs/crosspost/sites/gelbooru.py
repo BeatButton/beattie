@@ -9,7 +9,7 @@ from lxml import etree
 
 from beattie.utils.etc import translate_markdown
 
-from .booru import API_PARAMS, get_booru_post
+from ..booru import API_PARAMS, get_booru_post
 from .site import Site
 
 if TYPE_CHECKING:

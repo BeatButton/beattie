@@ -4,7 +4,7 @@ import urllib.parse as urlparse
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from ..cog import Crosspost
+    from .cog import Crosspost
 
     class Post(TypedDict):
         tags: str

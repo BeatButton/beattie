@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 import toml
 
-from .booru import API_PARAMS, get_booru_post
+from ..booru import API_PARAMS, get_booru_post
 from .site import Site
 
 if TYPE_CHECKING:
