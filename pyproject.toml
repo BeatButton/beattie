@@ -1,3 +1,28 @@
+[project]
+name = "beattie"
+version = "3.0"
+dependencies = [
+    "aiohttp",
+    "asyncpg",
+    "brotli",
+    "discord-ext-menus",
+    "discord.py",
+    "httpx",
+    "jishaku",
+    "levenshtein",
+    "lingua-language-detector",
+    "lxml",
+    "psutil",
+    "python-dateutil",
+    "recurrent",
+    "tldextract",
+    "toml",
+    "uvloop; platform_system != 'Windows'",
+]
+
+[project.optional-dependencies]
+dev = ["asyncpg-stubs", "black", "objgraph", "ruff", "types-lxml"]
+
 [tool.pyright]
 typeCheckingMode = "standard"
 strictParameterNoneValue = false         # less ugly
@@ -49,3 +74,6 @@ section-order = [
     "first-party",
     "local-folder",
 ]
+
+[tool.setuptools]
+py-modules = ["beattie"]
