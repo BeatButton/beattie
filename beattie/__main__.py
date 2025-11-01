@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import platform
 import sys
 from typing import TYPE_CHECKING
 
@@ -15,7 +14,7 @@ from beattie.utils.contextmanagers import MultiAsyncWith
 if TYPE_CHECKING:
     from beattie.utils.type_hints import BotConfig
 
-if platform.system() == "Windows":
+if sys.platform == "win32":
     from asyncio import run
 else:
     from uvloop import run
