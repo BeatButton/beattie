@@ -18,6 +18,7 @@ dependencies = [
     "tldextract",
     "toml",
     "uvloop; platform_system != 'Windows'",
+    "tzdata; platform_system == 'Windows'",
 ]
 
 [project.optional-dependencies]
