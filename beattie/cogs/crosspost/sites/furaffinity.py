@@ -29,7 +29,7 @@ class FurAffinity(Site):
             error_for_status=False,
             follow_redirects=False,
         ) as resp:
-            root = html.document_fromstring(resp.content)
+            root = html.document_fromstring(resp.content, self.cog.parser)
 
         try:
             url = root.xpath(OG_IMAGE)[0].get("content")

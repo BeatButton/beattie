@@ -42,7 +42,7 @@ class YGallery(Site):
             headers=self.headers,
             use_browser_ua=True,
         ) as resp:
-            root = html.document_fromstring(resp.content)
+            root = html.document_fromstring(resp.content, self.cog.parser)
 
         queue.author = root.xpath(AUTHOR_SELECTOR)[0].text_content().strip()
 

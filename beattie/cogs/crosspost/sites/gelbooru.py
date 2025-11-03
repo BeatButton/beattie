@@ -63,7 +63,7 @@ class Gelbooru(Site):
         del params["json"]
         params["post_id"] = params.pop("id")
         async with self.cog.get(GELBOORU_API_URL, params=params) as resp:
-            root = etree.fromstring(resp.content)
+            root = etree.fromstring(resp.content, self.cog.xml_parser)
 
         notes = list(root)
         if notes:

@@ -54,7 +54,7 @@ class Hiccears(Site):
             use_browser_ua=True,
         ) as resp:
             self.update_hiccears_cookies(resp)
-            root = html.document_fromstring(resp.content)
+            root = html.document_fromstring(resp.content, self.cog.parser)
 
         if author := root.xpath(AUTHOR_SELECTOR):
             queue.author = author[0].text_content().strip()
@@ -91,7 +91,10 @@ class Hiccears(Site):
                         use_browser_ua=True,
                     ) as resp:
                         self.update_hiccears_cookies(resp)
-                        root = html.document_fromstring(resp.content)
+                        root = html.document_fromstring(
+                            resp.content,
+                            self.cog.parser,
+                        )
                 else:
                     break
 
