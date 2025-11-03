@@ -261,6 +261,11 @@ class RPG(Cog):
         else:
             await ctx.bot.handle_error(ctx, e)
 
+    @commands.command(aliases=["coin", "coinflip"])
+    async def flip(self, ctx: BContext):
+        result = random.choice(("Heads", "Tails"))
+        await ctx.send(f"{result}!")
+
 
 def roller(
     num: int = 1,
