@@ -43,7 +43,7 @@ async def ffmpeg_gif_pp(frag: FileFragment):
         )
 
         try:
-            stdout = await try_wait_for(proc)
+            stdout, _stderr = await try_wait_for(proc)
         except asyncio.TimeoutError:
             pass
         else:
@@ -92,7 +92,7 @@ def magick_pp(to: str) -> PP:
         )
 
         try:
-            stdout = await try_wait_for(proc, frag.file_bytes)
+            stdout, _stderr = await try_wait_for(proc, frag.file_bytes)
         except asyncio.TimeoutError:
             pass
         else:
@@ -167,7 +167,7 @@ async def ugoira_pp(frag: FileFragment):
             stderr=subprocess.DEVNULL,
         )
         try:
-            stdout = await try_wait_for(proc)
+            stdout, _stderr = await try_wait_for(proc)
         except asyncio.TimeoutError:
             pass
         else:

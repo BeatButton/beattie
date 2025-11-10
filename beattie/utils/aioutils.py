@@ -41,14 +41,14 @@ async def try_wait_for(
     *,
     timeout: float | None = 120,
     kill_timeout: float | None = 5,
-) -> bytes:
+) -> tuple[bytes, bytes]:
     try:
-        out, _err = await asyncio.wait_for(proc.communicate(in_bytes), timeout=timeout)
+        out, err = await asyncio.wait_for(proc.communicate(in_bytes), timeout=timeout)
     except asyncio.TimeoutError:
         await gently_kill(proc, timeout=kill_timeout)
         raise
     else:
-        return out
+        return out, err
 
 
 async def gently_kill(proc: asyncio.subprocess.Process, *, timeout: float | None):
