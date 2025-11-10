@@ -81,7 +81,10 @@ async def ffmpeg_m3u8_to_mp4_pp(frag: FileFragment):
 
 def magick_pp(to: str) -> PP:
     async def inner(frag: FileFragment):
-        ext = frag.filename.rpartition(".")[2]
+        if isinstance(frag.pp_extra, str):
+            ext = frag.pp_extra
+        else:
+            ext = frag.filename.rpartition(".")[2]
         proc = await asyncio.create_subprocess_exec(
             "magick",
             f"{ext}:-",

@@ -77,12 +77,16 @@ class YTCommunity(Site):
 
             pp = None
             ext = ext or "jpeg"
+            pp_extra = None
 
             if ext == "webp" and tag == b"ANIM":
                 pp = magick_gif_pp
                 ext = "gif"
+                pp_extra = "webp"
 
-            queue.push_file(img, filename=f"{post_id}.{ext}", postprocess=pp)
+            frag = queue.push_file(img, filename=f"{post_id}.{ext}", postprocess=pp)
+            if pp_extra is not None:
+                frag.pp_extra = pp_extra
 
         if frags := post["contentText"].get("runs"):
             text = "".join(frag.get("text", "") for frag in frags)
