@@ -88,14 +88,16 @@ def magick_pp(to: str) -> PP:
             f"{to}:-",
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
         )
 
         try:
-            stdout, _stderr = await try_wait_for(proc, frag.file_bytes)
+            stdout, stderr = await try_wait_for(proc, frag.file_bytes)
         except asyncio.TimeoutError:
             pass
         else:
+            if stderr:
+                raise RuntimeError(stderr.decode())
             frag.pp_bytes = stdout
             frag.pp_filename = f"{frag.filename.rpartition(".")[0]}.{to}"
 
