@@ -168,6 +168,9 @@ class Pixiv(Site):
                     pp_extra=illust_id,
                     can_link=False,
                 )
+            elif "limit_unviewable" in url:
+                msg = "This post is currently unviewable. Wait a bit, then try again."
+                raise RuntimeError(msg)
             else:
                 queue.push_fallback(url, illust["image_urls"]["large"], headers=headers)
         elif multi := illust["meta_pages"]:
