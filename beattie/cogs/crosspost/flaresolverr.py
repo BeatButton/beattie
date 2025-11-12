@@ -31,15 +31,12 @@ if TYPE_CHECKING:
     class RequestGetBasicCmd(TypedDict):
         cmd: Literal["request.get"]
         url: str
+        maxTimeout: NotRequired[float]
 
-    class RequestGetSessionCmd(TypedDict):
-        cmd: Literal["request.get"]
-        url: str
+    class RequestGetSessionCmd(RequestGetBasicCmd):
         session: str
 
-    class RequestGetProxyCmd(TypedDict):
-        cmd: Literal["request.get"]
-        url: str
+    class RequestGetProxyCmd(RequestGetBasicCmd):
         proxy: Proxy
 
     RequestGetCmd = RequestGetBasicCmd | RequestGetSessionCmd | RequestGetProxyCmd
@@ -130,6 +127,7 @@ class FlareSolverr:
                 "cmd": "request.get",
                 "url": url,
                 "session": self.session,
+                "maxTimeout": 5 * 60 * 1000,
             },
         )
 
