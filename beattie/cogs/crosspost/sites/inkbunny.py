@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 import toml
 
 from beattie.utils.etc import translate_bbcode
+from beattie.utils.exceptions import ResponseError
 
 from .site import Site
 
@@ -80,7 +81,16 @@ class Inkbunny(Site):
         queue.link = f"https://inkbunny.net/s/{sub_id}"
 
         for file in sub["files"]:
-            queue.push_fallback(file["file_url_full"], file["file_url_screen"])
+            full = file["file_url_full"]
+            screen = file["file_url_screen"]
+            try:
+                async with self.cog.get(screen, method="HEAD") as resp:
+                    pass
+            except ResponseError as e:
+                if e.code == 404:
+                    queue.push_file(full)
+            else:
+                queue.push_fallback(full, screen)
 
         title = sub["title"]
         description = sub["description"].strip()
