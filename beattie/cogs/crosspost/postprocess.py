@@ -87,6 +87,7 @@ def magick_pp(to: str) -> PP:
             ext = frag.filename.rpartition(".")[2]
         proc = await asyncio.create_subprocess_exec(
             "magick",
+            "-quiet",
             f"{ext}:-",
             f"{to}:-",
             stdin=subprocess.PIPE,
