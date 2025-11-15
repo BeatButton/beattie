@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     VideoMedia = TypedDict(
         "VideoMedia",
         {
-            "$type": Literal["video"],
+            "$type": Literal["app.bsky.embed.video"],
             "video": Video,
         },
     )
@@ -170,7 +170,7 @@ class Bluesky(Site):
             case "app.bsky.embed.recordWithMedia":
                 media = embed["media"]
                 match media["$type"]:
-                    case "video":
+                    case "app.bsky.embed.video":
                         video = media["video"]
                     case "app.bsky.embed.images":
                         images = media["images"]
