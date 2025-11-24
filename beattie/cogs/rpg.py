@@ -86,6 +86,19 @@ class RPG(Cog):
         embed.set_image(url=f"attachment://{filename}")
         await ctx.send(file=discord.File(f"{card}"), embed=embed)
 
+    @commands.command()
+    async def sooth(
+        self,
+        ctx: BContext,
+    ):
+        """Get a random sooth card."""
+        cards = os.listdir("data/sooth")
+        card = random.choice(cards)
+        embed = discord.Embed()
+        embed.title = card.rpartition(".")[0]
+        embed.set_image(url=f"attachment://{card}")
+        await ctx.send(file=discord.File(f"data/sooth/{card}"), embed=embed)
+
     @commands.command(aliases=["r"])
     async def roll(self, ctx: BContext, *, roll: str = "1d20"):
         """Roll some dice!
