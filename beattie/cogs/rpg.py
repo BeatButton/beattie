@@ -28,10 +28,6 @@ if TYPE_CHECKING:
         meanings: str
 
 
-RollArg = tuple[int, int, int, int, int, int]
-L2 = list[int]
-L1 = list[L2]
-
 ROLL_EXPR = re.compile(
     r"^(?:(?P<num>\d*)d)?(?P<sides>\d+)(?:[+-](?P<mod>\d+))?"
     r"(?:[v^](?P<drop>\d+))?(?:x(?P<times>\d+))?(?:[ts]{1,2})?$",
@@ -344,10 +340,9 @@ def shadowroller(num: int, *, edge: bool = False) -> str:
     return result
 
 
-def denest(rolls: L1) -> str:
-    # this isn't my fault
-    rolls2: L1 | L2 = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
-    rolls3: L1 | L2 | int = rolls2[0] if len(rolls2) == 1 else rolls2
+def denest(rolls: list[list[int]]) -> str:
+    rolls2 = [roll[0] for roll in rolls] if len(rolls[0]) == 1 else rolls
+    rolls3 = rolls2[0] if len(rolls2) == 1 else rolls2
 
     return str(rolls3)
 
