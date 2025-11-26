@@ -1,0 +1,302 @@
+{
+    "ALCHEMIST": {
+        "name": "ALCHEMIST",
+        "family": "Secrets",
+        "meanings": "Complexity, transformation, knowledge"
+    },
+    "AMBASSADOR": {
+        "name": "AMBASSADOR",
+        "family": "Visions",
+        "meanings": "Diplomacy, reason, discussion, intelligence"
+    },
+    "ANGEL": {
+        "name": "ANGEL",
+        "family": "Notions",
+        "meanings": "judgment, safety, assistance, light, justice"
+    },
+    "ASSASSIN": {
+        "name": "ASSASSIN",
+        "family": "Mysteries",
+        "meanings": "Finesse, stealth, betrayal, finality"
+    },
+    "BANISHED SERPENT": {
+        "name": "BANISHED SERPENT",
+        "family": "Mysteries",
+        "meanings": "Balance, exile, punishment"
+    },
+    "BLIND GUARDIAN": {
+        "name": "BLIND GUARDIAN",
+        "family": "Visions",
+        "meanings": "Safety, impartiality, serenity, blindness, challenges"
+    },
+    "CAT": {
+        "name": "CAT",
+        "family": "Notions",
+        "meanings": "Solitude, curiosity, cleverness, dexterity"
+    },
+    "COMPELLING VOICE": {
+        "name": "COMPELLING VOICE",
+        "family": "Secrets",
+        "meanings": "Control, domination, persuasion"
+    },
+    "CONSPIRATOR": {
+        "name": "CONSPIRATOR",
+        "family": "Secrets",
+        "meanings": "Upheaval, hidden agendas, gossip"
+    },
+    "CROWDED TOMB": {
+        "name": "CROWDED TOMB",
+        "family": "Secrets",
+        "meanings": "Endings, despair, completion"
+    },
+    "DANGEROUS ELIXIR": {
+        "name": "DANGEROUS ELIXIR",
+        "family": "Notions",
+        "meanings": "Power, transformation, risk, consequences"
+    },
+    "DEVIL": {
+        "name": "DEVIL",
+        "family": "Secrets",
+        "meanings": "Temptation, lies, charm, persuasion, words"
+    },
+    "DOCTOR": {
+        "name": "DOCTOR",
+        "family": "Visions",
+        "meanings": "Wisdom, health, dependence upon others, disease"
+    },
+    "DRIVER": {
+        "name": "DRIVER",
+        "family": "Mysteries",
+        "meanings": "Impetuous, travel, forward motion, speed"
+    },
+    "ELUSIVE SLEEP": {
+        "name": "ELUSIVE SLEEP",
+        "family": "Visions",
+        "meanings": "Futility, worry, stress, awareness"
+    },
+    "EMPTY GALLOWS": {
+        "name": "EMPTY GALLOWS",
+        "family": "Notions",
+        "meanings": "Rescue, salvation, solution, favorable judgment, escape"
+    },
+    "ENDLESS MAZE": {
+        "name": "ENDLESS MAZE",
+        "family": "Secrets",
+        "meanings": "Journey, long spans of time, insanity, inner turmoil"
+    },
+    "ENDLESS WOODS": {
+        "name": "ENDLESS WOODS",
+        "family": "Mysteries",
+        "meanings": "Sounds, nature, mysteries, the dark side of the forces of life"
+    },
+    "ENTICING JEWEL": {
+        "name": "ENTICING JEWEL",
+        "family": "Visions",
+        "meanings": "Greed, money, beauty, goals, success"
+    },
+    "ENVELOPING DARKNESS": {
+        "name": "ENVELOPING DARKNESS",
+        "family": "Mysteries",
+        "meanings": "Restriction, loss, endings"
+    },
+    "ETERNAL MOUNTAIN": {
+        "name": "ETERNAL MOUNTAIN",
+        "family": "Visions",
+        "meanings": "Unchanging, solitude, memory, eternal, long life"
+    },
+    "FLEETING MOMENT": {
+        "name": "FLEETING MOMENT",
+        "family": "Mysteries",
+        "meanings": "Lost time, elusiveness, agility, reaction"
+    },
+    "FORBIDDEN GAME": {
+        "name": "FORBIDDEN GAME",
+        "family": "Notions",
+        "meanings": "Danger, intellect, strategy, balance"
+    },
+    "FORGOTTEN PRISONER": {
+        "name": "FORGOTTEN PRISONER",
+        "family": "Mysteries",
+        "meanings": "Injustice, bad fortune, memory loss, something lost"
+    },
+    "GHOSTLY PRESENCE": {
+        "name": "GHOSTLY PRESENCE",
+        "family": "Mysteries",
+        "meanings": "The past, guilt, unresolved issues"
+    },
+    "GOLDEN SHIP": {
+        "name": "GOLDEN SHIP",
+        "family": "Notions",
+        "meanings": "Wealth earned, honor, prestige, respect"
+    },
+    "HARVESTING SPIDER": {
+        "name": "HARVESTING SPIDER",
+        "family": "Mysteries",
+        "meanings": "Action, labor, stealth"
+    },
+    "HIDDEN MOON": {
+        "name": "HIDDEN MOON",
+        "family": "Secrets",
+        "meanings": "New beginnings, insight, intuition, foresight, looking ahead, potential danger"
+    },
+    "HUNTER": {
+        "name": "HUNTER",
+        "family": "Notions",
+        "meanings": "Nature, death, conflict, survival, seeking a goal"
+    },
+    "IMPERATOR": {
+        "name": "IMPERATOR",
+        "family": "Visions",
+        "meanings": "Wisdom in war, turning points, deciding factors"
+    },
+    "IMPRISONING ICE": {
+        "name": "IMPRISONING ICE",
+        "family": "Notions",
+        "meanings": "Entrapment, imprisonment, danger, conflict"
+    },
+    "INCRIMINATING SKULL": {
+        "name": "INCRIMINATING SKULL",
+        "family": "Secrets",
+        "meanings": "Disaster, discovery, evidence, connections, friends/family"
+    },
+    "INEVITABLE CATACLYSM": {
+        "name": "INEVITABLE CATACLYSM",
+        "family": "Visions",
+        "meanings": "Bad luck, endings, inevitability, breaking a relationship"
+    },
+    "JACKAL": {
+        "name": "JACKAL",
+        "family": "Mysteries",
+        "meanings": "Intimidation, power, ruthlessness, dark magic, necromancy"
+    },
+    "LOOMING SHADE": {
+        "name": "LOOMING SHADE",
+        "family": "Mysteries",
+        "meanings": "Terror, doom, impending danger, unseen threats"
+    },
+    "LOST STAR": {
+        "name": "LOST STAR",
+        "family": "Notions",
+        "meanings": "Good or bad luck, great distance, great age, great value"
+    },
+    "LUCKY COIN": {
+        "name": "LUCKY COIN",
+        "family": "Notions",
+        "meanings": "Good fortune, wealth, freedom, unexpected luck, unstructured"
+    },
+    "MESSIAH": {
+        "name": "MESSIAH",
+        "family": "Visions",
+        "meanings": "Change, salvation, familial love"
+    },
+    "MISREMEMBERED DREAM": {
+        "name": "MISREMEMBERED DREAM",
+        "family": "Mysteries",
+        "meanings": "Confusion, mistakes, change in identity"
+    },
+    "MISUNDERSTOOD BEAST": {
+        "name": "MISUNDERSTOOD BEAST",
+        "family": "Notions",
+        "meanings": "Mistakes, gentleness, friendship, danger, betrayal"
+    },
+    "MONARCH": {
+        "name": "MONARCH",
+        "family": "Notions",
+        "meanings": "Authority, judgment, the land/the world"
+    },
+    "MYSTERIOUS RUNE": {
+        "name": "MYSTERIOUS RUNE",
+        "family": "Secrets",
+        "meanings": "Magic, mystery, wordless communication"
+    },
+    "QUESTING KNIGHT": {
+        "name": "QUESTING KNIGHT",
+        "family": "Visions",
+        "meanings": "Justice, journey, determination, achieving goals"
+    },
+    "RAT": {
+        "name": "RAT",
+        "family": "Mysteries",
+        "meanings": "Survival, resistance, shadows, concealment"
+    },
+    "RAVEN": {
+        "name": "RAVEN",
+        "family": "Secrets",
+        "meanings": "Jealousy, sight, trickery"
+    },
+    "RELENTLESS RUMOR": {
+        "name": "RELENTLESS RUMOR",
+        "family": "Secrets",
+        "meanings": "Endless, half-truths, incessant drives, ruthlessness"
+    },
+    "REVEALING KNIFE": {
+        "name": "REVEALING KNIFE",
+        "family": "Visions",
+        "meanings": "Revelation, discovery, finesse"
+    },
+    "REVOLUTIONARY": {
+        "name": "REVOLUTIONARY",
+        "family": "Secrets",
+        "meanings": "Lust, sexuality, change, destruction"
+    },
+    "SAVAGE SWORD": {
+        "name": "SAVAGE SWORD",
+        "family": "Visions",
+        "meanings": "War, savagery, strength, violence, brute force"
+    },
+    "SEALED DOOR": {
+        "name": "SEALED DOOR",
+        "family": "Secrets",
+        "meanings": "Delay, inaction, barriers, unchanging"
+    },
+    "SUSPICIOUS HOUND": {
+        "name": "SUSPICIOUS HOUND",
+        "family": "Visions",
+        "meanings": "Doubt, suspicion, lack of clarity, judgment, decisions"
+    },
+    "SWAN": {
+        "name": "SWAN",
+        "family": "Visions",
+        "meanings": "Good fortune, good weather, latent talents"
+    },
+    "TYRANNICAL CLOCK": {
+        "name": "TYRANNICAL CLOCK",
+        "family": "Notions",
+        "meanings": "Oppression, time, countdown, schedule, repetition"
+    },
+    "UNKNOWABLE TRUTH": {
+        "name": "UNKNOWABLE TRUTH",
+        "family": "Secrets",
+        "meanings": "Truth, searching, futility"
+    },
+    "UNTRUSTWORTHY MIRROR": {
+        "name": "UNTRUSTWORTHY MIRROR",
+        "family": "Mysteries",
+        "meanings": "Illusion, false identity, failure"
+    },
+    "UNWELCOME CHILD": {
+        "name": "UNWELCOME CHILD",
+        "family": "Notions",
+        "meanings": "Bad luck, imbalance, things undesired, outcasts, duplicitousness"
+    },
+    "VIZIER": {
+        "name": "VIZIER",
+        "family": "Notions",
+        "meanings": "Manipulation, sycophant, power, influence"
+    },
+    "WATCHER": {
+        "name": "WATCHER",
+        "family": "Mysteries",
+        "meanings": "Parental figure, sight, alertness, observation, knowledge"
+    },
+    "WEEPING PRIEST": {
+        "name": "WEEPING PRIEST",
+        "family": "Secrets",
+        "meanings": "Betrayal, weakness, turnabout, disillusionment, loss"
+    },
+    "WHISPERING LOVER": {
+        "name": "WHISPERING LOVER",
+        "family": "Visions",
+        "meanings": "Love, romance, partnership, loved ones, relationships"
+    }
+}

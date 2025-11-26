@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import random
 import re
 from concurrent import futures
 from itertools import islice
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import discord
 from discord.ext import commands
@@ -20,6 +21,12 @@ if TYPE_CHECKING:
 
     from beattie.bot import BeattieBot
     from beattie.context import BContext
+
+    class SoothCard(TypedDict):
+        name: str
+        family: str
+        meanings: str
+
 
 RollArg = tuple[int, int, int, int, int, int]
 L2 = list[int]
@@ -38,6 +45,11 @@ TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
 
 
 class RPG(Cog):
+    def __init__(self):
+        with open("data/sooth/sooth.json") as fp:
+            sooth_data: dict[str, SoothCard] = json.load(fp)
+        self.sooth_cards = list(sooth_data.values())
+
     @commands.command()
     async def choose(self, ctx: BContext, *options: str):
         """Choose between some options. Use quotes if they have spaces."""
@@ -86,18 +98,21 @@ class RPG(Cog):
         embed.set_image(url=f"attachment://{filename}")
         await ctx.send(file=discord.File(f"{card}"), embed=embed)
 
-    @commands.command()
+    @commands.command(aliases=["soothe"])
     async def sooth(
         self,
         ctx: BContext,
     ):
         """Get a random sooth card."""
-        cards = os.listdir("data/sooth")
-        card = random.choice(cards)
+        card = random.choice(self.sooth_cards)
         embed = discord.Embed()
-        embed.title = card.rpartition(".")[0]
-        embed.set_image(url=f"attachment://{card}")
-        await ctx.send(file=discord.File(f"data/sooth/{card}"), embed=embed)
+        embed.title = card["name"]
+        filename = f"{card['name']}.PNG"
+        embed.set_image(url=f"attachment://{filename}")
+        embed.set_footer(
+            text=f"{card['family']}\N{EN SPACE}•\N{EN SPACE}{card['meanings']}",
+        )
+        await ctx.send(file=discord.File(f"data/sooth/{filename}"), embed=embed)
 
     @commands.command(aliases=["r"])
     async def roll(self, ctx: BContext, *, roll: str = "1d20"):
