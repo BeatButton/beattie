@@ -842,6 +842,8 @@ translate text, or a language name or code to translate text into that language.
                 match = next(matches, None)
             elif flag := await PostFlags().convert(ctx, arg):
                 steps.append(flag)
+            elif m := URL_EXPR.match(f"https://{arg}"):
+                steps.append(m)
 
         message_id = ctx.message.id
         coro = self.process_links(ctx, steps=steps, force=force)
