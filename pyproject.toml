@@ -76,5 +76,6 @@ section-order = [
     "local-folder",
 ]
 
-[tool.setuptools]
-py-modules = ["beattie"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["beattie*"]
