@@ -100,3 +100,4 @@ config/
 **/.mypy_cache
 /beattie/cogs/secret.py
 /testing
+/data/sooth
