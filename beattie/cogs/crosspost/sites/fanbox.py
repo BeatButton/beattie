@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 
 from discord import NotFound
 
+from ..database_types import TextLength
 from .site import Site
 
 if TYPE_CHECKING:
@@ -108,14 +109,22 @@ class Fanbox(Site):
                         headers=headers,
                     )
                 if text := body.get("text", "").strip():
-                    queue.push_text(text, interlaced=True)
+                    queue.push_text(
+                        text,
+                        interlaced=True,
+                        length=TextLength.LONG,
+                    )
             case "file":
                 for file_info in body["files"]:
                     url = file_info["url"]
                     filename = file_info["name"] + "." + file_info["extension"]
                     queue.push_file(url, filename=filename)
                 if text := body.get("text", "").strip():
-                    queue.push_text(text, interlaced=True)
+                    queue.push_text(
+                        text,
+                        interlaced=True,
+                        length=TextLength.LONG,
+                    )
             case "article":
                 blocks = body["blocks"]
                 image_map = body["imageMap"]
@@ -128,7 +137,11 @@ class Fanbox(Site):
                     match block["type"]:
                         case "p":
                             if text := block.get("text", "").strip():
-                                queue.push_text(text, interlaced=True)
+                                queue.push_text(
+                                    text,
+                                    interlaced=True,
+                                    length=TextLength.LONG,
+                                )
                         case "image":
                             image = image_map[block["imageId"]]
                             queue.push_fallback(

@@ -16,6 +16,7 @@ from discord.ext.commands import Cooldown
 from beattie.cogs.crosspost.fragment import FileSpec
 from beattie.utils.aioutils import adump, aload
 
+from ..database_types import TextLength
 from ..postprocess import ugoira_gif_pp, ugoira_mp4_pp
 from .site import Site
 
@@ -196,4 +197,4 @@ class Pixiv(Site):
             caption = re.sub(r"<br ?/?>", "\n", caption)
             root = html.document_fromstring(caption, self.cog.parser)
             text = root.text_content()
-            queue.push_text(text)
+            queue.push_text(text, length=TextLength.LONG)

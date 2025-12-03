@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from lxml import html
 
+from ..database_types import TextLength
 from ..selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
 from .site import Site
 
@@ -49,4 +50,4 @@ class FurAffinity(Site):
         title = root.xpath(OG_TITLE)[0].get("content")
         desc = root.xpath(OG_DESCRIPTION)[0].get("content")
         queue.push_text(title, bold=True)
-        queue.push_text(desc)
+        queue.push_text(desc, length=TextLength.LONG)

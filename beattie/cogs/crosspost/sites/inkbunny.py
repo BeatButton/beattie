@@ -8,6 +8,7 @@ import toml
 from beattie.utils.etc import translate_bbcode
 from beattie.utils.exceptions import ResponseError
 
+from ..database_types import TextLength
 from .site import Site
 
 if TYPE_CHECKING:
@@ -97,4 +98,4 @@ class Inkbunny(Site):
         queue.push_text(title, bold=True)
         if description:
             description = translate_bbcode(description)
-            queue.push_text(description, escape=False)
+            queue.push_text(description, escape=False, length=TextLength.LONG)
