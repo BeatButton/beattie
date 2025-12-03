@@ -9,6 +9,7 @@ from discord.utils import find
 
 from beattie.utils.converters import RangesConverter
 
+from .database_types import TextLength  # noqa: TC001
 from .translator import DONT, Language
 
 if TYPE_CHECKING:
@@ -56,12 +57,24 @@ class LanguageConverter(Converter):
         raise BadArgument(msg)
 
 
+def text_length_from_arg(value: TextLength | bool) -> TextLength:  # noqa: FBT001
+    match value:
+        case False:
+            length = TextLength.NONE
+        case True:
+            length = TextLength.LONG
+        case _:
+            length = value
+
+    return length
+
+
 class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
     pages: list[tuple[int, int]] | None = commands.flag(
         aliases=["page"],
         converter=RangesConverter | None,
     )
-    text: bool | None
+    text: TextLength | bool | None
 
     def __bool__(self) -> bool:
         return any(prop is not None for prop in vars(self).values())

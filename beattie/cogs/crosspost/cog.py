@@ -29,9 +29,10 @@ from beattie.utils.etc import GB, URL_EXPR, display_bytes, spoiler_spans
 from beattie.utils.type_hints import GuildMessageable
 
 from .context import CrosspostContext
-from .converters import LanguageConverter, PostFlags
+from .converters import LanguageConverter, PostFlags, text_length_from_arg
 from .converters import Site as SiteConverter
 from .database import Database, Settings
+from .database_types import TextLength
 from .queue import FragmentQueue, Postable, QueueKwargs
 from .sites import SITES, Site
 from .translator import (
@@ -247,7 +248,7 @@ class Crosspost(Cog):
                 if r := step.pages:
                     ranges = r
                 if step.text is not None:
-                    settings.text = step.text
+                    settings.text = text_length_from_arg(step.text)
                 continue
 
             link = step.group(0)
@@ -559,7 +560,7 @@ applying it to the guild as a whole."""
     async def text(
         self,
         ctx: BContext,
-        enabled: bool,  # noqa: FBT001
+        setting: TextLength | bool,  # noqa: FBT001
         *,
         target: ConfigTarget = None,
     ):
@@ -573,10 +574,13 @@ applying it to the guild as a whole."""
                 await ctx.send("No targets allowed in DM.")
                 return
             target_id = ctx.channel.id
-        settings = Settings(text=enabled)
+        length = text_length_from_arg(setting)
+        settings = Settings(text=length)
         await self.db.set_settings(guild_id, target_id, settings)
-        fmt = "en" if enabled else "dis"
-        message = f"Crossposting text context {fmt}abled"
+        if setting == TextLength.NONE:
+            message = "Crossposting text disabled"
+        else:
+            message = f"Will post {setting} text"
         if target is not None:
             message = f"{message} in {target.mention}"
         await ctx.send(f"{message}.")

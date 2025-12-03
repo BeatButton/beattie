@@ -13,6 +13,7 @@ from discord.utils import format_dt
 
 from beattie.utils.etc import INVITE_EXPR, display_bytes, get_size_limit, prompt_confirm
 
+from .database_types import TextLength
 from .exceptions import DownloadError
 from .fragment import (
     EmbedFragment,
@@ -163,6 +164,7 @@ class FragmentQueue:
         self,
         text: str,
         *,
+        length: TextLength = TextLength.SHORT,
         force: bool = False,
         interlaced: bool = False,
         skip_translate: bool = None,
@@ -189,6 +191,7 @@ class FragmentQueue:
             frag = TextFragment(
                 self,
                 text,
+                length=length,
                 force=force,
                 interlaced=interlaced,
                 skip_translate=skip_translate,
@@ -246,11 +249,12 @@ class FragmentQueue:
             max_pages = settings.max_pages_or_default()
 
         num_files = 0
+        length = settings.text_length_or_default()
 
         for frag in fragments:
             match frag:
                 case TextFragment():
-                    if settings.text or frag.force:
+                    if frag.force or frag.length <= length:
                         items.append((frag, spoiler))
                 case EmbedFragment():
                     items.append((frag, spoiler))

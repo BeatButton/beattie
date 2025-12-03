@@ -10,6 +10,7 @@ from discord.utils import escape_markdown
 
 from beattie.utils.etc import URL_EXPR, get_size_limit, replace_ext
 
+from .database_types import TextLength
 from .postprocess import magick_png_pp
 from .translator import DONT, Language
 
@@ -215,6 +216,7 @@ class EmbedFragment(Fragment):
 
 class TextFragment(Fragment):
     content: str
+    length: TextLength
     force: bool
     skip_translate: bool
     interlaced: bool
@@ -230,6 +232,7 @@ class TextFragment(Fragment):
         queue: FragmentQueue,
         content: str,
         *,
+        length: TextLength = TextLength.SHORT,
         force: bool = False,
         interlaced: bool = False,
         skip_translate: bool = None,
@@ -241,6 +244,7 @@ class TextFragment(Fragment):
     ):
         super().__init__(queue)
         self.content = content
+        self.length = length
         self.force = force
         if skip_translate is not None:
             self.skip_translate = skip_translate

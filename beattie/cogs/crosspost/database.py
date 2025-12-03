@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Self
 from discord import Message, Thread
 from discord.utils import sleep_until, snowflake_time, time_snowflake, utcnow
 
+from .database_types import SentMessages, TextLength
 from .translator import ENGLISH, Language
 
 if TYPE_CHECKING:
@@ -22,16 +23,6 @@ if TYPE_CHECKING:
 
 
 MESSAGE_CACHE_TTL: int = 60 * 60 * 24  # one day in seconds
-
-
-class SentMessages:
-    __slots__ = ("author_id", "message_ids")
-    author_id: int
-    message_ids: list[int]
-
-    def __init__(self, author_id: int, message_ids: list[int]):
-        self.author_id = author_id
-        self.message_ids = message_ids
 
 
 class Database:
@@ -49,12 +40,21 @@ class Database:
         async with self.pool.acquire() as conn:
             await conn.execute(
                 """
+                DO $$ BEGIN
+                    CREATE TYPE text_length AS ENUM (
+                        'long',
+                        'short',
+                        'none'
+                    );
+                EXCEPTION
+                    WHEN duplicate_object THEN null;
+                END $$;
                 CREATE TABLE IF NOT EXISTS public.crosspost (
                     guild_id bigint NOT NULL,
                     channel_id bigint NOT NULL,
                     auto boolean,
                     max_pages integer,
-                    text boolean,
+                    text text_length,
                     language char(2),
                     PRIMARY KEY(guild_id, channel_id)
                 );
@@ -140,7 +140,7 @@ class Database:
             if out.max_pages is None:
                 out.max_pages = 0
             if out.text is None:
-                out.text = True
+                out.text = TextLength.LONG
 
         return out
 
@@ -160,6 +160,8 @@ class Database:
                 config = {**config}
                 if (lang := config["language"]) and (translator := self.cog.translator):
                     config["language"] = (await translator.languages())[lang]
+                if length := config["text"]:
+                    config["text"] = TextLength(length)
                 res = Settings.from_record(config)
             self._settings_cache[(guild_id, channel_id)] = res
             return res
@@ -333,14 +335,14 @@ class Settings:
 
     auto: bool | None
     max_pages: int | None
-    text: bool | None
+    text: TextLength | None
     language: Language | None
 
     def __init__(
         self,
         auto: bool = None,  # noqa: FBT001
         max_pages: int = None,
-        text: bool = None,  # noqa: FBT001
+        text: TextLength = None,
         language: Language = None,
     ):
         self.auto = auto
@@ -390,6 +392,13 @@ class Settings:
                 return ENGLISH
             case lang:
                 return lang
+
+    def text_length_or_default(self) -> TextLength:
+        match self.text:
+            case None:
+                return TextLength.SHORT
+            case text:
+                return text
 
     @classmethod
     def from_record(cls, row: Mapping[str, Any]) -> Self:
