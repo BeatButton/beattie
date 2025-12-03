@@ -6,7 +6,7 @@ from datetime import datetime
 from io import BytesIO
 from itertools import groupby
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any, Self, TypedDict
+from typing import TYPE_CHECKING, Any, Self, TypedDict, overload
 
 from discord import Embed, File
 from discord.utils import format_dt
@@ -18,6 +18,7 @@ from .fragment import (
     EmbedFragment,
     FallbackFragment,
     FileFragment,
+    FileSpec,
     Fragment,
     TextFragment,
 )
@@ -121,21 +122,30 @@ class FragmentQueue:
         self.fragments.append(frag)
         return frag
 
+    @overload
     def push_fallback(
         self,
-        preferred_url: str,
-        fallback_url: str,
-        *,
-        preferred_filename: str = None,
-        fallback_filename: str = None,
+        *file_specs: FileSpec,
+        headers: dict[str, str] = None,
+    ) -> FallbackFragment: ...
+
+    @overload
+    def push_fallback(
+        self,
+        *file_specs: str,
+        headers: dict[str, str] = None,
+    ) -> FallbackFragment: ...
+
+    def push_fallback(
+        self,
+        *file_specs,
         headers: dict[str, str] = None,
     ) -> FallbackFragment:
+        if isinstance(file_specs[0], str):
+            file_specs = (FileSpec(url) for url in file_specs)
         frag = FallbackFragment(
             self,
-            preferred_url,
-            fallback_url,
-            preferred_filename=preferred_filename,
-            fallback_filename=fallback_filename,
+            *file_specs,
             headers=headers,
         )
         self.fragments.append(frag)

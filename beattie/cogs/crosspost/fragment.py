@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import re
+from dataclasses import dataclass
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from discord.utils import escape_markdown
 
@@ -120,44 +121,38 @@ class FileFragment(Fragment):
             await self.postprocess(self)
 
 
+class FileSpec(NamedTuple):
+    url: str
+    filename: str | None = None
+
+
+@dataclass
+class FallbackCandidate:
+    url: str
+    filename: str | None = None
+    fragment: FileFragment | None = None
+
+
 class FallbackFragment(Fragment):
-    preferred_url: str
-    fallback_url: str
-    preferred_filename: str | None
-    fallback_filename: str | None
     headers: dict[str, str] | None
-    length_task: asyncio.Task[int] | None
-    preferred_frag: FileFragment | None
-    fallback_frag: FileFragment | None
+    length_tasks: dict[int, asyncio.Task[int]]
+    candidates: list[FallbackCandidate]
 
     def __init__(
         self,
         queue: FragmentQueue,
-        preferred_url: str,
-        fallback_url: str,
-        *,
-        preferred_filename: str = None,
-        fallback_filename: str = None,
+        *file_specs: FileSpec,
         headers: dict[str, str] = None,
     ):
         super().__init__(queue)
-        self.preferred_url = preferred_url
-        self.fallback_url = fallback_url
-        self.preferred_filename = preferred_filename
-        if fallback_filename is None:
-            self.fallback_filename = preferred_filename
-        else:
-            self.fallback_filename = fallback_filename
         self.headers = headers
+        self.length_tasks = {}
+        self.candidates = [FallbackCandidate(fs.url, fs.filename) for fs in file_specs]
 
-        self.preferred_frag = None
-        self.fallback_frag = None
-        self.length_task = None
-
-    async def _determine_length(self) -> int:
+    async def _determine_length(self, idx: int) -> int:
         length = None
         async with self.cog.get(
-            self.preferred_url,
+            self.candidates[idx].url,
             method="HEAD",
             headers=self.headers,
         ) as resp:
@@ -165,38 +160,42 @@ class FallbackFragment(Fragment):
                 length = int(content_length)
 
         if length is None:
-            self.preferred_frag = FileFragment(
+            self.candidates[idx].fragment = frag = FileFragment(
                 self.queue,
-                self.preferred_url,
-                filename=self.preferred_filename,
+                self.candidates[idx].url,
+                filename=self.candidates[idx].filename,
                 headers=self.headers,
             )
-            await self.preferred_frag.save()
-            length = len(self.preferred_frag.file_bytes)
+            await frag.save()
+            length = len(frag.file_bytes)
 
         return length
 
-    async def determine_length(self) -> int:
-        if self.length_task is None:
-            self.length_task = asyncio.create_task(self._determine_length())
-        return await self.length_task
+    async def determine_length(self, idx: int) -> int:
+        if (task := self.length_tasks.get(idx)) is None:
+            task = asyncio.create_task(self._determine_length(idx))
+            self.length_tasks[idx] = task
+        return await task
 
     async def to_file(self, ctx: CrosspostContext) -> FileFragment:
-        length = await self.determine_length()
+        for idx, candidate in enumerate(self.candidates):
+            length = await self.determine_length(idx)
+            if get_size_limit(ctx) > length:
+                if (frag := candidate.fragment) is None:
+                    candidate.fragment = frag = FileFragment(
+                        self.queue,
+                        candidate.url,
+                        filename=candidate.filename,
+                        headers=self.headers,
+                    )
+                return frag
 
-        if get_size_limit(ctx) > length:
-            if (frag := self.preferred_frag) is None:
-                frag = self.preferred_frag = FileFragment(
-                    self.queue,
-                    self.preferred_url,
-                    filename=self.preferred_filename,
-                    headers=self.headers,
-                )
-        elif (frag := self.fallback_frag) is None:
-            frag = self.fallback_frag = FileFragment(
+        candidate = self.candidates[0]
+        if (frag := candidate.fragment) is None:
+            candidate.fragment = frag = FileFragment(
                 self.queue,
-                self.fallback_url,
-                filename=self.fallback_filename,
+                candidate.url,
+                filename=candidate.filename,
                 headers=self.headers,
             )
 
