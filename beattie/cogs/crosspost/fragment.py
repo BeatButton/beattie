@@ -124,12 +124,16 @@ class FileFragment(Fragment):
 class FileSpec(NamedTuple):
     url: str
     filename: str | None = None
+    postprocess: PP | None = None
+    pp_extra: Any = None
 
 
 @dataclass
 class FallbackCandidate:
     url: str
-    filename: str | None = None
+    filename: str | None
+    postprocess: PP | None
+    pp_extra: PP | None
     fragment: FileFragment | None = None
 
 
@@ -147,26 +151,25 @@ class FallbackFragment(Fragment):
         super().__init__(queue)
         self.headers = headers
         self.length_tasks = {}
-        self.candidates = [FallbackCandidate(fs.url, fs.filename) for fs in file_specs]
+        self.candidates = [
+            FallbackCandidate(fs.url, fs.filename, fs.postprocess, fs.pp_extra)
+            for fs in file_specs
+        ]
 
     async def _determine_length(self, idx: int) -> int:
-        length = None
-        async with self.cog.get(
-            self.candidates[idx].url,
-            method="HEAD",
+        candidate = self.candidates[idx]
+        candidate.fragment = frag = FileFragment(
+            self.queue,
+            candidate.url,
+            filename=candidate.filename,
             headers=self.headers,
-        ) as resp:
-            if content_length := resp.headers.get("content-length"):
-                length = int(content_length)
-
-        if length is None:
-            self.candidates[idx].fragment = frag = FileFragment(
-                self.queue,
-                self.candidates[idx].url,
-                filename=self.candidates[idx].filename,
-                headers=self.headers,
-            )
-            await frag.save()
+            postprocess=candidate.postprocess,
+            pp_extra=candidate.pp_extra,
+        )
+        await frag.save()
+        if (pp_bytes := frag.pp_bytes) is not None:
+            length = len(pp_bytes)
+        else:
             length = len(frag.file_bytes)
 
         return length
