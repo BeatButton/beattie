@@ -6,10 +6,10 @@ from asyncio import subprocess
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from zipfile import ZipFile
 
-from beattie.utils.aioutils import try_wait_for
+from beattie.utils.aioutils import aread, try_wait_for
 from beattie.utils.etc import replace_ext
 
 if TYPE_CHECKING:
@@ -105,6 +105,7 @@ def magick_pp(to: str) -> PP:
             frag.pp_bytes = stdout
             frag.pp_filename = f"{frag.filename.rpartition(".")[0]}.{to}"
 
+    inner.__name__ = f"magick_{to}_pp"
     return inner
 
 
@@ -119,63 +120,92 @@ def write_durations(tempdir: Path, res: dict[str, Any]):
             fp.write(f"file '{frame['file']}'\nduration {duration}\n")
 
 
-async def ugoira_pp(frag: FileFragment):
-    illust_id: str = frag.pp_extra
-    url = "https://app-api.pixiv.net/v1/ugoira/metadata"
-    params = {"illust_id": illust_id}
-    headers = frag.headers
-    async with frag.cog.get(url, params=params, headers=headers) as resp:
-        res = resp.json()["ugoira_metadata"]
+def ugoira_pp(to: Literal["gif", "mp4"]) -> PP:
+    async def inner(frag: FileFragment):
+        illust_id: str = frag.pp_extra
+        url = "https://app-api.pixiv.net/v1/ugoira/metadata"
+        params = {"illust_id": illust_id}
+        headers = frag.headers
+        async with frag.cog.get(url, params=params, headers=headers) as resp:
+            res = resp.json()["ugoira_metadata"]
 
-    zip_url = res["zip_urls"]["medium"]
-    zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
+        zip_url = res["zip_urls"]["medium"]
+        zip_url = re.sub(r"ugoira\d+x\d+", "ugoira1920x1080", zip_url)
 
-    headers = frag.headers or {}
+        headers = frag.headers or {}
 
-    headers["referer"] = f"https://www.pixiv.net/en/artworks/{illust_id}"
+        headers["referer"] = f"https://www.pixiv.net/en/artworks/{illust_id}"
 
-    zip_bytes, _ = await frag.cog.save(zip_url, headers=headers)
-    zfp = ZipFile(BytesIO(zip_bytes))
+        zip_bytes, _ = await frag.cog.save(zip_url, headers=headers)
+        zfp = ZipFile(BytesIO(zip_bytes))
+        filename = f"{illust_id}.{to}"
 
-    with TemporaryDirectory() as td:
-        tempdir = Path(td)
-        zfp.extractall(tempdir)
-        await asyncio.to_thread(write_durations, tempdir, res)
+        with TemporaryDirectory() as td:
+            tempdir = Path(td)
+            zfp.extractall(tempdir)
+            await asyncio.to_thread(write_durations, tempdir, res)
 
-        proc = await subprocess.create_subprocess_exec(
-            "ffmpeg",
-            "-i",
-            f"{tempdir}/%06d.jpg",
-            "-vf",
-            "palettegen",
-            f"{tempdir}/palette.png",
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        await proc.wait()
+            match to:
+                case "gif":
+                    proc = await subprocess.create_subprocess_exec(
+                        "ffmpeg",
+                        "-i",
+                        f"{tempdir}/%06d.jpg",
+                        "-vf",
+                        "palettegen",
+                        f"{tempdir}/palette.png",
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                    await proc.wait()
 
-        proc = await subprocess.create_subprocess_exec(
-            "ffmpeg",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            f"{tempdir}/durations.txt",
-            "-i",
-            f"{tempdir}/palette.png",
-            "-lavfi",
-            "paletteuse",
-            "-f",
-            "gif",
-            "pipe:1",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        try:
-            stdout, _stderr = await try_wait_for(proc)
-        except asyncio.TimeoutError:
-            pass
-        else:
-            frag.pp_bytes = stdout
-            frag.pp_filename = f"{illust_id}.gif"
+                    proc = await subprocess.create_subprocess_exec(
+                        "ffmpeg",
+                        "-f",
+                        "concat",
+                        "-safe",
+                        "0",
+                        "-i",
+                        f"{tempdir}/durations.txt",
+                        "-i",
+                        f"{tempdir}/palette.png",
+                        "-lavfi",
+                        "paletteuse",
+                        "-f",
+                        "gif",
+                        "pipe:1",
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                    )
+                case "mp4":
+                    proc = await subprocess.create_subprocess_exec(
+                        "ffmpeg",
+                        "-f",
+                        "concat",
+                        "-safe",
+                        "0",
+                        "-i",
+                        f"{tempdir}/durations.txt",
+                        f"{tempdir}/{filename}",
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+
+            try:
+                stdout, _stderr = await try_wait_for(proc)
+            except asyncio.TimeoutError:
+                pass
+            else:
+                frag.pp_filename = filename
+                match to:
+                    case "gif":
+                        frag.pp_bytes = stdout
+                    case "mp4":
+                        frag.pp_bytes = await aread(f"{tempdir}/{filename}", "rb")
+
+    inner.__name__ = f"ugoira_{to}_pp"
+    return inner
+
+
+ugoira_gif_pp = ugoira_pp("gif")
+ugoira_mp4_pp = ugoira_pp("mp4")

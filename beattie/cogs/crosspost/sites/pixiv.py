@@ -15,7 +15,7 @@ from discord.ext.commands import Cooldown
 
 from beattie.utils.aioutils import adump, aload
 
-from ..postprocess import ugoira_pp
+from ..postprocess import ugoira_gif_pp
 from .site import Site
 
 if TYPE_CHECKING:
@@ -163,7 +163,7 @@ class Pixiv(Site):
             if "ugoira" in url:
                 queue.push_file(
                     url,
-                    postprocess=ugoira_pp,
+                    postprocess=ugoira_gif_pp,
                     headers=headers,
                     pp_extra=illust_id,
                     can_link=False,

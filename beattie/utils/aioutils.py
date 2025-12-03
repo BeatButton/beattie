@@ -75,3 +75,12 @@ async def adump(path: str | bytes | PathLike, data: dict[str, Any]):
 def _dump(path: str | bytes | PathLike, data: dict[str, Any]):
     with open(path, "w") as fp:
         toml.dump(data, fp)
+
+
+async def aread(path: str | bytes | PathLike, mode: str = "r"):
+    return await asyncio.to_thread(_read, path, mode)
+
+
+def _read(path: str | bytes | PathLike, mode: str):
+    with open(path, mode=mode) as fp:
+        return fp.read()
