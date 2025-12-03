@@ -13,9 +13,10 @@ from lxml import html
 
 from discord.ext.commands import Cooldown
 
+from beattie.cogs.crosspost.fragment import FileSpec
 from beattie.utils.aioutils import adump, aload
 
-from ..postprocess import ugoira_gif_pp
+from ..postprocess import ugoira_gif_pp, ugoira_mp4_pp
 from .site import Site
 
 if TYPE_CHECKING:
@@ -161,12 +162,18 @@ class Pixiv(Site):
             url = single["original_image_url"]
 
             if "ugoira" in url:
-                queue.push_file(
-                    url,
-                    postprocess=ugoira_gif_pp,
+                queue.push_fallback(
+                    FileSpec(
+                        url,
+                        postprocess=ugoira_gif_pp,
+                        pp_extra=illust_id,
+                    ),
+                    FileSpec(
+                        url,
+                        postprocess=ugoira_mp4_pp,
+                        pp_extra=illust_id,
+                    ),
                     headers=headers,
-                    pp_extra=illust_id,
-                    can_link=False,
                 )
             elif "limit_unviewable" in url:
                 msg = "This post is currently unviewable. Wait a bit, then try again."
