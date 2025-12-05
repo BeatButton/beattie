@@ -23,6 +23,9 @@ class TextLength(Enum):
             return _VALMAP[self] > _VALMAP[other]
         return NotImplemented
 
+    def __str__(self) -> str:
+        return self.value
+
 
 _VALMAP = {
     TextLength.LONG: 2,

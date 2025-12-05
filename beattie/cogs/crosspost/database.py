@@ -173,6 +173,8 @@ class Database:
         kwargs = settings.asdict()
         if lang := kwargs.get("language"):
             kwargs["language"] = lang.code
+        if length := kwargs.get("text"):
+            kwargs["text"] = str(length)
         cols = ",".join(kwargs)
         params = ",".join(f"${i}" for i, _ in enumerate(kwargs, 1))
         update = ",".join(f"{col}=EXCLUDED.{col}" for col in kwargs)
