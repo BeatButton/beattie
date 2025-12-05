@@ -9,7 +9,7 @@ from discord.utils import find
 
 from beattie.utils.converters import RangesConverter
 
-from .database_types import TextLength  # noqa: TC001
+from .database_types import TextLength
 from .translator import DONT, Language
 
 if TYPE_CHECKING:
