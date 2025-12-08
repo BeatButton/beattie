@@ -35,6 +35,7 @@ ROLL_EXPR = re.compile(
 SHADOWRUN_EXPR = re.compile(r"^\d+e?$")
 GENESYS_ROLL_EXPR = re.compile(r"^(?:\d+[a-z])+$")
 GENESYS_DIE_EXPR = re.compile(r"\d+[a-z]")
+ISUN_EXPR = re.compile(r"^(\d*)(?:d10)?$")
 
 TAROT_EXPR = re.compile(r"(?:\w+/)+[IVX0_]*([\w_]+)\.jpg")
 TAROT_URL = "https://www.trustedtarot.com/cards/{}/"
@@ -285,6 +286,38 @@ class RPG(Cog):
         else:
             await ctx.bot.handle_error(ctx, e)
 
+    @commands.command(aliases=["invisibleroll", "iroll", "ir"])
+    async def isunroll(self, ctx: BContext, *, inp: str = ""):
+        """Roll some dice - for Invisible Sun!
+
+        Format: N(d10)
+        Roll N ten-sided dice (0-9). Dice after the first one might result in flux."""
+        inp = inp.strip()
+        if (m := ISUN_EXPR.match(inp)) is None:
+            raise commands.BadArgument
+
+        if n := m.group(1):
+            num = int(n)
+        else:
+            num = 1
+
+        future = asyncio.to_thread(isunroller, num)
+        async with ctx.typing():
+            result = await asyncio.wait_for(future, 10)
+
+        await ctx.reply(result)
+
+    @isunroll.error
+    async def isunroll_error(self, ctx: BContext, e: Exception):
+        if isinstance(e, commands.CommandInvokeError):
+            e = e.original
+        if isinstance(e, futures.TimeoutError):
+            await ctx.reply("Your execution took too long. Roll fewer dice.")
+        if isinstance(e, (commands.MissingRequiredArgument, commands.BadArgument)):
+            await ctx.send("Invalid input. Valid input examples:\n3\n2d10")
+        else:
+            await ctx.bot.handle_error(ctx, e)
+
     @commands.command(aliases=["coin", "coinflip"])
     async def flip(self, ctx: BContext):
         result = random.choice(("Heads", "Tails"))
@@ -338,6 +371,13 @@ def shadowroller(num: int, *, edge: bool = False) -> str:
         result = f"Glitch with {hits} hit{s}."
 
     return result
+
+
+def isunroller(num: int) -> str:
+    results: list[int | str] = [random.randint(0, 9)]
+    results.extend(random.randint(0, 9) or "flux" for _ in range(num - 1))
+
+    return ", ".join(map(str, results))
 
 
 def denest(rolls: list[list[int]]) -> str:
