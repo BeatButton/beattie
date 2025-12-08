@@ -129,6 +129,7 @@ BB_NOOP = [
         "t",
         "section",
         "iconname",
+        "quote",
     ]
 ]
 

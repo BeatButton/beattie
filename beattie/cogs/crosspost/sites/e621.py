@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 import toml
 
+from beattie.utils.etc import translate_bbcode
 from beattie.utils.exceptions import ResponseError
 
 from .site import Site
@@ -67,7 +68,7 @@ class E621(Site):
         queue.push_file(post["file"]["url"])
 
         if text := post.get("description"):
-            queue.push_text(text)
+            queue.push_text(translate_bbcode(text))
 
         if sources := post.get("sources"):
             queue.push_text(sources[-1], quote=False, force=True)
