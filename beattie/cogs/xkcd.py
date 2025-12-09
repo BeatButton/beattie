@@ -95,13 +95,6 @@ class XKCD(Cog):
             }
         await ctx.send(embed=format_comic(data))
 
-    @commands.command(hidden=True)
-    async def sudo(self, ctx: BContext, *, _: str):
-        if await ctx.bot.is_owner(ctx.author):
-            await ctx.send("Operation successful.")
-        else:
-            await ctx.send("Unable to lock /var/lib/dpkg/, are you root?")
-
 
 def format_comic(data: XkcdData) -> discord.Embed:
     embed = discord.Embed()
