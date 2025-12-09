@@ -19,8 +19,8 @@ class TextLength(Enum):
     NONE = "none"
 
     def __gt__(self, other: object) -> bool:
-        if isinstance(other, TextLength):
-            return _VALMAP[self] > _VALMAP[other]
+        if other.__class__.__name__ == self.__class__.__name__:  # for hot reloading
+            return _VALMAP[self] > _VALMAP[other]  # type: ignore
         return NotImplemented
 
     def __str__(self) -> str:
