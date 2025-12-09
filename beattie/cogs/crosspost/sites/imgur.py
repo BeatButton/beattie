@@ -61,7 +61,7 @@ class Imgur(Site):
             f"https://api.imgur.com/3/{target}/{album_id}",
             headers=self.headers,
         ) as resp:
-            data: ImageResponse | AlbumResponse = resp.json()["data"]
+            data: ImageResponse | AlbumResponse = resp.json()
 
         post = data["data"]
 
