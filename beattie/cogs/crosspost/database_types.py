@@ -20,15 +20,18 @@ class TextLength(Enum):
 
     def __gt__(self, other: object) -> bool:
         if other.__class__.__name__ == self.__class__.__name__:  # for hot reloading
-            return _VALMAP[self] > _VALMAP[other]  # type: ignore
+            return (
+                _VALMAP[self.value]
+                > _VALMAP[other.value]  # pyright: ignore[reportAttributeAccessIssue]
+            )
         return NotImplemented
 
     def __str__(self) -> str:
         return self.value
 
 
-_VALMAP = {
-    TextLength.LONG: 2,
-    TextLength.SHORT: 1,
-    TextLength.NONE: 0,
+_VALMAP: dict[str, int] = {
+    TextLength.LONG.value: 2,
+    TextLength.SHORT.value: 1,
+    TextLength.NONE.value: 0,
 }
