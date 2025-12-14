@@ -24,6 +24,9 @@ if TYPE_CHECKING:
     from .postprocess import PP
     from .queue import FragmentQueue
 
+FILE_CHAR = r"[\w. [\]-]"
+FILENAME_EXPR = re.compile(rf"{FILE_CHAR}+\.{FILE_CHAR}+")
+
 
 class Fragment:
     queue: FragmentQueue
@@ -81,7 +84,7 @@ class FileFragment(Fragment):
         self.can_link = can_link
 
         if filename is None:
-            filename = re.findall(r"[\w. [\]-]+\.[\w. [\]-]+", urls[0])[-1]
+            filename = FILENAME_EXPR.findall(urls[0])[-1]
         if filename is None:
             msg = f"could not parse filename from URL: {urls[0]}"
             raise RuntimeError(msg)
