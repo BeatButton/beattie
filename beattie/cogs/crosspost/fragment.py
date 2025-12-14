@@ -84,7 +84,9 @@ class FileFragment(Fragment):
         self.can_link = can_link
 
         if filename is None:
-            filename = FILENAME_EXPR.findall(urls[0])[-1]
+            for url in urls:
+                if matches := FILENAME_EXPR.findall(url):
+                    filename = matches[-1]
         if filename is None:
             msg = f"could not parse filename from URL: {urls[0]}"
             raise RuntimeError(msg)
