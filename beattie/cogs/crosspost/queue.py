@@ -78,8 +78,9 @@ class FragmentQueue:
         )
 
     async def _handle(self, ctx: CrosspostContext) -> Self:
-        cooldown = self.site.cooldown
-        if cooldown and (timeout := cooldown.update_rate_limit()):
+        if (cooldown := self.site.cooldown) and (
+            timeout := cooldown.update_rate_limit()
+        ):
             self.cog.logger.info(
                 "%s ratelimit hit, sleeping for %f seconds",
                 self.site.name,
