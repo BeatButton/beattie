@@ -221,32 +221,38 @@ class FragmentQueue:
         if not self.fragments:
             return items
 
-        if ranges:
-            slices = [
-                (
-                    (start - 1, None if end == 1 else end - 2, -1)
-                    if end < start
-                    else (start - 1, end, 1)
-                )
-                for start, end in ranges
-            ]
-            max_pages = 0
-            frags = [
-                frag
-                for frag in self.fragments
-                if isinstance(frag, (FileFragment, FallbackFragment))
-            ]
-            fragments = [
-                frag for start, end, step in slices for frag in frags[start:end:step]
-            ] + [
-                frag
-                for frag in self.fragments
-                if isinstance(frag, TextFragment)
-                and (frag.force or not frag.interlaced)
-            ]
-        else:
-            fragments = self.fragments
-            max_pages = settings.max_pages_or_default()
+        match ranges:
+            case [] | None:
+                max_pages = settings.max_pages_or_default()
+                fragments = self.fragments
+            case [(1, end)]:
+                max_pages = end
+                fragments = self.fragments
+            case _:
+                max_pages = 0
+                slices = [
+                    (
+                        (start - 1, None if end == 1 else end - 2, -1)
+                        if end < start
+                        else (start - 1, end, 1)
+                    )
+                    for start, end in ranges
+                ]
+                frags = [
+                    frag
+                    for frag in self.fragments
+                    if isinstance(frag, (FileFragment, FallbackFragment))
+                ]
+                fragments = [
+                    frag
+                    for start, end, step in slices
+                    for frag in frags[start:end:step]
+                ] + [
+                    frag
+                    for frag in self.fragments
+                    if isinstance(frag, TextFragment)
+                    and (frag.force or not frag.interlaced)
+                ]
 
         num_files = 0
         length = settings.text_length_or_default()

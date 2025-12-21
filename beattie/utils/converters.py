@@ -88,11 +88,21 @@ class RangesConverter(Converter):
             msg = "Failed to parse ranges."
             raise BadArgument(msg)
 
-        out = []
+        out: list[tuple[int, int]] = []
         for part in argument.split(","):
             if not part:
                 continue
             start, _, end = part.partition("-")
             out.append((int(start), int(end or start)))
+
+        # merge contiguous ascending ranges
+        i = 1
+        while i < len(out):
+            a, b = out[i - 1 : i + 1]
+            if a[1] + 1 == b[0] and a[0] <= a[1] and b[0] <= b[1]:
+                out[i - 1] = (a[0], b[1])
+                del out[i]
+            else:
+                i += 1
 
         return out
