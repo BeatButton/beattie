@@ -71,6 +71,7 @@ class FragmentQueue:
         return (
             super().__sizeof__()
             + getsizeof(self.link)
+            + getsizeof(self.args)
             + getsizeof(self.author)
             + getsizeof(self.handle_task)
             + getsizeof(self.last_used)
