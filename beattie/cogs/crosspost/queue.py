@@ -63,9 +63,7 @@ class FragmentQueue:
         self.cog = ctx.cog
         self.fragments = []
         self.handle_task = asyncio.create_task(self._handle(ctx))
-        now = time.time()
-        self.last_used = now
-        self.wait_until = now
+        self.last_used = self.wait_until = time.time()
 
     def __sizeof__(self) -> int:
         return (
