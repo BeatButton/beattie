@@ -82,11 +82,6 @@ class Default(Cog):
         )
 
     @commands.command()
-    async def source(self, ctx: BContext):
-        """Get the source for the bot."""
-        await ctx.send("https://github.com/BeatButton/beattie")
-
-    @commands.command()
     async def invite(self, ctx: BContext):
         """Get the invite for the bot."""
         url = (

@@ -20,7 +20,7 @@ class SauceNao(Cog):
         self.session = bot.session
         self.parser = etree.HTMLParser()
 
-    @commands.command(aliases=["sauce"])
+    @commands.command(aliases=["sauce", "source"])
     async def saucenao(self, ctx: BContext, *, link: str = None):
         """Find the source of a linked or attached image using saucenao."""
         async with ctx.typing():
