@@ -95,6 +95,8 @@ class HybridTranslator(Translator):
             return text
         if source in ("ja", "zh", "ko"):
             trans = await self.deepl.translate(text, source, target)
+            if trans.casefold() == "home":
+                return text
             if Levenshtein.ratio(trans, text, processor=str.casefold) < 0.75:
                 return trans
 
