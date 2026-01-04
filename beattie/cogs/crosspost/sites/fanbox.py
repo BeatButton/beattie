@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 
     class Post(TypedDict):
         creatorId: str
+        title: str
         type: Literal["image", "file", "article"]
         body: Body | None
 
@@ -98,6 +99,7 @@ class Fanbox(Site):
             return
 
         queue.author = post["creatorId"]
+        queue.push_text(post["title"], bold=True)
         headers = {"Referer": queue.link}
 
         match post["type"]:
