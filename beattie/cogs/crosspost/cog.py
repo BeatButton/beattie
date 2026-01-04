@@ -255,7 +255,7 @@ class Crosspost(Cog):
 
             matches: list[tuple[re.Match[str], Site]] = []
             for site in self.sites:
-                if site in blacklist:
+                if site.name in blacklist:
                     continue
                 if m := site.pattern.search(link):
                     matches.append((m, site))
