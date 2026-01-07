@@ -448,7 +448,6 @@ class Remind(Cog):
 
             if (
                 isinstance(recipient, discord.User)
-                or isinstance(channel, discord.Thread)
                 or channel.permissions_for(recipient).mention_everyone
             ):
                 allowed_mentions = AllowedMentions.all()
