@@ -65,7 +65,6 @@ class Twitter(Site):
         tweet_id: str,
         method: Method,
     ):
-        headers = {"referer": f"https://x.com/i/status/{tweet_id}"}
         api_link = f"https://api.{method}.com/status/{tweet_id}"
 
         async with self.cog.get(
@@ -98,16 +97,8 @@ class Twitter(Site):
             url = medium["url"]
             match medium["type"]:
                 case "photo" | "image":
-                    try:
-                        async with self.cog.get(
-                            f"{url}:orig",
-                            method="HEAD",
-                            headers=headers,
-                        ) as resp:
-                            url = str(resp.url)
-                    except ResponseError as e:
-                        if e.code != 404:
-                            raise
+                    if method == "vxtwitter":
+                        url = f"{url}:orig"
                     queue.push_file(url)
                 case "gif":
                     base = url.rpartition("/")[2].rpartition(".")[0]
