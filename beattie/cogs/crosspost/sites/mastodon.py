@@ -205,9 +205,9 @@ class Mastodon(Site):
 
     async def do_mastodon(
         self,
-        _ctx: CrosspostContext,
+        ctx: CrosspostContext,  # noqa: ARG002
         queue: FragmentQueue,
-        link: str,
+        link: str,  # noqa: ARG002
         site: str,
         post_id: str,
         headers: dict[str, str],
@@ -226,11 +226,6 @@ class Mastodon(Site):
             return
 
         queue.author = post["account"]["url"]
-
-        real_url = post["url"]
-        queue.link = real_url
-        if real_url.casefold() != link.casefold():
-            queue.push_text(real_url, quote=False, force=True)
 
         for image in images:
             urls = [url for url in [image["remote_url"], image["url"]] if url]
@@ -259,9 +254,9 @@ class Mastodon(Site):
 
     async def do_misskey(
         self,
-        _ctx: CrosspostContext,
+        ctx: CrosspostContext,  # noqa: ARG002
         queue: FragmentQueue,
-        _link: str,
+        link: str,  # noqa: ARG002
         site: str,
         post_id: str,
         headers: dict[str, str],
