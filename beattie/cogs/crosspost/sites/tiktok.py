@@ -38,4 +38,4 @@ class Tiktok(Site):
 
         filename = f"{video_id}.mp4"
 
-        queue.push_file(url, filename=filename)
+        queue.push_file(url.partition("?")[0], filename=filename)
