@@ -20,8 +20,8 @@ Method = Literal["fxtwitter", "vxtwitter"]
 class Twitter(Site):
     name = "twitter"
     pattern = re.compile(
-        r"https?://(?:(?:www|mobile|m)\.)?"
-        r"(?:(?:.x|zz)?tw[ix]tter|(?:fix(?:up|v)|girlcock|stupidpenis|skibidi|cunny)?x"
+        r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x|zz)?tw[ix]tter|"
+        r"(?:fix(?:up|v)|girlcock|stupidpenis|skibidi|cunny|mpreg)?x"
         r"(?:cancel)?)(?:vx)?\.com/[^\s/]+/status/(\d+)",
     )
 
