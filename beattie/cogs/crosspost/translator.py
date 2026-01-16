@@ -130,9 +130,9 @@ class LibreTranslator(Translator):
         }
 
     def languages(self) -> asyncio.Task[Mapping[str, Language]]:
-        if self._lang_task is None:
-            self._lang_task = asyncio.Task(self._languages())
-        return self._lang_task
+        if (task := self._lang_task) is None or task.done() and task.exception():
+            task = self._lang_task = asyncio.Task(self._languages())
+        return task
 
     async def detect(self, text: str) -> Language:
         self.logger.debug("detecting language for: %s", text)
