@@ -115,6 +115,7 @@ class Mastodon(Site):
 
         self.whitelist = data.pop("whitelist", {})
         self.blacklist = set(data.pop("blacklist", []))
+        self.rewrite = data.pop("rewrite", {})
         self.auth = data
 
         pre = "do_"
@@ -164,7 +165,12 @@ class Mastodon(Site):
             self.whitelist.pop(domain, None)
             self.blacklist.add(domain)
 
-        data = {**self.auth, "whitelist": self.whitelist, "blacklist": self.blacklist}
+        data = {
+            **self.auth,
+            "whitelist": self.whitelist,
+            "blacklist": self.blacklist,
+            "rewrite": self.rewrite,
+        }
 
         await adump(CONFIG, data)
 
@@ -184,6 +190,8 @@ class Mastodon(Site):
             domain = f"{sub}.{domain}"
         if domain in self.blacklist:
             return
+        if rewrite := self.rewrite.get(domain):
+            domain = site = rewrite
         if (software := self.whitelist.get(domain)) is None and (
             software := await self.determine(domain)
         ) is None:
