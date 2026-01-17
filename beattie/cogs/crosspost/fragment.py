@@ -311,12 +311,12 @@ class TextFragment(Fragment):
         return text
 
     def detect(self) -> Awaitable[Language]:
-        if self.dt_task is None:
+        if (task := self.dt_task) is None or task.done() and task.exception():
             if translator := self.cog.translator:
-                self.dt_task = asyncio.Task(translator.detect(self.content))
+                self.dt_task = task = asyncio.Task(translator.detect(self.content))
             else:
-                self.dt_task = asyncio.Task(asyncio.sleep(0, DONT))
-        return self.dt_task
+                self.dt_task = task = asyncio.Task(asyncio.sleep(0, DONT))
+        return task
 
     async def _translate(self, target: Language) -> str | None:
         if (translator := self.cog.translator) is None:
