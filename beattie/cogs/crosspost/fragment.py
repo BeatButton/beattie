@@ -348,7 +348,11 @@ class TextFragment(Fragment):
         return self.format(trans)
 
     def translate(self, target: Language) -> Awaitable[str | None]:
-        if (task := self.trans_tasks.get(target)) is None:
+        if (
+            (task := self.trans_tasks.get(target)) is None
+            or task.done()
+            and task.exception()
+        ):
             self.trans_tasks[target] = task = asyncio.Task(self._translate(target))
 
         return task
