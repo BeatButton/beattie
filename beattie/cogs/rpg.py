@@ -286,7 +286,7 @@ class RPG(Cog):
         else:
             await ctx.bot.handle_error(ctx, e)
 
-    @commands.command(aliases=["invisibleroll", "iroll", "ir"])
+    @commands.command(aliases=["invisibleroll", "iroll", "ir", "is"])
     async def isunroll(self, ctx: BContext, *, inp: str = ""):
         """Roll some dice - for Invisible Sun!
 
