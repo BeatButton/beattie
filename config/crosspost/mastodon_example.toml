@@ -1,0 +1,8 @@
+blacklist = []
+
+[whitelist]
+
+
+[rewrite]
+"pnet." = "pawoo.net"
+"p.net" = "pawoo.net"
