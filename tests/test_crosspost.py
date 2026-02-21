@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import toml
 
 from beattie.__main__ import get_pool
-from beattie.bot import BeattieBot, Shared
+from beattie.bot import BeattieBot
 from beattie.cogs.crosspost import Crosspost, sites
 
 if TYPE_CHECKING:
@@ -31,16 +31,11 @@ class SiteTest(unittest.IsolatedAsyncioTestCase):
 
         pool = await get_pool(self.config)
 
-        shared = Shared(
+        bot = BeattieBot(
             prefixes=tuple(self.config["test_prefixes"]),
             pool=pool,
             debug=True,
         )
-        await shared.async_init()
-
-        bot = BeattieBot(shared)
-        shared.bots = [bot]
-        bot.shared = shared
         self.bot = bot
 
         await bot.load_extension("beattie.cogs.crosspost")
@@ -50,7 +45,7 @@ class SiteTest(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         await super().asyncTearDown()
-        await self.bot.shared.close()
+        await self.bot.close()
 
     def mock_context(self) -> AsyncMock:
         ctx = AsyncMock()
