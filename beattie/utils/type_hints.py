@@ -7,7 +7,7 @@ GuildMessageable = TextChannel | VoiceChannel | Thread
 if TYPE_CHECKING:
 
     class BotConfig(TypedDict):
-        tokens: list[str]
+        token: str
         prefixes: list[str]
         test_token: str
         test_prefixes: list[str]

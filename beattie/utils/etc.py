@@ -190,7 +190,7 @@ async def prompt_confirm(
         mention_author=True,
     )
     for emoji in "⭕❌":
-        ctx.bot.shared.create_task(msg.add_reaction(emoji))
+        ctx.bot.create_task(msg.add_reaction(emoji))
 
     try:
         reaction, _ = await ctx.bot.wait_for(
@@ -205,5 +205,5 @@ async def prompt_confirm(
     else:
         emoji = reaction.emoji
 
-    ctx.bot.shared.create_task(msg.delete())
+    ctx.bot.create_task(msg.delete())
     return emoji == "⭕"
