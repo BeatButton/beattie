@@ -61,7 +61,8 @@ class Database:
 
                 CREATE TABLE IF NOT EXISTS public.crosspostmessage (
                     sent_message bigint NOT NULL PRIMARY KEY,
-                    invoking_message bigint NOT NULL
+                    invoking_message bigint NOT NULL,
+                    invoking_user bigint NOT NULL
                 );
 
                 CREATE INDEX IF NOT EXISTS crosspost_idx_invoking
