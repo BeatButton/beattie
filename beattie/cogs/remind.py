@@ -104,7 +104,6 @@ class Remind(Cog):
                 """
                 CREATE TABLE IF NOT EXISTS public.reminder (
                     id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    bot_id bigint NOT NULL,
                     guild_id bigint NOT NULL,
                     channel_id bigint NOT NULL,
                     message_id bigint NOT NULL,
@@ -127,29 +126,12 @@ class Remind(Cog):
             )
             self.queue = [
                 Reminder.from_record(row)
-                for row in await conn.fetch(
-                    "SELECT * FROM reminder WHERE bot_id = $1 ORDER BY time DESC",
-                    user.id,
-                )
+                for row in await conn.fetch("SELECT * FROM reminder ORDER BY time DESC")
             ]
         await self.start_timer()
 
     def cog_unload(self):
         self.timer.cancel()
-
-    @Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild):
-        user = self.bot.user
-        assert user is not None
-        others = self.bot.shared.bot_ids - {user.id}
-        if any(m.id in others for m in guild.members):
-            return
-        async with self.pool.acquire() as conn:
-            await conn.execute(
-                "UPDATE reminder SET bot_id = $1 WHERE guild_id = $2;",
-                user.id,
-                guild.id,
-            )
 
     async def get_user_timezone(self, user_id: int) -> ZoneInfo | None:
         async with self.pool.acquire() as conn:
@@ -336,7 +318,6 @@ class Remind(Cog):
             record = await conn.fetchrow(
                 """
                 INSERT INTO reminder(
-                    bot_id,
                     guild_id,
                     channel_id,
                     message_id,
@@ -344,11 +325,10 @@ class Remind(Cog):
                     time,
                     topic
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7
+                    $1, $2, $3, $4, $5, $6
                 )
                 RETURNING *
                 """,
-                user.id,
                 guild_id,
                 ctx.channel.id,
                 ctx.message.id,
