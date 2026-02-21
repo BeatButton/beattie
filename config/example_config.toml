@@ -4,3 +4,6 @@ test_token = ""
 test_prefixes = ["??", "!!"]
 loglevel = "INFO"
 config_password = ""
+owner_ids = []
+api = "https://api.fluxer.app/v1"
+gateway = "wss://gateway.fluxer.app/"
