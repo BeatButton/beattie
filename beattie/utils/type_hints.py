@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     class BotConfig(TypedDict):
         token: str
         prefixes: list[str]
-        test_token: str
-        test_prefixes: list[str]
+        test_token: NotRequired[str]
+        test_prefixes: NotRequired[list[str]]
         loglevel: NotRequired[str]
         config_password: NotRequired[str]
         debug: NotRequired[bool]

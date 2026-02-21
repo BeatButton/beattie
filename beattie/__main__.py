@@ -31,8 +31,8 @@ async def get_pool(config: BotConfig) -> asyncpg.Pool:
 async def main(config: BotConfig):
     debug = config.get("debug") or "debug" in sys.argv
     if debug:
-        prefixes = config["test_prefixes"]
-        token = config["test_token"]
+        prefixes = config.get("test_prefixes") or config["prefixes"]
+        token = config.get("test_token") or config["token"]
     else:
         prefixes = config["prefixes"]
         token = config["token"]

@@ -32,7 +32,7 @@ class SiteTest(unittest.IsolatedAsyncioTestCase):
         pool = await get_pool(self.config)
 
         bot = BeattieBot(
-            prefixes=tuple(self.config["test_prefixes"]),
+            prefixes=tuple(self.config.get("test_prefixes") or self.config["prefixes"]),
             pool=pool,
             debug=True,
         )
