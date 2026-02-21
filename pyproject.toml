@@ -6,7 +6,7 @@ dependencies = [
     "asyncpg",
     "brotli",
     "discord-ext-menus",
-    "discord.py[speed]",
+    "discord.py[speed] @ git+https://github.com/BeatButton/discord.py@fluxer",
     "httpx",
     "jishaku",
     "levenshtein",

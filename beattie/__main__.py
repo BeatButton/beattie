@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import asyncio
 import sys
 from typing import TYPE_CHECKING
 
 import asyncpg
 import toml
+import yarl
+
+from discord import http, gateway
 
 from beattie.bot import BeattieBot
 
@@ -37,7 +39,14 @@ async def main(config: BotConfig):
 
     pool = await get_pool(config)
 
+    if api := config.get("api"):
+        http.Route.BASE = api
+    if ws := config.get("gateway"):
+        gateway.DiscordWebSocket.DEFAULT_GATEWAY = yarl.URL(ws)
+
     bot = BeattieBot(prefixes=tuple(prefixes), pool=pool, debug=debug)
+    if ids := config.get("owner_ids"):
+        bot.owner_ids = ids
 
     await bot.start(token)
 

@@ -14,3 +14,6 @@ if TYPE_CHECKING:
         loglevel: NotRequired[str]
         config_password: NotRequired[str]
         debug: NotRequired[bool]
+        owner_ids: NotRequired[list[int]]
+        api: NotRequired[str]
+        gateway: NotRequired[str]
