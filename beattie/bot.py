@@ -38,9 +38,9 @@ if TYPE_CHECKING:
 C = TypeVar("C", bound=Context)
 
 
-class Shared:
-    bot_ids: set[int]
-    bots: list[BeattieBot]
+class BeattieBot(Bot):
+    """A very cute robot boy"""
+
     archive_task: Task[NoReturn] | None
     close_task: Task[None] | None
     logger: logging.Logger
@@ -49,6 +49,10 @@ class Shared:
     extra: dict[str, Any]
     uptime: datetime
     tasks: set[Task]
+    command_ignore = (commands.CommandNotFound, commands.CheckFailure)
+    general_ignore = (ConnectionResetError,)
+
+    http: HTTPClient
 
     def __init__(
         self,
@@ -57,11 +61,10 @@ class Shared:
         *,
         debug: bool,
     ):
+        self.logger = logging.getLogger(__name__)
         with open("config/config.toml") as file:
             data: BotConfig = toml.load(file)  # pyright: ignore[reportAssignmentType]
 
-        self.bot_ids = set()
-        self.bots = []
         self.prefixes = prefixes
         self.loglevel = data.get("loglevel", logging.WARNING)
         self.debug = debug
@@ -70,7 +73,7 @@ class Shared:
         self.uptime = datetime.now().astimezone()
         self.extra = {}
         self.tasks = set()
-        self.close_task = None
+        self.session = httpx.AsyncClient(follow_redirects=True, timeout=None)
         if debug:
             self.loglevel = logging.DEBUG
             self.archive_task = None
@@ -83,9 +86,27 @@ class Shared:
             self.archive_task = do_every(60 * 60 * 24, self.swap_logs)
         self.new_logger()
 
-    async def async_init(self):
-        self.session = httpx.AsyncClient(follow_redirects=True, timeout=None)
+        super().__init__(
+            self.prefix_func,
+            activity=Game(name=f"{prefixes[0]}help"),
+            case_insensitive=True,
+            strip_after_prefix=True,
+            help_command=BHelp(),
+            intents=Intents.all(),
+            allowed_mentions=AllowedMentions.none(),
+        )
+
+    async def setup_hook(self):
         await self.config.async_init()
+        cogs = Path(__file__).parent / "cogs"
+        extensions = [f"beattie.cogs.{f.stem}" for f in cogs.glob("*.py")]
+        extensions.append("beattie.cogs.crosspost")
+        extensions.append("jishaku")
+        for extension in extensions:
+            try:
+                await self.load_extension(extension, package="cogs")
+            except Exception:  # noqa: PERF203
+                self.logger.exception("Failed to load extension %s", extension)
 
     def create_task(self, coro: Coroutine) -> None:
         task = asyncio.create_task(coro)
@@ -95,23 +116,17 @@ class Shared:
     async def prefix_func(self, bot: BeattieBot, message: Message) -> Iterable[str]:
         prefix = self.prefixes
         if guild := message.guild:
-            guild_conf = await bot.shared.config.get_guild(guild.id)
+            guild_conf = await bot.config.get_guild(guild.id)
             if guild_pre := guild_conf.get("prefix"):
                 prefix = (*prefix, guild_pre)
         return when_mentioned_or(*prefix)(bot, message)
 
-    async def _close(self):
+    async def close(self):
+        await super().close()
         await self.session.aclose()
         await self.pool.close()
         if self.archive_task is not None:
             self.archive_task.cancel()
-        for bot in self.bots:
-            self.create_task(bot.close())
-
-    async def close(self):
-        if self.close_task is None:
-            self.close_task = asyncio.create_task(self._close())
-        await self.close_task
 
     def swap_logs(self, *, new: bool = True) -> Awaitable[None]:
         if new:
@@ -125,7 +140,7 @@ class Shared:
         if self.debug:
             pre = "debug"
         else:
-            pre = "discord"
+            pre = "beattie"
         filename = now.strftime(f"{pre}%Y%m%d%H%M.log")
         handler = logging.FileHandler(filename=filename, encoding="utf-8", mode="w")
         handler.setFormatter(
@@ -151,53 +166,6 @@ class Shared:
                 tar.add(name)
                 os.unlink(name)
                 log.unlink()
-
-
-class BeattieBot(Bot):
-    """A very cute robot boy"""
-
-    command_ignore = (commands.CommandNotFound, commands.CheckFailure)
-    general_ignore = (ConnectionResetError,)
-
-    http: HTTPClient
-    shared: Shared
-
-    def __init__(
-        self,
-        shared: Shared,
-    ):
-        self.shared = shared
-        self.logger = logging.getLogger(__name__)
-        self.pool = shared.pool
-        self.config = shared.config
-        self.session = shared.session
-        self.extra = shared.extra
-        self.uptime = shared.uptime
-
-        super().__init__(
-            shared.prefix_func,
-            activity=Game(name=f"{shared.prefixes[0]}help"),
-            case_insensitive=True,
-            strip_after_prefix=True,
-            help_command=BHelp(),
-            intents=Intents.all(),
-            allowed_mentions=AllowedMentions.none(),
-        )
-
-    async def setup_hook(self):
-        cogs = Path(__file__).parent / "cogs"
-        extensions = [f"beattie.cogs.{f.stem}" for f in cogs.glob("*.py")]
-        extensions.append("beattie.cogs.crosspost")
-        extensions.append("jishaku")
-        for extension in extensions:
-            try:
-                await self.load_extension(extension, package="cogs")
-            except Exception:  # noqa: PERF203
-                self.logger.exception("Failed to load extension %s", extension)
-
-    async def close(self):
-        await super().close()
-        await self.shared.close()
 
     async def handle_error(self, ctx: Context, e: BaseException):
         if isinstance(e, (commands.CommandInvokeError, commands.ExtensionFailed)):
@@ -230,18 +198,10 @@ class BeattieBot(Bot):
     async def on_ready(self):
         user = self.user
         assert user is not None
-        self.shared.bot_ids.add(user.id)
         print("Logged in as")
         print(user.name)
         print(user.id)
         print("------")
-
-    async def on_guild_join(self, guild: Guild):
-        user = self.user
-        assert user is not None
-        others = self.shared.bot_ids - {user.id}
-        if any(m.id in others for m in guild.members):
-            await guild.leave()
 
     @overload
     async def get_context(self, message: Message) -> BContext: ...

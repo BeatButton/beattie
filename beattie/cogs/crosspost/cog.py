@@ -220,7 +220,7 @@ class Crosspost(Cog):
                     case libre, deepl:
                         self.translator = HybridTranslator(self, libre, deepl)
 
-            if bot.shared.debug and libre is not None:
+            if bot.debug and libre is not None:
                 self.translator = libre
 
         self._tldextract = TLDExtract()
@@ -371,7 +371,7 @@ class Crosspost(Cog):
                         )
                     queues.append((queue, kwargs))
                 else:
-                    if self.bot.shared.debug or name != "mastodon":
+                    if self.bot.debug or name != "mastodon":
                         self.logger.info("began %s: %s/%s/%s: %s", name, *logloc, link)
                     queue = FragmentQueue(ctx, site, link, *args)
                     self.queue_cache[key] = queue
@@ -379,7 +379,7 @@ class Crosspost(Cog):
                     new.add(queue)
 
             for queue, _ in queues:
-                self.bot.shared.create_task(queue.site.on_invoke(ctx, queue))
+                self.bot.create_task(queue.site.on_invoke(ctx, queue))
                 try:
                     await queue.handle_task
                 except Exception:
@@ -431,10 +431,10 @@ class Crosspost(Cog):
                 raise e.source from None
 
             if embedded and do_suppress:
-                ctx.bot.shared.create_task(ctx.message.edit(suppress=True))
+                ctx.bot.create_task(ctx.message.edit(suppress=True))
                 do_suppress = False
 
-        ctx.bot.shared.create_task(self.try_evict())
+        ctx.bot.create_task(self.try_evict())
 
     async def try_evict(self):
         if self.cache_lock.locked():
@@ -940,7 +940,7 @@ translate text, or a language name or code to translate text into that language.
         except asyncio.CancelledError:
             pass
         except Exception:
-            ctx.bot.shared.create_task(ctx.message.add_reaction("⚠️"))
+            ctx.bot.create_task(ctx.message.add_reaction("⚠️"))
             raise
         finally:
             del self.ongoing_tasks[message_id]
