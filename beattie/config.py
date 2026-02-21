@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from beattie.bot import Shared
+    from beattie.bot import BeattieBot
 
 
 class Config:
-    def __init__(self, shared: Shared):
-        self.pool = shared.pool
+    def __init__(self, bot: BeattieBot):
+        self.pool = bot.pool
         self._cache: dict[int, dict[str, Any]] = {}
 
     async def async_init(self):
