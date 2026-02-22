@@ -8,7 +8,7 @@ import asyncpg
 import toml
 import yarl
 
-from discord import http, gateway
+from discord import gateway, http
 
 from beattie.bot import BeattieBot
 
