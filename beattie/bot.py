@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, overload
 import httpx
 import toml
 
-from discord import AllowedMentions, Game, Guild, Intents, Message
+from discord import AllowedMentions, Game, Intents, Message
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, when_mentioned_or
 
