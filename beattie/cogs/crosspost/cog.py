@@ -159,11 +159,17 @@ class Crosspost(Cog):
         await self.db.async_init()
 
         for site in self.sites:
-            await site.load()
+            try:
+                await site.load()
+            except Exception:  # noqa: PERF203
+                self.logger.exception("Failed to load site %s", site.name)
 
     async def cog_unload(self):
         for site in self.sites:
-            await site.unload()
+            try:
+                await site.unload()
+            except Exception:  # noqa: PERF203
+                self.logger.exception("Error unloading site %s", site.name)
 
     def get(
         self,
