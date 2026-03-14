@@ -301,7 +301,10 @@ class FragmentQueue:
         for idx, (item, spoiler) in enumerate(items):
             if type(item).__name__ == "FallbackFragment":
                 fall_frag: FallbackFragment = item  # type: ignore
-                item = await fall_frag.to_file(ctx)
+                try:
+                    item = await fall_frag.to_file(ctx)
+                except Exception as e:
+                    raise DownloadError(e, fall_frag) from e
                 items[idx] = item, spoiler
             if type(item).__name__ == "FileFragment":
                 to_dl.append(item)  # type: ignore
