@@ -7,3 +7,4 @@ config_password = ""
 owner_ids = []
 api = "https://api.fluxer.app/v1"
 gateway = "wss://gateway.fluxer.app/"
+cdn_base = "https://fluxerusercontent.com"
