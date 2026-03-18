@@ -24,7 +24,8 @@ else:
 async def get_pool(config: BotConfig) -> asyncpg.Pool:
     password = config.get("config_password", "")
     dbname = config.get("db_name", "beattie")
-    dsn = f"postgresql://beattie:{password}@localhost/{dbname}"
+    dbhost = config.get("db_host", "localhost")
+    dsn = f"postgresql://beattie:{password}@{dbhost}/{dbname}"
 
     return await asyncpg.create_pool(dsn)
 
