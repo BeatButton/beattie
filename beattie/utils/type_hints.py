@@ -13,4 +13,5 @@ if TYPE_CHECKING:
         test_prefixes: list[str]
         loglevel: NotRequired[str]
         config_password: NotRequired[str]
+        dbname: NotRequired[str]
         debug: NotRequired[bool]
