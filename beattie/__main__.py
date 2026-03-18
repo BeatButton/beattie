@@ -8,7 +8,7 @@ import asyncpg
 import toml
 import yarl
 
-from discord import gateway, http
+from discord import asset, gateway, http
 
 from beattie.bot import BeattieBot
 
@@ -44,6 +44,8 @@ async def main(config: BotConfig):
         http.Route.BASE = api
     if ws := config.get("gateway"):
         gateway.DiscordWebSocket.DEFAULT_GATEWAY = yarl.URL(ws)
+    if cdn := config.get("cdn_base"):
+        asset.Asset.BASE = cdn  # pyright: ignore[reportAttributeAccessIssue]
 
     bot = BeattieBot(prefixes=tuple(prefixes), pool=pool, debug=debug)
     if ids := config.get("owner_ids"):

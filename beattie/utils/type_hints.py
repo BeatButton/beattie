@@ -18,3 +18,4 @@ if TYPE_CHECKING:
         owner_ids: NotRequired[list[int]]
         api: NotRequired[str]
         gateway: NotRequired[str]
+        cdn_base: NotRequired[str]
