@@ -36,7 +36,9 @@ if TYPE_CHECKING:
 
 class E621(Site):
     name = "e621"
-    pattern = re.compile(r"https?://(?:www\.)?e621\.net/post(?:s|/show)/(\d+)")
+    pattern = re.compile(
+        r"https?://(?:www\.)?e621\.net/p(?:ost(?:s|/show))?/([0-9a-v]+)",
+    )
 
     headers: dict[str, str]
 
@@ -52,6 +54,8 @@ class E621(Site):
         self.headers = {"Authorization": f"Basic {auth_slug}"}
 
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, post_id: str):
+        if not post_id.isnumeric():
+            post_id = f"{int(post_id, 32)}"
         params = {"tags": f"id:{post_id}"}
         api_url = "https://e621.net/posts.json"
         async with self.cog.get(api_url, params=params, headers=self.headers) as resp:
