@@ -97,7 +97,7 @@ CONFIG = "config/crosspost/mastodon.toml"
 
 class Mastodon(Site):
     name = "mastodon"
-    pattern = re.compile(r"(https?://([^\s/]+)/(?:\S+/)+([\w-]+))(?:[\s>/]|$)")
+    pattern = re.compile(r"(https?://([^\s/]+)/(?:\S+/)+([\w-]+))(?:[\s>/)]|$)")
 
     auth: dict[str, dict[str, str]]
     whitelist: dict[str, str]
