@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from lxml import html
 
 from ..database_types import TextLength
-from ..selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
+from ..selectors import og
 from .site import Site
 
 if TYPE_CHECKING:
@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 
 AUTHOR_PATTERN = re.compile(r"furaffinity\.net/art/(\w+)/")
+OG_IMAGE = og("image")
+OG_TITLE = og("title")
+OG_DESCRIPTION = og("description")
 
 
 class FurAffinity(Site):

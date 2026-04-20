@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from lxml import html
 
-from ..selectors import OG_DESCRIPTION, OG_IMAGE, OG_TITLE
+from ..selectors import og
 from .site import Site
 
 if TYPE_CHECKING:
@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 
 AUTHOR_SELECTOR = "//div[contains(@class, 'username')]"
+OG_DESCRIPTION = og("description")
+OG_IMAGE = og("image")
+OG_TITLE = og("title")
 
 
 class Pillowfort(Site):
