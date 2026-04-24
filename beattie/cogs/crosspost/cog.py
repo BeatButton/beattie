@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from itertools import groupby
 from sys import getsizeof
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import aiohttp
 import httpx
@@ -41,6 +41,7 @@ from .translator import (
     HybridTranslator,
     Language,
     LibreTranslator,
+    SelectiveTranslator,
     Translator,
 )
 
@@ -51,6 +52,31 @@ if TYPE_CHECKING:
     from beattie.context import BContext
 
     from .flaresolverr import Config as FsC
+
+    TranslatorType = Literal["libre", "deepl", "hybrid", "none"]
+
+    class BasicTranslatorConfig(TypedDict):
+        type: TranslatorType
+
+    class SelectiveTranslatorConfig(TypedDict):
+        type: Literal["selective"]
+        languages: list[str]
+        inner: Literal["deepl", "libre"]
+
+    TranslatorConfig = BasicTranslatorConfig | SelectiveTranslatorConfig
+
+    class LibreConfig(TypedDict):
+        url: str
+        key: NotRequired[str]
+
+    class DeeplConfig(TypedDict):
+        url: str
+        key: str
+
+    class Config(TypedDict):
+        translator: NotRequired[TranslatorConfig]
+        libre: NotRequired[LibreConfig]
+        deepl: NotRequired[DeeplConfig]
 
 
 ConfigTarget = GuildMessageable | CategoryChannel
@@ -68,6 +94,12 @@ def item_priority(item: Postable):
             return 2
         case _:
             return 3
+
+
+def ensure(item: Any, name: str):
+    if item is None:
+        msg = f"missing required key {name}"
+        raise KeyError(msg)
 
 
 class Crosspost(Cog):
@@ -122,29 +154,74 @@ class Crosspost(Cog):
 
         try:
             with open("config/translator.toml") as fp:
-                data: dict[str, dict[str, str]] = toml.load(fp)
-
+                data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
+        except FileNotFoundError:
+            pass
+        else:
             libre = deepl = None
             if conf := data.get("libre"):
-                libre = LibreTranslator(self, conf["url"], conf["key"])
+                libre = LibreTranslator(self, conf["url"], conf.get("key", ""))
             if conf := data.get("deepl"):
                 deepl = DeeplTranslator(self, conf["url"], conf["key"])
-
-            match libre, deepl:
-                case None, None:
-                    self.translator = None
-                case libre, None:
-                    self.translator = libre
-                case None, deepl:
-                    self.translator = deepl
-                case libre, deepl:
-                    self.translator = HybridTranslator(self, libre, deepl)
+            if conf := data.get("translator"):
+                errfmt = "translator wants {} but it wasn't supplied"
+                match conf["type"]:
+                    case "none":
+                        self.translator = None
+                    case "libre":
+                        if libre is None:
+                            msg = errfmt.format("libre")
+                            raise KeyError(msg)
+                        self.translator = libre
+                    case "deepl":
+                        if deepl is None:
+                            msg = errfmt.format("deepl")
+                            raise KeyError(msg)
+                        self.translator = deepl
+                    case "hybrid":
+                        if libre is None:
+                            msg = errfmt.format("libre")
+                            raise KeyError(msg)
+                        if deepl is None:
+                            msg = errfmt.format("deepl")
+                            raise KeyError(msg)
+                        self.translator = HybridTranslator(self, libre, deepl)
+                    case "selective":
+                        match conf["inner"]:
+                            case "libre":
+                                if libre is None:
+                                    msg = errfmt.format("libre")
+                                    raise KeyError(msg)
+                                trans = libre
+                            case "deepl":
+                                if deepl is None:
+                                    msg = errfmt.format("deepl")
+                                    raise KeyError(msg)
+                                trans = deepl
+                            case other:
+                                msg = f"unhandled inner translator type {other}"
+                                raise RuntimeError(msg)
+                        self.translator = SelectiveTranslator(
+                            self,
+                            trans,
+                            conf["languages"],
+                        )
+                    case other:
+                        msg = f"unhandled translator type {other}"
+                        raise RuntimeError(msg)
+            else:
+                match libre, deepl:
+                    case None, None:
+                        self.translator = None
+                    case libre, None:
+                        self.translator = libre
+                    case None, deepl:
+                        self.translator = deepl
+                    case libre, deepl:
+                        self.translator = HybridTranslator(self, libre, deepl)
 
             if bot.shared.debug and libre is not None:
                 self.translator = libre
-
-        except FileNotFoundError:
-            pass
 
         self._tldextract = TLDExtract()
         self.logger = logging.getLogger(__name__)

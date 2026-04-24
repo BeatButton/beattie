@@ -108,6 +108,57 @@ class HybridTranslator(Translator):
         return text
 
 
+class SelectiveTranslator(Translator):
+    inner: Translator
+    detector: lingua.LanguageDetector
+    whitelist: list[str]
+
+    def __init__(self, cog: Crosspost, inner: Translator, languages: list[str]):
+        super().__init__(cog, "", "")
+        self.inner = inner
+        self.whitelist = languages
+
+    async def _languages(self) -> Mapping[str, Language]:
+        inner_langs = await self.inner.languages()
+        lang_codes = set(inner_langs) - {"xx", "zz"}
+        langs = (
+            lang
+            for code in lang_codes
+            if (lang := getattr(lingua.IsoCode639_1, code.upper(), None))
+        )
+
+        self.detector = lingua.LanguageDetectorBuilder.from_iso_codes_639_1(
+            *langs,
+        ).build()
+
+        return {
+            "xx": DONT,
+            "zz": UNKNOWN,
+            **{code: inner_langs[code] for code in lang_codes},
+        }
+
+    def languages(self) -> asyncio.Task[Mapping[str, Language]]:
+        if self._lang_task is None:
+            self._lang_task = asyncio.Task(self._languages())
+        return self._lang_task
+
+    async def detect(self, text: str) -> Language:
+        langs = await self.languages()
+
+        if lang := await asyncio.to_thread(self.detector.detect_language_of, text):
+            return langs[lang.iso_code_639_1.name.lower()]
+        return DONT
+
+    async def translate(self, text: str, source: str, target: str) -> str:
+        langs = await self.languages()
+        if source == "zz":
+            source = (await self.detect(text)).code
+        if source == DONT or source not in langs or source not in self.whitelist:
+            return text
+
+        return await self.inner.translate(text, source, target)
+
+
 class LibreTranslator(Translator):
 
     async def _languages(self) -> Mapping[str, Language]:
