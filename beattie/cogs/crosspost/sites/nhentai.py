@@ -1,55 +1,64 @@
 from __future__ import annotations
 
 import re
-from random import randint
-from typing import TYPE_CHECKING, Literal, TypedDict
+from itertools import cycle
+from typing import TYPE_CHECKING, TypedDict
+
+import toml
 
 from .site import Site
 
 if TYPE_CHECKING:
+    from beattie.cogs.crosspost.cog import Crosspost
+
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
     class Page(TypedDict):
-        t: Literal["j", "p", "g", "w"]
-
-    class Images(TypedDict):
-        pages: list[Page]
+        path: str
 
     class Title(TypedDict):
-        english: str
+        pretty: str
 
     class Response(TypedDict):
         media_id: str
         title: Title
-        images: Images
+        pages: list[Page]
+
+    class Cdn(TypedDict):
+        image_servers: list[str]
+
+
+API_FMT = "https://nhentai.net/api/v2/{}"
 
 
 class Nhentai(Site):
     name = "nhentai"
     pattern = re.compile(r"https?://(?:www\.)?nhentai\.net/g/(\d+)")
-    concurrent = True
+    image_servers: list[str]
+
+    def __init__(self, cog: Crosspost):
+        super().__init__(cog)
+        with open("config/crosspost/nhentai.toml") as fp:
+            data = toml.load(fp)
+
+        key = data["api_key"]
+        self.headers = {
+            "Authorization": f"Key {key}",
+            "Accept": "application/json",
+        }
+
+    async def load(self):
+        async with self.cog.get(API_FMT.format("cdn")) as resp:
+            data: Cdn = resp.json()
+        self.image_servers = data["image_servers"]
 
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
-        api_url = f"https://nhentai.net/api/gallery/{gal_id}"
-        async with self.cog.flaresolverr() as fs:
-            data: Response = await fs.get_json(api_url)
+        async with self.cog.get(API_FMT.format(f"galleries/{gal_id}")) as resp:
+            data: Response = resp.json()
 
-        media_id = data["media_id"]
-        for i, page in enumerate(data["images"]["pages"], 1):
-            match page["t"]:
-                case "j":
-                    ext = "jpg"
-                case "p":
-                    ext = "png"
-                case "g":
-                    ext = "gif"
-                case "w":
-                    ext = "webp"
-                case oth:
-                    msg = f"Unrecognized image type {oth}"
-                    raise RuntimeError(msg)
-            x = randint(1, 4)
-            queue.push_file(f"https://i{x}.nhentai.net/galleries/{media_id}/{i}.{ext}")
+        servers = cycle(self.image_servers)
+        for server, page in zip(servers, data["pages"], strict=False):
+            queue.push_file(f"{server}/{page['path']}")
 
-        queue.push_text(data["title"]["english"], bold=True)
+        queue.push_text(data["title"]["pretty"], bold=True)
