@@ -67,7 +67,14 @@ class XKCD(Cog):
         except ValueError:
             url = "https://duckduckgo.com/html/"
             params = {"q": f"{inp} xkcd"}
-            async with ctx.bot.get(url, params=params) as resp:
+            async with ctx.bot.get(
+                url,
+                params=params,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0)"
+                    " Gecko/20100101 Firefox/141.0",
+                },
+            ) as resp:
                 text = resp.text
             match = re.search(r"xkcd\.com/(\d+)/\s", text)
             if match:
