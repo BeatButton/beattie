@@ -6,6 +6,7 @@ import re
 import urllib.parse as urlparse
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
+import httpx
 import toml
 from lxml import html
 
@@ -150,6 +151,7 @@ class Mastodon(Site):
             ResponseError,
             json.JSONDecodeError,
             IndexError,
+            httpx.ConnectError,
         ):
             software = None
 
