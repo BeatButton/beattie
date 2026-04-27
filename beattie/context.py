@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 from typing import TYPE_CHECKING, Any
@@ -56,6 +57,25 @@ class BContext(commands.Context):
         return await super().reply(content, mention_author=mention_author, **kwargs)
 
     async def send(
+        self,
+        content: str = None,
+        *,
+        file: File = None,
+        files: Sequence[File] = None,
+        **kwargs: Any,
+    ) -> Message:
+        sleep = 0
+        while True:
+            try:
+                return await self._send(content, file=file, files=files, **kwargs)
+            except discord.DiscordServerError:  # noqa: PERF203
+                sleep += 1
+                if sleep < 3:
+                    await asyncio.sleep(sleep)
+                else:
+                    raise
+
+    async def _send(
         self,
         content: str = None,
         *,
