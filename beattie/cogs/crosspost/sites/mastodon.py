@@ -298,9 +298,9 @@ class Mastodon(Site):
 
     async def do_peertube(
         self,
-        _ctx: CrosspostContext,
+        ctx: CrosspostContext,  # noqa: ARG002
         queue: FragmentQueue,
-        _link: str,
+        link: str,  # noqa: ARG002
         site: str,
         post_id: str,
         headers: dict[str, str],
