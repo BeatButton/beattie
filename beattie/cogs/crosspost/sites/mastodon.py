@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import urllib.parse as urlparse
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import httpx
 import toml
@@ -103,7 +103,7 @@ class Mastodon(Site):
     auth: dict[str, dict[str, str]]
     whitelist: dict[str, str]
     blacklist: set[str]
-    dispatch: dict[str, Handler | Literal["SKIP"]]
+    dispatch: dict[str, Handler]
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
@@ -129,7 +129,7 @@ class Mastodon(Site):
         self.dispatch["iceshrimp"] = self.do_misskey
         self.dispatch["pleroma"] = self.do_mastodon
         self.dispatch["akkoma"] = self.do_mastodon
-        self.dispatch["bridgy-fed"] = "SKIP"
+        self.dispatch["bridgy-fed"] = self.do_nothing
 
     async def sniff(self, domain: str) -> str:
         async with self.cog.get(
@@ -202,9 +202,6 @@ class Mastodon(Site):
         if (handler := self.dispatch.get(software)) is None:
             msg = f"unsupported activitypub software {software}"
             raise RuntimeError(msg)
-
-        if handler == "SKIP":
-            return
 
         headers = {"Accept": "application/json"}
 
@@ -326,3 +323,14 @@ class Mastodon(Site):
 
         queue.push_text(post["name"], bold=True)
         queue.push_text(post["description"])
+
+    async def do_nothing(
+        self,
+        ctx: CrosspostContext,
+        queue: FragmentQueue,
+        link: str,
+        site: str,
+        post_id: str,
+        headers: dict[str, str],
+    ):
+        pass
