@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-import asyncio
 import re
 from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 
+from dns.asyncresolver import Resolver as DNSResolver
+from dns.exception import DNSException
+
 from discord.utils import find
+
+from beattie.utils.exceptions import ResponseError
 
 from .site import Site
 
 if TYPE_CHECKING:
+    from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
@@ -104,8 +109,7 @@ if TYPE_CHECKING:
 
 
 POST_FMT = (
-    "https://bsky.social/xrpc/com.atproto.repo.getRecord"
-    "?repo={}&collection=app.bsky.feed.post&rkey={}"
+    "{}/xrpc/com.atproto.repo.getRecord?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
 PROFILE_FMT = "{}/xrpc/com.atproto.repo.describeRepo?repo={}"
 
@@ -117,6 +121,10 @@ class Bluesky(Site):
         r"[bx]s[ky]yx?\.app|deer\.social)/profile/([^/]+)/post/([^\s/]+)",
     )
 
+    def __init__(self, cog: Crosspost):
+        super().__init__(cog)
+        self.resolver = DNSResolver()
+
     async def handler(
         self,
         _ctx: CrosspostContext,
@@ -124,7 +132,16 @@ class Bluesky(Site):
         repo: str,
         rkey: str,
     ):
-        xrpc_url = POST_FMT.format(repo, rkey)
+        if repo.startswith("did:"):
+            did = repo
+            pds = await self.get_pds(did)
+        elif did := await self.get_did(repo):
+            pds = await self.get_pds(did)
+        else:
+            did = repo
+            pds = "https://bsky.social"
+
+        xrpc_url = POST_FMT.format(pds, repo, rkey)
         async with self.cog.get(xrpc_url) as resp:
             data: PostResponse = resp.json()
 
@@ -138,11 +155,11 @@ class Bluesky(Site):
         qtext = None
         qname = None
         if embed["$type"] == "app.bsky.embed.record":
-            _, _, did, _, qrkey = embed["record"]["uri"].split("/")
+            _, _, qdid, _, qrkey = embed["record"]["uri"].split("/")
 
-            pds_task = asyncio.create_task(self.get_pds(did))
+            qpds = await self.get_pds(qdid)
 
-            xrpc_url = POST_FMT.format(did, qrkey)
+            xrpc_url = POST_FMT.format(qpds, qdid, qrkey)
             async with self.cog.get(xrpc_url) as resp:
                 data: PostResponse = resp.json()
 
@@ -152,8 +169,7 @@ class Bluesky(Site):
             if embed is None:
                 return
 
-            pds = await pds_task
-            url = PROFILE_FMT.format(pds, did)
+            url = PROFILE_FMT.format(qpds, qdid)
             if not url.startswith("http"):
                 url = f"https://{url}"
             async with self.cog.get(url) as resp:
@@ -181,7 +197,7 @@ class Bluesky(Site):
         did = data["uri"].removeprefix("at://").partition("/")[0]
 
         queue.author = repo
-        queue.link = f"https://bsky.app/profile/{repo}/post/{rkey}"
+        queue.link = f"{pds}/profile/{repo}/post/{rkey}"
 
         if video:
             cid = video["ref"]["$link"]
@@ -226,3 +242,22 @@ class Bluesky(Site):
         else:
             pds = "https://bsky.social"
         return pds
+
+    async def get_did(self, repo: str) -> str | None:
+        try:
+            records = await self.resolver.resolve(f"_atproto.{repo}", "TXT")
+        except DNSException:
+            pass
+        else:
+            for rec in records:
+                for value in map(bytes.decode, rec.strings):
+                    if value.startswith("did="):
+                        return value[4:]
+
+        try:
+            async with self.cog.get(f"https://{repo}/.well-known/atproto-did") as resp:
+                return resp.text.strip()
+        except ResponseError:
+            pass
+
+        return None
