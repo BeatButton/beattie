@@ -21,8 +21,12 @@ if TYPE_CHECKING:
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
-    class Response(TypedDict):
+    class Media(TypedDict):
         url: str
+
+    class Response(TypedDict):
+        id: str
+        media_attachments: list[Media]
 
 
 class Tiktok(Site):
@@ -30,6 +34,7 @@ class Tiktok(Site):
     pattern = re.compile(
         r"https?://(?:\w+\.)*(?:vx|kk)?t[in]ktok\.com/(?:@[\w\.]+/video/|t/)?[\w\-]+",
     )
+    API_URL = "https://offload.tnktok.com/api/v1/statuses"
 
     async def handler(
         self,
@@ -59,7 +64,8 @@ class Tiktok(Site):
 
         if images := root.xpath(OG_IMAGE):
             mimetypes = root.xpath(OG_IMAGE_TYPE)
-            post_id = images[0].get("content").rpartition("/")[2]
+            post_id = images[0].get("content").rpartition("/")[2].partition("?")[0]
+            ext = ""
             for idx, (image, mimetype) in enumerate(
                 zip(images, mimetypes, strict=True),
                 1,
@@ -67,6 +73,20 @@ class Tiktok(Site):
                 ext = mimetype.get("content").rpartition("/")[2]
                 filename = f"{post_id}_{idx}.{ext}"
                 queue.push_file(image.get("content"), filename=filename)
+
+            page = 1
+            while len(images) == 4:
+                page += 1
+                param = f"{post_id}page{page}"
+                async with self.cog.get(f"{self.API_URL}/{param}") as resp:
+                    data: Response = resp.json()
+                if data["id"] != param:
+                    break
+                images = data["media_attachments"]
+                for idx, item in enumerate(images, (page - 1) * 4 + 1):
+                    filename = f"{post_id}_{idx}.{ext}"
+                    queue.push_file(item["url"], filename)
+
         else:
             url = root.xpath(OG_VIDEO)[0].get("content")
             queue.push_file(url)
