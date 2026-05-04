@@ -39,9 +39,10 @@ class QueueKwargs(TypedDict):
     settings: Settings
 
 
-Postable = (
-    EmbedFragment | TextFragment | FileFragment | FallbackFragment
-)  # spoiler toggle
+type Postable = tuple[
+    EmbedFragment | TextFragment | FileFragment | FallbackFragment,
+    bool,  # spoiler toggle
+]
 
 
 class FragmentQueue:
@@ -213,10 +214,10 @@ class FragmentQueue:
         spoiler: bool,
         ranges: list[tuple[int, int]] | None,
         settings: Settings,
-    ) -> list[tuple[Postable, bool]]:
+    ) -> list[Postable]:
         self.last_used = time.time()
         await self.handle_task
-        items: list[tuple[Postable, bool]] = []
+        items: list[Postable] = []
 
         if not self.fragments:
             return items
@@ -292,7 +293,7 @@ class FragmentQueue:
         self,
         ctx: CrosspostContext,
         *,
-        items: list[tuple[Postable, bool]],
+        items: list[Postable],
         settings: Settings,
         force: bool,
     ) -> bool:

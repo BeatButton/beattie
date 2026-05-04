@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from beattie.bot import BeattieBot
+    from beattie.cogs.crosspost.fragment import Fragment
     from beattie.context import BContext
 
     from .flaresolverr import Config as FsC
@@ -84,7 +85,7 @@ ConfigTarget = GuildMessageable | CategoryChannel
 QUEUE_CACHE_SIZE: int = 1 * GB
 
 
-def item_priority(item: Postable):
+def item_priority(item: Fragment):
     match type(item).__name__:
         case "FileFragment" | "FallbackFragment":
             return 0
@@ -402,7 +403,7 @@ class Crosspost(Cog):
             filter(lambda p: p[0].fragments, queues),
             lambda p: (p[0].site.name, p[0].author or object()),
         ):
-            items: list[tuple[Postable, bool]] = []
+            items: list[Postable] = []
             batch = list(batch)
             for queue, kwargs in batch:
                 items.extend(
