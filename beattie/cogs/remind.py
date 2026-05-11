@@ -446,15 +446,19 @@ class Remind(Cog):
                 if reference is None:
                     message = f"{recipient.mention}\n{message}"
 
-            if (
-                isinstance(recipient, discord.User)
-                or channel.permissions_for(recipient).mention_everyone
-            ):
+            if isinstance(recipient, discord.User):
                 allowed_mentions = AllowedMentions.all()
             else:
-                allowed_mentions = AllowedMentions.none().merge(
-                    AllowedMentions(replied_user=True, users=[recipient]),
-                )
+                try:
+                    can_mention = channel.permissions_for(recipient).mention_everyone
+                except discord.ClientException:
+                    can_mention = False
+                if can_mention:
+                    allowed_mentions = AllowedMentions.all()
+                else:
+                    allowed_mentions = AllowedMentions.none().merge(
+                        AllowedMentions(replied_user=True, users=[recipient]),
+                    )
 
             kwargs = {"allowed_mentions": allowed_mentions, "reference": reference}
             try:
