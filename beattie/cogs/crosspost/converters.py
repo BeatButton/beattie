@@ -71,7 +71,7 @@ def text_length_from_arg(value: TextLength | bool) -> TextLength:  # noqa: FBT00
 
 class PostFlags(FlagConverter, case_insensitive=True, delimiter="="):
     pages: list[tuple[int, int]] | None = commands.flag(
-        aliases=["page"],
+        aliases=["page", "image", "images"],
         converter=RangesConverter | None,
     )
     text: TextLength | bool | None
