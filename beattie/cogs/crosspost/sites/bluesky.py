@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     class ProfileResponse(TypedDict):
         handle: str
 
+    class HandleResponse(TypedDict):
+        did: str
+
     class Record(TypedDict):
         cid: str
         uri: str
@@ -112,6 +115,7 @@ POST_FMT = (
     "{}/xrpc/com.atproto.repo.getRecord?repo={}&collection=app.bsky.feed.post&rkey={}"
 )
 PROFILE_FMT = "{}/xrpc/com.atproto.repo.describeRepo?repo={}"
+HANDLE_FMT = "{}/xrpc/com.atproto.identity.resolveHandle?handle={}"
 
 
 class Bluesky(Site):
@@ -244,20 +248,11 @@ class Bluesky(Site):
         return pds
 
     async def get_did(self, repo: str) -> str | None:
+        url = HANDLE_FMT.format("https://public.api.bsky.app", repo)
         try:
-            records = await self.resolver.resolve(f"_atproto.{repo}", "TXT")
-        except DNSException:
-            pass
-        else:
-            for rec in records:
-                for value in map(bytes.decode, rec.strings):
-                    if value.startswith("did="):
-                        return value[4:]
-
-        try:
-            async with self.cog.get(f"https://{repo}/.well-known/atproto-did") as resp:
-                return resp.text.strip()
+            async with self.cog.get(url) as resp:
+                data: HandleResponse = resp.json()
         except ResponseError:
-            pass
-
-        return None
+            return None
+        else:
+            return data["did"]
