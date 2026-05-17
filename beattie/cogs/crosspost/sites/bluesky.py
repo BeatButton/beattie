@@ -3,9 +3,6 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 
-from dns.asyncresolver import Resolver as DNSResolver
-from dns.exception import DNSException
-
 from discord.utils import find
 
 from beattie.utils.exceptions import ResponseError
@@ -124,10 +121,6 @@ class Bluesky(Site):
         r"(?:https://fed.brid.gy/r/)?https?://(?:(?:c|[fv]x)?"
         r"[bx]s[ky]yx?\.app|deer\.social)/profile/([^/]+)/post/([^\s/]+)",
     )
-
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-        self.resolver = DNSResolver()
 
     async def handler(
         self,

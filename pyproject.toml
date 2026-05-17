@@ -7,7 +7,6 @@ dependencies = [
     "brotli",
     "discord-ext-menus",
     "discord.py[speed]",
-    "dnspython",
     "httpx",
     "jishaku",
     "levenshtein",
