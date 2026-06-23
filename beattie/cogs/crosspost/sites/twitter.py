@@ -63,7 +63,8 @@ class Twitter(Site):
         tweet_id: str,
         method: Method,
     ):
-        api_link = f"https://api.{method}.com/status/{tweet_id}"
+        i = "/i" if method == "vxtwitter" else ""
+        api_link = f"https://api.{method}.com{i}/status/{tweet_id}"
 
         async with self.cog.get(
             api_link,
