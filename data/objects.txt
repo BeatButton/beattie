@@ -1,0 +1,99 @@
+﻿spoon
+fork
+plate
+bowl
+mug
+glass
+water bottle
+toothbrush
+toothpaste
+soap bar
+shampoo bottle
+hairbrush
+towel
+pillow
+blanket
+lamp
+chair
+table
+couch
+bookshelf
+clock
+mirror
+trash can
+laundry basket
+vacuum cleaner
+broom
+dustpan
+mop
+bucket
+sponge
+dish rack
+cutting board
+chef's knife
+measuring cup
+can opener
+whisk
+rolling pin
+baking sheet
+oven mitt
+refrigerator magnet
+pencil
+pen
+notebook
+eraser
+scissors
+stapler
+tape dispenser
+ruler
+calculator
+flashlight
+extension cord
+power strip
+remote control
+phone charger
+USB flash drive
+headphones
+backpack
+umbrella
+keychain
+wallet
+coin jar
+playing cards
+deck of sticky notes
+candle
+lighter
+sewing needle
+thimble
+safety pin
+clothespin
+rubber band
+binder clip
+zip tie
+bubble wrap
+magnifying glass
+compass
+binoculars
+mortar and pestle
+cast iron skillet
+French press
+corkscrew
+egg timer
+digital thermometer
+hand crank flashlight
+carabiner
+pocket compass
+kaleidoscope
+abacus
+slide rule
+astrolabe
+plumb bob
+tuning fork
+sextant
+spokeshave
+marlinspike
+niddy-noddy
+dip pen
+Curta calculator
+planimeter
+fid
