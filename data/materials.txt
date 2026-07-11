@@ -1,0 +1,182 @@
+﻿wood
+oak
+pine
+maple
+mahogany
+ebony
+bamboo
+cork
+paper
+cardboard
+parchment
+papyrus
+cotton
+linen
+silk
+wool
+canvas
+denim
+felt
+velvet
+leather
+rubber
+latex
+silicone
+plastic
+acrylic
+polycarbonate
+PVC
+nylon
+polyester
+Kevlar
+carbon fiber
+fiberglass
+graphite
+graphene
+fullerene
+aerogel
+foam
+memory foam
+glass
+tempered glass
+quartz glass
+crystal
+quartz
+diamond
+obsidian
+flint
+jade
+opal
+amber
+pearl
+coral
+marble
+granite
+basalt
+slate
+limestone
+sandstone
+soapstone
+pumice
+concrete
+brick
+plaster
+clay
+porcelain
+ceramic
+terracotta
+stoneware
+steel
+stainless steel
+cast iron
+wrought iron
+aluminum
+copper
+brass
+bronze
+titanium
+nickel
+chromium
+tungsten
+tin
+lead
+silver
+gold
+platinum
+palladium
+bismuth
+mercury
+gallium
+lithium
+magnesium
+zinc
+meteoric iron
+nickel-iron meteorite
+coal
+charcoal
+coke
+ash
+tar
+pitch
+bitumen
+resin
+epoxy
+wax
+beeswax
+paraffin wax
+soap
+salt
+rock salt
+ice
+dry ice
+sulfur
+niter
+gypsum
+mica
+talc
+kaolin
+bentonite
+bauxite
+hematite
+magnetite
+pyrite
+azurite
+malachite
+cinnabar
+galena
+chalk
+shale
+mudstone
+gneiss
+schist
+travertine
+tuff
+scoria
+lava
+volcanic glass
+sea glass
+driftwood
+rattan
+wicker
+MDF
+particle board
+plywood
+mycelium
+cellulose
+chitin
+natural sponge
+sea sponge
+kelp fiber
+coconut coir
+hemp fiber
+jute
+flax fiber
+peat
+ambergris
+silica gel
+activated carbon
+silicon
+germanium
+Bakelite
+Teflon
+neoprene
+ebonite
+vulcanized rubber
+liquid crystal
+hydrogel
+xenon ice
+metallic hydrogen
+neutronium
+strange matter
+degenerate matter
+dark crystal
+phlogiston
+orichalcum
+adamant
+mithril
+unobtainium
+naquadah
+trinium
+dilithium crystal
+kyber crystal
+red matter
