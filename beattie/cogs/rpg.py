@@ -45,7 +45,16 @@ class RPG(Cog):
     def __init__(self):
         with open("data/sooth/sooth.json") as fp:
             sooth_data: dict[str, SoothCard] = json.load(fp)
+        with open("data/gun/objects.txt") as fp:
+            gun_objects = [stripped for line in fp if (stripped := line.strip())]
+        with open("data/gun/materials.txt") as fp:
+            gun_materials = [stripped for line in fp if (stripped := line.strip())]
+        with open("data/gun/quirks.txt") as fp:
+            gun_quirks = [stripped for line in fp if (stripped := line.strip())]
         self.sooth_cards = list(sooth_data.values())
+        self.gun_objects = gun_objects
+        self.gun_materials = gun_materials
+        self.gun_quirks = gun_quirks
 
     @commands.command()
     async def choose(self, ctx: BContext, *options: str):
@@ -322,6 +331,14 @@ class RPG(Cog):
     async def flip(self, ctx: BContext):
         result = random.choice(("Heads", "Tails"))
         await ctx.send(f"{result}!")
+
+    @commands.command()
+    async def gun(self, ctx: BContext):
+        await ctx.send(
+            f"A {random.choice(self.gun_objects)} "
+            f"made of {random.choice(self.gun_materials)} "
+            f"which {random.choice(self.gun_quirks)}",
+        )
 
 
 def roller(
