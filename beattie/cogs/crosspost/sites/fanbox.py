@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
     Block = TextBlock | ImageBlock | FileBlock
 
-    class Body(TypedDict):
+    class PostBody(TypedDict):
         images: list[Image]
         files: list[File]
         blocks: list[Block]
@@ -46,10 +46,13 @@ if TYPE_CHECKING:
         creatorId: str
         title: str
         type: Literal["image", "file", "article"]
-        body: Body | None
+        body: PostBody | None
+
+    class ResponseBody(TypedDict):
+        post: Post
 
     class Response(TypedDict):
-        body: Post
+        body: ResponseBody
 
 
 class Fanbox(Site):
@@ -93,7 +96,7 @@ class Fanbox(Site):
                 },
             )
 
-        post = data["body"]
+        post = data["body"]["post"]
         body = post["body"]
         if body is None:
             return
