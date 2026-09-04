@@ -224,7 +224,7 @@ class BeattieBot(Bot):
                 message = (
                     f"An error occured in guild {ctx.guild} channel #{ctx.channel}"
                 )
-            self.logger.exception(message, exc_info=e)
+            self.logger.error(message, exc_info=e)
             raise e
 
     async def on_ready(self):
