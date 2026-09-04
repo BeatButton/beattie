@@ -7,9 +7,13 @@ from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from lxml import html
 
+from beattie.utils.http import make_session
+
 from .site import Site
 
 if TYPE_CHECKING:
+    from beattie.cogs.crosspost.cog import Crosspost
+
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
@@ -51,6 +55,10 @@ class Tumblr(Site):
         r"([\w-]+)(?:/|\.tumblr(?:\.com)?/post/)(\d+)",
     )
 
+    def __init__(self, cog: Crosspost):
+        self.session = make_session(verify=False)
+        super().__init__(cog)
+
     @staticmethod
     def embeddable(block: ContentBlock) -> bool:
         match block["type"]:
@@ -70,7 +78,11 @@ class Tumblr(Site):
     ):
         link = f"https://tumbex.com/{blog}.tumblr/post/{post_id}"
 
-        async with self.cog.get(link, use_browser_ua=True) as resp:
+        async with self.cog.get(
+            link,
+            use_browser_ua=True,
+            session=self.session,
+        ) as resp:
             content = resp.content
 
         root = html.document_fromstring(content, self.cog.parser)
