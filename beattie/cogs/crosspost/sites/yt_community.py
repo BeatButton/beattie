@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ..queue import FragmentQueue
 
 
-YT_SCRIPT_SELECTOR = ".//script[contains(text(),'responseContext')]"
+YT_SCRIPT_SELECTOR = """.//script[contains(text(),'"responseContext"')]"""
 
 
 class YTCommunity(Site):
