@@ -13,7 +13,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, overload
 
-import httpx
 import toml
 
 from discord import AllowedMentions, Game, Guild, Intents, Message
@@ -25,11 +24,13 @@ from beattie.context import BContext
 from beattie.help import BHelp
 from beattie.utils import contextmanagers, exceptions
 from beattie.utils.aioutils import do_every
+from beattie.utils.http import make_session
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Coroutine, Iterable
 
     import asyncpg
+    import httpx
 
     from discord.http import HTTPClient
 
@@ -84,7 +85,7 @@ class Shared:
         self.new_logger()
 
     async def async_init(self):
-        self.session = httpx.AsyncClient(follow_redirects=True, timeout=None)
+        self.session = make_session()
         await self.config.async_init()
 
     def create_task(self, coro: Coroutine) -> None:

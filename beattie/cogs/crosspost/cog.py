@@ -10,7 +10,6 @@ from sys import getsizeof
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import aiohttp
-import httpx
 import toml
 from lxml import etree, html
 from tldextract import ExtractResult, TLDExtract
@@ -26,6 +25,7 @@ from beattie.cogs.crosspost.flaresolverr import FlareSolverr
 from beattie.utils.checks import is_owner_or
 from beattie.utils.contextmanagers import get
 from beattie.utils.etc import GB, URL_EXPR, display_bytes, spoiler_spans
+from beattie.utils.http import make_session
 from beattie.utils.type_hints import GuildMessageable
 
 from .context import CrosspostContext
@@ -47,6 +47,8 @@ from .translator import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    import httpx
 
     from beattie.bot import BeattieBot
     from beattie.cogs.crosspost.fragment import Fragment
@@ -231,7 +233,7 @@ class Crosspost(Cog):
 
     async def cog_load(self):
         if not hasattr(self, "session"):
-            self.session = httpx.AsyncClient(follow_redirects=True, timeout=None)
+            self.session = make_session()
             self.bot.extra["crosspost_session"] = self.session
 
         await self.db.async_init()
