@@ -84,14 +84,7 @@ class Inkbunny(Site):
         for file in sub["files"]:
             full = file["file_url_full"]
             screen = file["file_url_screen"]
-            try:
-                async with self.cog.get(screen, method="HEAD") as resp:
-                    pass
-            except ResponseError as e:
-                if e.code == 404:
-                    queue.push_file(full)
-            else:
-                queue.push_fallback(full, screen)
+            queue.push_fallback(full, screen, headers={"Referer": queue.link})
 
         title = sub["title"]
         description = sub["description"].strip()
