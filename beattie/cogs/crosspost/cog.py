@@ -327,10 +327,12 @@ class Crosspost(Cog):
         queues: list[tuple[FragmentQueue, QueueKwargs]] = []
         new: set[FragmentQueue] = set()
 
+        if any(isinstance(step, PostFlags) for step in steps):
+            force = True
+
         ranges = None
         for step in steps:
             if isinstance(step, PostFlags):
-                force = True
                 settings = copy.copy(settings)
                 if r := step.pages:
                     ranges = r
