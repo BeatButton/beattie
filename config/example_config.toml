@@ -1,4 +1,4 @@
-token = ""
+tokens = [""]
 prefixes = ["?", "!"]
 test_token = ""
 test_prefixes = ["??", "!!"]
