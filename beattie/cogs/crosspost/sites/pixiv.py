@@ -62,7 +62,7 @@ CONFIG = "config/crosspost/pixiv.toml"
 class Pixiv(Site):
     name = "pixiv"
     pattern = re.compile(
-        r"https?://(?:www\.)?ph?ixiv\.net/(?:(?:en/)?artworks/|"
+        r"https?://(?:www\.)?(?:ph?|f)ixiv\.net/(?:(?:en/)?artworks/|"
         r"member_illust\.php\?(?:\w+=\w+&?)*illust_id=|i/)(\d+)",
     )
     headers: dict[str, str]

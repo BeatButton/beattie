@@ -21,7 +21,7 @@ class Twitter(Site):
     name = "twitter"
     pattern = re.compile(
         r"https?://(?:(?:www|mobile|m)\.)?(?:(?:.x|zz)?tw[ix]tter|(?:fix(?:up|v)|"
-        r"girlcock|stupidpenis|skibidi|cunny|mpreg|peepeepoopoodumdumtwitter)?x"
+        r"girlcock|stupidpenis|skibidi|cunny|mpreg|peepeepoopoodumdumtwitter|yiff)?x"
         r"(?:cancel)?)(?:vx)?\.(?:com|org)/[^\s/]+/status/(\d+)",
     )
 
