@@ -33,9 +33,7 @@ class Danbooru(Site):
 
     headers: dict[str, str]
 
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-
+    async def load(self):
         with open("config/crosspost/danbooru.toml") as fp:
             data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
 
