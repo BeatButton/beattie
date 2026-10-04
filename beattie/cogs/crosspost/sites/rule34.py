@@ -28,9 +28,7 @@ class Rule34(Site):
     pattern = re.compile(r"https?://rule34\.xxx/index\.php\?(?:\w+=[^&]+&?){2,}")
     auth: Config
 
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-
+    async def load(self):
         with open("config/crosspost/rule34.toml") as fp:
             self.auth = toml.load(fp)  # pyright: ignore[reportAttributeAccessIssue]
 

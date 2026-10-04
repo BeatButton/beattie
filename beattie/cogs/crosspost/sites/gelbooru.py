@@ -35,8 +35,11 @@ class Gelbooru(Site):
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
-        with open("config/crosspost/gelbooru.toml") as fp:
-            self.gelbooru_params = toml.load(fp)
+        try:
+            with open("config/crosspost/gelbooru.toml") as fp:
+                self.gelbooru_params = toml.load(fp)
+        except FileNotFoundError:
+            self.gelbooru_params = {}
 
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, link: str):
         params = {**API_PARAMS, **self.gelbooru_params}

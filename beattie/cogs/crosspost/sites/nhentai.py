@@ -37,18 +37,14 @@ class Nhentai(Site):
     pattern = re.compile(r"https?://(?:www\.)?nhentai\.net/g/(\d+)")
     image_servers: list[str]
 
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
+    async def load(self):
         with open("config/crosspost/nhentai.toml") as fp:
-            data = toml.load(fp)
-
-        key = data["api_key"]
+            auth = toml.load(fp)
+        key = auth["api_key"]
         self.headers = {
             "Authorization": f"Key {key}",
             "Accept": "application/json",
         }
-
-    async def load(self):
         async with self.cog.get(API_FMT.format("cdn")) as resp:
             data: Cdn = resp.json()
         self.image_servers = data["image_servers"]

@@ -35,18 +35,26 @@ class Poipiku(Site):
 
     def __init__(self, cog: Crosspost):
         super().__init__(cog)
-        with open("config/headers.toml") as fp:
-            headers = toml.load(fp)
         self.session = httpx.AsyncClient(follow_redirects=True, timeout=None)
         cookies = self.session.cookies
-        with open("config/crosspost/poipiku.toml") as fp:
-            data = toml.load(fp)
+        cookies.set("POIPIKU_CONTENTS_VIEW_MODE", "1")
+        try:
+            with open("config/crosspost/poipiku.toml") as fp:
+                data = toml.load(fp)
+        except FileNotFoundError:
+            pass
+        else:
             for key, value in data.items():
                 cookies.set(key, value)
-        cookies.set("POIPIKU_CONTENTS_VIEW_MODE", "1")
 
-        for k, v in headers.items():
-            self.session.headers[k] = v
+        try:
+            with open("config/headers.toml") as fp:
+                headers = toml.load(fp)
+        except FileNotFoundError:
+            pass
+        else:
+            for k, v in headers.items():
+                self.session.headers[k] = v
 
     async def handler(self, ctx: CrosspostContext, queue: FragmentQueue, link: str):
         resp = await self.session.get(link)

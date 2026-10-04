@@ -56,8 +56,8 @@ class Tumblr(Site):
     )
 
     def __init__(self, cog: Crosspost):
-        self.session = make_session(verify=False)
         super().__init__(cog)
+        self.session = make_session(verify=False)
 
     @staticmethod
     def embeddable(block: ContentBlock) -> bool:

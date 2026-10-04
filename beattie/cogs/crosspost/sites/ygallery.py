@@ -27,9 +27,7 @@ class YGallery(Site):
 
     headers: dict[str, str]
 
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-
+    async def load(self):
         with open("config/crosspost/ygal.toml") as fp:
             self.headers = toml.load(fp)
 

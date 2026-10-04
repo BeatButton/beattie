@@ -41,19 +41,18 @@ class Inkbunny(Site):
     )
 
     sid: str
-    login: dict[str, str]
-
-    def __init__(self, cog: Crosspost):
-        super().__init__(cog)
-        with open("config/crosspost/inkbunny.toml") as fp:
-            self.login = toml.load(fp)
 
     async def load(self):
         if sid := self.cog.bot.extra.get("crosspost_inkbunny_sid"):
             self.sid = sid
         else:
-            url = API_FMT.format("login")
-            async with self.cog.get(url, method="POST", params=self.login) as resp:
+            with open("config/crosspost/inkbunny.toml") as fp:
+                params = toml.load(fp)
+            async with self.cog.get(
+                API_FMT.format("login"),
+                method="POST",
+                params=params,
+            ) as resp:
                 json = resp.json()
             self.sid = self.cog.bot.extra["crosspost_inkbunny_sid"] = json["sid"]
 
