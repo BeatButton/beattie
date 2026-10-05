@@ -6,7 +6,7 @@ import certifi
 import httpx
 
 
-def make_session(*, verify: bool | None = None) -> httpx.AsyncClient:
+def make_session(*, verify: bool = None) -> httpx.AsyncClient:
     if verify is None:
         ctx = ssl.create_default_context(cafile=certifi.where())
     else:
