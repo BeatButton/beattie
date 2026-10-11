@@ -157,7 +157,7 @@ class BeattieBot(Bot):
         else:
             mode = "w"
         # get all logfiles but newest
-        old_logs = sorted(Path(".").glob("discord*.log"), key=os.path.getmtime)[:-1]
+        old_logs = sorted(Path(".").glob("beattie*.log"), key=os.path.getmtime)[:-1]
         with tarfile.open(logname, mode) as tar:
             for log in old_logs:
                 name = f"{log.name}.xz"
