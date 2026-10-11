@@ -16,6 +16,7 @@ from .inkbunny import Inkbunny
 from .itaku import Itaku
 from .lofter import Lofter
 from .mastodon import Mastodon
+from .mousepad import Mousepad
 from .nhentai import Nhentai
 from .paheal import Paheal
 from .pillowfort import Pillowfort
@@ -48,6 +49,7 @@ SITES: list[type[Site]] = [
     Itaku,
     Lofter,
     Mastodon,
+    Mousepad,
     Nhentai,
     Paheal,
     Pillowfort,
