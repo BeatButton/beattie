@@ -3,15 +3,14 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-import toml
 from lxml import html
 
+from beattie.utils.aioutils import aload
 from beattie.utils.etc import translate_markdown
 
 from .site import Site
 
 if TYPE_CHECKING:
-    from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
@@ -28,8 +27,7 @@ class YGallery(Site):
     headers: dict[str, str]
 
     async def load(self):
-        with open("config/crosspost/ygal.toml") as fp:
-            self.headers = toml.load(fp)
+        self.headers = await aload("config/crosspost/ygal.toml")
 
     async def handler(self, _ctx: CrosspostContext, queue: FragmentQueue, gal_id: str):
 

@@ -160,7 +160,6 @@ class SelectiveTranslator(Translator):
 
 
 class LibreTranslator(Translator):
-
     async def _languages(self) -> Mapping[str, Language]:
         self.logger.info("fetching language list")
         body = {

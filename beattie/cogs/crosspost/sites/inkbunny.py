@@ -3,16 +3,13 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, TypedDict
 
-import toml
-
+from beattie.utils.aioutils import aload
 from beattie.utils.etc import translate_bbcode
-from beattie.utils.exceptions import ResponseError
 
 from ..database_types import TextLength
 from .site import Site
 
 if TYPE_CHECKING:
-    from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
@@ -46,8 +43,7 @@ class Inkbunny(Site):
         if sid := self.cog.bot.extra.get("crosspost_inkbunny_sid"):
             self.sid = sid
         else:
-            with open("config/crosspost/inkbunny.toml") as fp:
-                params = toml.load(fp)
+            params = await aload("config/crosspost/inkbunny.toml")
             async with self.cog.get(
                 API_FMT.format("login"),
                 method="POST",

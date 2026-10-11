@@ -4,12 +4,11 @@ import re
 from base64 import b64encode
 from typing import TYPE_CHECKING, TypedDict
 
-import toml
+from beattie.utils.aioutils import aload
 
 from .site import Site
 
 if TYPE_CHECKING:
-    from ..cog import Crosspost
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
@@ -34,8 +33,9 @@ class Danbooru(Site):
     headers: dict[str, str]
 
     async def load(self):
-        with open("config/crosspost/danbooru.toml") as fp:
-            data: Config = toml.load(fp)  # pyright: ignore[reportAssignmentType]
+        data: Config = await aload(
+            "config/crosspost/danbooru.toml",
+        )  # pyright: ignore[reportAssignmentType]
 
         key = data["api_key"]
         user = data["user"]

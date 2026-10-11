@@ -4,12 +4,11 @@ import re
 from itertools import cycle
 from typing import TYPE_CHECKING, TypedDict
 
-import toml
+from beattie.utils.aioutils import aload
 
 from .site import Site
 
 if TYPE_CHECKING:
-    from beattie.cogs.crosspost.cog import Crosspost
 
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
@@ -38,8 +37,7 @@ class Nhentai(Site):
     image_servers: list[str]
 
     async def load(self):
-        with open("config/crosspost/nhentai.toml") as fp:
-            auth = toml.load(fp)
+        auth = await aload("config/crosspost/nhentai.toml")
         key = auth["api_key"]
         self.headers = {
             "Authorization": f"Key {key}",

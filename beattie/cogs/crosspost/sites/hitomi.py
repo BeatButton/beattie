@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, TypedDict
 from .site import Site
 
 if TYPE_CHECKING:
-
     from ..context import CrosspostContext
     from ..queue import FragmentQueue
 
