@@ -35,7 +35,10 @@ class Itaku(Site):
         ) as resp:
             post: Response = resp.json()
 
-        url = post.get("image_xl")
+        if video := post.get("video"):
+            url = video["video"]
+        else:
+            url = post.get("image_xl")
 
         if url is None:
             url = post["image"]
