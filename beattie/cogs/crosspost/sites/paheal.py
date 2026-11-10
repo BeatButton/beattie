@@ -27,7 +27,7 @@ class Paheal(Site):
 
         img = root.xpath(IMG_SELECTOR)[0]
         url = img.get("src")
-        mime = img.get("data-mime").partition("/")[2]
+        mime = img.get("data-mime").partition("/")[2].partition(";")[0]
         filename = f"{post}.{mime}"
         queue.push_file(url, filename=filename)
 
